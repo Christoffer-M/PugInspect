@@ -8,7 +8,8 @@
     "build": "vite build",
     "check-types": "tsc --noEmit",
     "serve": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\""
   },
   "dependencies": {
     "@mantine/core": "^8.3.1",
