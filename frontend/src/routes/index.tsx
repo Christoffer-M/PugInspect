@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import "../App.css";
 import {
   Autocomplete,
@@ -9,7 +9,7 @@ import {
   useMantineColorScheme,
   ActionIcon,
 } from "@mantine/core";
-import { IconMoon, IconSun } from "@tabler/icons-react";
+import { IconHome, IconMoon, IconSun } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -17,9 +17,18 @@ export const Route = createFileRoute("/")({
 
 function App() {
   const hook = useMantineColorScheme();
+  const navigate = useNavigate();
   return (
     <div>
-      <Flex justify="flex-end" p="md">
+      <Flex justify="flex-start" p="md" gap="md">
+        <ActionIcon
+          variant="outline"
+          onClick={() => navigate({ to: "/" })}
+          aria-label="Go to home page"
+          size="lg"
+        >
+          <IconHome />
+        </ActionIcon>
         <ActionIcon
           variant="outline"
           color={hook.colorScheme === "dark" ? "yellow" : "blue"}
@@ -34,7 +43,7 @@ function App() {
         <Flex direction="column" align="center">
           <Flex direction="column" align="center" gap="sm">
             <Title order={1}>Welcome to PugInspect</Title>
-            <Title order={3}>
+            <Title order={3} w="500" style={{ textAlign: "center" }}>
               The ultimate character profile search tool for World of Warcraft
             </Title>
           </Flex>

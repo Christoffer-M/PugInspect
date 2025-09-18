@@ -12,7 +12,6 @@
   "dependencies": {
     "@mantine/core": "^8.3.1",
     "@mantine/hooks": "^8.3.1",
-    "@tabler/icons": "^3.35.0",
     "@tabler/icons-react": "^3.35.0",
     "@tanstack/react-devtools": "^0.2.2",
     "@tanstack/react-router": "^1.130.2",
