@@ -11,7 +11,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { IconHome, IconMoon, IconSun } from "@tabler/icons-react";
-import React from "react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 function App() {
   const hook = useMantineColorScheme();
   const navigate = useNavigate();
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
 
   return (
     <div>
@@ -48,7 +48,7 @@ function App() {
           <Flex direction="column" align="center" gap="sm">
             <Title order={1}>Welcome to PugInspect</Title>
             <Title order={3} w="500" style={{ textAlign: "center" }}>
-              The ultimate character profile search tool for World of Warcraft
+              The ultimate character search tool for World of Warcraft
             </Title>
           </Flex>
           <Flex direction="column" align="center" gap="sm" mt="xl">
@@ -62,8 +62,8 @@ function App() {
               rightSection={loading ? <Loader size="xs" /> : null}
             />
             <Box mt="md" style={{ color: "gray" }}>
-              Start by typing in a character name above to search for a Pug
-              template.
+              Start by typing in a character name above to search for a
+              character.
             </Box>
           </Flex>
         </Flex>
