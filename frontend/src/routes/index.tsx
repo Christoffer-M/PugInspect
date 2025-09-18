@@ -8,8 +8,10 @@ import {
   Title,
   useMantineColorScheme,
   ActionIcon,
+  Loader,
 } from "@mantine/core";
 import { IconHome, IconMoon, IconSun } from "@tabler/icons-react";
+import React from "react";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -18,6 +20,8 @@ export const Route = createFileRoute("/")({
 function App() {
   const hook = useMantineColorScheme();
   const navigate = useNavigate();
+  const [loading, setLoading] = React.useState(false);
+
   return (
     <div>
       <Flex justify="flex-start" p="md" gap="md">
@@ -55,6 +59,7 @@ function App() {
               comboboxProps={{
                 transitionProps: { transition: "pop", duration: 200 },
               }}
+              rightSection={loading ? <Loader size="xs" /> : null}
             />
             <Box mt="md" style={{ color: "gray" }}>
               Start by typing in a character name above to search for a Pug
