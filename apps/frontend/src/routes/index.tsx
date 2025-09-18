@@ -13,11 +13,7 @@ import {
 import { IconHome, IconMoon, IconSun } from "@tabler/icons-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/")({
-  component: App,
-});
-
-function App() {
+const App: React.FC = () => {
   const hook = useMantineColorScheme();
   const navigate = useNavigate();
   const [loading] = useState(false);
@@ -70,4 +66,8 @@ function App() {
       </Center>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/")({
+  component: App,
+});
