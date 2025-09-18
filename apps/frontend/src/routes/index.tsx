@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 function App() {
   const hook = useMantineColorScheme();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   return (
     <div>
