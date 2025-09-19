@@ -8,7 +8,6 @@ export const CHARACTER_PROFILE_QUERY = gql`
         server {
           name
         }
-        ssdsad
       }
     }
   }
