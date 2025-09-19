@@ -1,13 +1,18 @@
 {
   "extends": "../../packages/typescript-config/base.json",
   "compilerOptions": {
-    "rootDirs": ["src"],
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "NodeNext",
     "outDir": "dist",
-    "lib": ["es2023"],
-    "target": "es2023",
-    "module": "esnext",
-    "moduleResolution": "node",
+    "rootDir": "src",
     "esModuleInterop": true,
-    "types": ["node"]
-  }
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
