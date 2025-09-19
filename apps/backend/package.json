@@ -5,14 +5,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "check-types": "tsc --noEmit",
     "build": "tsc",
-    "dev": "pnpm run build && node ./dist/index.js"
+    "dev": "npm run build && node ./dist/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@apollo/server": "^5.0.0",
+    "dotenv": "^17.2.2",
     "graphql": "^16.11.0",
     "graphql-tag": "^2.12.6",
     "node-fetch": "^3.3.2"

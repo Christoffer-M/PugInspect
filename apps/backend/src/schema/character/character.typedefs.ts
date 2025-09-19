@@ -1,26 +1,17 @@
-import { gql } from 'graphql-tag';
+import { gql } from "graphql-tag";
 
 export default gql`
   extend type Query {
-    character(name: String!, realm: String!): Character
+    character(name: String!, realm: String!, region: String!): Character
+    characters: [Character!]!
   }
 
   type Character {
     name: String!
     realm: String!
+    region: String!
     raiderIoScore: Int
-    gear: Gear
     logs: [Log!]!
-  }
-
-  type Gear {
-    ilvl: Int
-    items: [Item!]!
-  }
-
-  type Item {
-    slot: String!
-    name: String!
   }
 
   type Log {

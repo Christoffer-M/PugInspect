@@ -1,5 +1,5 @@
-import { gql } from 'graphql-tag';
-import chracterTypedefs from './character/chracter.typedefs.js';
+import { gql } from "graphql-tag";
+import chracterTypedefs from "./character/character.typedefs.js";
 
 const baseTypeDefs = gql`
   type Query {
