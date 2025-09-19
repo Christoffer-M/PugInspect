@@ -1,5 +1,5 @@
 import { config } from "../../../config/index.js";
-import { buildUrlWithQueries, fetcher } from "../../utils/fetcher.js";
+import { fetcher } from "../../utils/fetcher.js";
 import type { RequestInit } from "node-fetch";
 import { CharacterApiResponse } from "./model/CharacterApiResponse.js";
 
@@ -12,12 +12,12 @@ enum CharacterFieldKey {
 
 type CharacterField = {
   key: CharacterFieldKey;
-  value: string;
+  value?: string;
 };
 
 const fields: CharacterField[] = [
   { key: CharacterFieldKey.MythicPlusScoresBySeason, value: "current" },
-  { key: CharacterFieldKey.MythicPlusRanks, value: "current" },
+  { key: CharacterFieldKey.MythicPlusRanks },
 ];
 
 export class RaiderIOService {
@@ -40,18 +40,29 @@ export class RaiderIOService {
       realm,
       region,
       access_key: apiKey,
+      fields: fields
+        .map((f) => `${f.key}${f.value ? `:${f.value}` : ""}`)
+        .join(","),
     };
-
-    if (fields && fields.length > 0) {
-      query.fields = fields
-        .map((field) => `${field.key}:${field.value}`)
-        .join(",");
-    }
 
     const url = buildUrlWithQueries(`${baseUrl}/characters/profile`, query);
 
     var response = await fetcher<CharacterApiResponse>(url, options);
 
+    if (!response) throw new Error("Failed to fetch character profile");
+    console.log("RaiderIO response:", response);
+
     return response;
   }
 }
+
+const buildUrlWithQueries = (
+  baseUrl: string,
+  queries: Record<string, string | number | boolean>
+): string => {
+  const url = new URL(baseUrl);
+  Object.entries(queries).forEach(([key, value]) => {
+    url.searchParams.append(key, String(value));
+  });
+  return url.toString();
+};
