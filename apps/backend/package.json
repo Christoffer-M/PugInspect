@@ -7,7 +7,8 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "build": "tsc",
-    "dev": "npm run build && node ./dist/index.js"
+    "dev": "npm run build && node ./dist/index.js",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +21,11 @@
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "6.0.0",
+    "@graphql-codegen/typescript": "5.0.0",
+    "@graphql-codegen/typescript-operations": "^5.0.0",
     "@types/node": "^24.5.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "@graphql-codegen/typescript-resolvers": "5.0.0"
   }
 }

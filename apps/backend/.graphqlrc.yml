@@ -1,0 +1,2 @@
+schema: ./src/generated/graphql.ts
+documents: ./src/**/*.{ts,graphql}
