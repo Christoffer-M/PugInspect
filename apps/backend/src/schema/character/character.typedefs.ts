@@ -11,12 +11,6 @@ export default gql`
     realm: String!
     region: String!
     raiderIoScore: Int
-    logs: [Log!]!
-  }
-
-  type Log {
-    boss: String!
-    dps: Int
-    percentile: Float
+    warcraftLogsName: String
   }
 `;
