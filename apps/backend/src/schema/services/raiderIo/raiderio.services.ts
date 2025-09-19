@@ -2,6 +2,7 @@ import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import type { RequestInit } from "node-fetch";
 import { CharacterApiResponse } from "./model/CharacterApiResponse.js";
+import { CharacterArgs } from "../../character/character.resolvers.js";
 
 const baseUrl = "https://raider.io/api/v1";
 
@@ -22,10 +23,9 @@ const fields: CharacterField[] = [
 
 export class RaiderIOService {
   static async getCharacterProfile(
-    name: string,
-    realm: string,
-    region: string
+    args: CharacterArgs
   ): Promise<CharacterApiResponse> {
+    const { name, realm, region } = args;
     const options: RequestInit = {
       method: "GET",
     };
@@ -48,9 +48,7 @@ export class RaiderIOService {
     const url = buildUrlWithQueries(`${baseUrl}/characters/profile`, query);
 
     var response = await fetcher<CharacterApiResponse>(url, options);
-
     if (!response) throw new Error("Failed to fetch character profile");
-    console.log("RaiderIO response:", response);
 
     return response;
   }
