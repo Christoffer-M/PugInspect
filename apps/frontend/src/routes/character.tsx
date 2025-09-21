@@ -1,9 +1,9 @@
 import { Container, Text } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
-import Header from "../components/header";
 import { regions } from "../components/characterSearchInput";
 import { useSearch } from "@tanstack/react-router";
 import { useCharacterQuery } from "../queries/character-queries";
+import { Page } from "../components/page";
 
 type CharacterRouteSearch = {
   region: string;
@@ -25,12 +25,11 @@ const character: React.FC = () => {
   console.log("data", data);
 
   return (
-    <>
-      <Header />
+    <Page>
       <Container>
         <Text>{data?.name}</Text>
       </Container>
-    </>
+    </Page>
   );
 };
 
