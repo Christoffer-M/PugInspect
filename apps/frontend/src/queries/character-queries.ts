@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetcher } from "./util";
 
 const queryKeys = {
   character: (name: string, realm: string, region: string) =>
@@ -13,17 +14,10 @@ export const useCharacterQuery = (
   return useQuery({
     queryKey: queryKeys.character(name, realm, region),
     queryFn: async () => {
-      const response = await fetch(
-        `/api/character?name=${encodeURIComponent(
-          name,
-        )}&realm=${encodeURIComponent(realm)}&region=${encodeURIComponent(
-          region,
-        )}`,
+      const response = await fetcher(
+        `${process.env.API_BASE_URL}/character?name=${name}&realm=${realm}&region=${region}`,
       );
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.json();
+      return response;
     },
     enabled: !!name && !!realm && !!region,
   });
