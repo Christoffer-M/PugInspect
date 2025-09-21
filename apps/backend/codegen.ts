@@ -4,7 +4,6 @@ import { config as DotEnvConfig } from "./src/config/index";
 const config: CodegenConfig = {
   overwrite: true,
   schema: [
-    "http://localhost:4000/",
     {
       "https://www.warcraftlogs.com/api/v2/client": {
         headers: {

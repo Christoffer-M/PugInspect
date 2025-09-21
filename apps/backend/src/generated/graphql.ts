@@ -236,14 +236,10 @@ export type Character = {
   id: Scalars['Int']['output'];
   /** The level of the character. */
   level: Scalars['Int']['output'];
-  logs: Array<Log>;
   /** The name of the character. */
   name: Scalars['String']['output'];
-  raiderIoScore?: Maybe<Scalars['Int']['output']>;
-  realm: Scalars['String']['output'];
   /** Recent reports for the character. */
   recentReports?: Maybe<ReportPagination>;
-  region: Scalars['String']['output'];
   /** The server that the character belongs to. */
   server: Server;
   /** Rankings information for a character, filterable to specific zones, bosses, metrics, etc. This data is not considered frozen, and it can change without notice. Use at your own risk. */
@@ -1269,13 +1265,6 @@ export type LeaderboardRank =
   /** Only include ranks with a backing log. */
   | 'LogsOnly';
 
-export type Log = {
-  __typename?: 'Log';
-  boss: Scalars['String']['output'];
-  dps?: Maybe<Scalars['Int']['output']>;
-  percentile?: Maybe<Scalars['Float']['output']>;
-};
-
 /** A single partition for a given raid zone. Partitions have an integer value representing the actual partition and a localized name that describes what the partition represents. Partitions contain their own rankings, statistics and all stars. */
 export type Partition = {
   __typename?: 'Partition';
@@ -1357,11 +1346,8 @@ export type ProgressRaceDataProgressRaceArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  _empty?: Maybe<Scalars['String']['output']>;
-  character?: Maybe<Character>;
   /** Obtain the character data object that allows the retrieval of individual characters or filtered collections of characters. */
   characterData?: Maybe<CharacterData>;
-  characters: Array<Character>;
   /** Obtain the game data object that holds collections of static data such as abilities, achievements, classes, items, NPCs, etc.. */
   gameData?: Maybe<GameData>;
   /** Obtain the guild data object that allows the retrieval of individual guilds or filtered collections of guilds. */
@@ -1378,13 +1364,6 @@ export type Query = {
   userData?: Maybe<UserData>;
   /** Obtain the world data object that holds collections of data such as all expansions, regions, subregions, servers, dungeon/raid zones, and encounters. */
   worldData?: Maybe<WorldData>;
-};
-
-
-export type QueryCharacterArgs = {
-  name: Scalars['String']['input'];
-  realm: Scalars['String']['input'];
-  region: Scalars['String']['input'];
 };
 
 export type Rank = {
@@ -2483,7 +2462,6 @@ export type ResolversTypes = {
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   KillType: KillType;
   LeaderboardRank: LeaderboardRank;
-  Log: ResolverTypeWrapper<Log>;
   Partition: ResolverTypeWrapper<Partition>;
   PhaseMetadata: ResolverTypeWrapper<PhaseMetadata>;
   PhaseTransition: ResolverTypeWrapper<PhaseTransition>;
@@ -2574,7 +2552,6 @@ export type ResolversParentTypes = {
   GuildZoneRankings: GuildZoneRankings;
   Int: Scalars['Int']['output'];
   JSON: Scalars['JSON']['output'];
-  Log: Log;
   Partition: Partition;
   PhaseMetadata: PhaseMetadata;
   PhaseTransition: PhaseTransition;
@@ -2677,12 +2654,8 @@ export type CharacterResolvers<ContextType = any, ParentType extends ResolversPa
   hidden?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   level?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  logs?: Resolver<Array<ResolversTypes['Log']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  raiderIoScore?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
-  realm?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   recentReports?: Resolver<Maybe<ResolversTypes['ReportPagination']>, ParentType, ContextType, RequireFields<CharacterRecentReportsArgs, 'limit' | 'page'>>;
-  region?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   server?: Resolver<ResolversTypes['Server'], ParentType, ContextType>;
   zoneRankings?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType, RequireFields<CharacterZoneRankingsArgs, 'byBracket' | 'className' | 'compare' | 'difficulty' | 'includePrivateLogs' | 'metric' | 'partition' | 'role' | 'size' | 'specName' | 'timeframe' | 'zoneID'>>;
 };
@@ -2975,12 +2948,6 @@ export interface JsonScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
   name: 'JSON';
 }
 
-export type LogResolvers<ContextType = any, ParentType extends ResolversParentTypes['Log'] = ResolversParentTypes['Log']> = {
-  boss?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  dps?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
-  percentile?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
-};
-
 export type PartitionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Partition'] = ResolversParentTypes['Partition']> = {
   compactName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   default?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -3011,10 +2978,7 @@ export type ProgressRaceDataResolvers<ContextType = any, ParentType extends Reso
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  character?: Resolver<Maybe<ResolversTypes['Character']>, ParentType, ContextType, RequireFields<QueryCharacterArgs, 'name' | 'realm' | 'region'>>;
   characterData?: Resolver<Maybe<ResolversTypes['CharacterData']>, ParentType, ContextType>;
-  characters?: Resolver<Array<ResolversTypes['Character']>, ParentType, ContextType>;
   gameData?: Resolver<Maybe<ResolversTypes['GameData']>, ParentType, ContextType>;
   guildData?: Resolver<Maybe<ResolversTypes['GuildData']>, ParentType, ContextType>;
   progressRaceData?: Resolver<Maybe<ResolversTypes['ProgressRaceData']>, ParentType, ContextType>;
@@ -3350,7 +3314,6 @@ export type Resolvers<ContextType = any> = {
   GuildTag?: GuildTagResolvers<ContextType>;
   GuildZoneRankings?: GuildZoneRankingsResolvers<ContextType>;
   JSON?: GraphQLScalarType;
-  Log?: LogResolvers<ContextType>;
   Partition?: PartitionResolvers<ContextType>;
   PhaseMetadata?: PhaseMetadataResolvers<ContextType>;
   PhaseTransition?: PhaseTransitionResolvers<ContextType>;

@@ -191,12 +191,9 @@ type Character {
 
   """The level of the character."""
   level: Int!
-  logs: [Log!]!
 
   """The name of the character."""
   name: String!
-  raiderIoScore: Int
-  realm: String!
 
   """Recent reports for the character."""
   recentReports(
@@ -210,7 +207,6 @@ type Character {
     """
     page: Int = 1
   ): ReportPagination
-  region: String!
 
   """The server that the character belongs to."""
   server: Server!
@@ -1727,12 +1723,6 @@ enum LeaderboardRank {
   LogsOnly
 }
 
-type Log {
-  boss: String!
-  dps: Int
-  percentile: Float
-}
-
 """
 A single partition for a given raid zone. Partitions have an integer value representing the actual partition and a localized name that describes what the partition represents. Partitions contain their own rankings, statistics and all stars.
 """
@@ -1880,14 +1870,10 @@ type ProgressRaceData {
 }
 
 type Query {
-  _empty: String
-  character(name: String!, realm: String!, region: String!): Character
-
   """
   Obtain the character data object that allows the retrieval of individual characters or filtered collections of characters.
   """
   characterData: CharacterData
-  characters: [Character!]!
 
   """
   Obtain the game data object that holds collections of static data such as abilities, achievements, classes, items, NPCs, etc..
