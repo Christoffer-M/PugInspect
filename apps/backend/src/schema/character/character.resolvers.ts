@@ -28,6 +28,7 @@ export default {
       ]);
 
       if (!warcraftLogsProfile?.character) {
+        console.error("Character not found in Warcraft Logs");
         throw new Error("Character not found in Warcraft Logs");
       }
 
@@ -37,8 +38,12 @@ export default {
       // If the structure changes, this assertion might lead to runtime errors.
       // A more robust solution would involve validating the structure at runtime.
       // For now, we proceed with the assertion for simplicity.
-      const zoneRankings = warcraftLogsProfile.character
-        .zoneRankings as ZoneRanking;
+      const zoneRankings = warcraftLogsProfile.character.zoneRankings as
+        | ZoneRanking
+        | undefined;
+
+      const currentSeasonSegments =
+        rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
 
       return {
         name: args.name,
@@ -47,38 +52,28 @@ export default {
         thumbnailUrl: rioProfile.thumbnail_url,
         raiderIoScore: {
           all: {
-            score:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.all.score,
-            color:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.all.color,
+            score: currentSeasonSegments?.all.score,
+            color: currentSeasonSegments?.all.color,
           },
           dps: {
-            score:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.dps.score,
-            color:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.dps.color,
+            score: currentSeasonSegments?.dps.score,
+            color: currentSeasonSegments?.dps.color,
           },
           healer: {
-            score:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.healer
-                .score,
-            color:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.healer
-                .color,
+            score: currentSeasonSegments?.healer.score,
+            color: currentSeasonSegments?.healer.color,
           },
           tank: {
-            score:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.tank.score,
-            color:
-              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.tank.color,
+            score: currentSeasonSegments?.tank.score,
+            color: currentSeasonSegments?.tank.color,
           },
         },
         logs: {
           bestPerformanceAverage:
-            zoneRankings.bestPerformanceAverage?.toFixed(2),
+            zoneRankings?.bestPerformanceAverage?.toFixed(2),
           medianPerformanceAverage:
-            zoneRankings.medianPerformanceAverage?.toFixed(2),
-          raidRankings: zoneRankings.rankings?.map((ranking) => ({
+            zoneRankings?.medianPerformanceAverage?.toFixed(2),
+          raidRankings: zoneRankings?.rankings?.map((ranking) => ({
             encounter: ranking.encounter
               ? {
                   id: ranking.encounter.id,

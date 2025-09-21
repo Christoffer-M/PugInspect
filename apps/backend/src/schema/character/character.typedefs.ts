@@ -12,7 +12,7 @@ export default gql`
     region: String!
     thumbnailUrl: String
     raiderIoScore: RioScore
-    logs: Logs
+    logs: Logs!
   }
 
   type RioScore {
@@ -28,17 +28,17 @@ export default gql`
   }
 
   type Logs {
-    bestPerformanceAverage: Float!
-    medianPerformanceAverage: Float!
-    raidRankings: [RaidRanking!]!
+    bestPerformanceAverage: Float
+    medianPerformanceAverage: Float
+    raidRankings: [RaidRanking!]
   }
 
   type RaidRanking {
     encounter: Encounter
-    rankPercent: Float!
-    medianPercent: Float!
-    bestAmount: Float!
-    totalKills: Int!
+    rankPercent: Float
+    medianPercent: Float
+    bestAmount: Float
+    totalKills: Int
   }
 
   type Encounter {

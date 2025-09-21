@@ -45,7 +45,8 @@ export class WarcraftLogsService {
 
     const characterData = response.data.characterData;
 
-    if (!characterData?.character) throw new Error("Character not found");
+    if (!characterData?.character)
+      throw new Error("Character not found in Warcraft Logs");
 
     return characterData;
   }

@@ -25,7 +25,7 @@ const config: CodegenConfig = {
         documentMode: "string",
       },
     },
-    "./schema.graphql": {
+    "./src/generated/schema.graphql": {
       plugins: ["schema-ast"],
       config: {
         includeDirectives: true,

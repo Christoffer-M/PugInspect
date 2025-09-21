@@ -49,10 +49,6 @@ export class RaiderIOService {
 
     var response = await fetcher<CharacterApiResponse>(url, options);
     if (!response) throw new Error("Failed to fetch character profile");
-    console.log(
-      "RaiderIO Response:",
-      response.mythic_plus_scores_by_season?.[0]?.scores.all
-    );
 
     return response;
   }

@@ -3,7 +3,7 @@ schema {
 }
 
 type Character {
-  logs: Logs
+  logs: Logs!
   name: String!
   raiderIoScore: RioScore
   realm: String!
@@ -17,9 +17,9 @@ type Encounter {
 }
 
 type Logs {
-  bestPerformanceAverage: Float!
-  medianPerformanceAverage: Float!
-  raidRankings: [RaidRanking!]!
+  bestPerformanceAverage: Float
+  medianPerformanceAverage: Float
+  raidRankings: [RaidRanking!]
 }
 
 type Query {
@@ -29,11 +29,11 @@ type Query {
 }
 
 type RaidRanking {
-  bestAmount: Float!
+  bestAmount: Float
   encounter: Encounter
-  medianPercent: Float!
-  rankPercent: Float!
-  totalKills: Int!
+  medianPercent: Float
+  rankPercent: Float
+  totalKills: Int
 }
 
 type RioScore {

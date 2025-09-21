@@ -14,33 +14,41 @@ export const LogsTable: React.FC<LogsTableProps> = ({ data, loading }) => {
     <Table.Tr key={ranking.encounter?.id ?? Math.random()}>
       <Table.Td>{ranking.encounter?.name}</Table.Td>
       <Table.Td
-        c={GetWarcraftLogRankingColors(ranking.rankPercent, theme)}
+        c={
+          ranking.rankPercent
+            ? GetWarcraftLogRankingColors(ranking.rankPercent, theme)
+            : undefined
+        }
         fw={500}
       >
-        {ranking.rankPercent.toLocaleString(undefined, {
+        {ranking.rankPercent?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        })}
+        }) || "N/A"}
       </Table.Td>
       <Table.Td
-        c={GetWarcraftLogRankingColors(ranking.medianPercent, theme)}
+        c={
+          ranking.medianPercent
+            ? GetWarcraftLogRankingColors(ranking.medianPercent, theme)
+            : undefined
+        }
         fw={500}
       >
-        {ranking.medianPercent.toLocaleString(undefined, {
+        {ranking.medianPercent?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        })}
+        }) || "N/A"}
       </Table.Td>
       <Table.Td>
-        {ranking.bestAmount.toLocaleString(undefined, {
+        {ranking.bestAmount?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        })}
+        }) || "N/A"}
       </Table.Td>
       <Table.Td>
-        {ranking.totalKills.toLocaleString(undefined, {
+        {ranking.totalKills?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
-        })}
+        }) || "N/A"}
       </Table.Td>
     </Table.Tr>
   ));
