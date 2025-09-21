@@ -9,55 +9,48 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as CharacterRouteImport } from './routes/character'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RegionRealmNameRouteImport } from './routes/$region.$realm.$name'
 
-const CharacterRoute = CharacterRouteImport.update({
-  id: '/character',
-  path: '/character',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RegionRealmNameRoute = RegionRealmNameRouteImport.update({
+  id: '/$region/$realm/$name',
+  path: '/$region/$realm/$name',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/character': typeof CharacterRoute
+  '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/character': typeof CharacterRoute
+  '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/character': typeof CharacterRoute
+  '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/character'
+  fullPaths: '/' | '/$region/$realm/$name'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/character'
-  id: '__root__' | '/' | '/character'
+  to: '/' | '/$region/$realm/$name'
+  id: '__root__' | '/' | '/$region/$realm/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CharacterRoute: typeof CharacterRoute
+  RegionRealmNameRoute: typeof RegionRealmNameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/character': {
-      id: '/character'
-      path: '/character'
-      fullPath: '/character'
-      preLoaderRoute: typeof CharacterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -65,12 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$region/$realm/$name': {
+      id: '/$region/$realm/$name'
+      path: '/$region/$realm/$name'
+      fullPath: '/$region/$realm/$name'
+      preLoaderRoute: typeof RegionRealmNameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CharacterRoute: CharacterRoute,
+  RegionRealmNameRoute: RegionRealmNameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

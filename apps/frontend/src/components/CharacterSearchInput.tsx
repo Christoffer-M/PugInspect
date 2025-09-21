@@ -22,14 +22,8 @@ const CharacterSearchInput: React.FC = () => {
       setErrorText("Character not found");
     }
     if (isSuccess && data) {
-      setSearchTerm("");
       router.navigate({
-        to: "/character",
-        search: {
-          region: data.region,
-          name: data.name,
-          server: data.realm,
-        },
+        to: `/${data.region.toLowerCase()}/${data.realm}/${data.name}`,
       });
     }
   }, [isError, isSuccess]);
