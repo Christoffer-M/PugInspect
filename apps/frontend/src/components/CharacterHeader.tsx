@@ -8,15 +8,14 @@ import {
   Image,
   Text,
 } from "@mantine/core";
-import { GetWarcraftLogRankingColors } from "../util/util";
+import {
+  GetWarcraftLogRankingColors,
+  upperCaseFirstLetter,
+} from "../util/util";
 import { RankingGroup } from "./RankingGroup";
 import RaiderIoIocn from "../../icons/raiderio-icon.svg";
 import WarcraftLogsIcon from "../../icons/warcraftlogs-icon.svg";
 import { ExternalLinkIcon } from "./ExternalLinkIcon";
-
-const upperCaseString = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
 
 export const CharacterHeader: React.FC<{
   name: string;
@@ -59,7 +58,7 @@ export const CharacterHeader: React.FC<{
           >
             <Group gap="xs" justify="flex-start" align="center">
               <Title order={3} m={0}>
-                {upperCaseString(name)}
+                {upperCaseFirstLetter(name)}
               </Title>
               <ExternalLinkIcon
                 href={`https://raider.io/characters/${region}/${server}/${name}`}
@@ -75,7 +74,7 @@ export const CharacterHeader: React.FC<{
             </Group>
 
             <Text size="sm" m={0}>
-              ({region.toUpperCase()}) {upperCaseString(server)}
+              ({region.toUpperCase()}) {upperCaseFirstLetter(server)}
             </Text>
 
             <Text size="sm">Dracthyr</Text>

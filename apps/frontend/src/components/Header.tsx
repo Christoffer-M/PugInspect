@@ -1,14 +1,16 @@
-import { ActionIcon, AppShell, Container, Group } from "@mantine/core";
+import { ActionIcon, AppShell, Container, Flex, Group } from "@mantine/core";
 import { IconHome } from "@tabler/icons-react";
-import { useNavigate } from "@tanstack/react-router";
+import { useMatchRoute, useNavigate, useParams } from "@tanstack/react-router";
+import CharacterSearchInput from "./CharacterSearchInput";
 
-type HeaderProps = {
-  showSearch?: boolean;
-};
-
-// ...existing code...
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC = () => {
   const navigate = useNavigate();
+  const matchRoute = useMatchRoute();
+
+  const params = useParams({
+    from: "/$region/$realm/$name",
+    shouldThrow: false,
+  });
   return (
     <AppShell.Header>
       <Container h="100%">
@@ -21,10 +23,19 @@ const Header: React.FC<HeaderProps> = () => {
           >
             <IconHome />
           </ActionIcon>
+          {!matchRoute({ from: "/" }) && (
+            <Flex justify="center" align="center" style={{ flex: 1 }}>
+              <CharacterSearchInput
+                realm={params?.realm}
+                name={params?.name}
+                region={params?.region}
+              />
+            </Flex>
+          )}
         </Group>
       </Container>
     </AppShell.Header>
   );
 };
-// ...existing code...
+
 export default Header;

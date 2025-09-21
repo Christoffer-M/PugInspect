@@ -11,3 +11,7 @@ export const GetWarcraftLogRankingColors = (
   if (percent < 100) return theme.colors.orange[5];
   return theme.colors.yellow[2];
 };
+
+export const upperCaseFirstLetter = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};

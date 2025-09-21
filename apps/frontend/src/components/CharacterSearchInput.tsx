@@ -6,9 +6,23 @@ import { useCharacterQuery } from "../queries/character-queries";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 
-const CharacterSearchInput: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [region, setRegion] = useState(localStorage.getItem("region") || "EU");
+type CharacterSearchInputProps = {
+  region?: string;
+  realm?: string;
+  name?: string;
+};
+
+const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
+  region: initialRegion,
+  realm: initialRealm,
+  name: initialName,
+}) => {
+  const [searchTerm, setSearchTerm] = useState(
+    initialName && initialRealm ? `${initialName}-${initialRealm}` : "",
+  );
+  const [region, setRegion] = useState(
+    initialRegion || localStorage.getItem("region") || "EU",
+  );
   const [errorText, setErrorText] = useState("");
   const [queryVariables, setQueryVariables] =
     useState<CharacterQueryVariables | null>(null);
@@ -31,11 +45,11 @@ const CharacterSearchInput: React.FC = () => {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     setErrorText("");
     if (event.key === "Enter" && searchTerm.trim()) {
-      const [name, server] = searchTerm.split("-");
-      if (name && server) {
-        setQueryVariables({ name, realm: server, region });
+      const [name, realm] = searchTerm.split("-");
+      if (name && realm) {
+        setQueryVariables({ name, realm, region });
       } else {
-        setErrorText("Invalid character or server");
+        setErrorText("Invalid character or realm");
       }
     }
   };
