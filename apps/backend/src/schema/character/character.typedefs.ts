@@ -11,8 +11,20 @@ export default gql`
     realm: String!
     region: String!
     thumbnailUrl: String
-    raiderIoScore: Float
+    raiderIoScore: RioScore
     logs: Logs
+  }
+
+  type RioScore {
+    all: Segment
+    dps: Segment
+    healer: Segment
+    tank: Segment
+  }
+
+  type Segment {
+    score: Float!
+    color: String!
   }
 
   type Logs {

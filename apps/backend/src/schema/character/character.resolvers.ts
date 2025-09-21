@@ -8,6 +8,13 @@ export interface CharacterArgs {
   region: string;
 }
 
+function toTwoDecimals(
+  num: number | null | undefined
+): number | null | undefined {
+  if (num === null || num === undefined) return null;
+  return Math.round(num * 100) / 100;
+}
+
 export default {
   Query: {
     character: async (_: any, args: CharacterArgs) => {
@@ -38,11 +45,41 @@ export default {
         realm: args.realm,
         region: args.region,
         thumbnailUrl: rioProfile.thumbnail_url,
-        raiderIoScore:
-          rioProfile.mythic_plus_scores_by_season?.[0]?.scores?.all,
+        raiderIoScore: {
+          all: {
+            score:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.all.score,
+            color:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.all.color,
+          },
+          dps: {
+            score:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.dps.score,
+            color:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.dps.color,
+          },
+          healer: {
+            score:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.healer
+                .score,
+            color:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.healer
+                .color,
+          },
+          tank: {
+            score:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.tank.score,
+            color:
+              rioProfile.mythic_plus_scores_by_season?.[0]?.segments.tank.color,
+          },
+        },
         logs: {
-          bestPerformanceAverage: zoneRankings.bestPerformanceAverage,
-          medianPerformanceAverage: zoneRankings.medianPerformanceAverage,
+          bestPerformanceAverage: toTwoDecimals(
+            zoneRankings.bestPerformanceAverage
+          ),
+          medianPerformanceAverage: toTwoDecimals(
+            zoneRankings.medianPerformanceAverage
+          ),
           raidRankings: zoneRankings.rankings?.map((ranking) => ({
             encounter: ranking.encounter
               ? {
@@ -50,10 +87,10 @@ export default {
                   name: ranking.encounter.name,
                 }
               : null,
-            rankPercent: ranking.rankPercent,
-            medianPercent: ranking.medianPercent,
-            bestAmount: ranking.bestAmount,
-            totalKills: ranking.totalKills,
+            rankPercent: toTwoDecimals(ranking.rankPercent),
+            medianPercent: toTwoDecimals(ranking.medianPercent),
+            bestAmount: toTwoDecimals(ranking.bestAmount),
+            totalKills: toTwoDecimals(ranking.totalKills),
           })),
         },
       };

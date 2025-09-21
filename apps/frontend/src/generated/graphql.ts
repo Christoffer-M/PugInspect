@@ -20,7 +20,7 @@ export type Character = {
   __typename?: 'Character';
   logs?: Maybe<Logs>;
   name: Scalars['String']['output'];
-  raiderIoScore?: Maybe<Scalars['Float']['output']>;
+  raiderIoScore?: Maybe<RioScore>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
@@ -62,6 +62,20 @@ export type RaidRanking = {
   totalKills: Scalars['Int']['output'];
 };
 
+export type RioScore = {
+  __typename?: 'RioScore';
+  all?: Maybe<Segment>;
+  dps?: Maybe<Segment>;
+  healer?: Maybe<Segment>;
+  tank?: Maybe<Segment>;
+};
+
+export type Segment = {
+  __typename?: 'Segment';
+  color: Scalars['String']['output'];
+  score: Scalars['Float']['output'];
+};
+
 export type CharacterQueryVariables = Exact<{
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
@@ -69,7 +83,7 @@ export type CharacterQueryVariables = Exact<{
 }>;
 
 
-export type CharacterQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, raiderIoScore?: number | null, thumbnailUrl?: string | null, logs?: { __typename?: 'Logs', bestPerformanceAverage: number, medianPerformanceAverage: number, raidRankings: Array<{ __typename?: 'RaidRanking', rankPercent: number, medianPercent: number, bestAmount: number, totalKills: number, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> } | null } | null };
+export type CharacterQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, thumbnailUrl?: string | null, logs?: { __typename?: 'Logs', bestPerformanceAverage: number, medianPerformanceAverage: number, raidRankings: Array<{ __typename?: 'RaidRanking', rankPercent: number, medianPercent: number, bestAmount: number, totalKills: number, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> } | null, raiderIoScore?: { __typename?: 'RioScore', all?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
 
 
-export const CharacterDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Character"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"realm"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"region"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"character"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"realm"},"value":{"kind":"Variable","name":{"kind":"Name","value":"realm"}}},{"kind":"Argument","name":{"kind":"Name","value":"region"},"value":{"kind":"Variable","name":{"kind":"Name","value":"region"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"logs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bestPerformanceAverage"}},{"kind":"Field","name":{"kind":"Name","value":"medianPerformanceAverage"}},{"kind":"Field","name":{"kind":"Name","value":"raidRankings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"encounter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rankPercent"}},{"kind":"Field","name":{"kind":"Name","value":"medianPercent"}},{"kind":"Field","name":{"kind":"Name","value":"bestAmount"}},{"kind":"Field","name":{"kind":"Name","value":"totalKills"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"realm"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"raiderIoScore"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnailUrl"}}]}}]}}]} as unknown as DocumentNode<CharacterQuery, CharacterQueryVariables>;
+export const CharacterDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Character"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"realm"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"region"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"character"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"realm"},"value":{"kind":"Variable","name":{"kind":"Name","value":"realm"}}},{"kind":"Argument","name":{"kind":"Name","value":"region"},"value":{"kind":"Variable","name":{"kind":"Name","value":"region"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"logs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bestPerformanceAverage"}},{"kind":"Field","name":{"kind":"Name","value":"medianPerformanceAverage"}},{"kind":"Field","name":{"kind":"Name","value":"raidRankings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"encounter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rankPercent"}},{"kind":"Field","name":{"kind":"Name","value":"medianPercent"}},{"kind":"Field","name":{"kind":"Name","value":"bestAmount"}},{"kind":"Field","name":{"kind":"Name","value":"totalKills"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"realm"}},{"kind":"Field","name":{"kind":"Name","value":"region"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnailUrl"}},{"kind":"Field","name":{"kind":"Name","value":"raiderIoScore"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"all"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"score"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}}]}}]}}]}}]} as unknown as DocumentNode<CharacterQuery, CharacterQueryVariables>;

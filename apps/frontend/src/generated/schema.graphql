@@ -5,7 +5,7 @@ schema {
 type Character {
   logs: Logs
   name: String!
-  raiderIoScore: Float
+  raiderIoScore: RioScore
   realm: String!
   region: String!
   thumbnailUrl: String
@@ -34,4 +34,16 @@ type RaidRanking {
   medianPercent: Float!
   rankPercent: Float!
   totalKills: Int!
+}
+
+type RioScore {
+  all: Segment
+  dps: Segment
+  healer: Segment
+  tank: Segment
+}
+
+type Segment {
+  color: String!
+  score: Float!
 }

@@ -31,8 +31,14 @@ export const CHARACTER_QUERY = graphql(`
       name
       realm
       region
-      raiderIoScore
+
       thumbnailUrl
+      raiderIoScore {
+        all {
+          score
+          color
+        }
+      }
     }
   }
 `);
