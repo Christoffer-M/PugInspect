@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Box, Center, Flex, Title, Typography, Container } from "@mantine/core";
 import Header from "../components/header";
-import CharacterSearch from "../components/characterSearch";
+import CharacterSearchInput from "../components/characterSearchInput";
 
 const Home: React.FC = () => {
   return (
@@ -17,7 +17,7 @@ const Home: React.FC = () => {
               </Title>
             </Flex>
             <Flex direction="column" align="center" mt="xl">
-              <CharacterSearch />
+              <CharacterSearchInput />
 
               <Box mt="md" style={{ color: "gray" }}>
                 Start by typing in a character name above to search for a

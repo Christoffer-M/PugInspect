@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "./util"; // assumes fetcher does POST requests
-import type { Character } from "../generated/graphql";
+import type { CharacterQuery } from "../generated/graphql";
 import { graphql } from "../generated";
 
 const queryKeys = {
@@ -42,7 +42,7 @@ export const useCharacterQuery = (
   return useQuery({
     queryKey: queryKeys.character(name, realm, region),
     queryFn: async () => {
-      const response = await fetcher<{ data: { character: Character } }>(
+      const response = await fetcher<{ data: CharacterQuery }>(
         `${process.env.API_BASE_URL}/graphql`,
         {
           method: "POST",
