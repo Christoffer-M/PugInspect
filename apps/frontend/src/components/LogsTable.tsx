@@ -13,13 +13,19 @@ export const LogsTable: React.FC<LogsTableProps> = ({ data, loading }) => {
   const rows = data.map((ranking) => (
     <Table.Tr key={ranking.encounter?.id ?? Math.random()}>
       <Table.Td>{ranking.encounter?.name}</Table.Td>
-      <Table.Td c={GetWarcraftLogRankingColors(ranking.rankPercent, theme)}>
+      <Table.Td
+        c={GetWarcraftLogRankingColors(ranking.rankPercent, theme)}
+        fw={500}
+      >
         {ranking.rankPercent.toLocaleString(undefined, {
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
         })}
       </Table.Td>
-      <Table.Td c={GetWarcraftLogRankingColors(ranking.medianPercent, theme)}>
+      <Table.Td
+        c={GetWarcraftLogRankingColors(ranking.medianPercent, theme)}
+        fw={500}
+      >
         {ranking.medianPercent.toLocaleString(undefined, {
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,

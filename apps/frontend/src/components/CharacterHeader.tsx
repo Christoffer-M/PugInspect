@@ -9,8 +9,9 @@ import {
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import { RankingGroup } from "./RankingGroup";
-import RaiderIoIocn from "../../icons/raiderio-icon.png";
-import WarcraftLogsIcon from "../../icons/warcraftlogs-icon.png";
+import RaiderIoIocn from "../../icons/raiderio-icon.svg";
+import WarcraftLogsIcon from "../../icons/warcraftlogs-icon.svg";
+import { ExternalLinkIcon } from "./ExternalLinkIcon";
 
 const upperCaseString = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -56,34 +57,22 @@ export const CharacterHeader: React.FC<{
             align="flex-start"
           >
             <Group gap="xs" justify="flex-start" align="center">
-              <Image
-                w={26}
-                h={26}
-                m={0}
-                src={RaiderIoIocn}
-                onClick={() =>
-                  window.open(
-                    `https://raider.io/characters/${region}/${server}/${name}`,
-                    "_blank",
-                  )
-                }
+              <Title order={3} m={0}>
+                {upperCaseString(name)}
+              </Title>
+              <ExternalLinkIcon
+                href={`https://raider.io/characters/${region}/${server}/${name}`}
+                icon={RaiderIoIocn}
+                size={22}
               />
-              <Image
-                w={24}
-                h={24}
-                m={0}
-                src={WarcraftLogsIcon}
-                onClick={() =>
-                  window.open(
-                    `https://www.warcraftlogs.com/character/${region}/${server}/${name}`,
-                    "_blank",
-                  )
-                }
+
+              <ExternalLinkIcon
+                href={`https://www.warcraftlogs.com/character/${region}/${server}/${name}`}
+                icon={WarcraftLogsIcon}
+                size={22}
               />
             </Group>
-            <Title order={3} m={0}>
-              {upperCaseString(name)}
-            </Title>
+
             <Title order={5} m={0}>
               ({region}) {upperCaseString(server)}
             </Title>
