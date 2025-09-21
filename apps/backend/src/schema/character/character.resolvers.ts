@@ -73,6 +73,7 @@ export default {
             zoneRankings?.bestPerformanceAverage?.toFixed(2),
           medianPerformanceAverage:
             zoneRankings?.medianPerformanceAverage?.toFixed(2),
+          metric: zoneRankings?.metric || null,
           raidRankings: zoneRankings?.rankings?.map((ranking) => ({
             encounter: ranking.encounter
               ? {

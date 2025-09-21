@@ -1,14 +1,19 @@
 import React from "react";
-import { RaidRanking } from "../generated/graphql";
+import { Metric, RaidRanking } from "../generated/graphql";
 import { Table, Skeleton, Paper, useMantineTheme, Title } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 
 type LogsTableProps = {
   data: RaidRanking[];
+  metric: Metric;
   loading?: boolean;
 };
 
-export const LogsTable: React.FC<LogsTableProps> = ({ data, loading }) => {
+export const LogsTable: React.FC<LogsTableProps> = ({
+  data,
+  metric,
+  loading,
+}) => {
   const theme = useMantineTheme();
   const rows = data.map((ranking) => (
     <Table.Tr key={ranking.encounter?.id ?? Math.random()}>
@@ -84,7 +89,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ data, loading }) => {
             <Table.Th>Encounter</Table.Th>
             <Table.Th>Rank Percent</Table.Th>
             <Table.Th>Median Percent</Table.Th>
-            <Table.Th>Highest DPS</Table.Th>
+            <Table.Th>Highest {metric.toUpperCase()}</Table.Th>
             <Table.Th>Kills</Table.Th>
           </Table.Tr>
         </Table.Thead>

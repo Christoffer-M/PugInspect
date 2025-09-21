@@ -4,6 +4,7 @@ import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
 import { useCharacterQuery } from "../queries/character-queries";
+import { Metric } from "../generated/graphql";
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: RouteComponent,
@@ -32,6 +33,7 @@ function RouteComponent() {
           />
           <LogsTable
             data={data?.logs?.raidRankings || []}
+            metric={data?.logs?.metric || Metric.Dps}
             loading={isFetching}
           />
         </Stack>

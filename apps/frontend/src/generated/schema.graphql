@@ -19,7 +19,13 @@ type Encounter {
 type Logs {
   bestPerformanceAverage: Float
   medianPerformanceAverage: Float
+  metric: Metric
   raidRankings: [RaidRanking!]
+}
+
+enum Metric {
+  dps
+  hps
 }
 
 type Query {

@@ -30,7 +30,13 @@ export default gql`
   type Logs {
     bestPerformanceAverage: Float
     medianPerformanceAverage: Float
+    metric: Metric
     raidRankings: [RaidRanking!]
+  }
+
+  enum Metric {
+    dps
+    hps
   }
 
   type RaidRanking {

@@ -17,6 +17,7 @@ export const CHARACTER_QUERY = graphql(`
       logs {
         bestPerformanceAverage
         medianPerformanceAverage
+        metric
         raidRankings {
           encounter {
             id
