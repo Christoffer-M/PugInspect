@@ -1,12 +1,12 @@
 {
   "extends": "../../packages/typescript-config/base.json",
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", "build", "scripts", "src/generated/**"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist", "build", "scripts"],
   "compilerOptions": {
     "types": ["vite/client"],
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
     "noEmit": true,
+
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
@@ -14,7 +14,7 @@
     "plugins": [
       {
         "name": "@0no-co/graphqlsp",
-        "schema": "src/generated/graphql.schema.json"
+        "schema": "src/generated/schema.graphql"
       }
     ]
   }

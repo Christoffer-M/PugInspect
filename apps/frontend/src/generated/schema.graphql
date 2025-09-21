@@ -1,0 +1,37 @@
+schema {
+  query: Query
+}
+
+type Character {
+  logs: Logs
+  name: String!
+  raiderIoScore: Float
+  realm: String!
+  region: String!
+  thumbnailUrl: String
+}
+
+type Encounter {
+  id: Int!
+  name: String!
+}
+
+type Logs {
+  bestPerformanceAverage: Float!
+  medianPerformanceAverage: Float!
+  raidRankings: [RaidRanking!]!
+}
+
+type Query {
+  _empty: String
+  character(name: String!, realm: String!, region: String!): Character
+  characters: [Character!]!
+}
+
+type RaidRanking {
+  bestAmount: Float!
+  encounter: Encounter
+  medianPercent: Float!
+  rankPercent: Float!
+  totalKills: Int!
+}
