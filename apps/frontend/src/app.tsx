@@ -46,7 +46,7 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <ReactQueryDevtools initialIsOpen={false} />
-        <MantineProvider>
+        <MantineProvider defaultColorScheme="dark">
           <RouterProvider router={router} />
         </MantineProvider>
       </QueryClientProvider>

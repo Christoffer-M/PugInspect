@@ -5,17 +5,17 @@ import {
   Image,
   Group,
   Title,
-  Flex,
   useMantineTheme,
   Skeleton,
   Text,
 } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
-import { regions } from "../components/characterSearchInput";
+import { regions } from "../components/CharacterSearchInput";
 import { useSearch } from "@tanstack/react-router";
 import { useCharacterQuery } from "../queries/character-queries";
-import { Page } from "../components/page";
+import { Page } from "../components/Page";
 import { GetWarcraftLogRankingColors } from "../util/util";
+import { RankingGroup } from "../components/RankingGroup";
 
 type CharacterRouteSearch = {
   region: string;
@@ -87,47 +87,33 @@ const Character: React.FC = () => {
                 </Stack>
               </Group>
 
-              <Stack align="flex-end" gap={0} flex={0.25}>
-                <Group justify="space-between" w="100%">
-                  <Text fw={700} m={0}>
-                    RIO score:
-                  </Text>
-                  <Text c={data?.raiderIoScore?.all?.color} fw={700} m={0}>
-                    {data?.raiderIoScore?.all?.score ?? "N/A"}
-                  </Text>
-                </Group>
-                <Group justify="space-between" w="100%">
-                  <Text fw={700} m={0}>
-                    Best avg. log:
-                  </Text>
-                  <Text
-                    fw={700}
-                    m={0}
-                    c={
-                      bestPerformance
-                        ? GetWarcraftLogRankingColors(bestPerformance, theme)
-                        : undefined
-                    }
-                  >
-                    {bestPerformance ?? "N/A"}
-                  </Text>
-                </Group>
-                <Group justify="space-between" w="100%">
-                  <Text fw={700} m={0}>
-                    Med. avg. log:
-                  </Text>
-                  <Text
-                    fw={700}
-                    m={0}
-                    c={
-                      medianPerformance
-                        ? GetWarcraftLogRankingColors(medianPerformance, theme)
-                        : undefined
-                    }
-                  >
-                    {medianPerformance ?? "N/A"}
-                  </Text>
-                </Group>
+              <Stack align="flex-end" gap={0}>
+                <RankingGroup
+                  label="RIO score:"
+                  value={data?.raiderIoScore?.all?.score}
+                  color={data?.raiderIoScore?.all?.color}
+                  isLoading={isFetching}
+                />
+                <RankingGroup
+                  label="Best avg. log:"
+                  value={bestPerformance}
+                  color={
+                    bestPerformance
+                      ? GetWarcraftLogRankingColors(bestPerformance, theme)
+                      : undefined
+                  }
+                  isLoading={isFetching}
+                />
+                <RankingGroup
+                  label="Med. avg. log:"
+                  value={medianPerformance}
+                  color={
+                    medianPerformance
+                      ? GetWarcraftLogRankingColors(medianPerformance, theme)
+                      : undefined
+                  }
+                  isLoading={isFetching}
+                />
               </Stack>
             </Group>
           </Paper>

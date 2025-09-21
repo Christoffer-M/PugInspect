@@ -62,7 +62,6 @@ export const useCharacterQuery = ({
           "Content-Type": "application/json",
         },
       );
-      console.log("Character data fetched:", response);
       return response.character;
     },
     enabled: Boolean(name) && Boolean(realm) && Boolean(region),

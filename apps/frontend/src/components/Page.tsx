@@ -1,5 +1,5 @@
 import { AppShell, Typography } from "@mantine/core";
-import Header from "./header";
+import Header from "./Header";
 
 export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AppShell header={{ height: 60 }}>
