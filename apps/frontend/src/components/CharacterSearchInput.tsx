@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CharacterQueryVariables } from "../generated/graphql";
 import { useCharacterQuery } from "../queries/character-queries";
+import { upperCaseFirstLetter } from "../util/util";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 
@@ -18,10 +19,12 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
   name: initialName,
 }) => {
   const [searchTerm, setSearchTerm] = useState(
-    initialName && initialRealm ? `${initialName}-${initialRealm}` : "",
+    initialName && initialRealm
+      ? `${upperCaseFirstLetter(initialName)}-${upperCaseFirstLetter(initialRealm)}`
+      : "",
   );
   const [region, setRegion] = useState(
-    initialRegion || localStorage.getItem("region") || "EU",
+    initialRegion?.toUpperCase() || localStorage.getItem("region") || "EU",
   );
   const [errorText, setErrorText] = useState("");
   const [queryVariables, setQueryVariables] =
