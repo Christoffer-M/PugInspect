@@ -17,12 +17,19 @@ const config: CodegenConfig = {
     enumsAsTypes: true,
   },
   documents: ["./src/**/*.ts", "./src/**/*.graphql"],
+  ignoreNoDocuments: true,
   generates: {
-    "src/generated/graphql.ts": {
-      plugins: ["typescript", "typescript-resolvers", "typescript-operations"],
+    "./src/generated/": {
+      preset: "client",
+      config: {
+        documentMode: "string",
+      },
     },
-    "src/generated/schema.graphql": {
+    "./schema.graphql": {
       plugins: ["schema-ast"],
+      config: {
+        includeDirectives: true,
+      },
     },
   },
 };

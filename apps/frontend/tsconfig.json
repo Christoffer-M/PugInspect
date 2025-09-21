@@ -1,6 +1,7 @@
 {
   "extends": "../../packages/typescript-config/base.json",
   "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", "build", "scripts", "src/generated/**"],
   "compilerOptions": {
     "types": ["vite/client"],
     "allowImportingTsExtensions": true,
@@ -9,6 +10,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "src/generated/graphql.schema.json"
+      }
+    ]
   }
 }

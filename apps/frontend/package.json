@@ -9,7 +9,8 @@
     "check-types": "tsc --noEmit",
     "serve": "vite preview",
     "test": "vitest run",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
     "@mantine/core": "^8.3.1",
@@ -21,10 +22,16 @@
     "@tanstack/react-router-devtools": "^1.131.5",
     "@tanstack/router-plugin": "^1.121.2",
     "dotenv": "^17.2.2",
+    "graphql": "^16.11.0",
+    "graphql-tag": "^2.12.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@0no-co/graphqlsp": "^1.15.0",
+    "@graphql-codegen/cli": "6.0.0",
+    "@graphql-codegen/client-preset": "5.0.1",
+    "@graphql-codegen/introspection": "5.0.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/react": "^19.0.8",
