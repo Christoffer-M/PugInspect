@@ -6,6 +6,7 @@ import {
   Stack,
   Title,
   Image,
+  Text,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import { RankingGroup } from "./RankingGroup";
@@ -73,9 +74,11 @@ export const CharacterHeader: React.FC<{
               />
             </Group>
 
-            <Title order={5} m={0}>
-              ({region}) {upperCaseString(server)}
-            </Title>
+            <Text size="sm" m={0}>
+              ({region.toUpperCase()}) {upperCaseString(server)}
+            </Text>
+
+            <Text size="sm">Dracthyr</Text>
           </Stack>
         </Group>
 
