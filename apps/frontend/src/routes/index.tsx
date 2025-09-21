@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Box, Center, Flex, Title, Typography, Container } from "@mantine/core";
-import Header from "../components/header";
+import { Box, Center, Flex, Title, Container } from "@mantine/core";
 import CharacterSearchInput from "../components/characterSearchInput";
+import { Page } from "../components/page";
 
 const Home: React.FC = () => {
   return (
-    <Typography>
-      <Header />
+    <Page>
       <Container>
         <Center h={500}>
           <Flex direction="column" align="center">
@@ -27,7 +26,7 @@ const Home: React.FC = () => {
           </Flex>
         </Center>
       </Container>
-    </Typography>
+    </Page>
   );
 };
 

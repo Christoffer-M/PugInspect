@@ -1,8 +1,9 @@
-import { Container } from "@mantine/core";
+import { Container, Text } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
 import Header from "../components/header";
 import { regions } from "../components/characterSearchInput";
 import { useSearch } from "@tanstack/react-router";
+import { useCharacterQuery } from "../queries/character-queries";
 
 type CharacterRouteSearch = {
   region: string;
@@ -15,16 +16,21 @@ const character: React.FC = () => {
     from: Route.fullPath,
   });
 
-  console.log(region, name, server);
+  const { data } = useCharacterQuery({
+    name: name,
+    realm: server,
+    region: region,
+  });
 
-  // You can now use region, name, and server in your component
+  console.log("data", data);
 
   return (
-    <Container>
+    <>
       <Header />
-      {/* Example usage */}
-      {/* <div>{region} - {name} - {server}</div> */}
-    </Container>
+      <Container>
+        <Text>{data?.name}</Text>
+      </Container>
+    </>
   );
 };
 
