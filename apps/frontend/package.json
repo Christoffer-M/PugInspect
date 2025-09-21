@@ -16,9 +16,11 @@
     "@mantine/hooks": "^8.3.1",
     "@tabler/icons-react": "^3.35.0",
     "@tanstack/react-devtools": "^0.2.2",
+    "@tanstack/react-query": "^5.89.0",
     "@tanstack/react-router": "^1.130.2",
     "@tanstack/react-router-devtools": "^1.131.5",
     "@tanstack/router-plugin": "^1.121.2",
+    "dotenv": "^17.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

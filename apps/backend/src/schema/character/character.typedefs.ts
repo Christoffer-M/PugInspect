@@ -10,7 +10,27 @@ export default gql`
     name: String!
     realm: String!
     region: String!
-    raiderIoScore: Int
-    warcraftLogsName: String
+    thumbnailUrl: String
+    raiderIoScore: Float
+    logs: Logs
+  }
+
+  type Logs {
+    bestPerformanceAverage: Float!
+    medianPerformanceAverage: Float!
+    raidRankings: [RaidRanking!]!
+  }
+
+  type RaidRanking {
+    encounter: Encounter
+    rankPercent: Float!
+    medianPercent: Float!
+    bestAmount: Float!
+    totalKills: Int!
+  }
+
+  type Encounter {
+    id: Int!
+    name: String!
   }
 `;

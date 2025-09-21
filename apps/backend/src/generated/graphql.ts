@@ -3356,7 +3356,9 @@ export type CharacterProfileQueryVariables = Exact<{
   name: Scalars['String']['input'];
   server: Scalars['String']['input'];
   region: Scalars['String']['input'];
+  zoneID: Scalars['Int']['input'];
+  difficulty: Scalars['Int']['input'];
 }>;
 
 
-export type CharacterProfileQuery = { __typename?: 'Query', characterData?: { __typename?: 'CharacterData', character?: { __typename?: 'Character', name: string, server: { __typename?: 'Server', name: string } } | null } | null };
+export type CharacterProfileQuery = { __typename?: 'Query', characterData?: { __typename?: 'CharacterData', character?: { __typename?: 'Character', zoneRankings?: any | null, name: string, hidden: boolean } | null } | null, rateLimitData?: { __typename?: 'RateLimitData', limitPerHour: number, pointsSpentThisHour: number, pointsResetIn: number } | null };

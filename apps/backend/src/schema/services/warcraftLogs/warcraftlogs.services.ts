@@ -22,6 +22,8 @@ export class WarcraftLogsService {
       name,
       server: realm,
       region,
+      zoneID: 44, // Example zone ID, replace with actual as needed
+      difficulty: 4, // Example difficulty, replace with actual as needed
     };
 
     const options: RequestInit = {
