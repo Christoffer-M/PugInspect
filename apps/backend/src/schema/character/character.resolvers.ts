@@ -74,12 +74,10 @@ export default {
           },
         },
         logs: {
-          bestPerformanceAverage: toTwoDecimals(
-            zoneRankings.bestPerformanceAverage
-          ),
-          medianPerformanceAverage: toTwoDecimals(
-            zoneRankings.medianPerformanceAverage
-          ),
+          bestPerformanceAverage:
+            zoneRankings.bestPerformanceAverage?.toFixed(2),
+          medianPerformanceAverage:
+            zoneRankings.medianPerformanceAverage?.toFixed(2),
           raidRankings: zoneRankings.rankings?.map((ranking) => ({
             encounter: ranking.encounter
               ? {
@@ -87,10 +85,10 @@ export default {
                   name: ranking.encounter.name,
                 }
               : null,
-            rankPercent: toTwoDecimals(ranking.rankPercent),
-            medianPercent: toTwoDecimals(ranking.medianPercent),
-            bestAmount: toTwoDecimals(ranking.bestAmount),
-            totalKills: toTwoDecimals(ranking.totalKills),
+            rankPercent: ranking.rankPercent?.toFixed(2),
+            medianPercent: ranking.medianPercent?.toFixed(2),
+            bestAmount: ranking.bestAmount?.toFixed(2),
+            totalKills: ranking.totalKills?.toFixed(2),
           })),
         },
       };
