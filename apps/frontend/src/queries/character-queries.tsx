@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetcher } from "./util"; // assumes fetcher does POST requests
-import type { CharacterQuery } from "../generated/graphql";
+import type {
+  CharacterQuery,
+  CharacterQueryVariables,
+} from "../generated/graphql";
 import { graphql } from "../generated";
+import request from "graphql-request";
 
 const queryKeys = {
   character: (name: string, realm: string, region: string) =>
@@ -34,27 +37,28 @@ export const CHARACTER_QUERY = graphql(`
   }
 `);
 
-export const useCharacterQuery = (
-  name: string,
-  realm: string,
-  region: string,
-) => {
+export const useCharacterQuery = ({
+  name,
+  realm,
+  region,
+}: CharacterQueryVariables) => {
   return useQuery({
     queryKey: queryKeys.character(name, realm, region),
+    retry: false,
     queryFn: async () => {
-      const response = await fetcher<{ data: CharacterQuery }>(
-        `${process.env.API_BASE_URL}/graphql`,
+      console.log("Fetching character data...");
+
+      const response = await request<CharacterQuery>(
+        "http://localhost:4000",
+        CHARACTER_QUERY,
+        { name, realm, region },
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: CHARACTER_QUERY.loc?.source.body, // gql AST -> string
-            variables: { name, realm, region },
-          }),
+          "Content-Type": "application/json",
         },
       );
-      return response.data.character;
+      console.log("Character data fetched:", response);
+      return response.character;
     },
-    enabled: !!name && !!realm && !!region,
+    enabled: Boolean(name) && Boolean(realm) && Boolean(region),
   });
 };

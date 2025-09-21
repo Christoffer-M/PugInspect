@@ -1,27 +1,45 @@
 import { Autocomplete, Flex, Loader, Select } from "@mantine/core";
 import { useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CharacterQueryVariables } from "../generated/graphql";
+import { useCharacterQuery } from "../queries/character-queries";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 
 const CharacterSearchInput: React.FC = () => {
-  const [loading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [region, setRegion] = useState(localStorage.getItem("region") || "EU");
   const [errorText, setErrorText] = useState("");
+  const [queryVariables, setQueryVariables] =
+    useState<CharacterQueryVariables | null>(null);
+  const { data, isSuccess, isFetching, isError } = useCharacterQuery(
+    queryVariables || { name: "", realm: "", region: "" },
+  );
   const router = useRouter();
+
+  useEffect(() => {
+    if (isError) {
+      setErrorText("Character not found");
+    }
+    if (isSuccess && data) {
+      setSearchTerm("");
+      router.navigate({
+        to: "/character",
+        search: {
+          region: data.region,
+          name: data.name,
+          server: data.realm,
+        },
+      });
+    }
+  }, [isError, isSuccess]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     setErrorText("");
     if (event.key === "Enter" && searchTerm.trim()) {
       const [name, server] = searchTerm.split("-");
-      console.log("name, server");
-
       if (name && server) {
-        router.navigate({
-          to: "/character",
-          search: { region, name, server },
-        });
+        setQueryVariables({ name, realm: server, region });
       } else {
         setErrorText("Invalid character or server");
       }
@@ -33,6 +51,7 @@ const CharacterSearchInput: React.FC = () => {
       <Select
         placeholder="EU"
         data={regions}
+        disabled={isFetching}
         w="75"
         value={region}
         onChange={(value) => {
@@ -49,12 +68,12 @@ const CharacterSearchInput: React.FC = () => {
         data={[]}
         value={searchTerm}
         onChange={setSearchTerm}
-        disabled={loading}
+        disabled={isFetching}
         style={{ width: 350 }}
         comboboxProps={{
           transitionProps: { transition: "pop", duration: 200 },
         }}
-        rightSection={loading ? <Loader size="xs" /> : null}
+        rightSection={isFetching ? <Loader size="xs" /> : null}
         onKeyDown={handleKeyDown}
       />
     </Flex>

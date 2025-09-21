@@ -1,23 +1,18 @@
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import typeDefs from './schema/typeDefs.js';
-import resolvers from './schema/resolvers.js';
+import { ApolloServer } from "@apollo/server";
+import { startStandaloneServer } from "@apollo/server/standalone";
+import typeDefs from "./schema/typeDefs.js";
+import resolvers from "./schema/resolvers.js";
 
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+});
 
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-  });
+const { url } = await startStandaloneServer(server, {
+  listen: { port: 4000 },
+  context: async () => ({
+    // You can pass auth, loaders, cache here
+  }),
+});
 
-
-  const { url } = await startStandaloneServer(server, {
-    listen: { port: 4000 },
-    context: async () => ({
-      // You can pass auth, loaders, cache here
-    }),
-  });
-
-  console.log(`🚀 Server ready at ${url}`);
-
-
-
+console.log(`🚀 Server ready at ${url}`);
