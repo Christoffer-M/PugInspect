@@ -6,13 +6,14 @@ import {
   ActionIcon,
   Tooltip,
 } from "@mantine/core";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
 import { useCharacterSummaryQuery } from "../queries/character-summary";
 import { IconReload } from "@tabler/icons-react";
 import { Metric, RoleType } from "../graphql/graphql";
+import { useCharacterLogs } from "../queries/character-logs";
 
 type CharacterQueryParams = {
   roleType: RoleType;
@@ -29,17 +30,37 @@ export const Route = createFileRoute("/$region/$realm/$name")({
 
 function CharacterPage() {
   const { region, name, realm } = useParams({ from: Route.id });
+  const { roleType: searchRoleType, metric: searchMetric } = useSearch({
+    from: Route.id,
+  });
   const {
     data,
     isFetching: isFetchingSummary,
     isError,
     dataUpdatedAt,
-    refetch,
+    refetch: refetchSummary,
   } = useCharacterSummaryQuery({
-    name: name,
-    realm: realm,
-    region: region,
+    name,
+    realm,
+    region,
   });
+
+  const {
+    data: logsData,
+    isFetching: isFetchingLogs,
+    refetch: refetchLogs,
+  } = useCharacterLogs({
+    name,
+    realm,
+    region,
+    role: searchRoleType,
+    metric: searchMetric,
+  });
+
+  const refetchData = () => {
+    refetchSummary();
+    refetchLogs();
+  };
 
   return (
     <Page>
@@ -53,7 +74,7 @@ function CharacterPage() {
               <ActionIcon
                 size={"md"}
                 variant="outline"
-                onClick={() => refetch()}
+                onClick={() => refetchData()}
                 loaderProps={{
                   size: "xs",
                   type: "dots",
@@ -73,7 +94,7 @@ function CharacterPage() {
             isError={isError}
           />
 
-          <LogsTable />
+          <LogsTable logs={logsData} isFetching={isFetchingLogs} />
         </Stack>
       </Container>
     </Page>

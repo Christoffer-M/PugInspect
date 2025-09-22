@@ -9,30 +9,25 @@ import {
   Select,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
-import { Metric, RoleType } from "../graphql/graphql";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { useCharacterLogs } from "../queries/character-logs";
+import { Logs, Metric, RoleType } from "../graphql/graphql";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 
-export const LogsTable: React.FC = () => {
-  const { name, realm, region } = useParams({ from: "/$region/$realm/$name" });
+type LogsTableProps = {
+  logs?: Logs | null;
+  isFetching: boolean;
+};
+
+export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
   const { roleType: searchRoleType, metric: searchMetric } = useSearch({
     from: "/$region/$realm/$name",
   });
 
-  const { data, isFetching } = useCharacterLogs({
-    name,
-    realm,
-    region,
-    role: searchRoleType,
-    metric: searchMetric,
-  });
-
-  const logs = data?.logs?.raidRankings || [];
-  const metric = data?.logs?.metric;
+  const metric = logs?.metric;
+  const rankings = logs?.raidRankings || [];
 
   const navigate = useNavigate();
   const theme = useMantineTheme();
-  const rows = logs?.map((ranking) => (
+  const rows = rankings?.map((ranking) => (
     <Table.Tr key={ranking.encounter?.id ?? Math.random()}>
       <Table.Td>{ranking.encounter?.name}</Table.Td>
       <Table.Td
@@ -116,7 +111,7 @@ export const LogsTable: React.FC = () => {
                 search: (prev) => ({ ...prev, metric: value as Metric }),
               });
             }}
-            value={metric}
+            value={searchMetric ?? metric}
             data={Object.values(Metric)}
             comboboxProps={{
               transitionProps: { transition: "pop", duration: 200 },
