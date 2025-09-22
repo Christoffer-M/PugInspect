@@ -5,6 +5,9 @@ import {
   Group,
   ActionIcon,
   Tooltip,
+  Paper,
+  Title,
+  Grid,
 } from "@mantine/core";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
@@ -54,6 +57,46 @@ function RouteComponent() {
             loading={isFetching}
             isError={isError}
           />
+          <Grid grow w="100%">
+            <Grid.Col span={4}>
+              <Paper withBorder p="xs">
+                <Group justify="space-between" align="center">
+                  <Title order={4} m={0}>
+                    DPS
+                  </Title>
+                  <Text c={data?.raiderIoScore?.dps?.color} fw={700}>
+                    {data?.raiderIoScore?.dps?.score}
+                  </Text>
+                </Group>
+              </Paper>
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <Paper withBorder p="xs">
+                <Group justify="space-between" align="center">
+                  <Title order={4} m={0}>
+                    Healer
+                  </Title>
+
+                  <Text c={data?.raiderIoScore?.healer?.color} fw={700}>
+                    {data?.raiderIoScore?.healer?.score}
+                  </Text>
+                </Group>
+              </Paper>
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <Paper withBorder p="xs">
+                <Group justify="space-between" align="center">
+                  <Title order={4} m={0}>
+                    Tank
+                  </Title>
+                  <Text c={data?.raiderIoScore?.tank?.color} fw={700}>
+                    {data?.raiderIoScore?.tank?.score}
+                  </Text>
+                </Group>
+              </Paper>
+            </Grid.Col>
+          </Grid>
+
           <LogsTable
             data={data?.logs?.raidRankings || []}
             metric={data?.logs?.metric || "dps"}

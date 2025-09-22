@@ -32,6 +32,18 @@ export const CharacterDataQuery = graphql(`
           score
           color
         }
+        dps {
+          score
+          color
+        }
+        healer {
+          score
+          color
+        }
+        tank {
+          score
+          color
+        }
       }
     }
   }
