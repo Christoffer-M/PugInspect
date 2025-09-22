@@ -37,12 +37,14 @@ const rootElement = document.getElementById("app");
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
-    <QueryClientProvider client={queryClient}>
-      <ReactQueryDevtools initialIsOpen={false} />
-      <MantineProvider defaultColorScheme="dark">
-        <RouterProvider router={router} />
-      </MantineProvider>
-    </QueryClientProvider>,
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ReactQueryDevtools initialIsOpen={false} />
+        <MantineProvider defaultColorScheme="dark">
+          <RouterProvider router={router} />
+        </MantineProvider>
+      </QueryClientProvider>
+    </StrictMode>,
   );
 }
 

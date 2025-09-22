@@ -45,11 +45,6 @@ export const useCharacterQuery = ({
   const lowerCasedName = name.toLowerCase();
   const lowerCasedRealm = realm.toLowerCase();
   const upperCasedRegion = region.toUpperCase();
-  console.log("fetching character", {
-    lowerCasedName,
-    lowerCasedRealm,
-    upperCasedRegion,
-  });
 
   return useQuery({
     queryKey: queryKeys.character(

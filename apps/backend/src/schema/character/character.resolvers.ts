@@ -50,10 +50,6 @@ export default {
       const currentSeasonSegments =
         rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
 
-      console.log("returning character", {
-        name: args.name,
-      });
-
       return {
         name: args.name,
         realm: args.realm,

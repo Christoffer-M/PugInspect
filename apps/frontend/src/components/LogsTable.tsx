@@ -83,7 +83,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
       <Title order={3} pl="xs" pt={"xs"}>
         Raid logs
       </Title>
-      <Table>
+      <Table striped>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Encounter</Table.Th>
