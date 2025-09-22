@@ -9,13 +9,6 @@ export interface CharacterArgs {
   region: string;
 }
 
-function toTwoDecimals(
-  num: number | null | undefined
-): number | null | undefined {
-  if (num === null || num === undefined) return null;
-  return Math.round(num * 100) / 100;
-}
-
 export default {
   Query: {
     character: async (_: any, args: CharacterArgs) => {

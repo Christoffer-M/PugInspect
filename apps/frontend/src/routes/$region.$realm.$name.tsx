@@ -17,10 +17,10 @@ import { useCharacterQuery } from "../queries/character-queries";
 import { IconReload } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/$region/$realm/$name")({
-  component: RouteComponent,
+  component: CharacterPage,
 });
 
-function RouteComponent() {
+function CharacterPage() {
   const { region, name, realm } = useParams({ from: Route.id });
   const { data, isFetching, isError, dataUpdatedAt, refetch } =
     useCharacterQuery({
@@ -42,10 +42,13 @@ function RouteComponent() {
                 size={"md"}
                 variant="outline"
                 onClick={() => refetch()}
-                loaderProps={{ size: "xs", type: "dots" }}
+                loaderProps={{
+                  size: "xs",
+                  type: "dots",
+                }}
                 loading={isFetching}
               >
-                <IconReload size={20} />
+                <IconReload size={18} />
               </ActionIcon>
             </Tooltip>
           </Group>

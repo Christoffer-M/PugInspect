@@ -60,21 +60,11 @@ export const LogsTable: React.FC<LogsTableProps> = ({
 
   const skeletonRows = Array.from({ length: 5 }).map((_, idx) => (
     <Table.Tr key={idx}>
-      <Table.Td>
-        <Skeleton height={20} />
-      </Table.Td>
-      <Table.Td>
-        <Skeleton height={20} />
-      </Table.Td>
-      <Table.Td>
-        <Skeleton height={20} />
-      </Table.Td>
-      <Table.Td>
-        <Skeleton height={20} />
-      </Table.Td>
-      <Table.Td>
-        <Skeleton height={20} />
-      </Table.Td>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Table.Td key={i}>
+          <Skeleton height={20} />
+        </Table.Td>
+      ))}
     </Table.Tr>
   ));
 
@@ -83,7 +73,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
       <Title order={3} pl="xs" pt={"xs"}>
         Raid logs
       </Title>
-      <Table striped>
+      <Table>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Encounter</Table.Th>

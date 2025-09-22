@@ -3,7 +3,19 @@ import { gql } from "graphql-tag";
 export const characterTypedefs = gql`
   extend type Query {
     character(name: String!, realm: String!, region: String!): Character
+    characterLogs(
+      name: String!
+      realm: String!
+      region: String!
+      role: RoleType
+    ): Logs
     characters: [Character!]!
+  }
+
+  enum RoleType {
+    DPS
+    Healer
+    Tank
   }
 
   type Character {
