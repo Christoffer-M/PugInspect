@@ -1,7 +1,5 @@
-/* eslint-disable */
-import { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
-export type InputMaybe<T> = T | null | undefined;
+export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
@@ -2348,39 +2346,3 @@ export type CharacterProfileQueryVariables = Exact<{
 
 
 export type CharacterProfileQuery = { __typename?: 'Query', characterData?: { __typename?: 'CharacterData', character?: { __typename?: 'Character', zoneRankings?: any | null, name: string, hidden: boolean } | null } | null, rateLimitData?: { __typename?: 'RateLimitData', limitPerHour: number, pointsSpentThisHour: number, pointsResetIn: number } | null };
-
-export class TypedDocumentString<TResult, TVariables>
-  extends String
-  implements DocumentTypeDecoration<TResult, TVariables>
-{
-  __apiType?: NonNullable<DocumentTypeDecoration<TResult, TVariables>['__apiType']>;
-  private value: string;
-  public __meta__?: Record<string, any> | undefined;
-
-  constructor(value: string, __meta__?: Record<string, any> | undefined) {
-    super(value);
-    this.value = value;
-    this.__meta__ = __meta__;
-  }
-
-  override toString(): string & DocumentTypeDecoration<TResult, TVariables> {
-    return this.value;
-  }
-}
-
-export const CharacterProfileDocument = new TypedDocumentString(`
-    query CharacterProfile($name: String!, $server: String!, $region: String!, $zoneID: Int!, $difficulty: Int!) {
-  characterData {
-    character(name: $name, serverSlug: $server, serverRegion: $region) {
-      zoneRankings(zoneID: $zoneID, difficulty: $difficulty)
-      name
-      hidden
-    }
-  }
-  rateLimitData {
-    limitPerHour
-    pointsSpentThisHour
-    pointsResetIn
-  }
-}
-    `) as unknown as TypedDocumentString<CharacterProfileQuery, CharacterProfileQueryVariables>;

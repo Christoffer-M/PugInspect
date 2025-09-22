@@ -1,2 +1,2 @@
-schema: ./apps/**/src/generated/schema.graphql
+schema: ./packages/graphql-types/src/schema.graphql
 documents: ./apps/**/src/**/*.{ts,tsx,js,jsx}

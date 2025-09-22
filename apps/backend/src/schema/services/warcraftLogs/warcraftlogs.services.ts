@@ -1,11 +1,11 @@
 import { config } from "../../../config/index.js";
+import { fetcher } from "../../utils/fetcher.js";
+import { RequestInit } from "node-fetch";
 import {
   CharacterProfileQuery,
   CharacterProfileQueryVariables,
-} from "../../../generated/graphql.js";
-import { fetcher } from "../../utils/fetcher.js";
-import { CHARACTER_PROFILE_QUERY } from "./queries/characterProfile.js";
-import { RequestInit } from "node-fetch";
+} from "./generated/index.js";
+import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 
 export class WarcraftLogsService {
   private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
@@ -33,7 +33,7 @@ export class WarcraftLogsService {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        query: CHARACTER_PROFILE_QUERY.loc?.source.body,
+        query: CHARACTER_PROFILE.loc?.source.body,
         variables,
       }),
     };

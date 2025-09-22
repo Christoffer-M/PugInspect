@@ -1,6 +1,6 @@
 import { gql } from "graphql-tag";
 
-export const CHARACTER_PROFILE_QUERY = gql`
+export const CHARACTER_PROFILE = gql`
   query CharacterProfile(
     $name: String!
     $server: String!

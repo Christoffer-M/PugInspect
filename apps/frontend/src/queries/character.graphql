@@ -1,0 +1,30 @@
+query Character($name: String!, $realm: String!, $region: String!) {
+  character(name: $name, realm: $realm, region: $region) {
+    logs {
+      bestPerformanceAverage
+      medianPerformanceAverage
+      metric
+      raidRankings {
+        encounter {
+          id
+          name
+        }
+        rankPercent
+        medianPercent
+        bestAmount
+        totalKills
+      }
+    }
+    name
+    realm
+    region
+
+    thumbnailUrl
+    raiderIoScore {
+      all {
+        score
+        color
+      }
+    }
+  }
+}

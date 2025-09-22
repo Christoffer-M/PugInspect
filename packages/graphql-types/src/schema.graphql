@@ -29,7 +29,6 @@ enum Metric {
 }
 
 type Query {
-  _empty: String
   character(name: String!, realm: String!, region: String!): Character
   characters: [Character!]!
 }

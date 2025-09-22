@@ -3,33 +3,41 @@ import { config as DotEnvConfig } from "./src/config/index";
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: [
-    {
-      "https://www.warcraftlogs.com/api/v2/client": {
-        headers: {
-          Authorization: `Bearer ${DotEnvConfig.warcraftLogsBearerToken}`,
-        },
-      },
-    },
-  ],
   config: {
     strict: true,
     enumsAsTypes: true,
   },
-  documents: ["./src/**/*.ts", "./src/**/*.graphql"],
   ignoreNoDocuments: true,
   generates: {
-    "./src/generated/": {
-      preset: "client",
-      config: {
-        documentMode: "string",
+    "./src/schema/services/warcraftLogs/generated/index.ts": {
+      documents: "./src/schema/services/warcraftLogs/queries/*.ts",
+      schema: {
+        "https://www.warcraftlogs.com/api/v2/client": {
+          headers: {
+            Authorization: `Bearer ${DotEnvConfig.warcraftLogsBearerToken}`,
+          },
+        },
+      },
+      plugins: ["typescript", "typescript-operations"],
+    },
+    "./src/schema/services/warcraftLogs/generated/schema.graphql": {
+      plugins: ["schema-ast"],
+      schema: {
+        "https://www.warcraftlogs.com/api/v2/client": {
+          headers: {
+            Authorization: `Bearer ${DotEnvConfig.warcraftLogsBearerToken}`,
+          },
+        },
       },
     },
-    "./src/generated/schema.graphql": {
+    "../../packages/graphql-types/src/index.ts": {
+      schema: "./src/schema/character/character.graphql",
+      plugins: ["typescript", "typescript-operations"],
+    },
+    "../../packages/graphql-types/src/schema.graphql": {
+      schema: "./src/schema/character/character.graphql",
       plugins: ["schema-ast"],
-      config: {
-        includeDirectives: true,
-      },
+      config: { includeDirectives: true },
     },
   },
 };

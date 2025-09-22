@@ -2,21 +2,22 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: "http://localhost:4000",
-  documents: "src/**/*.{ts,tsx,graphql}",
-  ignoreNoDocuments: true,
+  schema: "../../packages/graphql-types/src/schema.graphql",
+  documents: ["./src/**/*.graphql"],
   generates: {
-    "src/generated/": {
-      preset: "client",
-      plugins: [],
-    },
-    "src/generated/schema.graphql": {
-      plugins: ["schema-ast"],
+    "./src/generated/graphql.ts": {
+      plugins: [
+        "typescript", // base TS types
+        "typescript-operations", // typed query/mutation result & variables
+        "typescript-react-apollo", // React hooks (useQuery, useMutation, etc.)
+      ],
       config: {
-        includeDirectives: true,
+        withHooks: true,
+        reactApolloVersion: 4,
+        documentMode: "string",
+        importDocumentNodeExternallyFrom: "@apollo/client",
       },
     },
   },
 };
-
 export default config;
