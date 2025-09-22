@@ -45,6 +45,7 @@ export type Metric =
 export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
+  characterLogs?: Maybe<Logs>;
   characters: Array<Character>;
 };
 
@@ -53,6 +54,14 @@ export type QueryCharacterArgs = {
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
+};
+
+
+export type QueryCharacterLogsArgs = {
+  name: Scalars['String']['input'];
+  realm: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+  role?: InputMaybe<RoleType>;
 };
 
 export type RaidRanking = {
@@ -71,6 +80,11 @@ export type RioScore = {
   healer?: Maybe<Segment>;
   tank?: Maybe<Segment>;
 };
+
+export type RoleType =
+  | 'DPS'
+  | 'Healer'
+  | 'Tank';
 
 export type Segment = {
   __typename?: 'Segment';

@@ -2,6 +2,11 @@ import { GraphQLError } from "graphql";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
 import { ZoneRanking } from "../services/warcraftLogs/model/ZoneRankings.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
+import { Character } from "@repo/graphql-types";
+
+function toFixedNumber(value: number | undefined, digits = 2): number | null {
+  return typeof value === "number" ? parseFloat(value.toFixed(digits)) : null;
+}
 
 export interface CharacterArgs {
   name: string;
@@ -11,7 +16,7 @@ export interface CharacterArgs {
 
 export default {
   Query: {
-    character: async (_: any, args: CharacterArgs) => {
+    character: async (_: any, args: CharacterArgs): Promise<Character> => {
       const [rioProfile, warcraftLogsProfile] = await Promise.all([
         RaiderIOService.getCharacterProfile(args),
         WarcraftLogsService.getCharacterProfile(
@@ -48,7 +53,7 @@ export default {
         realm: args.realm,
         region: args.region,
         thumbnailUrl: rioProfile.thumbnail_url,
-        raiderIoScore: {
+        raiderIoScore: currentSeasonSegments && {
           all: {
             score: currentSeasonSegments?.all.score,
             color: currentSeasonSegments?.all.color,
@@ -67,23 +72,29 @@ export default {
           },
         },
         logs: {
-          bestPerformanceAverage:
-            zoneRankings?.bestPerformanceAverage?.toFixed(2),
-          medianPerformanceAverage:
-            zoneRankings?.medianPerformanceAverage?.toFixed(2),
-          metric: zoneRankings?.metric || null,
-          raidRankings: zoneRankings?.rankings?.map((ranking) => ({
-            encounter: ranking.encounter
-              ? {
-                  id: ranking.encounter.id,
-                  name: ranking.encounter.name,
-                }
-              : null,
-            rankPercent: ranking.rankPercent?.toFixed(2),
-            medianPercent: ranking.medianPercent?.toFixed(2),
-            bestAmount: ranking.bestAmount?.toFixed(2),
-            totalKills: ranking.totalKills?.toFixed(2),
-          })),
+          bestPerformanceAverage: toFixedNumber(
+            zoneRankings?.bestPerformanceAverage
+          ),
+          medianPerformanceAverage: toFixedNumber(
+            zoneRankings?.medianPerformanceAverage
+          ),
+          metric: zoneRankings?.metric,
+          raidRankings:
+            zoneRankings?.rankings?.map((ranking) => ({
+              encounter:
+                ranking.encounter &&
+                typeof ranking.encounter.id === "number" &&
+                typeof ranking.encounter.name === "string"
+                  ? {
+                      id: ranking.encounter.id,
+                      name: ranking.encounter.name,
+                    }
+                  : null,
+              rankPercent: toFixedNumber(ranking.rankPercent),
+              medianPercent: toFixedNumber(ranking.medianPercent),
+              bestAmount: toFixedNumber(ranking.bestAmount),
+              totalKills: toFixedNumber(ranking.totalKills),
+            })) || [],
         },
       };
     },

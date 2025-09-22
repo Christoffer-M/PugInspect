@@ -1,8 +1,10 @@
+import { Metric } from "@repo/graphql-types";
+
 export type ZoneRanking = {
   bestPerformanceAverage?: number;
   medianPerformanceAverage?: number;
   difficulty?: number;
-  metric?: string;
+  metric?: Metric;
   partition?: number;
   zone?: number;
   size?: number;

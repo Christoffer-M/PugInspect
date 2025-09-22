@@ -30,6 +30,7 @@ enum Metric {
 
 type Query {
   character(name: String!, realm: String!, region: String!): Character
+  characterLogs(name: String!, realm: String!, region: String!, role: RoleType): Logs
   characters: [Character!]!
 }
 
@@ -46,6 +47,12 @@ type RioScore {
   dps: Segment
   healer: Segment
   tank: Segment
+}
+
+enum RoleType {
+  DPS
+  Healer
+  Tank
 }
 
 type Segment {

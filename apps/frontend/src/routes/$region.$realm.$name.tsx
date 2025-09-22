@@ -15,6 +15,7 @@ import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
 import { useCharacterQuery } from "../queries/character-queries";
 import { IconReload } from "@tabler/icons-react";
+import { Metric } from "../graphql/graphql";
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
@@ -102,7 +103,7 @@ function CharacterPage() {
 
           <LogsTable
             data={data?.logs?.raidRankings || []}
-            metric={data?.logs?.metric || "dps"}
+            metric={data?.logs?.metric || Metric.Dps}
             loading={isFetching}
           />
         </Stack>

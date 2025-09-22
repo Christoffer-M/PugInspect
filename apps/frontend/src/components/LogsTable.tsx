@@ -1,7 +1,7 @@
 import React from "react";
 import { Table, Skeleton, Paper, useMantineTheme, Title } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
-import { Metric, RaidRanking } from "@repo/graphql-types";
+import { Metric, RaidRanking } from "../graphql/graphql";
 
 type LogsTableProps = {
   data: RaidRanking[];

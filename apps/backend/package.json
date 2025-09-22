@@ -18,7 +18,8 @@
     "dotenv": "^17.2.2",
     "graphql": "^16.11.0",
     "graphql-tag": "^2.12.6",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "@repo/graphql-types": "workspace:*"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "6.0.0",
