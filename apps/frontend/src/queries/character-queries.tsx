@@ -1,12 +1,8 @@
-import { CharacterQueryVariables } from "../graphql/graphql";
+import { CharacterQuery, CharacterQueryVariables } from "../graphql/graphql";
 import { useQuery } from "@tanstack/react-query";
 import { graphql } from "../graphql";
 import { execute } from "../api/graphqlClient";
-
-const queryKeys = {
-  character: (name: string, realm: string, region: string) =>
-    ["character", name, realm, region] as const,
-};
+import { queryKeys } from "../queryKeys";
 
 export const CharacterDataQuery = graphql(`
   query Character($name: String!, $realm: String!, $region: String!) {
@@ -46,18 +42,35 @@ export const useCharacterQuery = ({
   realm,
   region,
 }: CharacterQueryVariables) => {
+  const lowerCasedName = name.toLowerCase();
+  const lowerCasedRealm = realm.toLowerCase();
+  const upperCasedRegion = region.toUpperCase();
+  console.log("fetching character", {
+    lowerCasedName,
+    lowerCasedRealm,
+    upperCasedRegion,
+  });
+
   return useQuery({
-    queryKey: queryKeys.character(name, realm, region),
+    queryKey: queryKeys.character(
+      lowerCasedName,
+      lowerCasedRealm,
+      upperCasedRegion,
+    ),
     retry: false,
     queryFn: async () => {
-      const response = await execute(CharacterDataQuery, {
-        name,
-        realm,
-        region,
-      });
+      const response = await execute<CharacterQuery, CharacterQueryVariables>(
+        CharacterDataQuery,
+        {
+          name,
+          realm,
+          region,
+        },
+      );
 
       return response.character;
     },
-    enabled: Boolean(name) && Boolean(realm) && Boolean(region),
+    gcTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };

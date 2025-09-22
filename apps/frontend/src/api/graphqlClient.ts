@@ -20,5 +20,15 @@ export async function execute<TResult, TVariables>(
     throw new Error("Network response was not ok");
   }
 
-  return response.json() as TResult;
+  const result: {
+    data?: TResult;
+    errors?: { message: string }[];
+    extensions?: Record<string, unknown>;
+  } = await response.json();
+
+  if (result.errors && result.errors.length > 0) {
+    throw new Error(result.errors[0]?.message || "GraphQL error");
+  }
+
+  return result.data as TResult;
 }

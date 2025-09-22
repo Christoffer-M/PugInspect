@@ -12,6 +12,8 @@ export const Route = createFileRoute("/$region/$realm/$name")({
 function RouteComponent() {
   const { region, name, realm } = useParams({ from: Route.id });
 
+  console.log("region, realm, name", region, realm, name);
+
   const { data, isFetching, isError } = useCharacterQuery({
     name: name,
     realm: realm,

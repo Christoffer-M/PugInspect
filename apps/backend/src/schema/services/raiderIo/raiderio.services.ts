@@ -3,6 +3,7 @@ import { fetcher } from "../../utils/fetcher.js";
 import type { RequestInit } from "node-fetch";
 import { CharacterApiResponse } from "./model/CharacterApiResponse.js";
 import { CharacterArgs } from "../../character/character.resolvers.js";
+import { GraphQLError } from "graphql";
 
 const baseUrl = "https://raider.io/api/v1";
 
@@ -47,10 +48,20 @@ export class RaiderIOService {
 
     const url = buildUrlWithQueries(`${baseUrl}/characters/profile`, query);
 
-    var response = await fetcher<CharacterApiResponse>(url, options);
-    if (!response) throw new Error("Failed to fetch character profile");
-
-    return response;
+    try {
+      var response = await fetcher<CharacterApiResponse>(url, options);
+      return response;
+    } catch (error) {
+      throw new GraphQLError(
+        "Failed to fetch character profile from RaiderIO",
+        {
+          extensions: {
+            code: "NOT_FOUND",
+            originalError: error instanceof Error ? error : undefined,
+          },
+        }
+      );
+    }
   }
 }
 

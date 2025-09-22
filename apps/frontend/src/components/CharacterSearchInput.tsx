@@ -1,9 +1,7 @@
-import { Autocomplete, Flex, Loader, Select } from "@mantine/core";
+import { Autocomplete, Flex, Select } from "@mantine/core";
 import { useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { upperCaseFirstLetter } from "../util/util";
-import { CharacterQueryVariables } from "../graphql/graphql";
-import { useCharacterQuery } from "../queries/character-queries";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 
@@ -27,30 +25,15 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
     initialRegion?.toUpperCase() || localStorage.getItem("region") || "EU",
   );
   const [errorText, setErrorText] = useState("");
-  const [queryVariables, setQueryVariables] =
-    useState<CharacterQueryVariables | null>(null);
-  const { data, isSuccess, isFetching, isError } = useCharacterQuery(
-    queryVariables || { name: "", realm: "", region: "" },
-  );
   const router = useRouter();
 
-  useEffect(() => {
-    if (isError) {
-      setErrorText("Character not found");
-    }
-    if (isSuccess && data) {
-      router.navigate({
-        to: `/${data.region.toLowerCase()}/${data.realm}/${data.name}`,
-      });
-    }
-  }, [isError, isSuccess]);
-
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    setErrorText("");
     if (event.key === "Enter" && searchTerm.trim()) {
       const [name, realm] = searchTerm.split("-");
       if (name && realm) {
-        setQueryVariables({ name, realm, region });
+        router.navigate({
+          to: `/${region.toLowerCase()}/${realm.toLowerCase()}/${name.toLowerCase()}`,
+        });
       } else {
         setErrorText("Invalid character or realm");
       }
@@ -62,7 +45,6 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
       <Select
         placeholder="EU"
         data={regions}
-        disabled={isFetching}
         w="75"
         value={region}
         onChange={(value) => {
@@ -78,13 +60,14 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
         placeholder="Ceasevoker-Kazzak"
         data={[]}
         value={searchTerm}
-        onChange={setSearchTerm}
-        disabled={isFetching}
+        onChange={(search) => {
+          if (errorText) setErrorText("");
+          setSearchTerm(search);
+        }}
         style={{ width: 350 }}
         comboboxProps={{
           transitionProps: { transition: "pop", duration: 200 },
         }}
-        rightSection={isFetching ? <Loader size="xs" /> : null}
         onKeyDown={handleKeyDown}
       />
     </Flex>

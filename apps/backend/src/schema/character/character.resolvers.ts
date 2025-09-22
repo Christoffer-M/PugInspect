@@ -1,3 +1,4 @@
+import { GraphQLError } from "graphql";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
 import { ZoneRanking } from "../services/warcraftLogs/model/ZoneRankings.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
@@ -29,7 +30,11 @@ export default {
 
       if (!warcraftLogsProfile?.character) {
         console.error("Character not found in Warcraft Logs");
-        throw new Error("Character not found in Warcraft Logs");
+        throw new GraphQLError("Character not found in Warcraft Logs", {
+          extensions: {
+            code: "NOT_FOUND",
+          },
+        });
       }
 
       // Type assertion to ZoneRanking since warcraftLogsProfile.character.zoneRankings is of type JSON
@@ -44,6 +49,10 @@ export default {
 
       const currentSeasonSegments =
         rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
+
+      console.log("returning character", {
+        name: args.name,
+      });
 
       return {
         name: args.name,

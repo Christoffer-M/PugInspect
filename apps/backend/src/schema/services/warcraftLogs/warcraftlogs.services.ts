@@ -6,6 +6,7 @@ import {
   CharacterProfileQueryVariables,
 } from "./generated/index.js";
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
+import { GraphQLError } from "graphql";
 
 export class WarcraftLogsService {
   private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
@@ -37,17 +38,22 @@ export class WarcraftLogsService {
         variables,
       }),
     };
-
-    const response = await fetcher<{ data: CharacterProfileQuery }>(
-      this.endpoint,
-      options
-    );
-
-    const characterData = response.data.characterData;
-
-    if (!characterData?.character)
-      throw new Error("Character not found in Warcraft Logs");
-
-    return characterData;
+    try {
+      const response = await fetcher<{ data: CharacterProfileQuery }>(
+        this.endpoint,
+        options
+      );
+      return response.data.characterData;
+    } catch (error) {
+      throw new GraphQLError(
+        "Failed to fetch character profile from Warcraft Logs",
+        {
+          extensions: {
+            code: "NOT_FOUND",
+            originalError: error instanceof Error ? error : undefined,
+          },
+        }
+      );
+    }
   }
 }
