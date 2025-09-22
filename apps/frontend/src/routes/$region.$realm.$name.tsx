@@ -3,7 +3,7 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
-import { useCharacterQuery } from "../generated/graphql";
+import { useCharacterQuery } from "../queries/character-queries";
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: RouteComponent,

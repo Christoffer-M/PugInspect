@@ -9,12 +9,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-    "plugins": [
-      {
-        "name": "@0no-co/graphqlsp",
-        "schema": "src/generated/schema.graphql"
-      }
-    ]
+    "noUncheckedSideEffectImports": true
   }
 }

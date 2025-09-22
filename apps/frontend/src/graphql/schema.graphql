@@ -1,0 +1,54 @@
+schema {
+  query: Query
+}
+
+type Character {
+  logs: Logs!
+  name: String!
+  raiderIoScore: RioScore
+  realm: String!
+  region: String!
+  thumbnailUrl: String
+}
+
+type Encounter {
+  id: Int!
+  name: String!
+}
+
+type Logs {
+  bestPerformanceAverage: Float
+  medianPerformanceAverage: Float
+  metric: Metric
+  raidRankings: [RaidRanking!]
+}
+
+enum Metric {
+  dps
+  hps
+}
+
+type Query {
+  character(name: String!, realm: String!, region: String!): Character
+  characters: [Character!]!
+}
+
+type RaidRanking {
+  bestAmount: Float
+  encounter: Encounter
+  medianPercent: Float
+  rankPercent: Float
+  totalKills: Int
+}
+
+type RioScore {
+  all: Segment
+  dps: Segment
+  healer: Segment
+  tank: Segment
+}
+
+type Segment {
+  color: String!
+  score: Float!
+}

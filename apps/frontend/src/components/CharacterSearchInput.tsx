@@ -1,11 +1,9 @@
 import { Autocomplete, Flex, Loader, Select } from "@mantine/core";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  CharacterQueryVariables,
-  useCharacterQuery,
-} from "../generated/graphql";
 import { upperCaseFirstLetter } from "../util/util";
+import { CharacterQueryVariables } from "../graphql/graphql";
+import { useCharacterQuery } from "../queries/character-queries";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 
