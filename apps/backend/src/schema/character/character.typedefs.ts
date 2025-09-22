@@ -7,6 +7,7 @@ export const characterTypedefs = gql`
       realm: String!
       region: String!
       role: RoleType
+      metric: Metric
     ): Character
   }
 
@@ -23,7 +24,7 @@ export const characterTypedefs = gql`
     region: String!
     thumbnailUrl: String
     raiderIoScore: RioScore
-    logs(role: RoleType): Logs
+    logs(role: RoleType, metric: Metric): Logs
   }
 
   type RioScore {

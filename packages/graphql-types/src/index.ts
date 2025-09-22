@@ -26,6 +26,7 @@ export type Character = {
 
 
 export type CharacterLogsArgs = {
+  metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
 };
 
@@ -54,6 +55,7 @@ export type Query = {
 
 
 export type QueryCharacterArgs = {
+  metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];

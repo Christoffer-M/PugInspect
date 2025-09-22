@@ -5,11 +5,8 @@ import {
   Group,
   ActionIcon,
   Tooltip,
-  Paper,
-  Title,
-  Grid,
 } from "@mantine/core";
-import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useParams } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
@@ -19,18 +16,19 @@ import { Metric, RoleType } from "../graphql/graphql";
 
 type CharacterQueryParams = {
   roleType: RoleType;
+  metric?: Metric;
 };
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
   validateSearch: (search: Record<string, unknown>): CharacterQueryParams => ({
     roleType: (search.roleType as RoleType) || RoleType.Any,
+    metric: search.metric as Metric | undefined,
   }),
 });
 
 function CharacterPage() {
   const { region, name, realm } = useParams({ from: Route.id });
-  const { roleType } = useSearch({ from: Route.id });
   const {
     data,
     isFetching: isFetchingSummary,
@@ -75,7 +73,7 @@ function CharacterPage() {
             isError={isError}
           />
 
-          <LogsTable roleType={roleType} />
+          <LogsTable />
         </Stack>
       </Container>
     </Page>

@@ -4,6 +4,8 @@ import { graphql } from "../graphql";
 import {
   CharacterLogsQuery,
   CharacterLogsQueryVariables,
+  Metric,
+  RoleType,
 } from "../graphql/graphql";
 import { queryKeys } from "../queryKeys";
 
@@ -12,9 +14,16 @@ const query = graphql(`
     $name: String!
     $realm: String!
     $region: String!
-    $role: RoleType!
+    $role: RoleType
+    $metric: Metric
   ) {
-    character(name: $name, realm: $realm, region: $region, role: $role) {
+    character(
+      name: $name
+      realm: $realm
+      region: $region
+      role: $role
+      metric: $metric
+    ) {
       logs {
         bestPerformanceAverage
         medianPerformanceAverage
@@ -39,16 +48,19 @@ export const useCharacterLogs = ({
   realm,
   region,
   role,
+  metric,
 }: CharacterLogsQueryVariables) => {
   const lowerCasedName = name.toLowerCase();
   const lowerCasedRealm = realm.toLowerCase();
   const upperCasedRegion = region.toUpperCase();
+
   return useQuery({
     queryKey: queryKeys.characterLogs(
       lowerCasedName,
       lowerCasedRealm,
       upperCasedRegion,
-      role,
+      role as RoleType | undefined,
+      metric as Metric | undefined,
     ),
     retry: false,
     queryFn: async () => {
@@ -60,6 +72,7 @@ export const useCharacterLogs = ({
         realm,
         region,
         role,
+        metric,
       });
 
       return response.character;

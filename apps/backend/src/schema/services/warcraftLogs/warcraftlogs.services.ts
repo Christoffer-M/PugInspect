@@ -4,10 +4,11 @@ import { RequestInit } from "node-fetch";
 import {
   CharacterProfileQuery,
   CharacterProfileQueryVariables,
+  InputMaybe,
 } from "./generated/index.js";
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { GraphQLError } from "graphql";
-import { RoleType } from "@repo/graphql-types";
+import { Metric, RoleType } from "@repo/graphql-types";
 
 export class WarcraftLogsService {
   private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
@@ -16,7 +17,8 @@ export class WarcraftLogsService {
     name: string,
     realm: string,
     region: string,
-    role: RoleType
+    role?: InputMaybe<RoleType>,
+    metric?: InputMaybe<Metric>
   ): Promise<CharacterProfileQuery["characterData"]> {
     const apiKey = config.warcraftLogsBearerToken;
     if (!apiKey) throw new Error("API key not configured.");
@@ -28,6 +30,7 @@ export class WarcraftLogsService {
       zoneID: 44, // Example zone ID, replace with actual as needed
       difficulty: 4, // Example difficulty, replace with actual as needed
       role,
+      metric,
     };
 
     const options: RequestInit = {

@@ -3,7 +3,7 @@ schema {
 }
 
 type Character {
-  logs(role: RoleType): Logs
+  logs(metric: Metric, role: RoleType): Logs
   name: String!
   raiderIoScore: RioScore
   realm: String!
@@ -29,7 +29,7 @@ enum Metric {
 }
 
 type Query {
-  character(name: String!, realm: String!, region: String!, role: RoleType): Character
+  character(metric: Metric, name: String!, realm: String!, region: String!, role: RoleType): Character
 }
 
 type RaidRanking {

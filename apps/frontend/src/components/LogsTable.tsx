@@ -10,24 +10,25 @@ import {
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import { Metric, RoleType } from "../graphql/graphql";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCharacterLogs } from "../queries/character-logs";
 
-type LogsTableProps = {
-  roleType: RoleType;
-};
-
-export const LogsTable: React.FC<LogsTableProps> = ({ roleType }) => {
+export const LogsTable: React.FC = () => {
   const { name, realm, region } = useParams({ from: "/$region/$realm/$name" });
+  const { roleType: searchRoleType, metric: searchMetric } = useSearch({
+    from: "/$region/$realm/$name",
+  });
+
   const { data, isFetching } = useCharacterLogs({
     name,
     realm,
     region,
-    role: roleType || RoleType.Any,
+    role: searchRoleType,
+    metric: searchMetric,
   });
 
   const logs = data?.logs?.raidRankings || [];
-  const metric = data?.logs?.metric || Metric.Dps;
+  const metric = data?.logs?.metric;
 
   const navigate = useNavigate();
   const theme = useMantineTheme();
@@ -88,18 +89,40 @@ export const LogsTable: React.FC<LogsTableProps> = ({ roleType }) => {
     <Paper withBorder w="100%">
       <Group justify="space-between" align="flex-start" p="sm">
         <Title order={3}>Raid logs</Title>
-        <Select
-          label="Role"
-          labelProps={{ size: "xs" }}
-          onChange={(value) => {
-            navigate({
-              to: ".",
-              search: { roleType: value as RoleType },
-            });
-          }}
-          value={roleType}
-          data={Object.values(RoleType)}
-        />
+        <Group>
+          <Select
+            w={100}
+            label="Role"
+            labelProps={{ size: "xs" }}
+            onChange={(value) => {
+              navigate({
+                to: ".",
+                search: (prev) => ({ ...prev, roleType: value as RoleType }),
+              });
+            }}
+            value={searchRoleType}
+            data={Object.values(RoleType)}
+            comboboxProps={{
+              transitionProps: { transition: "pop", duration: 200 },
+            }}
+          />
+          <Select
+            w={100}
+            label="Metric"
+            labelProps={{ size: "xs" }}
+            onChange={(value) => {
+              navigate({
+                to: ".",
+                search: (prev) => ({ ...prev, metric: value as Metric }),
+              });
+            }}
+            value={metric}
+            data={Object.values(Metric)}
+            comboboxProps={{
+              transitionProps: { transition: "pop", duration: 200 },
+            }}
+          />
+        </Group>
       </Group>
 
       <Table>
@@ -108,7 +131,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ roleType }) => {
             <Table.Th>Encounter</Table.Th>
             <Table.Th>Rank Percent</Table.Th>
             <Table.Th>Median Percent</Table.Th>
-            <Table.Th>Highest {metric.toUpperCase()}</Table.Th>
+            <Table.Th>Highest {metric?.toUpperCase()}</Table.Th>
             <Table.Th>Kills</Table.Th>
           </Table.Tr>
         </Table.Thead>

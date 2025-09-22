@@ -22,10 +22,17 @@ export default {
           selection.kind === "Field" && selection.name.value === "logs"
       );
 
+      const raiderIoRequested =
+        info.fieldNodes[0]?.selectionSet?.selections.some(
+          (selection: any) =>
+            selection.kind === "Field" &&
+            selection.name.value === "raiderIoScore"
+        );
+
       let rioProfile: any;
       let warcraftLogsProfile: any;
 
-      if (logsRequested) {
+      if (logsRequested && raiderIoRequested) {
         // Parallelize both calls
         [rioProfile, warcraftLogsProfile] = await Promise.all([
           RaiderIOService.getCharacterProfile(args),
@@ -33,15 +40,25 @@ export default {
             args.name,
             args.realm,
             args.region,
-            args.role || "Any"
+            args.role,
+            args.metric
           ),
         ]);
-      } else {
+      } else if (raiderIoRequested) {
         // Only fetch RaiderIO
         rioProfile = await RaiderIOService.getCharacterProfile(args);
         warcraftLogsProfile = undefined;
+      } else if (logsRequested) {
+        // Only fetch Warcraft Logs
+        warcraftLogsProfile = await WarcraftLogsService.getCharacterProfile(
+          args.name,
+          args.realm,
+          args.region,
+          args.role,
+          args.metric
+        );
+        rioProfile = undefined;
       }
-
       // Type assertion to ZoneRanking since warcraftLogsProfile.character.zoneRankings is of type JSON
       // and we know its structure based on the query, however its not frozen so it might change
       // in the future so we need to handle that possibility.
@@ -52,32 +69,35 @@ export default {
         | ZoneRanking
         | undefined;
 
-      const currentSeasonSegments =
-        rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
+      const currentSeasonSegments = raiderIoRequested
+        ? rioProfile.mythic_plus_scores_by_season?.[0]?.segments
+        : undefined;
 
       return {
         name: args.name,
         realm: args.realm,
         region: args.region,
-        thumbnailUrl: rioProfile.thumbnail_url,
-        raiderIoScore: currentSeasonSegments && {
-          all: {
-            score: currentSeasonSegments?.all.score,
-            color: currentSeasonSegments?.all.color,
-          },
-          dps: {
-            score: currentSeasonSegments?.dps.score,
-            color: currentSeasonSegments?.dps.color,
-          },
-          healer: {
-            score: currentSeasonSegments?.healer.score,
-            color: currentSeasonSegments?.healer.color,
-          },
-          tank: {
-            score: currentSeasonSegments?.tank.score,
-            color: currentSeasonSegments?.tank.color,
-          },
-        },
+        thumbnailUrl: raiderIoRequested ? rioProfile.thumbnail_url : null,
+        raiderIoScore: raiderIoRequested
+          ? currentSeasonSegments && {
+              all: {
+                score: currentSeasonSegments?.all.score,
+                color: currentSeasonSegments?.all.color,
+              },
+              dps: {
+                score: currentSeasonSegments?.dps.score,
+                color: currentSeasonSegments?.dps.color,
+              },
+              healer: {
+                score: currentSeasonSegments?.healer.score,
+                color: currentSeasonSegments?.healer.color,
+              },
+              tank: {
+                score: currentSeasonSegments?.tank.score,
+                color: currentSeasonSegments?.tank.color,
+              },
+            }
+          : null,
         logs: logsRequested
           ? {
               bestPerformanceAverage: toFixedNumber(

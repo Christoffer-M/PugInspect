@@ -28,6 +28,7 @@ export type Character = {
 
 
 export type CharacterLogsArgs = {
+  metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
 };
 
@@ -57,6 +58,7 @@ export type Query = {
 
 
 export type QueryCharacterArgs = {
+  metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
@@ -97,7 +99,8 @@ export type CharacterLogsQueryVariables = Exact<{
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
-  role: RoleType;
+  role?: InputMaybe<RoleType>;
+  metric?: InputMaybe<Metric>;
 }>;
 
 
@@ -132,8 +135,14 @@ export class TypedDocumentString<TResult, TVariables>
 }
 
 export const CharacterLogsDocument = new TypedDocumentString(`
-    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType!) {
-  character(name: $name, realm: $realm, region: $region, role: $role) {
+    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric) {
+  character(
+    name: $name
+    realm: $realm
+    region: $region
+    role: $role
+    metric: $metric
+  ) {
     logs {
       bestPerformanceAverage
       medianPerformanceAverage

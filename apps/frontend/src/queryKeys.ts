@@ -1,4 +1,4 @@
-import { RoleType } from "./graphql/graphql";
+import { Metric, RoleType } from "./graphql/graphql";
 
 export const queryKeys = {
   character: (name: string, realm: string, region: string) => [
@@ -11,6 +11,7 @@ export const queryKeys = {
     name: string,
     realm: string,
     region: string,
-    role: RoleType,
-  ) => ["characterLogs", name, realm, region, role],
+    role?: RoleType,
+    metric?: Metric,
+  ) => ["characterLogs", name, realm, region, role, metric],
 };
