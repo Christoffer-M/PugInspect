@@ -7,6 +7,7 @@ import {
 } from "./generated/index.js";
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { GraphQLError } from "graphql";
+import { RoleType } from "@repo/graphql-types";
 
 export class WarcraftLogsService {
   private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
@@ -14,7 +15,8 @@ export class WarcraftLogsService {
   static async getCharacterProfile(
     name: string,
     realm: string,
-    region: string
+    region: string,
+    role: RoleType
   ): Promise<CharacterProfileQuery["characterData"]> {
     const apiKey = config.warcraftLogsBearerToken;
     if (!apiKey) throw new Error("API key not configured.");
@@ -25,6 +27,7 @@ export class WarcraftLogsService {
       region,
       zoneID: 44, // Example zone ID, replace with actual as needed
       difficulty: 4, // Example difficulty, replace with actual as needed
+      role,
     };
 
     const options: RequestInit = {

@@ -2,8 +2,8 @@ import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import type { RequestInit } from "node-fetch";
 import { CharacterApiResponse } from "./model/CharacterApiResponse.js";
-import { CharacterArgs } from "../../character/character.resolvers.js";
 import { GraphQLError } from "graphql";
+import { QueryCharacterArgs } from "@repo/graphql-types";
 
 const baseUrl = "https://raider.io/api/v1";
 
@@ -24,7 +24,7 @@ const fields: CharacterField[] = [
 
 export class RaiderIOService {
   static async getCharacterProfile(
-    args: CharacterArgs
+    args: QueryCharacterArgs
   ): Promise<CharacterApiResponse> {
     const { name, realm, region } = args;
     const options: RequestInit = {

@@ -7,10 +7,11 @@ export const CHARACTER_PROFILE = gql`
     $region: String!
     $zoneID: Int!
     $difficulty: Int!
+    $role: RoleType!
   ) {
     characterData {
       character(name: $name, serverSlug: $server, serverRegion: $region) {
-        zoneRankings(zoneID: $zoneID, difficulty: $difficulty)
+        zoneRankings(zoneID: $zoneID, difficulty: $difficulty, role: $role)
         name
         hidden
       }

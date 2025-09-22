@@ -1,31 +1,23 @@
-import { CharacterQuery, CharacterQueryVariables } from "../graphql/graphql";
 import { useQuery } from "@tanstack/react-query";
 import { graphql } from "../graphql";
 import { execute } from "../api/graphqlClient";
 import { queryKeys } from "../queryKeys";
+import {
+  CharacterSummaryQuery,
+  CharacterSummaryQueryVariables,
+} from "../graphql/graphql";
 
 export const CharacterDataQuery = graphql(`
-  query Character($name: String!, $realm: String!, $region: String!) {
+  query CharacterSummary($name: String!, $realm: String!, $region: String!) {
     character(name: $name, realm: $realm, region: $region) {
       logs {
         bestPerformanceAverage
         medianPerformanceAverage
         metric
-        raidRankings {
-          encounter {
-            id
-            name
-          }
-          rankPercent
-          medianPercent
-          bestAmount
-          totalKills
-        }
       }
       name
       realm
       region
-
       thumbnailUrl
       raiderIoScore {
         all {
@@ -49,15 +41,14 @@ export const CharacterDataQuery = graphql(`
   }
 `);
 
-export const useCharacterQuery = ({
+export const useCharacterSummaryQuery = ({
   name,
   realm,
   region,
-}: CharacterQueryVariables) => {
+}: CharacterSummaryQueryVariables) => {
   const lowerCasedName = name.toLowerCase();
   const lowerCasedRealm = realm.toLowerCase();
   const upperCasedRegion = region.toUpperCase();
-
   return useQuery({
     queryKey: queryKeys.character(
       lowerCasedName,
@@ -66,14 +57,14 @@ export const useCharacterQuery = ({
     ),
     retry: false,
     queryFn: async () => {
-      const response = await execute<CharacterQuery, CharacterQueryVariables>(
-        CharacterDataQuery,
-        {
-          name,
-          realm,
-          region,
-        },
-      );
+      const response = await execute<
+        CharacterSummaryQuery,
+        CharacterSummaryQueryVariables
+      >(CharacterDataQuery, {
+        name,
+        realm,
+        region,
+      });
 
       return response.character;
     },

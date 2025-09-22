@@ -9,26 +9,39 @@ import {
   Title,
   Grid,
 } from "@mantine/core";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
-import { useCharacterQuery } from "../queries/character-queries";
+import { useCharacterSummaryQuery } from "../queries/character-summary";
 import { IconReload } from "@tabler/icons-react";
-import { Metric } from "../graphql/graphql";
+import { Metric, RoleType } from "../graphql/graphql";
+
+type CharacterQueryParams = {
+  roleType: RoleType;
+};
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
+  validateSearch: (search: Record<string, unknown>): CharacterQueryParams => ({
+    roleType: (search.roleType as RoleType) || RoleType.Any,
+  }),
 });
 
 function CharacterPage() {
   const { region, name, realm } = useParams({ from: Route.id });
-  const { data, isFetching, isError, dataUpdatedAt, refetch } =
-    useCharacterQuery({
-      name: name,
-      realm: realm,
-      region: region,
-    });
+  const { roleType } = useSearch({ from: Route.id });
+  const {
+    data,
+    isFetching: isFetchingSummary,
+    isError,
+    dataUpdatedAt,
+    refetch,
+  } = useCharacterSummaryQuery({
+    name: name,
+    realm: realm,
+    region: region,
+  });
 
   return (
     <Page>
@@ -47,7 +60,7 @@ function CharacterPage() {
                   size: "xs",
                   type: "dots",
                 }}
-                loading={isFetching}
+                loading={isFetchingSummary}
               >
                 <IconReload size={18} />
               </ActionIcon>
@@ -58,54 +71,11 @@ function CharacterPage() {
             region={region}
             server={realm}
             data={data}
-            loading={isFetching}
+            loading={isFetchingSummary}
             isError={isError}
           />
-          <Grid grow w="100%">
-            <Grid.Col span={4}>
-              <Paper withBorder p="xs">
-                <Group justify="space-between" align="center">
-                  <Title order={4} m={0}>
-                    DPS
-                  </Title>
-                  <Text c={data?.raiderIoScore?.dps?.color} fw={700}>
-                    {data?.raiderIoScore?.dps?.score}
-                  </Text>
-                </Group>
-              </Paper>
-            </Grid.Col>
-            <Grid.Col span={4}>
-              <Paper withBorder p="xs">
-                <Group justify="space-between" align="center">
-                  <Title order={4} m={0}>
-                    Healer
-                  </Title>
 
-                  <Text c={data?.raiderIoScore?.healer?.color} fw={700}>
-                    {data?.raiderIoScore?.healer?.score}
-                  </Text>
-                </Group>
-              </Paper>
-            </Grid.Col>
-            <Grid.Col span={4}>
-              <Paper withBorder p="xs">
-                <Group justify="space-between" align="center">
-                  <Title order={4} m={0}>
-                    Tank
-                  </Title>
-                  <Text c={data?.raiderIoScore?.tank?.color} fw={700}>
-                    {data?.raiderIoScore?.tank?.score}
-                  </Text>
-                </Group>
-              </Paper>
-            </Grid.Col>
-          </Grid>
-
-          <LogsTable
-            data={data?.logs?.raidRankings || []}
-            metric={data?.logs?.metric || Metric.Dps}
-            loading={isFetching}
-          />
+          <LogsTable roleType={roleType} />
         </Stack>
       </Container>
     </Page>

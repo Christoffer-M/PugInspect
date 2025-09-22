@@ -3,7 +3,7 @@ schema {
 }
 
 type Character {
-  logs: Logs!
+  logs(role: RoleType): Logs
   name: String!
   raiderIoScore: RioScore
   realm: String!
@@ -29,9 +29,7 @@ enum Metric {
 }
 
 type Query {
-  character(name: String!, realm: String!, region: String!): Character
-  characterLogs(name: String!, realm: String!, region: String!, role: RoleType): Logs
-  characters: [Character!]!
+  character(name: String!, realm: String!, region: String!, role: RoleType): Character
 }
 
 type RaidRanking {
@@ -50,6 +48,7 @@ type RioScore {
 }
 
 enum RoleType {
+  Any
   DPS
   Healer
   Tank

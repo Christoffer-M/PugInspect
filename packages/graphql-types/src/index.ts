@@ -16,12 +16,17 @@ export type Scalars = {
 
 export type Character = {
   __typename?: 'Character';
-  logs: Logs;
+  logs?: Maybe<Logs>;
   name: Scalars['String']['output'];
   raiderIoScore?: Maybe<RioScore>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
+};
+
+
+export type CharacterLogsArgs = {
+  role?: InputMaybe<RoleType>;
 };
 
 export type Encounter = {
@@ -45,19 +50,10 @@ export type Metric =
 export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
-  characterLogs?: Maybe<Logs>;
-  characters: Array<Character>;
 };
 
 
 export type QueryCharacterArgs = {
-  name: Scalars['String']['input'];
-  realm: Scalars['String']['input'];
-  region: Scalars['String']['input'];
-};
-
-
-export type QueryCharacterLogsArgs = {
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
@@ -82,6 +78,7 @@ export type RioScore = {
 };
 
 export type RoleType =
+  | 'Any'
   | 'DPS'
   | 'Healer'
   | 'Tank';

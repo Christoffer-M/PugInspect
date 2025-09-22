@@ -1,21 +1,37 @@
 import React from "react";
-import { Table, Skeleton, Paper, useMantineTheme, Title } from "@mantine/core";
+import {
+  Table,
+  Skeleton,
+  Paper,
+  useMantineTheme,
+  Title,
+  Group,
+  Select,
+} from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
-import { Metric, RaidRanking } from "../graphql/graphql";
+import { Metric, RoleType } from "../graphql/graphql";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { useCharacterLogs } from "../queries/character-logs";
 
 type LogsTableProps = {
-  data: RaidRanking[];
-  metric: Metric;
-  loading?: boolean;
+  roleType: RoleType;
 };
 
-export const LogsTable: React.FC<LogsTableProps> = ({
-  data,
-  metric,
-  loading,
-}) => {
+export const LogsTable: React.FC<LogsTableProps> = ({ roleType }) => {
+  const { name, realm, region } = useParams({ from: "/$region/$realm/$name" });
+  const { data, isFetching } = useCharacterLogs({
+    name,
+    realm,
+    region,
+    role: roleType || RoleType.Any,
+  });
+
+  const logs = data?.logs?.raidRankings || [];
+  const metric = data?.logs?.metric || Metric.Dps;
+
+  const navigate = useNavigate();
   const theme = useMantineTheme();
-  const rows = data.map((ranking) => (
+  const rows = logs?.map((ranking) => (
     <Table.Tr key={ranking.encounter?.id ?? Math.random()}>
       <Table.Td>{ranking.encounter?.name}</Table.Td>
       <Table.Td
@@ -70,9 +86,22 @@ export const LogsTable: React.FC<LogsTableProps> = ({
 
   return (
     <Paper withBorder w="100%">
-      <Title order={3} pl="xs" pt={"xs"}>
-        Raid logs
-      </Title>
+      <Group justify="space-between" align="flex-start" p="sm">
+        <Title order={3}>Raid logs</Title>
+        <Select
+          label="Role"
+          labelProps={{ size: "xs" }}
+          onChange={(value) => {
+            navigate({
+              to: ".",
+              search: { roleType: value as RoleType },
+            });
+          }}
+          value={roleType}
+          data={Object.values(RoleType)}
+        />
+      </Group>
+
       <Table>
         <Table.Thead>
           <Table.Tr>
@@ -84,7 +113,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {loading ? (
+          {isFetching ? (
             skeletonRows
           ) : rows.length > 0 ? (
             rows

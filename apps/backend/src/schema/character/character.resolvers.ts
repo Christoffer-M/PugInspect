@@ -1,38 +1,45 @@
-import { GraphQLError } from "graphql";
+import { GraphQLResolveInfo } from "graphql";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
 import { ZoneRanking } from "../services/warcraftLogs/model/ZoneRankings.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
-import { Character } from "@repo/graphql-types";
+import { Character, QueryCharacterArgs } from "@repo/graphql-types";
 
 function toFixedNumber(value: number | undefined, digits = 2): number | null {
   return typeof value === "number" ? parseFloat(value.toFixed(digits)) : null;
 }
 
-export interface CharacterArgs {
-  name: string;
-  realm: string;
-  region: string;
-}
-
 export default {
   Query: {
-    character: async (_: any, args: CharacterArgs): Promise<Character> => {
-      const [rioProfile, warcraftLogsProfile] = await Promise.all([
-        RaiderIOService.getCharacterProfile(args),
-        WarcraftLogsService.getCharacterProfile(
-          args.name,
-          args.realm,
-          args.region
-        ),
-      ]);
+    character: async (
+      _: any,
+      args: QueryCharacterArgs,
+      _context: any,
+      info: GraphQLResolveInfo
+    ): Promise<Character> => {
+      // Check if 'logs' is requested
+      const logsRequested = info.fieldNodes[0]?.selectionSet?.selections.some(
+        (selection: any) =>
+          selection.kind === "Field" && selection.name.value === "logs"
+      );
 
-      if (!warcraftLogsProfile?.character) {
-        console.error("Character not found in Warcraft Logs");
-        throw new GraphQLError("Character not found in Warcraft Logs", {
-          extensions: {
-            code: "NOT_FOUND",
-          },
-        });
+      let rioProfile: any;
+      let warcraftLogsProfile: any;
+
+      if (logsRequested) {
+        // Parallelize both calls
+        [rioProfile, warcraftLogsProfile] = await Promise.all([
+          RaiderIOService.getCharacterProfile(args),
+          WarcraftLogsService.getCharacterProfile(
+            args.name,
+            args.realm,
+            args.region,
+            args.role || "Any"
+          ),
+        ]);
+      } else {
+        // Only fetch RaiderIO
+        rioProfile = await RaiderIOService.getCharacterProfile(args);
+        warcraftLogsProfile = undefined;
       }
 
       // Type assertion to ZoneRanking since warcraftLogsProfile.character.zoneRankings is of type JSON
@@ -41,7 +48,7 @@ export default {
       // If the structure changes, this assertion might lead to runtime errors.
       // A more robust solution would involve validating the structure at runtime.
       // For now, we proceed with the assertion for simplicity.
-      const zoneRankings = warcraftLogsProfile.character.zoneRankings as
+      const zoneRankings = warcraftLogsProfile?.character?.zoneRankings as
         | ZoneRanking
         | undefined;
 
@@ -71,35 +78,33 @@ export default {
             color: currentSeasonSegments?.tank.color,
           },
         },
-        logs: {
-          bestPerformanceAverage: toFixedNumber(
-            zoneRankings?.bestPerformanceAverage
-          ),
-          medianPerformanceAverage: toFixedNumber(
-            zoneRankings?.medianPerformanceAverage
-          ),
-          metric: zoneRankings?.metric,
-          raidRankings:
-            zoneRankings?.rankings?.map((ranking) => ({
-              encounter:
-                ranking.encounter &&
-                typeof ranking.encounter.id === "number" &&
-                typeof ranking.encounter.name === "string"
-                  ? {
-                      id: ranking.encounter.id,
-                      name: ranking.encounter.name,
-                    }
-                  : null,
-              rankPercent: toFixedNumber(ranking.rankPercent),
-              medianPercent: toFixedNumber(ranking.medianPercent),
-              bestAmount: toFixedNumber(ranking.bestAmount),
-              totalKills: toFixedNumber(ranking.totalKills),
-            })) || [],
-        },
+        logs: logsRequested
+          ? {
+              bestPerformanceAverage: toFixedNumber(
+                zoneRankings?.bestPerformanceAverage
+              ),
+              medianPerformanceAverage: toFixedNumber(
+                zoneRankings?.medianPerformanceAverage
+              ),
+              metric: zoneRankings?.metric,
+              raidRankings: zoneRankings?.rankings?.map((ranking) => ({
+                encounter:
+                  ranking.encounter &&
+                  typeof ranking.encounter.id === "number" &&
+                  typeof ranking.encounter.name === "string"
+                    ? {
+                        id: ranking.encounter.id,
+                        name: ranking.encounter.name,
+                      }
+                    : null,
+                rankPercent: toFixedNumber(ranking.rankPercent),
+                medianPercent: toFixedNumber(ranking.medianPercent),
+                bestAmount: toFixedNumber(ranking.bestAmount),
+                totalKills: toFixedNumber(ranking.totalKills),
+              })),
+            }
+          : null,
       };
-    },
-    characters: async () => {
-      return [];
     },
   },
 };

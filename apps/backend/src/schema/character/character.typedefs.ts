@@ -2,17 +2,16 @@ import { gql } from "graphql-tag";
 
 export const characterTypedefs = gql`
   extend type Query {
-    character(name: String!, realm: String!, region: String!): Character
-    characterLogs(
+    character(
       name: String!
       realm: String!
       region: String!
       role: RoleType
-    ): Logs
-    characters: [Character!]!
+    ): Character
   }
 
   enum RoleType {
+    Any
     DPS
     Healer
     Tank
@@ -24,7 +23,7 @@ export const characterTypedefs = gql`
     region: String!
     thumbnailUrl: String
     raiderIoScore: RioScore
-    logs: Logs!
+    logs(role: RoleType): Logs
   }
 
   type RioScore {
