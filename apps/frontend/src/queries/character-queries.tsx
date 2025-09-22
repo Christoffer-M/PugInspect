@@ -1,7 +1,7 @@
 import { CharacterQueryVariables } from "../graphql/graphql";
 import { useQuery } from "@tanstack/react-query";
 import { graphql } from "../graphql";
-import { execute } from "../api/client";
+import { execute } from "../api/graphqlClient";
 
 const queryKeys = {
   character: (name: string, realm: string, region: string) =>
