@@ -31,11 +31,11 @@ const config: CodegenConfig = {
       },
     },
     "../../packages/graphql-types/src/index.ts": {
-      schema: "./src/schema/character/character.graphql",
+      schema: "./src/schema/character/character.typedefs.ts",
       plugins: ["typescript", "typescript-operations"],
     },
     "../../packages/graphql-types/src/schema.graphql": {
-      schema: "./src/schema/character/character.graphql",
+      schema: "./src/schema/character/character.typedefs.ts",
       plugins: ["schema-ast"],
       config: { includeDirectives: true },
     },

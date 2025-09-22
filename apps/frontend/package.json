@@ -24,7 +24,8 @@
     "@tanstack/router-plugin": "^1.121.2",
     "dotenv": "^17.2.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@repo/graphql-types": "workspace:*"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "6.0.0",

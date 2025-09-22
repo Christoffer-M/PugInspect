@@ -12,6 +12,11 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
+    "codegen": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^codegen"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

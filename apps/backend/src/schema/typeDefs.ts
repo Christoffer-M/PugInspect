@@ -1,5 +1,5 @@
 import { gql } from "graphql-tag";
-import chracterTypedefs from "./character/character.typedefs.js";
+import { characterTypedefs } from "./character/character.typedefs.js";
 
 const baseTypeDefs = gql`
   type Query {
@@ -7,4 +7,4 @@ const baseTypeDefs = gql`
   }
 `;
 
-export default [baseTypeDefs, chracterTypedefs];
+export default [baseTypeDefs, characterTypedefs];
