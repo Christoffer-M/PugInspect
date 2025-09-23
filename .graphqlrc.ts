@@ -6,8 +6,8 @@ export default {
     },
     api: {
       schema:
-        "apps/backend/src/schema/services/warcraftLogs/generated/schema.graphql",
-      documents: ["apps/backend/src/**/*.{ts,tsx,js,jsx}"],
+        "apps/backend/api/schema/services/warcraftLogs/generated/schema.graphql",
+      documents: ["apps/backend/api/**/*.{ts,tsx,js,jsx}"],
     },
   },
 };
