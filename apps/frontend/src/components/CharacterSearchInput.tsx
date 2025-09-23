@@ -1,7 +1,7 @@
 import { Autocomplete, Flex, Select } from "@mantine/core";
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
-import { upperCaseFirstLetter } from "../util/util";
+import { parseRaiderIoUrl, upperCaseFirstLetter } from "../util/util";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 
@@ -35,6 +35,14 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
 
       const trimmed = searchTerm.trim();
       if (!trimmed) return;
+
+      const raiderIoParse = parseRaiderIoUrl(trimmed);
+      if (raiderIoParse) {
+        router.navigate({
+          to: `/${raiderIoParse.region.toLowerCase()}/${raiderIoParse.realm.toLowerCase()}/${raiderIoParse.name.toLowerCase()}`,
+        });
+        return;
+      }
 
       const [name, realm] = trimmed.split("-", 2).map((s) => s.trim());
 

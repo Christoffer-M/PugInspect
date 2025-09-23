@@ -15,3 +15,19 @@ export const GetWarcraftLogRankingColors = (
 export const upperCaseFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
+
+export function parseRaiderIoUrl(
+  url: string,
+): { region: string; realm: string; name: string } | null {
+  const match = url.match(
+    /raider\.io\/characters\/([^/]+)\/([^/]+)\/([^/?#]+)/i,
+  );
+  if (!match) return null;
+  const [, region, realm, name] = match;
+  if (!region || !realm || !name) return null;
+  return {
+    region: region.toUpperCase(),
+    realm,
+    name,
+  };
+}

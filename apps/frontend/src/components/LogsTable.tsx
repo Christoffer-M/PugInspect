@@ -77,13 +77,13 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             })
           : "N/A"}
       </Table.Td>
-      <Table.Td c={ranking.bestAmount ? undefined : "dimmed"} fw={500}>
+      <Table.Td c={ranking.bestAmount ? undefined : "dimmed"}>
         {ranking.bestAmount?.toLocaleString(undefined, {
           maximumFractionDigits: 0,
           minimumFractionDigits: 0,
         }) || "N/A"}
       </Table.Td>
-      <Table.Td>
+      <Table.Td c={ranking.totalKills ? undefined : "dimmed"}>
         {ranking.totalKills?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
         }) || "N/A"}
