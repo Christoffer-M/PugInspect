@@ -82,9 +82,6 @@ export const useCharacterLogs = ({
         difficulty,
       });
 
-      console.log(response);
-      console.log(response.character?.warcraftLogs);
-
       return response.character?.warcraftLogs;
     },
     gcTime: 1000 * 60 * 5, // 5 minutes
