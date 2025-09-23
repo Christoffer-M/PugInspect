@@ -1,4 +1,9 @@
 {
   "extends": ["//"],
-  "globalDependencies": [".env", "tsconfig.json"]
+  "globalDependencies": [".env", "tsconfig.json"],
+  "tasks": {
+    "build": {
+      "env": ["RAIDERIO_API_KEY", "WARCRAFTLOGS_BEARER_TOKEN"]
+    }
+  }
 }
