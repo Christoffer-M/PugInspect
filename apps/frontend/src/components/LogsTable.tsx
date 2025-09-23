@@ -125,55 +125,61 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
       <Paper withBorder w="100%">
         <Grid gutter={"md"} p={"xs"}>
           <Grid.Col span={"auto"}>
-            <Text m="0" size="sm" fw={500} w={"fit-content"}>
-              Difficulty
-            </Text>
-            <SegmentedControl
-              fullWidth
-              data={difficultyOrder.map((difficulty) => ({
-                label: difficulty,
-                value: difficulty,
-              }))}
-              value={searchDifficulty ?? difficulty ?? difficultyOrder[0]}
-              onChange={(value) => {
-                if (value == null) return;
-                setSearch({ difficulty: value as Difficulty });
-              }}
-            />
+            <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
+              <Text m="0" fw={500} w={"fit-content"}>
+                Difficulty
+              </Text>
+              <SegmentedControl
+                w={"100%"}
+                data={difficultyOrder.map((difficulty) => ({
+                  label: difficulty,
+                  value: difficulty,
+                }))}
+                value={searchDifficulty ?? difficulty ?? difficultyOrder[0]}
+                onChange={(value) => {
+                  if (value == null) return;
+                  setSearch({ difficulty: value as Difficulty });
+                }}
+              />
+            </Stack>
           </Grid.Col>
           <Grid.Col span={"auto"}>
-            <Text m="0" size="sm" fw={500} w={"fit-content"}>
-              Role
-            </Text>
-            <SegmentedControl
-              fullWidth
-              data={Object.values(RoleType).map((role) => ({
-                label: role,
-                value: role,
-              }))}
-              value={searchRoleType}
-              onChange={(value) => {
-                if (value == null) return;
-                setSearch({ roleType: value as RoleType });
-              }}
-            />
+            <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
+              <Text m="0" fw={500} w={"fit-content"}>
+                Role
+              </Text>
+              <SegmentedControl
+                w={"100%"}
+                data={Object.values(RoleType).map((role) => ({
+                  label: role,
+                  value: role,
+                }))}
+                value={searchRoleType}
+                onChange={(value) => {
+                  if (value == null) return;
+                  setSearch({ roleType: value as RoleType });
+                }}
+              />
+            </Stack>
           </Grid.Col>
           <Grid.Col span={"auto"}>
-            <Text m="0" size="sm" fw={500} w={"fit-content"}>
-              Metric
-            </Text>
-            <SegmentedControl
-              fullWidth
-              data={Object.values(Metric).map((metric) => ({
-                label: metric.toUpperCase(),
-                value: metric,
-              }))}
-              value={searchMetric ?? metric ?? Metric.Dps}
-              onChange={(value) => {
-                if (value == null) return;
-                setSearch({ metric: value as Metric });
-              }}
-            />
+            <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
+              <Text m="0" fw={500} w={"fit-content"}>
+                Metric
+              </Text>
+              <SegmentedControl
+                w={"100%"}
+                data={Object.values(Metric).map((metric) => ({
+                  label: metric.toUpperCase(),
+                  value: metric,
+                }))}
+                value={searchMetric ?? metric ?? Metric.Dps}
+                onChange={(value) => {
+                  if (value == null) return;
+                  setSearch({ metric: value as Metric });
+                }}
+              />{" "}
+            </Stack>
           </Grid.Col>
         </Grid>
 

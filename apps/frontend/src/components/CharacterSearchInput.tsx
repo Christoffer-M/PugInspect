@@ -5,13 +5,7 @@ import { parseRaiderIoUrl, upperCaseFirstLetter } from "../util/util";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 
-type CharacterSearchInputProps = {
-  region?: string;
-  realm?: string;
-  name?: string;
-};
-
-const CharacterSearchInput: React.FC<CharacterSearchInputProps> = () => {
+const CharacterSearchInput: React.FC = () => {
   const params = useParams({
     from: "/$region/$realm/$name",
     shouldThrow: false,
