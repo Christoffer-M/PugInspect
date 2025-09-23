@@ -21,6 +21,7 @@ const CharacterSearchInput: React.FC = () => {
   const [region, setRegion] = useState(
     initialRegion?.toUpperCase() || localStorage.getItem("region") || "EU",
   );
+
   const [errorText, setErrorText] = useState("");
   const router = useRouter();
 
