@@ -1,0 +1,4 @@
+{
+  "extends": ["//"],
+  "globalDependencies": [".env", "tsconfig.json"]
+}

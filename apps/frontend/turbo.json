@@ -1,5 +1,6 @@
 {
   "extends": ["//"],
+  "globalDependencies": [".env", "tsconfig.json"],
   "tasks": {
     "codegen": {
       "dependsOn": ["backend#codegen"]
