@@ -1,9 +1,4 @@
 {
   "extends": ["//"],
-  "globalDependencies": [".env", "tsconfig.json"],
-  "tasks": {
-    "build": {
-      "inputs": ["$TURBO_DEFAULT$", ".env"]
-    }
-  }
+  "globalDependencies": [".env", "tsconfig.json"]
 }
