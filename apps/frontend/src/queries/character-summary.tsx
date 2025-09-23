@@ -3,6 +3,7 @@ import { graphql } from "../graphql";
 import { execute } from "../api/graphqlClient";
 import { queryKeys } from "../queryKeys";
 import {
+  Character,
   CharacterSummaryQuery,
   CharacterSummaryQueryVariables,
 } from "../graphql/graphql";
@@ -10,7 +11,7 @@ import {
 export const CharacterDataQuery = graphql(`
   query CharacterSummary($name: String!, $realm: String!, $region: String!) {
     character(name: $name, realm: $realm, region: $region) {
-      logs {
+      warcraftLogs {
         bestPerformanceAverage
         medianPerformanceAverage
         metric
@@ -18,8 +19,8 @@ export const CharacterDataQuery = graphql(`
       name
       realm
       region
-      thumbnailUrl
-      raiderIoScore {
+      raiderIo {
+        thumbnailUrl
         all {
           score
           color
@@ -45,18 +46,11 @@ export const useCharacterSummaryQuery = ({
   name,
   realm,
   region,
-}: CharacterSummaryQueryVariables) => {
-  const lowerCasedName = name.toLowerCase();
-  const lowerCasedRealm = realm.toLowerCase();
-  const upperCasedRegion = region.toUpperCase();
-  return useQuery({
-    queryKey: queryKeys.character(
-      lowerCasedName,
-      lowerCasedRealm,
-      upperCasedRegion,
-    ),
+}: CharacterSummaryQueryVariables) =>
+  useQuery({
+    queryKey: queryKeys.character(name, realm, region),
     retry: false,
-    queryFn: async () => {
+    queryFn: async (): Promise<Character | undefined | null> => {
       const response = await execute<
         CharacterSummaryQuery,
         CharacterSummaryQueryVariables
@@ -71,4 +65,3 @@ export const useCharacterSummaryQuery = ({
     gcTime: 1000 * 60 * 5, // 5 minutes
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
-};

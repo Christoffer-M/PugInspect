@@ -24,7 +24,7 @@ const query = graphql(`
       role: $role
       metric: $metric
     ) {
-      logs {
+      warcraftLogs {
         bestPerformanceAverage
         medianPerformanceAverage
         metric
@@ -49,16 +49,12 @@ export const useCharacterLogs = ({
   region,
   role,
   metric,
-}: CharacterLogsQueryVariables) => {
-  const lowerCasedName = name.toLowerCase();
-  const lowerCasedRealm = realm.toLowerCase();
-  const upperCasedRegion = region.toUpperCase();
-
-  return useQuery({
+}: CharacterLogsQueryVariables) =>
+  useQuery({
     queryKey: queryKeys.characterLogs(
-      lowerCasedName,
-      lowerCasedRealm,
-      upperCasedRegion,
+      name,
+      realm,
+      region,
       role as RoleType | undefined,
       metric as Metric | undefined,
     ),
@@ -75,9 +71,8 @@ export const useCharacterLogs = ({
         metric,
       });
 
-      return response.character?.logs;
+      return response.character?.warcraftLogs;
     },
     gcTime: 1000 * 60 * 5, // 5 minutes
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
-};

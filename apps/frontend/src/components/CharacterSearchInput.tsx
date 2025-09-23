@@ -1,6 +1,6 @@
 import { Autocomplete, Flex, Select } from "@mantine/core";
 import { useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { upperCaseFirstLetter } from "../util/util";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
@@ -27,9 +27,17 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
   const [errorText, setErrorText] = useState("");
   const router = useRouter();
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" && searchTerm.trim()) {
-      const [name, realm] = searchTerm.split("-");
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== "Enter") return;
+
+      event.preventDefault(); // prevent form submit
+
+      const trimmed = searchTerm.trim();
+      if (!trimmed) return;
+
+      const [name, realm] = trimmed.split("-", 2).map((s) => s.trim());
+
       if (name && realm) {
         router.navigate({
           to: `/${region.toLowerCase()}/${realm.toLowerCase()}/${name.toLowerCase()}`,
@@ -37,8 +45,9 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
       } else {
         setErrorText("Invalid character or realm");
       }
-    }
-  };
+    },
+    [searchTerm, region, router],
+  );
 
   return (
     <Flex gap="xs">

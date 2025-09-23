@@ -1,11 +1,61 @@
-import { GraphQLResolveInfo } from "graphql";
+import { GraphQLError, GraphQLResolveInfo } from "graphql";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
 import { ZoneRanking } from "../services/warcraftLogs/model/ZoneRankings.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import { Character, QueryCharacterArgs } from "@repo/graphql-types";
+import { CharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
+import { CharacterProfileQuery } from "../services/warcraftLogs/generated/index.js";
+import {
+  FieldsByTypeName,
+  parseResolveInfo,
+  simplifyParsedResolveInfoFragmentWithType,
+} from "graphql-parse-resolve-info";
 
 function toFixedNumber(value: number | undefined, digits = 2): number | null {
   return typeof value === "number" ? parseFloat(value.toFixed(digits)) : null;
+}
+
+function mapRaiderIo(rioProfile?: CharacterApiResponse) {
+  const segments = rioProfile?.mythic_plus_scores_by_season?.[0]?.segments;
+  console.log("segments", segments);
+
+  if (!segments) return null;
+  return {
+    thumbnailUrl: rioProfile.thumbnail_url,
+    all: { score: segments.all.score, color: segments.all.color },
+    dps: { score: segments.dps.score, color: segments.dps.color },
+    healer: { score: segments.healer.score, color: segments.healer.color },
+    tank: { score: segments.tank.score, color: segments.tank.color },
+  };
+}
+
+function mapWarcraftLogs(
+  characterData?: CharacterProfileQuery["characterData"]
+) {
+  const zoneRankings = characterData?.character?.zoneRankings as
+    | ZoneRanking
+    | undefined;
+
+  if (!zoneRankings) return null;
+  return {
+    bestPerformanceAverage: toFixedNumber(zoneRankings.bestPerformanceAverage),
+    medianPerformanceAverage: toFixedNumber(
+      zoneRankings.medianPerformanceAverage
+    ),
+    metric: zoneRankings.metric,
+    raidRankings: zoneRankings.rankings?.map((ranking) => ({
+      encounter:
+        ranking.encounter &&
+        typeof ranking.encounter.id === "number" &&
+        typeof ranking.encounter.name === "string"
+          ? { id: ranking.encounter.id, name: ranking.encounter.name }
+          : null,
+      rankPercent: toFixedNumber(ranking.rankPercent),
+      medianPercent: toFixedNumber(ranking.medianPercent),
+      bestAmount: toFixedNumber(ranking.bestAmount),
+      totalKills: toFixedNumber(ranking.totalKills),
+    })),
+  };
 }
 
 export default {
@@ -16,21 +66,25 @@ export default {
       _context: any,
       info: GraphQLResolveInfo
     ): Promise<Character> => {
+      const parsedResolveInfoFragment = parseResolveInfo(info);
+      if (!parsedResolveInfoFragment) {
+        throw new GraphQLError("Failed to parse resolve info");
+      }
+
       // Check if 'logs' is requested
       const logsRequested = info.fieldNodes[0]?.selectionSet?.selections.some(
         (selection: any) =>
-          selection.kind === "Field" && selection.name.value === "logs"
+          selection.kind === "Field" && selection.name.value === "warcraftLogs"
       );
 
       const raiderIoRequested =
         info.fieldNodes[0]?.selectionSet?.selections.some(
           (selection: any) =>
-            selection.kind === "Field" &&
-            selection.name.value === "raiderIoScore"
+            selection.kind === "Field" && selection.name.value === "raiderIo"
         );
 
-      let rioProfile: any;
-      let warcraftLogsProfile: any;
+      let rioProfile: CharacterApiResponse | undefined;
+      let warcraftLogsProfile: CharacterProfileQuery["characterData"];
 
       if (logsRequested && raiderIoRequested) {
         // Parallelize both calls
@@ -59,70 +113,14 @@ export default {
         );
         rioProfile = undefined;
       }
-      // Type assertion to ZoneRanking since warcraftLogsProfile.character.zoneRankings is of type JSON
-      // and we know its structure based on the query, however its not frozen so it might change
-      // in the future so we need to handle that possibility.
-      // If the structure changes, this assertion might lead to runtime errors.
-      // A more robust solution would involve validating the structure at runtime.
-      // For now, we proceed with the assertion for simplicity.
-      const zoneRankings = warcraftLogsProfile?.character?.zoneRankings as
-        | ZoneRanking
-        | undefined;
-
-      const currentSeasonSegments = raiderIoRequested
-        ? rioProfile.mythic_plus_scores_by_season?.[0]?.segments
-        : undefined;
 
       return {
         name: args.name,
         realm: args.realm,
         region: args.region,
-        thumbnailUrl: raiderIoRequested ? rioProfile.thumbnail_url : null,
-        raiderIoScore: raiderIoRequested
-          ? currentSeasonSegments && {
-              all: {
-                score: currentSeasonSegments?.all.score,
-                color: currentSeasonSegments?.all.color,
-              },
-              dps: {
-                score: currentSeasonSegments?.dps.score,
-                color: currentSeasonSegments?.dps.color,
-              },
-              healer: {
-                score: currentSeasonSegments?.healer.score,
-                color: currentSeasonSegments?.healer.color,
-              },
-              tank: {
-                score: currentSeasonSegments?.tank.score,
-                color: currentSeasonSegments?.tank.color,
-              },
-            }
-          : null,
-        logs: logsRequested
-          ? {
-              bestPerformanceAverage: toFixedNumber(
-                zoneRankings?.bestPerformanceAverage
-              ),
-              medianPerformanceAverage: toFixedNumber(
-                zoneRankings?.medianPerformanceAverage
-              ),
-              metric: zoneRankings?.metric,
-              raidRankings: zoneRankings?.rankings?.map((ranking) => ({
-                encounter:
-                  ranking.encounter &&
-                  typeof ranking.encounter.id === "number" &&
-                  typeof ranking.encounter.name === "string"
-                    ? {
-                        id: ranking.encounter.id,
-                        name: ranking.encounter.name,
-                      }
-                    : null,
-                rankPercent: toFixedNumber(ranking.rankPercent),
-                medianPercent: toFixedNumber(ranking.medianPercent),
-                bestAmount: toFixedNumber(ranking.bestAmount),
-                totalKills: toFixedNumber(ranking.totalKills),
-              })),
-            }
+        raiderIo: raiderIoRequested ? mapRaiderIo(rioProfile) : null,
+        warcraftLogs: logsRequested
+          ? mapWarcraftLogs(warcraftLogsProfile)
           : null,
       };
     },

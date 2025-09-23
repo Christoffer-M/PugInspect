@@ -16,16 +16,15 @@ export type Scalars = {
 
 export type Character = {
   __typename?: 'Character';
-  logs?: Maybe<Logs>;
   name: Scalars['String']['output'];
-  raiderIoScore?: Maybe<RioScore>;
+  raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
-  thumbnailUrl?: Maybe<Scalars['String']['output']>;
+  warcraftLogs?: Maybe<Logs>;
 };
 
 
-export type CharacterLogsArgs = {
+export type CharacterWarcraftLogsArgs = {
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
 };
@@ -71,12 +70,13 @@ export type RaidRanking = {
   totalKills?: Maybe<Scalars['Int']['output']>;
 };
 
-export type RioScore = {
-  __typename?: 'RioScore';
+export type RaiderIo = {
+  __typename?: 'RaiderIo';
   all?: Maybe<Segment>;
   dps?: Maybe<Segment>;
   healer?: Maybe<Segment>;
   tank?: Maybe<Segment>;
+  thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type RoleType =

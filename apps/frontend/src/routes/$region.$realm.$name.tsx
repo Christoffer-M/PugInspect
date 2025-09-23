@@ -34,7 +34,7 @@ function CharacterPage() {
     from: Route.id,
   });
   const {
-    data,
+    data: characterSummaryData,
     isFetching: isFetchingSummary,
     isError,
     dataUpdatedAt,
@@ -68,7 +68,7 @@ function CharacterPage() {
         <Stack mt="md" align="center" justify="center">
           <Group justify="flex-end" w={"100%"} align="flex-start" gap={"xs"}>
             <Text size="sm" c="dimmed" m={0}>
-              {`Last updated:  ${data ? new Date(dataUpdatedAt).toLocaleTimeString() : "--:--:--"}`}
+              {`Last updated:  ${characterSummaryData ? new Date(dataUpdatedAt).toLocaleTimeString() : "--:--:--"}`}
             </Text>
             <Tooltip label={"Refresh data"} withArrow openDelay={150}>
               <ActionIcon
@@ -89,7 +89,7 @@ function CharacterPage() {
             name={name}
             region={region}
             server={realm}
-            data={data}
+            data={characterSummaryData}
             loading={isFetchingSummary}
             isError={isError}
           />

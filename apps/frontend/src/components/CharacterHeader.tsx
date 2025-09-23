@@ -16,18 +16,22 @@ import { RankingGroup } from "./RankingGroup";
 import RaiderIoIocn from "../../icons/raiderio-icon.svg";
 import WarcraftLogsIcon from "../../icons/warcraftlogs-icon.svg";
 import { ExternalLinkIcon } from "./ExternalLinkIcon";
+import { Character } from "../graphql/graphql";
 
 export const CharacterHeader: React.FC<{
   name: string;
   region: string;
   server: string;
-  data: any;
+  data: Character | undefined | null;
   loading: boolean;
   isError: boolean;
 }> = ({ name, region, server, data, loading, isError }) => {
   const theme = useMantineTheme();
-  const medianPerformance = data?.logs?.medianPerformanceAverage;
-  const bestPerformance = data?.logs?.bestPerformanceAverage;
+
+  const logs = data?.warcraftLogs;
+  const raiderIoInfo = data?.raiderIo;
+  const medianPerformance = logs?.medianPerformanceAverage;
+  const bestPerformance = logs?.bestPerformanceAverage;
 
   return (
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
@@ -38,7 +42,7 @@ export const CharacterHeader: React.FC<{
               <Skeleton h={85} w={85} radius={100} m={0} animate={!isError} />
             ) : (
               <Image
-                src={data?.thumbnailUrl}
+                src={data?.raiderIo?.thumbnailUrl}
                 alt={`${data?.name}`}
                 h={85}
                 w={85}
@@ -84,8 +88,8 @@ export const CharacterHeader: React.FC<{
         <Stack align="flex-end" gap={0}>
           <RankingGroup
             label="RIO score:"
-            value={data?.raiderIoScore?.all?.score}
-            color={data?.raiderIoScore?.all?.color}
+            value={raiderIoInfo?.all?.score}
+            color={raiderIoInfo?.all?.color}
             isLoading={loading}
           />
           <RankingGroup

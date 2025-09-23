@@ -18,16 +18,15 @@ export type Scalars = {
 
 export type Character = {
   __typename?: 'Character';
-  logs?: Maybe<Logs>;
   name: Scalars['String']['output'];
-  raiderIoScore?: Maybe<RioScore>;
+  raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
-  thumbnailUrl?: Maybe<Scalars['String']['output']>;
+  warcraftLogs?: Maybe<Logs>;
 };
 
 
-export type CharacterLogsArgs = {
+export type CharacterWarcraftLogsArgs = {
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
 };
@@ -74,12 +73,13 @@ export type RaidRanking = {
   totalKills?: Maybe<Scalars['Int']['output']>;
 };
 
-export type RioScore = {
-  __typename?: 'RioScore';
+export type RaiderIo = {
+  __typename?: 'RaiderIo';
   all?: Maybe<Segment>;
   dps?: Maybe<Segment>;
   healer?: Maybe<Segment>;
   tank?: Maybe<Segment>;
+  thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export enum RoleType {
@@ -104,7 +104,7 @@ export type CharacterLogsQueryVariables = Exact<{
 }>;
 
 
-export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', logs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, raidRankings?: Array<{ __typename?: 'RaidRanking', rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
+export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, raidRankings?: Array<{ __typename?: 'RaidRanking', rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
 
 export type CharacterSummaryQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -113,7 +113,7 @@ export type CharacterSummaryQueryVariables = Exact<{
 }>;
 
 
-export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, thumbnailUrl?: string | null, logs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null } | null, raiderIoScore?: { __typename?: 'RioScore', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
+export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null } | null, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -143,7 +143,7 @@ export const CharacterLogsDocument = new TypedDocumentString(`
     role: $role
     metric: $metric
   ) {
-    logs {
+    warcraftLogs {
       bestPerformanceAverage
       medianPerformanceAverage
       metric
@@ -164,7 +164,7 @@ export const CharacterLogsDocument = new TypedDocumentString(`
 export const CharacterSummaryDocument = new TypedDocumentString(`
     query CharacterSummary($name: String!, $realm: String!, $region: String!) {
   character(name: $name, realm: $realm, region: $region) {
-    logs {
+    warcraftLogs {
       bestPerformanceAverage
       medianPerformanceAverage
       metric
@@ -172,8 +172,8 @@ export const CharacterSummaryDocument = new TypedDocumentString(`
     name
     realm
     region
-    thumbnailUrl
-    raiderIoScore {
+    raiderIo {
+      thumbnailUrl
       all {
         score
         color

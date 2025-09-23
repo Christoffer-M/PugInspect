@@ -15,11 +15,12 @@
   "license": "ISC",
   "dependencies": {
     "@apollo/server": "^5.0.0",
+    "@repo/graphql-types": "workspace:*",
     "dotenv": "^17.2.2",
     "graphql": "^16.11.0",
+    "graphql-parse-resolve-info": "^4.14.1",
     "graphql-tag": "^2.12.6",
-    "node-fetch": "^3.3.2",
-    "@repo/graphql-types": "workspace:*"
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "6.0.0",

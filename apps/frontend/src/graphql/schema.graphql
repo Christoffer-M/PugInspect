@@ -3,12 +3,11 @@ schema {
 }
 
 type Character {
-  logs(metric: Metric, role: RoleType): Logs
   name: String!
-  raiderIoScore: RioScore
+  raiderIo: RaiderIo
   realm: String!
   region: String!
-  thumbnailUrl: String
+  warcraftLogs(metric: Metric, role: RoleType): Logs
 }
 
 type Encounter {
@@ -40,11 +39,12 @@ type RaidRanking {
   totalKills: Int
 }
 
-type RioScore {
+type RaiderIo {
   all: Segment
   dps: Segment
   healer: Segment
   tank: Segment
+  thumbnailUrl: String
 }
 
 enum RoleType {

@@ -22,12 +22,12 @@ export const characterTypedefs = gql`
     name: String!
     realm: String!
     region: String!
-    thumbnailUrl: String
-    raiderIoScore: RioScore
-    logs(role: RoleType, metric: Metric): Logs
+    raiderIo: RaiderIo
+    warcraftLogs(role: RoleType, metric: Metric): Logs
   }
 
-  type RioScore {
+  type RaiderIo {
+    thumbnailUrl: String
     all: Segment
     dps: Segment
     healer: Segment
