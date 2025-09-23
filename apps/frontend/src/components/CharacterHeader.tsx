@@ -81,7 +81,7 @@ export const CharacterHeader: React.FC<{
               ({region.toUpperCase()}) {upperCaseFirstLetter(server)}
             </Text>
 
-            <Text size="sm">Dracthyr</Text>
+            <Text size="sm">{raiderIoInfo?.race}</Text>
           </Stack>
         </Group>
 

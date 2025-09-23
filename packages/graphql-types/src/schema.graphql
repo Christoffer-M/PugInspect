@@ -51,6 +51,7 @@ type RaiderIo {
   all: Segment
   dps: Segment
   healer: Segment
+  race: String
   tank: Segment
   thumbnailUrl: String
 }

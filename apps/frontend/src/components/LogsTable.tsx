@@ -7,6 +7,9 @@ import {
   Title,
   Group,
   Select,
+  SegmentedControl,
+  Stack,
+  Text,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import {
@@ -50,32 +53,34 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
         c={
           ranking.rankPercent
             ? GetWarcraftLogRankingColors(ranking.rankPercent, theme)
-            : undefined
+            : "dimmed"
         }
         fw={500}
       >
-        {ranking.rankPercent?.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-          minimumFractionDigits: 2,
-        }) || "N/A"}
+        {ranking.rankPercent != null
+          ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })
+          : "N/A"}
       </Table.Td>
       <Table.Td
         c={
           ranking.medianPercent
             ? GetWarcraftLogRankingColors(ranking.medianPercent, theme)
-            : undefined
+            : "dimmed"
         }
         fw={500}
       >
-        {ranking.medianPercent?.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-          minimumFractionDigits: 2,
-        }) || "N/A"}
+        {ranking.medianPercent != null
+          ? Math.floor(ranking.medianPercent).toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })
+          : "N/A"}
       </Table.Td>
-      <Table.Td>
+      <Table.Td c={ranking.bestAmount ? undefined : "dimmed"} fw={500}>
         {ranking.bestAmount?.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-          minimumFractionDigits: 2,
+          maximumFractionDigits: 0,
+          minimumFractionDigits: 0,
         }) || "N/A"}
       </Table.Td>
       <Table.Td>
@@ -119,38 +124,43 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
       <Group justify="space-between" align="flex-start" p="sm">
         <Title order={3}>Raid logs</Title>
         <Group>
-          <Select
-            w={100}
-            label="Role"
-            labelProps={{ size: "xs" }}
-            onChange={(value) => {
-              if (value == null) return;
-              setSearch({ roleType: value as RoleType });
-            }}
-            value={searchRoleType}
-            data={Object.values(RoleType)}
-            comboboxProps={{
-              transitionProps: { transition: "pop", duration: 200 },
-            }}
-          />
-          <Select
-            w={100}
-            label="Metric"
-            labelProps={{ size: "xs" }}
-            onChange={(value) => {
-              if (value == null) return;
-              setSearch({ metric: value as Metric });
-            }}
-            value={searchMetric ?? metric}
-            data={Object.values(Metric)}
-            comboboxProps={{
-              transitionProps: { transition: "pop", duration: 200 },
-            }}
-          />
+          <Stack gap={0}>
+            <Text m="0" size="sm" fw={500}>
+              Role
+            </Text>
+            <SegmentedControl
+              fullWidth
+              data={Object.values(RoleType).map((role) => ({
+                label: role,
+                value: role,
+              }))}
+              value={searchRoleType}
+              onChange={(value) => {
+                if (value == null) return;
+                setSearch({ roleType: value as RoleType });
+              }}
+            />
+          </Stack>
+          <Stack gap={0}>
+            <Text m="0" size="sm" fw={500}>
+              Metric
+            </Text>
+            <SegmentedControl
+              fullWidth
+              data={Object.values(Metric).map((metric) => ({
+                label: metric.toUpperCase(),
+                value: metric,
+              }))}
+              value={searchMetric ?? metric ?? Metric.Dps}
+              onChange={(value) => {
+                if (value == null) return;
+                setSearch({ metric: value as Metric });
+              }}
+            />
+          </Stack>
           <Select
             w={100}
             label="Difficulty"
-            labelProps={{ size: "xs" }}
             onChange={(value) => {
               if (value == null) return;
               setSearch({ difficulty: value as Difficulty });

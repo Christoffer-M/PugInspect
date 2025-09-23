@@ -21,6 +21,7 @@ function mapRaiderIo(rioProfile: CharacterApiResponse): RaiderIo | null {
   const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
   return {
     thumbnailUrl: rioProfile.thumbnail_url,
+    race: rioProfile.race,
     all: segments
       ? { score: segments.all.score, color: segments.all.color }
       : null,
@@ -44,8 +45,6 @@ function mapWarcraftLogs(
     | undefined;
 
   if (!zoneRankings) return null;
-
-  console.log("zoneRankings", zoneRankings);
 
   return {
     bestPerformanceAverage: toFixedNumber(zoneRankings.bestPerformanceAverage),

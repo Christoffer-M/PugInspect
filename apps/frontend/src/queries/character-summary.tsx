@@ -21,6 +21,7 @@ export const CharacterDataQuery = graphql(`
       region
       raiderIo {
         thumbnailUrl
+        race
         all {
           score
           color

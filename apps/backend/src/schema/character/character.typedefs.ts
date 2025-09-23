@@ -36,6 +36,7 @@ export const characterTypedefs = gql`
 
   type RaiderIo {
     thumbnailUrl: String
+    race: String
     all: Segment
     dps: Segment
     healer: Segment
