@@ -96,6 +96,24 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
     </Table.Tr>
   ));
 
+  const setSearch = (
+    partial: Partial<{
+      roleType: RoleType;
+      metric: Metric;
+      difficulty: Difficulty;
+    }>,
+  ) => {
+    navigate({
+      to: ".",
+      search: (prev) => ({
+        roleType: partial.roleType ?? prev.roleType ?? RoleType.Any,
+        metric: partial.metric ?? prev.metric ?? metric ?? undefined,
+        difficulty:
+          partial.difficulty ?? prev.difficulty ?? difficulty ?? undefined,
+      }),
+    });
+  };
+
   return (
     <Paper withBorder w="100%">
       <Group justify="space-between" align="flex-start" p="sm">
@@ -107,10 +125,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             labelProps={{ size: "xs" }}
             onChange={(value) => {
               if (value == null) return;
-              navigate({
-                to: ".",
-                search: (prev) => ({ ...prev, roleType: value as RoleType }),
-              });
+              setSearch({ roleType: value as RoleType });
             }}
             value={searchRoleType}
             data={Object.values(RoleType)}
@@ -124,10 +139,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             labelProps={{ size: "xs" }}
             onChange={(value) => {
               if (value == null) return;
-              navigate({
-                to: ".",
-                search: (prev) => ({ ...prev, metric: value as Metric }),
-              });
+              setSearch({ metric: value as Metric });
             }}
             value={searchMetric ?? metric}
             data={Object.values(Metric)}
@@ -141,13 +153,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             labelProps={{ size: "xs" }}
             onChange={(value) => {
               if (value == null) return;
-              navigate({
-                to: ".",
-                search: (prev) => ({
-                  ...prev,
-                  difficulty: value as Difficulty,
-                }),
-              });
+              setSearch({ difficulty: value as Difficulty });
             }}
             value={searchDifficulty ?? difficulty}
             data={Object.values(Difficulty).toSorted(

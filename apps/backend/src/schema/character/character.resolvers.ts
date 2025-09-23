@@ -99,7 +99,7 @@ export default {
 
       if (logsRequested && raiderIoRequested) {
         // Parallelize both calls
-        [rioProfile, warcraftLogsProfile] = await Promise.all([
+        const [rioResult, logsResult] = await Promise.allSettled([
           RaiderIOService.getCharacterProfile(args),
           WarcraftLogsService.getCharacterProfile(
             args.name,
@@ -110,6 +110,11 @@ export default {
             args.difficulty
           ),
         ]);
+
+        rioProfile =
+          rioResult.status === "fulfilled" ? rioResult.value : undefined;
+        warcraftLogsProfile =
+          logsResult.status === "fulfilled" ? logsResult.value : undefined;
       } else if (raiderIoRequested) {
         // Only fetch RaiderIO
         rioProfile = await RaiderIOService.getCharacterProfile(args);

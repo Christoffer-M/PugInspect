@@ -16,7 +16,7 @@ import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterLogs } from "../queries/character-logs";
 
 type CharacterQueryParams = {
-  roleType?: RoleType;
+  roleType: RoleType;
   metric?: Metric;
   difficulty?: Difficulty;
 };
@@ -24,7 +24,7 @@ type CharacterQueryParams = {
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
   validateSearch: (search: Record<string, unknown>): CharacterQueryParams => ({
-    roleType: search.roleType as RoleType | undefined,
+    roleType: (search.roleType as RoleType) || RoleType.Any,
     metric: search.metric as Metric | undefined,
     difficulty: search.difficulty as Difficulty | undefined,
   }),
