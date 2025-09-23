@@ -23,11 +23,12 @@ export function parseRaiderIoUrl(
     /raider\.io\/characters\/([^/]+)\/([^/]+)\/([^/?#]+)/i,
   );
   if (!match) return null;
-  const [, region, realm, name] = match;
-  if (!region || !realm || !name) return null;
+  const [, region, rawRealm, name] = match;
+  if (!region || !rawRealm || !name) return null;
+
   return {
     region: region.toUpperCase(),
-    realm,
-    name,
+    realm: decodeURIComponent(rawRealm),
+    name: decodeURIComponent(name),
   };
 }

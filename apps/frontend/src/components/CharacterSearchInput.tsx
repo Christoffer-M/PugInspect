@@ -1,5 +1,5 @@
 import { Autocomplete, Flex, Select } from "@mantine/core";
-import { useRouter } from "@tanstack/react-router";
+import { useParams, useRouter } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { parseRaiderIoUrl, upperCaseFirstLetter } from "../util/util";
 
@@ -11,21 +11,36 @@ type CharacterSearchInputProps = {
   name?: string;
 };
 
-const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
-  region: initialRegion,
-  realm: initialRealm,
-  name: initialName,
-}) => {
+const CharacterSearchInput: React.FC<CharacterSearchInputProps> = () => {
+  const params = useParams({
+    from: "/$region/$realm/$name",
+    shouldThrow: false,
+  });
+
+  const initialRegion = params?.region;
+  const initialRealm = params?.realm;
+  const initialName = params?.name;
+
   const [searchTerm, setSearchTerm] = useState(
-    initialName && initialRealm
-      ? `${upperCaseFirstLetter(initialName)}-${upperCaseFirstLetter(initialRealm)}`
-      : "",
+    initialName && initialRealm ? `${initialName}-${initialRealm}` : "",
   );
   const [region, setRegion] = useState(
     initialRegion?.toUpperCase() || localStorage.getItem("region") || "EU",
   );
   const [errorText, setErrorText] = useState("");
   const router = useRouter();
+
+  const handleRaiderIoUrl = (url: string) => {
+    const parsed = parseRaiderIoUrl(url);
+    if (parsed) {
+      setSearchTerm(
+        `${upperCaseFirstLetter(parsed.name)}-${upperCaseFirstLetter(parsed.realm)}`,
+      );
+      setRegion(parsed.region.toUpperCase());
+    } else {
+      setErrorText("Invalid Raider.IO URL");
+    }
+  };
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -36,15 +51,14 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
       const trimmed = searchTerm.trim();
       if (!trimmed) return;
 
-      const raiderIoParse = parseRaiderIoUrl(trimmed);
-      if (raiderIoParse) {
-        router.navigate({
-          to: `/${raiderIoParse.region.toLowerCase()}/${raiderIoParse.realm.toLowerCase()}/${raiderIoParse.name.toLowerCase()}`,
-        });
+      // Split only on the first dash: name is before, realm is everything after
+      const dashIndex = trimmed.indexOf("-");
+      if (dashIndex === -1) {
+        setErrorText("Invalid character or realm");
         return;
       }
-
-      const [name, realm] = trimmed.split("-", 2).map((s) => s.trim());
+      const name = trimmed.slice(0, dashIndex).trim();
+      const realm = trimmed.slice(dashIndex + 1).trim();
 
       if (name && realm) {
         router.navigate({
@@ -79,6 +93,13 @@ const CharacterSearchInput: React.FC<CharacterSearchInputProps> = ({
         value={searchTerm}
         onChange={(search) => {
           if (errorText) setErrorText("");
+          const trimmed = search.trim();
+
+          if (trimmed.toLowerCase().startsWith("https://raider.io/")) {
+            handleRaiderIoUrl(trimmed);
+            return;
+          }
+
           setSearchTerm(search);
         }}
         style={{ width: 350 }}
