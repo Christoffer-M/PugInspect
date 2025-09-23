@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Box, Center, Flex, Title, Container } from "@mantine/core";
+import { Center, Flex, Title, Container, Text } from "@mantine/core";
 import CharacterSearchInput from "../components/CharacterSearchInput";
 import { Page } from "../components/Page";
 
@@ -7,7 +7,7 @@ const Home: React.FC = () => {
   return (
     <Page>
       <Container>
-        <Center h={500}>
+        <Center h={"80vh"}>
           <Flex direction="column" align="center">
             <Flex direction="column" align="center">
               <Title order={1}>Welcome to PugInspect</Title>
@@ -18,10 +18,14 @@ const Home: React.FC = () => {
             <Flex direction="column" align="center" mt="xl">
               <CharacterSearchInput />
 
-              <Box mt="md" style={{ color: "gray" }}>
+              <Text
+                mt="md"
+                c="dimmed"
+                style={{ maxWidth: 400, textAlign: "center" }}
+              >
                 Start by typing in a character name above to search for a
-                character.
-              </Box>
+                character. You can also paste a Raider.IO character profile URL.
+              </Text>
             </Flex>
           </Flex>
         </Center>

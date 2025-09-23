@@ -64,6 +64,7 @@ function mapWarcraftLogs(
       medianPercent: toFixedNumber(ranking.medianPercent),
       bestAmount: toFixedNumber(ranking.bestAmount),
       totalKills: toFixedNumber(ranking.totalKills),
+      spec: ranking.spec,
     })),
   };
 }
@@ -132,9 +133,9 @@ export default {
       }
 
       return {
-        name: args.name,
-        realm: args.realm,
-        region: args.region,
+        name: rioProfile ? rioProfile.name : args.name,
+        realm: rioProfile ? rioProfile.realm : args.realm,
+        region: rioProfile ? rioProfile.region : args.region,
         raiderIo:
           raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
         warcraftLogs:

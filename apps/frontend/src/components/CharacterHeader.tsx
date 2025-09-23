@@ -37,10 +37,17 @@ export const CharacterHeader: React.FC<{
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
       <Group justify="space-between">
         <Group h="100%">
-          <div>
-            {loading || isError ? (
+          {loading ? (
+            <>
               <Skeleton h={85} w={85} radius={100} m={0} animate={!isError} />
-            ) : (
+              <Stack gap={"xs"}>
+                <Skeleton height={20} width={200} animate={!isError} />
+                <Skeleton height={16} width={160} animate={!isError} />
+                <Skeleton height={16} width={160} animate={!isError} />
+              </Stack>
+            </>
+          ) : (
+            <>
               <Image
                 src={data?.raiderIo?.thumbnailUrl}
                 alt={`${data?.name}`}
@@ -49,40 +56,40 @@ export const CharacterHeader: React.FC<{
                 fit="contain"
                 radius={100}
                 m={0}
+                fallbackSrc={`https://placehold.co/85x85?text=No+Image`}
               />
-            )}
-          </div>
+              <Stack
+                gap={0}
+                justify="flex-start"
+                h="100%"
+                flex={1}
+                align="flex-start"
+              >
+                <Group gap="xs" justify="flex-start" align="center">
+                  <Title order={3} m={0}>
+                    {upperCaseFirstLetter(data?.name || name)}
+                  </Title>
+                  <ExternalLinkIcon
+                    href={`https://raider.io/characters/${region}/${server}/${name}`}
+                    icon={RaiderIoIocn}
+                    size={22}
+                  />
 
-          <Stack
-            gap={0}
-            justify="flex-start"
-            h="100%"
-            flex={1}
-            align="flex-start"
-          >
-            <Group gap="xs" justify="flex-start" align="center">
-              <Title order={3} m={0}>
-                {upperCaseFirstLetter(name)}
-              </Title>
-              <ExternalLinkIcon
-                href={`https://raider.io/characters/${region}/${server}/${name}`}
-                icon={RaiderIoIocn}
-                size={22}
-              />
+                  <ExternalLinkIcon
+                    href={`https://www.warcraftlogs.com/character/${region}/${server}/${name}`}
+                    icon={WarcraftLogsIcon}
+                    size={22}
+                  />
+                </Group>
 
-              <ExternalLinkIcon
-                href={`https://www.warcraftlogs.com/character/${region}/${server}/${name}`}
-                icon={WarcraftLogsIcon}
-                size={22}
-              />
-            </Group>
+                <Text size="sm" m={0}>
+                  ({data?.region.toUpperCase()}) {data?.realm}
+                </Text>
 
-            <Text size="sm" m={0}>
-              ({region.toUpperCase()}) {upperCaseFirstLetter(server)}
-            </Text>
-
-            <Text size="sm">{raiderIoInfo?.race}</Text>
-          </Stack>
+                <Text size="sm">{raiderIoInfo?.race}</Text>
+              </Stack>
+            </>
+          )}
         </Group>
 
         <Stack align="flex-end" gap={0}>

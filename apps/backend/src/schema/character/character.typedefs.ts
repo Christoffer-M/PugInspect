@@ -67,6 +67,7 @@ export const characterTypedefs = gql`
     medianPercent: Float
     bestAmount: Float
     totalKills: Int
+    spec: String
   }
 
   type Encounter {

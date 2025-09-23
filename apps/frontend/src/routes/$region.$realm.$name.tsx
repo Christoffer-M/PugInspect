@@ -5,6 +5,7 @@ import {
   Group,
   ActionIcon,
   Tooltip,
+  Title,
 } from "@mantine/core";
 import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
@@ -72,36 +73,42 @@ function CharacterPage() {
   return (
     <Page>
       <Container>
-        <Stack mt="md" align="center" justify="center">
-          <Group justify="flex-end" w={"100%"} align="flex-start" gap={"xs"}>
-            <Text size="sm" c="dimmed" m={0}>
-              {`Last updated:  ${characterSummaryData ? new Date(dataUpdatedAt).toLocaleTimeString() : "--:--:--"}`}
-            </Text>
-            <Tooltip label={"Refresh data"} withArrow openDelay={150}>
-              <ActionIcon
-                size={"md"}
-                variant="outline"
-                onClick={() => refetchData()}
-                loaderProps={{
-                  size: "xs",
-                  type: "dots",
-                }}
-                loading={isFetchingSummary}
-              >
-                <IconReload size={18} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-          <CharacterHeader
-            name={name}
-            region={region}
-            server={realm}
-            data={characterSummaryData}
-            loading={isFetchingSummary}
-            isError={isError}
-          />
+        <Stack mt="md" align="center" justify="center" gap={0}>
+          <Group justify="space-between" w={"100%"} align="flex-start">
+            <Title order={3}>Profile</Title>
 
-          <LogsTable logs={logsData} isFetching={isFetchingLogs} />
+            <Group>
+              <Text size="sm" c="dimmed" m={0}>
+                {`Last updated:  ${characterSummaryData ? new Date(dataUpdatedAt).toLocaleTimeString() : "--:--:--"}`}
+              </Text>
+              <Tooltip label={"Refresh data"} withArrow openDelay={150}>
+                <ActionIcon
+                  size={"md"}
+                  variant="outline"
+                  onClick={() => refetchData()}
+                  loaderProps={{
+                    size: "xs",
+                    type: "dots",
+                  }}
+                  loading={isFetchingSummary}
+                >
+                  <IconReload size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Group>
+          <Stack gap={"md"} w={"100%"} align="center">
+            <CharacterHeader
+              name={name}
+              region={region}
+              server={realm}
+              data={characterSummaryData}
+              loading={isFetchingSummary}
+              isError={isError}
+            />
+
+            <LogsTable logs={logsData} isFetching={isFetchingLogs} />
+          </Stack>
         </Stack>
       </Container>
     </Page>

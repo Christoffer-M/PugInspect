@@ -75,6 +75,7 @@ export type RaidRanking = {
   encounter?: Maybe<Encounter>;
   medianPercent?: Maybe<Scalars['Float']['output']>;
   rankPercent?: Maybe<Scalars['Float']['output']>;
+  spec?: Maybe<Scalars['String']['output']>;
   totalKills?: Maybe<Scalars['Int']['output']>;
 };
 

@@ -5,11 +5,11 @@ import {
   Paper,
   useMantineTheme,
   Title,
-  Group,
-  Select,
   SegmentedControl,
   Stack,
   Text,
+  Grid,
+  Group,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import {
@@ -77,11 +77,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             })
           : "N/A"}
       </Table.Td>
-      <Table.Td c={ranking.bestAmount ? undefined : "dimmed"}>
-        {ranking.bestAmount?.toLocaleString(undefined, {
-          maximumFractionDigits: 0,
-          minimumFractionDigits: 0,
-        }) || "N/A"}
+      <Table.Td c={ranking.spec ? undefined : "dimmed"}>
+        {ranking.spec || "N/A"}
       </Table.Td>
       <Table.Td c={ranking.totalKills ? undefined : "dimmed"}>
         {ranking.totalKills?.toLocaleString(undefined, {
@@ -120,12 +117,32 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
   };
 
   return (
-    <Paper withBorder w="100%">
-      <Group justify="space-between" align="flex-start" p="sm">
+    <Stack w={"100%"} gap={0}>
+      <Group justify="space-between" align="center" mb={"xs"}>
         <Title order={3}>Raid logs</Title>
-        <Group>
-          <Stack gap={0}>
-            <Text m="0" size="sm" fw={500}>
+      </Group>
+
+      <Paper withBorder w="100%">
+        <Grid gutter={"md"} p={"xs"}>
+          <Grid.Col span={"auto"}>
+            <Text m="0" size="sm" fw={500} w={"fit-content"}>
+              Difficulty
+            </Text>
+            <SegmentedControl
+              fullWidth
+              data={difficultyOrder.map((difficulty) => ({
+                label: difficulty,
+                value: difficulty,
+              }))}
+              value={searchDifficulty ?? difficulty ?? difficultyOrder[0]}
+              onChange={(value) => {
+                if (value == null) return;
+                setSearch({ difficulty: value as Difficulty });
+              }}
+            />
+          </Grid.Col>
+          <Grid.Col span={"auto"}>
+            <Text m="0" size="sm" fw={500} w={"fit-content"}>
               Role
             </Text>
             <SegmentedControl
@@ -140,9 +157,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
                 setSearch({ roleType: value as RoleType });
               }}
             />
-          </Stack>
-          <Stack gap={0}>
-            <Text m="0" size="sm" fw={500}>
+          </Grid.Col>
+          <Grid.Col span={"auto"}>
+            <Text m="0" size="sm" fw={500} w={"fit-content"}>
               Metric
             </Text>
             <SegmentedControl
@@ -157,49 +174,34 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
                 setSearch({ metric: value as Metric });
               }}
             />
-          </Stack>
-          <Select
-            w={100}
-            label="Difficulty"
-            onChange={(value) => {
-              if (value == null) return;
-              setSearch({ difficulty: value as Difficulty });
-            }}
-            value={searchDifficulty ?? difficulty}
-            data={Object.values(Difficulty).toSorted(
-              (a, b) => difficultyOrder.indexOf(a) - difficultyOrder.indexOf(b),
-            )}
-            comboboxProps={{
-              transitionProps: { transition: "pop", duration: 200 },
-            }}
-          />
-        </Group>
-      </Group>
+          </Grid.Col>
+        </Grid>
 
-      <Table>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Encounter</Table.Th>
-            <Table.Th>Rank Percent</Table.Th>
-            <Table.Th>Median Percent</Table.Th>
-            <Table.Th>Highest {metric?.toUpperCase()}</Table.Th>
-            <Table.Th>Kills</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {isFetching ? (
-            skeletonRows
-          ) : rows.length > 0 ? (
-            rows
-          ) : (
+        <Table>
+          <Table.Thead>
             <Table.Tr>
-              <Table.Td colSpan={5} style={{ textAlign: "center" }}>
-                No logs available.
-              </Table.Td>
+              <Table.Th>Encounter</Table.Th>
+              <Table.Th>Rank Percent</Table.Th>
+              <Table.Th>Median Percent</Table.Th>
+              <Table.Th>Spec</Table.Th>
+              <Table.Th>Kills</Table.Th>
             </Table.Tr>
-          )}
-        </Table.Tbody>
-      </Table>
-    </Paper>
+          </Table.Thead>
+          <Table.Tbody>
+            {isFetching ? (
+              skeletonRows
+            ) : rows.length > 0 ? (
+              rows
+            ) : (
+              <Table.Tr>
+                <Table.Td colSpan={5} style={{ textAlign: "center" }}>
+                  No logs available.
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Paper>
+    </Stack>
   );
 };

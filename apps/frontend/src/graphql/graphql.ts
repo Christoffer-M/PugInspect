@@ -79,6 +79,7 @@ export type RaidRanking = {
   encounter?: Maybe<Encounter>;
   medianPercent?: Maybe<Scalars['Float']['output']>;
   rankPercent?: Maybe<Scalars['Float']['output']>;
+  spec?: Maybe<Scalars['String']['output']>;
   totalKills?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -115,7 +116,7 @@ export type CharacterLogsQueryVariables = Exact<{
 }>;
 
 
-export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
+export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
 
 export type CharacterSummaryQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -161,6 +162,7 @@ export const CharacterLogsDocument = new TypedDocumentString(`
       metric
       difficulty
       raidRankings {
+        spec
         encounter {
           id
           name

@@ -37,6 +37,7 @@ const query = graphql(`
         metric
         difficulty
         raidRankings {
+          spec
           encounter {
             id
             name
