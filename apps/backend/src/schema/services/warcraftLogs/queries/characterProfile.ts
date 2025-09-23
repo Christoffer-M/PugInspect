@@ -5,8 +5,8 @@ export const CHARACTER_PROFILE = gql`
     $name: String!
     $server: String!
     $region: String!
-    $zoneID: Int!
-    $difficulty: Int!
+    $zoneID: Int
+    $difficulty: Int
     $role: RoleType
     $metric: CharacterRankingMetricType
   ) {

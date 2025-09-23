@@ -4,10 +4,15 @@ import { graphql } from "../graphql";
 import {
   CharacterLogsQuery,
   CharacterLogsQueryVariables,
+  Difficulty,
   Metric,
   RoleType,
 } from "../graphql/graphql";
 import { queryKeys } from "../queryKeys";
+
+export type CharacterLogsWarcraftLogs = NonNullable<
+  CharacterLogsQuery["character"]
+>["warcraftLogs"];
 
 const query = graphql(`
   query CharacterLogs(
@@ -16,6 +21,7 @@ const query = graphql(`
     $region: String!
     $role: RoleType
     $metric: Metric
+    $difficulty: Difficulty
   ) {
     character(
       name: $name
@@ -23,11 +29,13 @@ const query = graphql(`
       region: $region
       role: $role
       metric: $metric
+      difficulty: $difficulty
     ) {
       warcraftLogs {
         bestPerformanceAverage
         medianPerformanceAverage
         metric
+        difficulty
         raidRankings {
           encounter {
             id
@@ -49,6 +57,7 @@ export const useCharacterLogs = ({
   region,
   role,
   metric,
+  difficulty,
 }: CharacterLogsQueryVariables) =>
   useQuery({
     queryKey: queryKeys.characterLogs(
@@ -57,9 +66,10 @@ export const useCharacterLogs = ({
       region,
       role as RoleType | undefined,
       metric as Metric | undefined,
+      difficulty as Difficulty | undefined,
     ),
     retry: false,
-    queryFn: async () => {
+    queryFn: async (): Promise<CharacterLogsWarcraftLogs> => {
       const response = await execute<
         CharacterLogsQuery,
         CharacterLogsQueryVariables
@@ -69,7 +79,11 @@ export const useCharacterLogs = ({
         region,
         role,
         metric,
+        difficulty,
       });
+
+      console.log(response);
+      console.log(response.character?.warcraftLogs);
 
       return response.character?.warcraftLogs;
     },

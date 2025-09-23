@@ -9,21 +9,37 @@ import {
   Select,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
-import { Logs, Metric, RoleType } from "../graphql/graphql";
+import {
+  CharacterLogsQuery,
+  Difficulty,
+  Metric,
+  RoleType,
+} from "../graphql/graphql";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 
+export type CharacterLogsWarcraftLogs = NonNullable<
+  CharacterLogsQuery["character"]
+>["warcraftLogs"];
+
+const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
+
 type LogsTableProps = {
-  logs?: Logs | null;
+  logs?: CharacterLogsWarcraftLogs | null;
   isFetching: boolean;
 };
 
 export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
-  const { roleType: searchRoleType, metric: searchMetric } = useSearch({
+  const {
+    roleType: searchRoleType,
+    metric: searchMetric,
+    difficulty: searchDifficulty,
+  } = useSearch({
     from: "/$region/$realm/$name",
   });
 
   const metric = logs?.metric;
   const rankings = logs?.raidRankings || [];
+  const difficulty = logs?.difficulty;
 
   const navigate = useNavigate();
   const theme = useMantineTheme();
@@ -90,6 +106,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             label="Role"
             labelProps={{ size: "xs" }}
             onChange={(value) => {
+              if (value == null) return;
               navigate({
                 to: ".",
                 search: (prev) => ({ ...prev, roleType: value as RoleType }),
@@ -106,6 +123,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             label="Metric"
             labelProps={{ size: "xs" }}
             onChange={(value) => {
+              if (value == null) return;
               navigate({
                 to: ".",
                 search: (prev) => ({ ...prev, metric: value as Metric }),
@@ -113,6 +131,28 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             }}
             value={searchMetric ?? metric}
             data={Object.values(Metric)}
+            comboboxProps={{
+              transitionProps: { transition: "pop", duration: 200 },
+            }}
+          />
+          <Select
+            w={100}
+            label="Difficulty"
+            labelProps={{ size: "xs" }}
+            onChange={(value) => {
+              if (value == null) return;
+              navigate({
+                to: ".",
+                search: (prev) => ({
+                  ...prev,
+                  difficulty: value as Difficulty,
+                }),
+              });
+            }}
+            value={searchDifficulty ?? difficulty}
+            data={Object.values(Difficulty).toSorted(
+              (a, b) => difficultyOrder.indexOf(a) - difficultyOrder.indexOf(b),
+            )}
             comboboxProps={{
               transitionProps: { transition: "pop", duration: 200 },
             }}

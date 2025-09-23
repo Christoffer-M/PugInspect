@@ -31,6 +31,13 @@ export type CharacterWarcraftLogsArgs = {
   role?: InputMaybe<RoleType>;
 };
 
+export enum Difficulty {
+  Heroic = 'Heroic',
+  Lfr = 'LFR',
+  Mythic = 'Mythic',
+  Normal = 'Normal'
+}
+
 export type Encounter = {
   __typename?: 'Encounter';
   id: Scalars['Int']['output'];
@@ -40,6 +47,7 @@ export type Encounter = {
 export type Logs = {
   __typename?: 'Logs';
   bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  difficulty?: Maybe<Difficulty>;
   medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
   metric?: Maybe<Metric>;
   raidRankings?: Maybe<Array<RaidRanking>>;
@@ -57,6 +65,7 @@ export type Query = {
 
 
 export type QueryCharacterArgs = {
+  difficulty?: InputMaybe<Difficulty>;
   metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
@@ -101,10 +110,11 @@ export type CharacterLogsQueryVariables = Exact<{
   region: Scalars['String']['input'];
   role?: InputMaybe<RoleType>;
   metric?: InputMaybe<Metric>;
+  difficulty?: InputMaybe<Difficulty>;
 }>;
 
 
-export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, raidRankings?: Array<{ __typename?: 'RaidRanking', rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
+export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
 
 export type CharacterSummaryQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -135,18 +145,20 @@ export class TypedDocumentString<TResult, TVariables>
 }
 
 export const CharacterLogsDocument = new TypedDocumentString(`
-    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric) {
+    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty) {
   character(
     name: $name
     realm: $realm
     region: $region
     role: $role
     metric: $metric
+    difficulty: $difficulty
   ) {
     warcraftLogs {
       bestPerformanceAverage
       medianPerformanceAverage
       metric
+      difficulty
       raidRankings {
         encounter {
           id

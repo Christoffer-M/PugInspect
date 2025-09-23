@@ -12,25 +12,31 @@ import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
 import { useCharacterSummaryQuery } from "../queries/character-summary";
 import { IconReload } from "@tabler/icons-react";
-import { Metric, RoleType } from "../graphql/graphql";
+import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterLogs } from "../queries/character-logs";
 
 type CharacterQueryParams = {
-  roleType: RoleType;
+  roleType?: RoleType;
   metric?: Metric;
+  difficulty?: Difficulty;
 };
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
   validateSearch: (search: Record<string, unknown>): CharacterQueryParams => ({
-    roleType: (search.roleType as RoleType) || RoleType.Any,
+    roleType: search.roleType as RoleType | undefined,
     metric: search.metric as Metric | undefined,
+    difficulty: search.difficulty as Difficulty | undefined,
   }),
 });
 
 function CharacterPage() {
   const { region, name, realm } = useParams({ from: Route.id });
-  const { roleType: searchRoleType, metric: searchMetric } = useSearch({
+  const {
+    roleType: searchRoleType,
+    metric: searchMetric,
+    difficulty: searchDifficulty,
+  } = useSearch({
     from: Route.id,
   });
   const {
@@ -55,6 +61,7 @@ function CharacterPage() {
     region,
     role: searchRoleType,
     metric: searchMetric,
+    difficulty: searchDifficulty,
   });
 
   const refetchData = () => {

@@ -8,17 +8,35 @@ import {
 } from "./generated/index.js";
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { GraphQLError } from "graphql";
-import { Metric, RoleType } from "@repo/graphql-types";
+import { Difficulty, Metric, RoleType } from "@repo/graphql-types";
 
 export class WarcraftLogsService {
   private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
+
+  private static mapDifficulty(
+    difficulty?: InputMaybe<Difficulty>
+  ): number | undefined {
+    switch (difficulty) {
+      case "LFR":
+        return 1;
+      case "Normal":
+        return 3;
+      case "Heroic":
+        return 4;
+      case "Mythic":
+        return 5;
+      default:
+        return undefined;
+    }
+  }
 
   static async getCharacterProfile(
     name: string,
     realm: string,
     region: string,
     role?: InputMaybe<RoleType>,
-    metric?: InputMaybe<Metric>
+    metric?: InputMaybe<Metric>,
+    difficulty?: InputMaybe<Difficulty>
   ): Promise<CharacterProfileQuery["characterData"]> {
     const apiKey = config.warcraftLogsBearerToken;
     if (!apiKey) throw new Error("API key not configured.");
@@ -27,8 +45,8 @@ export class WarcraftLogsService {
       name,
       server: realm,
       region,
-      zoneID: 44, // Example zone ID, replace with actual as needed
-      difficulty: 4, // Example difficulty, replace with actual as needed
+      zoneID: undefined,
+      difficulty: this.mapDifficulty(difficulty),
       role,
       metric,
     };
@@ -49,6 +67,7 @@ export class WarcraftLogsService {
         this.endpoint,
         options
       );
+
       return response.data.characterData;
     } catch (error) {
       throw new GraphQLError(

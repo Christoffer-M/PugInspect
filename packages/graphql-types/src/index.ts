@@ -29,6 +29,12 @@ export type CharacterWarcraftLogsArgs = {
   role?: InputMaybe<RoleType>;
 };
 
+export type Difficulty =
+  | 'Heroic'
+  | 'LFR'
+  | 'Mythic'
+  | 'Normal';
+
 export type Encounter = {
   __typename?: 'Encounter';
   id: Scalars['Int']['output'];
@@ -38,6 +44,7 @@ export type Encounter = {
 export type Logs = {
   __typename?: 'Logs';
   bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  difficulty?: Maybe<Difficulty>;
   medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
   metric?: Maybe<Metric>;
   raidRankings?: Maybe<Array<RaidRanking>>;
@@ -54,6 +61,7 @@ export type Query = {
 
 
 export type QueryCharacterArgs = {
+  difficulty?: InputMaybe<Difficulty>;
   metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];

@@ -2,47 +2,58 @@ import { GraphQLError, GraphQLResolveInfo } from "graphql";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
 import { ZoneRanking } from "../services/warcraftLogs/model/ZoneRankings.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
-import { Character, QueryCharacterArgs } from "@repo/graphql-types";
+import {
+  Character,
+  Logs,
+  QueryCharacterArgs,
+  RaiderIo,
+} from "@repo/graphql-types";
 import { CharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
 import { CharacterProfileQuery } from "../services/warcraftLogs/generated/index.js";
-import {
-  FieldsByTypeName,
-  parseResolveInfo,
-  simplifyParsedResolveInfoFragmentWithType,
-} from "graphql-parse-resolve-info";
+import { parseResolveInfo } from "graphql-parse-resolve-info";
+import { mapDifficultyIdToName } from "../utils/helpers.js";
 
 function toFixedNumber(value: number | undefined, digits = 2): number | null {
   return typeof value === "number" ? parseFloat(value.toFixed(digits)) : null;
 }
 
-function mapRaiderIo(rioProfile?: CharacterApiResponse) {
-  const segments = rioProfile?.mythic_plus_scores_by_season?.[0]?.segments;
-  console.log("segments", segments);
-
-  if (!segments) return null;
+function mapRaiderIo(rioProfile: CharacterApiResponse): RaiderIo | null {
+  const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
   return {
     thumbnailUrl: rioProfile.thumbnail_url,
-    all: { score: segments.all.score, color: segments.all.color },
-    dps: { score: segments.dps.score, color: segments.dps.color },
-    healer: { score: segments.healer.score, color: segments.healer.color },
-    tank: { score: segments.tank.score, color: segments.tank.color },
+    all: segments
+      ? { score: segments.all.score, color: segments.all.color }
+      : null,
+    dps: segments
+      ? { score: segments.dps.score, color: segments.dps.color }
+      : null,
+    healer: segments
+      ? { score: segments.healer.score, color: segments.healer.color }
+      : null,
+    tank: segments
+      ? { score: segments.tank.score, color: segments.tank.color }
+      : null,
   };
 }
 
 function mapWarcraftLogs(
-  characterData?: CharacterProfileQuery["characterData"]
-) {
+  characterData: CharacterProfileQuery["characterData"]
+): Logs | null {
   const zoneRankings = characterData?.character?.zoneRankings as
     | ZoneRanking
     | undefined;
 
   if (!zoneRankings) return null;
+
+  console.log("zoneRankings", zoneRankings);
+
   return {
     bestPerformanceAverage: toFixedNumber(zoneRankings.bestPerformanceAverage),
     medianPerformanceAverage: toFixedNumber(
       zoneRankings.medianPerformanceAverage
     ),
     metric: zoneRankings.metric,
+    difficulty: mapDifficultyIdToName(zoneRankings.difficulty),
     raidRankings: zoneRankings.rankings?.map((ranking) => ({
       encounter:
         ranking.encounter &&
@@ -95,7 +106,8 @@ export default {
             args.realm,
             args.region,
             args.role,
-            args.metric
+            args.metric,
+            args.difficulty
           ),
         ]);
       } else if (raiderIoRequested) {
@@ -109,7 +121,8 @@ export default {
           args.realm,
           args.region,
           args.role,
-          args.metric
+          args.metric,
+          args.difficulty
         );
         rioProfile = undefined;
       }
@@ -118,10 +131,12 @@ export default {
         name: args.name,
         realm: args.realm,
         region: args.region,
-        raiderIo: raiderIoRequested ? mapRaiderIo(rioProfile) : null,
-        warcraftLogs: logsRequested
-          ? mapWarcraftLogs(warcraftLogsProfile)
-          : null,
+        raiderIo:
+          raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
+        warcraftLogs:
+          logsRequested && warcraftLogsProfile
+            ? mapWarcraftLogs(warcraftLogsProfile)
+            : null,
       };
     },
   },

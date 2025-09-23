@@ -10,6 +10,13 @@ type Character {
   warcraftLogs(metric: Metric, role: RoleType): Logs
 }
 
+enum Difficulty {
+  Heroic
+  LFR
+  Mythic
+  Normal
+}
+
 type Encounter {
   id: Int!
   name: String!
@@ -17,6 +24,7 @@ type Encounter {
 
 type Logs {
   bestPerformanceAverage: Float
+  difficulty: Difficulty
   medianPerformanceAverage: Float
   metric: Metric
   raidRankings: [RaidRanking!]
@@ -28,7 +36,7 @@ enum Metric {
 }
 
 type Query {
-  character(metric: Metric, name: String!, realm: String!, region: String!, role: RoleType): Character
+  character(difficulty: Difficulty, metric: Metric, name: String!, realm: String!, region: String!, role: RoleType): Character
 }
 
 type RaidRanking {

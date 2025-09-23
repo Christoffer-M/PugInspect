@@ -8,7 +8,15 @@ export const characterTypedefs = gql`
       region: String!
       role: RoleType
       metric: Metric
+      difficulty: Difficulty
     ): Character
+  }
+
+  enum Difficulty {
+    LFR
+    Normal
+    Heroic
+    Mythic
   }
 
   enum RoleType {
@@ -43,6 +51,7 @@ export const characterTypedefs = gql`
     bestPerformanceAverage: Float
     medianPerformanceAverage: Float
     metric: Metric
+    difficulty: Difficulty
     raidRankings: [RaidRanking!]
   }
 

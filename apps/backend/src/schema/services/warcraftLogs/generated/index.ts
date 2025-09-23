@@ -2340,8 +2340,8 @@ export type CharacterProfileQueryVariables = Exact<{
   name: Scalars['String']['input'];
   server: Scalars['String']['input'];
   region: Scalars['String']['input'];
-  zoneID: Scalars['Int']['input'];
-  difficulty: Scalars['Int']['input'];
+  zoneID?: InputMaybe<Scalars['Int']['input']>;
+  difficulty?: InputMaybe<Scalars['Int']['input']>;
   role?: InputMaybe<RoleType>;
   metric?: InputMaybe<CharacterRankingMetricType>;
 }>;
