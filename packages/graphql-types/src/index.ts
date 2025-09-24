@@ -82,6 +82,7 @@ export type RaidRanking = {
 export type RaiderIo = {
   __typename?: 'RaiderIo';
   all?: Maybe<Segment>;
+  class?: Maybe<Scalars['String']['output']>;
   dps?: Maybe<Segment>;
   healer?: Maybe<Segment>;
   race?: Maybe<Scalars['String']['output']>;

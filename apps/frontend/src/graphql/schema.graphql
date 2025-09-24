@@ -50,6 +50,7 @@ type RaidRanking {
 
 type RaiderIo {
   all: Segment
+  class: String
   dps: Segment
   healer: Segment
   race: String

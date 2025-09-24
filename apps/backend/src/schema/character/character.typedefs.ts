@@ -35,6 +35,7 @@ export const characterTypedefs = gql`
   }
 
   type RaiderIo {
+    class: String
     thumbnailUrl: String
     race: String
     all: Segment

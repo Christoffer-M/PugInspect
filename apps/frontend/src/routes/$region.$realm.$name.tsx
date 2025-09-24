@@ -107,7 +107,11 @@ function CharacterPage() {
               isError={isError}
             />
 
-            <LogsTable logs={logsData} isFetching={isFetchingLogs} />
+            <LogsTable
+              logs={logsData}
+              isFetching={isFetchingLogs}
+              class={characterSummaryData?.raiderIo?.class}
+            />
           </Stack>
         </Stack>
       </Container>

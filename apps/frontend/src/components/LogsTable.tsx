@@ -10,11 +10,13 @@ import {
   Text,
   Grid,
   Group,
+  Image,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import {
   CharacterLogsQuery,
   Difficulty,
+  Maybe,
   Metric,
   RoleType,
 } from "../graphql/graphql";
@@ -28,10 +30,15 @@ const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
 
 type LogsTableProps = {
   logs?: CharacterLogsWarcraftLogs | null;
+  class?: Maybe<string> | undefined;
   isFetching: boolean;
 };
 
-export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
+export const LogsTable: React.FC<LogsTableProps> = ({
+  logs,
+  isFetching,
+  class: className,
+}) => {
   const {
     roleType: searchRoleType,
     metric: searchMetric,
@@ -44,6 +51,11 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
   const rankings = logs?.raidRankings || [];
   const difficulty = logs?.difficulty;
 
+  const getClassSrc = (spec: string | undefined | null) => {
+    if (!className || !spec) return null;
+    return `../../icons/class-icons/classicon_${className.toLowerCase()}_${spec.toLowerCase()}.svg`;
+  };
+
   const navigate = useNavigate();
   const theme = useMantineTheme();
   const rows = rankings?.map((ranking) => (
@@ -55,13 +67,29 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             ? GetWarcraftLogRankingColors(ranking.rankPercent, theme)
             : "dimmed"
         }
-        fw={500}
+        fw={700}
       >
-        {ranking.rankPercent != null
-          ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
-              maximumFractionDigits: 0,
-            })
-          : "N/A"}
+        <Grid align="center">
+          <Grid.Col span={2}>
+            {ranking.rankPercent != null
+              ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
+                  maximumFractionDigits: 0,
+                })
+              : "N/A"}
+          </Grid.Col>
+          <Grid.Col span={3}>
+            {ranking.spec && className && (
+              <Image
+                h={22}
+                w={22}
+                fit="contain"
+                radius={"xs"}
+                alt={`${className} ${ranking.spec}`}
+                src={getClassSrc(ranking.spec)}
+              />
+            )}
+          </Grid.Col>
+        </Grid>
       </Table.Td>
       <Table.Td
         c={
@@ -69,7 +97,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             ? GetWarcraftLogRankingColors(ranking.medianPercent, theme)
             : "dimmed"
         }
-        fw={500}
+        fw={700}
       >
         {ranking.medianPercent != null
           ? Math.floor(ranking.medianPercent).toLocaleString(undefined, {
@@ -77,10 +105,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
             })
           : "N/A"}
       </Table.Td>
-      <Table.Td c={ranking.spec ? undefined : "dimmed"}>
-        {ranking.spec || "N/A"}
-      </Table.Td>
-      <Table.Td c={ranking.totalKills ? undefined : "dimmed"}>
+      <Table.Td c={ranking.totalKills ? undefined : "dimmed"} fw={700}>
         {ranking.totalKills?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
         }) || "N/A"}
@@ -189,7 +214,6 @@ export const LogsTable: React.FC<LogsTableProps> = ({ logs, isFetching }) => {
               <Table.Th>Encounter</Table.Th>
               <Table.Th>Rank Percent</Table.Th>
               <Table.Th>Median Percent</Table.Th>
-              <Table.Th>Spec</Table.Th>
               <Table.Th>Kills</Table.Th>
             </Table.Tr>
           </Table.Thead>
