@@ -1,1 +1,1 @@
-web: cd apps/frontend && pnpm run dev
+web: cd apps/frontend && pnpm run start
