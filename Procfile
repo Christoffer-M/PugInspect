@@ -1,1 +1,1 @@
-web: turbo dev
+web: cd apps/backend && pnpm run dev
