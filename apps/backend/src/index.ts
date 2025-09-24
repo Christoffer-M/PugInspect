@@ -1,19 +1,31 @@
-import { ApolloServer } from "@apollo/server";
-import { startStandaloneServer } from "@apollo/server/standalone";
+import { ApolloServer, BaseContext } from "@apollo/server";
 import typeDefs from "./schema/typeDefs.js";
 import resolvers from "./schema/resolvers.js";
 import { config } from "./config/index.js";
+import express from "express";
+import http from "http";
+import cors from "cors";
+import { expressMiddleware } from "@as-integrations/express5";
 
-const server = new ApolloServer({
+const app = express();
+
+const httpServer = http.createServer(app);
+
+const server = new ApolloServer<BaseContext>({
   typeDefs,
   resolvers,
 });
 
-const { url } = await startStandaloneServer(server, {
-  listen: { port: config.port },
-  context: async () => ({
-    // You can pass auth, loaders, cache here
-  }),
-});
+await server.start();
+app.use(
+  "/graphql",
+  cors<cors.CorsRequest>(),
+  express.json(),
+  expressMiddleware(server)
+);
 
-console.log(`🚀 Server ready at ${url}`);
+// Modified server startup
+await new Promise<void>((resolve) =>
+  httpServer.listen({ port: config.port }, resolve)
+);
+console.log(`🚀 Server ready on port ${config.port}`);

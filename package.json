@@ -2,6 +2,11 @@
   "name": "pug-inspect",
   "private": true,
   "scripts": {
+    "build:frontend": "turbo run build --filter=frontend",
+    "build:backend": "turbo run build --filter=backend",
+    "heroku-postbuild": "if [ $CLIENT_ENV ]; then pnpm run prod-frontend; elif [ $SERVER_ENV ]; then pnpm run prod-backend; else echo no environment detected, please set CLIENT_ENV or SERVER_ENV; fi",
+    "prod-frontend": "pnpm run build:frontend",
+    "prod-backend": "pnpm run build:backend",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

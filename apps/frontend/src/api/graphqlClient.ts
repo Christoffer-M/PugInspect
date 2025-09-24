@@ -1,10 +1,11 @@
+import { config } from "../config ";
 import { TypedDocumentString } from "../graphql/graphql";
 
 export async function execute<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
 ) {
-  const response = await fetch("http://localhost:4000", {
+  const response = await fetch(config.apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
