@@ -13,8 +13,8 @@ import {
   upperCaseFirstLetter,
 } from "../util/util";
 import { RankingGroup } from "./RankingGroup";
-import RaiderIoIocn from "../../icons/raiderio-icon.svg";
-import WarcraftLogsIcon from "../../icons/warcraftlogs-icon.svg";
+import RaiderIoIocn from "../assets/raiderio-icon.svg";
+import WarcraftLogsIcon from "../assets/warcraftlogs-icon.svg";
 import { ExternalLinkIcon } from "./ExternalLinkIcon";
 import { Character } from "../graphql/graphql";
 

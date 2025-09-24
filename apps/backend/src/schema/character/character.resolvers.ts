@@ -19,8 +19,6 @@ function toFixedNumber(value: number | undefined, digits = 2): number | null {
 
 function mapRaiderIo(rioProfile: CharacterApiResponse): RaiderIo | null {
   const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
-  console.log(rioProfile.class);
-
   return {
     thumbnailUrl: rioProfile.thumbnail_url,
     race: rioProfile.race,

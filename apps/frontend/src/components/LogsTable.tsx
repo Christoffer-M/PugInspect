@@ -34,6 +34,11 @@ type LogsTableProps = {
   isFetching: boolean;
 };
 
+const icons = import.meta.glob("/src/assets/class-icons/*.svg", {
+  eager: true,
+  import: "default",
+});
+
 export const LogsTable: React.FC<LogsTableProps> = ({
   logs,
   isFetching,
@@ -53,7 +58,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
 
   const getClassSrc = (spec: string | undefined | null) => {
     if (!className || !spec) return null;
-    return `../../icons/class-icons/classicon_${className.toLowerCase()}_${spec.toLowerCase()}.svg`;
+    const key = `/src/assets/class-icons/classicon_${className.toLowerCase()}_${spec.toLowerCase()}.svg`;
+    return icons[key] as string | undefined;
   };
 
   const navigate = useNavigate();
