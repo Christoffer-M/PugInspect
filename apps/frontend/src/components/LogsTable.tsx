@@ -56,9 +56,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   const rankings = logs?.raidRankings || [];
   const difficulty = logs?.difficulty;
 
-  const getClassSrc = (spec: string | undefined | null) => {
+  const getClassImageSrc = (spec: string | undefined | null) => {
     if (!className || !spec) return null;
-    const key = `/src/assets/class-icons/classicon_${className.toLowerCase()}_${spec.toLowerCase()}.svg`;
+    const key = `/src/assets/class-icons/classicon_${className.replace(/\s+/g, "").toLowerCase()}_${spec.toLowerCase()}.svg`;
     return icons[key] as string | undefined;
   };
 
@@ -90,7 +90,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               fit="contain"
               radius={"xs"}
               alt={`${className} ${ranking.spec}`}
-              src={getClassSrc(ranking.spec)}
+              src={getClassImageSrc(ranking.spec)}
             />
           )}
         </Group>
