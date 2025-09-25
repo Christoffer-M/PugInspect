@@ -1,6 +1,6 @@
 import { Autocomplete, Flex, Select } from "@mantine/core";
 import { useParams, useRouter } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { parseRaiderIoUrl, upperCaseFirstLetter } from "../util/util";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
@@ -36,6 +36,15 @@ const CharacterSearchInput: React.FC = () => {
       setErrorText("Invalid Raider.IO URL");
     }
   };
+
+  useEffect(() => {
+    if (initialName && initialRealm) {
+      setSearchTerm(`${initialName}-${initialRealm}`);
+    }
+    if (initialRegion) {
+      setRegion(initialRegion.toUpperCase());
+    }
+  }, [initialName, initialRealm, initialRegion]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -87,6 +96,8 @@ const CharacterSearchInput: React.FC = () => {
         data={[]}
         value={searchTerm}
         onChange={(search) => {
+          console.log("onChange");
+
           if (errorText) setErrorText("");
           const trimmed = search.trim();
 
@@ -102,6 +113,11 @@ const CharacterSearchInput: React.FC = () => {
           transitionProps: { transition: "pop", duration: 200 },
         }}
         onKeyDown={handleKeyDown}
+        onPaste={(e) => {
+          console.log("onPaste");
+
+          e.stopPropagation();
+        }}
       />
     </Flex>
   );
