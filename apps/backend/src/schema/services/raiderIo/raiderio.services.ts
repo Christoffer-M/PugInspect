@@ -25,6 +25,17 @@ const fields: CharacterField[] = [
 ];
 
 export class RaiderIOService {
+  private static buildUrlWithQueries(
+    baseUrl: string,
+    queries: Record<string, string | number | boolean>
+  ): string {
+    const url = new URL(baseUrl);
+    Object.entries(queries).forEach(([key, value]) => {
+      url.searchParams.append(key, String(value));
+    });
+    return url.toString();
+  }
+
   static async getCharacterProfile(
     args: QueryCharacterArgs
   ): Promise<CharacterApiResponse> {
@@ -48,7 +59,10 @@ export class RaiderIOService {
         .join(","),
     };
 
-    const url = buildUrlWithQueries(`${baseUrl}/characters/profile`, query);
+    const url = this.buildUrlWithQueries(
+      `${baseUrl}/characters/profile`,
+      query
+    );
 
     try {
       var response = await fetcher<CharacterApiResponse>(url, options);
@@ -66,14 +80,3 @@ export class RaiderIOService {
     }
   }
 }
-
-const buildUrlWithQueries = (
-  baseUrl: string,
-  queries: Record<string, string | number | boolean>
-): string => {
-  const url = new URL(baseUrl);
-  Object.entries(queries).forEach(([key, value]) => {
-    url.searchParams.append(key, String(value));
-  });
-  return url.toString();
-};

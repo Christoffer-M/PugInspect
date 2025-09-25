@@ -16,3 +16,10 @@ export const mapDifficultyIdToName = (
       return null;
   }
 };
+
+export function toFixedNumber(
+  value: number | undefined,
+  digits = 2
+): number | null {
+  return typeof value === "number" ? parseFloat(value.toFixed(digits)) : null;
+}
