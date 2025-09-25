@@ -69,6 +69,17 @@ export type QueryCharacterArgs = {
   role?: InputMaybe<RoleType>;
 };
 
+export type RaidProgressionDetail = {
+  __typename?: 'RaidProgressionDetail';
+  expansion_id?: Maybe<Scalars['Int']['output']>;
+  heroic_bosses_killed?: Maybe<Scalars['Int']['output']>;
+  mythic_bosses_killed?: Maybe<Scalars['Int']['output']>;
+  normal_bosses_killed?: Maybe<Scalars['Int']['output']>;
+  raid: Scalars['String']['output'];
+  summary?: Maybe<Scalars['String']['output']>;
+  total_bosses?: Maybe<Scalars['Int']['output']>;
+};
+
 export type RaidRanking = {
   __typename?: 'RaidRanking';
   bestAmount?: Maybe<Scalars['Float']['output']>;
@@ -86,6 +97,7 @@ export type RaiderIo = {
   dps?: Maybe<Segment>;
   healer?: Maybe<Segment>;
   race?: Maybe<Scalars['String']['output']>;
+  raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   tank?: Maybe<Segment>;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };

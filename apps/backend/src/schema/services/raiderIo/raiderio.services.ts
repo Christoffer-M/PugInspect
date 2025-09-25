@@ -10,6 +10,7 @@ const baseUrl = "https://raider.io/api/v1";
 enum CharacterFieldKey {
   MythicPlusScoresBySeason = "mythic_plus_scores_by_season",
   MythicPlusRanks = "mythic_plus_ranks",
+  RaidProgression = "raid_progression",
 }
 
 type CharacterField = {
@@ -20,6 +21,7 @@ type CharacterField = {
 const fields: CharacterField[] = [
   { key: CharacterFieldKey.MythicPlusScoresBySeason, value: "current" },
   { key: CharacterFieldKey.MythicPlusRanks },
+  { key: CharacterFieldKey.RaidProgression },
 ];
 
 export class RaiderIOService {

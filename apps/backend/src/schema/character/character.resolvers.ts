@@ -18,23 +18,45 @@ function toFixedNumber(value: number | undefined, digits = 2): number | null {
 }
 
 function mapRaiderIo(rioProfile: CharacterApiResponse): RaiderIo | null {
-  const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
-  return {
+  const base = {
     thumbnailUrl: rioProfile.thumbnail_url,
     race: rioProfile.race,
     class: rioProfile.class,
-    all: segments
-      ? { score: segments.all.score, color: segments.all.color }
-      : null,
-    dps: segments
-      ? { score: segments.dps.score, color: segments.dps.color }
-      : null,
-    healer: segments
-      ? { score: segments.healer.score, color: segments.healer.color }
-      : null,
-    tank: segments
-      ? { score: segments.tank.score, color: segments.tank.color }
-      : null,
+  };
+  const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
+  const raidProgression = Object.entries(rioProfile.raid_progression || {}).map(
+    ([raid, details]) => ({
+      raid,
+      ...details,
+    })
+  );
+
+  if (!segments) {
+    return {
+      ...base,
+      raidProgression,
+    };
+  }
+
+  return {
+    ...base,
+    all: {
+      color: segments.all.color,
+      score: segments.all.score,
+    },
+    dps: {
+      color: segments.dps.color,
+      score: segments.dps.score,
+    },
+    healer: {
+      color: segments.healer.color,
+      score: segments.healer.score,
+    },
+
+    tank: {
+      color: segments.tank.color,
+      score: segments.tank.score,
+    },
   };
 }
 
@@ -131,6 +153,12 @@ export default {
           args.difficulty
         );
         rioProfile = undefined;
+      }
+
+      if (!rioProfile && !warcraftLogsProfile) {
+        throw new GraphQLError("Character not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
       }
 
       return {

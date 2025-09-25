@@ -39,6 +39,16 @@ type Query {
   character(difficulty: Difficulty, metric: Metric, name: String!, realm: String!, region: String!, role: RoleType): Character
 }
 
+type RaidProgressionDetail {
+  expansion_id: Int
+  heroic_bosses_killed: Int
+  mythic_bosses_killed: Int
+  normal_bosses_killed: Int
+  raid: String!
+  summary: String
+  total_bosses: Int
+}
+
 type RaidRanking {
   bestAmount: Float
   encounter: Encounter
@@ -54,6 +64,7 @@ type RaiderIo {
   dps: Segment
   healer: Segment
   race: String
+  raidProgression: [RaidProgressionDetail!]
   tank: Segment
   thumbnailUrl: String
 }

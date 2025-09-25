@@ -37,11 +37,22 @@ export const characterTypedefs = gql`
   type RaiderIo {
     class: String
     thumbnailUrl: String
+    raidProgression: [RaidProgressionDetail!]
     race: String
     all: Segment
     dps: Segment
     healer: Segment
     tank: Segment
+  }
+
+  type RaidProgressionDetail {
+    raid: String!
+    summary: String
+    expansion_id: Int
+    total_bosses: Int
+    normal_bosses_killed: Int
+    heroic_bosses_killed: Int
+    mythic_bosses_killed: Int
   }
 
   type Segment {
