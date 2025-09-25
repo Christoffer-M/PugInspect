@@ -75,27 +75,25 @@ export const LogsTable: React.FC<LogsTableProps> = ({
         }
         fw={700}
       >
-        <Grid align="center">
-          <Grid.Col span={2}>
+        <Group align="center" m={0} gap="sm">
+          <Text m={0}>
             {ranking.rankPercent != null
               ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
                   maximumFractionDigits: 0,
                 })
-              : "N/A"}
-          </Grid.Col>
-          <Grid.Col span={3}>
-            {ranking.spec && className && (
-              <Image
-                h={22}
-                w={22}
-                fit="contain"
-                radius={"xs"}
-                alt={`${className} ${ranking.spec}`}
-                src={getClassSrc(ranking.spec)}
-              />
-            )}
-          </Grid.Col>
-        </Grid>
+              : null}
+          </Text>
+          {ranking.spec && className && (
+            <Image
+              h={22}
+              w={22}
+              fit="contain"
+              radius={"xs"}
+              alt={`${className} ${ranking.spec}`}
+              src={getClassSrc(ranking.spec)}
+            />
+          )}
+        </Group>
       </Table.Td>
       <Table.Td
         c={
@@ -214,7 +212,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           </Grid.Col>
         </Grid>
 
-        <Table>
+        <Table verticalSpacing={0} horizontalSpacing={"md"}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Encounter</Table.Th>

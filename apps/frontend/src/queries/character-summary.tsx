@@ -23,19 +23,14 @@ export const CharacterDataQuery = graphql(`
         thumbnailUrl
         race
         class
+        raidProgression {
+          raid
+          total_bosses
+          heroic_bosses_killed
+          mythic_bosses_killed
+          normal_bosses_killed
+        }
         all {
-          score
-          color
-        }
-        dps {
-          score
-          color
-        }
-        healer {
-          score
-          color
-        }
-        tank {
           score
           color
         }

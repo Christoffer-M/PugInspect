@@ -15,6 +15,7 @@ import { useCharacterSummaryQuery } from "../queries/character-summary";
 import { IconReload } from "@tabler/icons-react";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterLogs } from "../queries/character-logs";
+import { RaidProgression } from "../components/RaidProgression";
 
 type CharacterQueryParams = {
   roleType: RoleType;
@@ -106,7 +107,10 @@ function CharacterPage() {
               loading={isFetchingSummary}
               isError={isError}
             />
-
+            <RaidProgression
+              raidData={characterSummaryData?.raiderIo?.raidProgression ?? []}
+              isLoading={isFetchingSummary}
+            />
             <LogsTable
               logs={logsData}
               isFetching={isFetchingLogs}
