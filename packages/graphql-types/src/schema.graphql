@@ -65,6 +65,7 @@ type RaiderIo {
   healer: Segment
   race: String
   raidProgression: [RaidProgressionDetail!]
+  specialization: String
   tank: Segment
   thumbnailUrl: String
 }

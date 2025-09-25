@@ -102,6 +102,7 @@ export type RaiderIo = {
   healer?: Maybe<Segment>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
+  specialization?: Maybe<Scalars['String']['output']>;
   tank?: Maybe<Segment>;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
@@ -138,7 +139,7 @@ export type CharacterSummaryQueryVariables = Exact<{
 }>;
 
 
-export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null } | null, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, all?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
+export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null } | null, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, all?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -204,6 +205,7 @@ export const CharacterSummaryDocument = new TypedDocumentString(`
       thumbnailUrl
       race
       class
+      specialization
       raidProgression {
         raid
         total_bosses

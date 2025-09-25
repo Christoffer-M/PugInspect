@@ -98,6 +98,7 @@ export type RaiderIo = {
   healer?: Maybe<Segment>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
+  specialization?: Maybe<Scalars['String']['output']>;
   tank?: Maybe<Segment>;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };

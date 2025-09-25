@@ -66,34 +66,22 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   const theme = useMantineTheme();
   const rows = rankings?.map((ranking) => (
     <Table.Tr key={ranking.encounter?.id ?? Math.random()}>
-      <Table.Td>{ranking.encounter?.name}</Table.Td>
+      <Table.Td c={ranking.medianPercent ? undefined : "dimmed"}>
+        {ranking.encounter?.name}
+      </Table.Td>
       <Table.Td
         c={
           ranking.rankPercent
             ? GetWarcraftLogRankingColors(ranking.rankPercent, theme)
             : "dimmed"
         }
-        fw={700}
+        fw={ranking.rankPercent ? 700 : undefined}
       >
-        <Group align="center" m={0} gap="sm">
-          <Text m={0}>
-            {ranking.rankPercent != null
-              ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
-                  maximumFractionDigits: 0,
-                })
-              : null}
-          </Text>
-          {ranking.spec && className && (
-            <Image
-              h={22}
-              w={22}
-              fit="contain"
-              radius={"xs"}
-              alt={`${className} ${ranking.spec}`}
-              src={getClassImageSrc(ranking.spec)}
-            />
-          )}
-        </Group>
+        {ranking.rankPercent != null
+          ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })
+          : "N/A"}
       </Table.Td>
       <Table.Td
         c={
@@ -101,7 +89,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
             ? GetWarcraftLogRankingColors(ranking.medianPercent, theme)
             : "dimmed"
         }
-        fw={700}
+        fw={ranking.medianPercent ? 700 : undefined}
       >
         {ranking.medianPercent != null
           ? Math.floor(ranking.medianPercent).toLocaleString(undefined, {
@@ -109,10 +97,25 @@ export const LogsTable: React.FC<LogsTableProps> = ({
             })
           : "N/A"}
       </Table.Td>
-      <Table.Td c={ranking.totalKills ? undefined : "dimmed"} fw={700}>
+      <Table.Td
+        c={ranking.totalKills ? undefined : "dimmed"}
+        fw={ranking.totalKills ? 700 : undefined}
+      >
         {ranking.totalKills?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
         }) || "N/A"}
+      </Table.Td>
+      <Table.Td>
+        {ranking.spec && className && (
+          <Image
+            h={22}
+            w={22}
+            fit="contain"
+            radius={"xs"}
+            alt={`${className} ${ranking.spec}`}
+            src={getClassImageSrc(ranking.spec)}
+          />
+        )}
       </Table.Td>
     </Table.Tr>
   ));
@@ -219,6 +222,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               <Table.Th>Rank Percent</Table.Th>
               <Table.Th>Median Percent</Table.Th>
               <Table.Th>Kills</Table.Th>
+              <Table.Th>Spec</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

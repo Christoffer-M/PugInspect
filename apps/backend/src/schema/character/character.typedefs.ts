@@ -37,6 +37,7 @@ export const characterTypedefs = gql`
   type RaiderIo {
     class: String
     thumbnailUrl: String
+    specialization: String
     raidProgression: [RaidProgressionDetail!]
     race: String
     all: Segment

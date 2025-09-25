@@ -1,3 +1,4 @@
+import "@mantine/core/styles.css";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
@@ -7,7 +8,6 @@ import { routeTree } from "./routeTree.gen.ts";
 
 import reportWebVitals from "./reportWebVitals.ts";
 
-import "@mantine/core/styles.css";
 import { MantineProvider } from "@mantine/core";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

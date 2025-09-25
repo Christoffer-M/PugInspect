@@ -8,6 +8,7 @@ export function mapRaiderIo(rioProfile: CharacterApiResponse): RaiderIo | null {
     thumbnailUrl: rioProfile.thumbnail_url,
     race: rioProfile.race,
     class: rioProfile.class,
+    specialization: rioProfile.active_spec_name,
   };
 
   const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;

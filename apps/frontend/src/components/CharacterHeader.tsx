@@ -89,7 +89,8 @@ export const CharacterHeader: React.FC<{
                   </Text>
 
                   <Text size="sm">
-                    {raiderIoInfo.race} - {raiderIoInfo.class}
+                    {raiderIoInfo.race} {raiderIoInfo.specialization}{" "}
+                    {raiderIoInfo.class}
                   </Text>
                 </Stack>
               </>

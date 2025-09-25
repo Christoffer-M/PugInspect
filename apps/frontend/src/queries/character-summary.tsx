@@ -23,6 +23,7 @@ export const CharacterDataQuery = graphql(`
         thumbnailUrl
         race
         class
+        specialization
         raidProgression {
           raid
           total_bosses
