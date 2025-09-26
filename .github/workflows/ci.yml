@@ -9,22 +9,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
 
-  - name: Setup Node.js
-    uses: actions/setup-node@v4
-    with:
-      node-version: 20
-      cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-  - name: Install dependencies
-    run: pnpm install --frozen-lockfile
+      - name: Type check
+        run: npx turbo check-types
 
-  - name: Type check
-    run: npx turbo check-types
-
-  - name: Build with Turbopack
-    run: npx turbo build
+      - name: Build with Turbopack
+        run: npx turbo build
