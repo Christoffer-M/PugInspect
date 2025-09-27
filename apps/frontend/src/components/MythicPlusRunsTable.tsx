@@ -52,11 +52,11 @@ export const MythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
             </AspectRatio>
             {dungeon.runUrl ? (
               <Anchor
+                underline="never"
                 size="sm"
                 m={0}
                 href={dungeon.runUrl ?? "#"}
                 target="_blank"
-                underline="never"
               >
                 {dungeon.name}
               </Anchor>
