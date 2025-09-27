@@ -22,6 +22,7 @@ export interface RaiderIoCharacterApiResponse {
   mythic_plus_recent_runs?: MythicPlusRun[];
   mythic_plus_best_runs?: MythicPlusRun[];
   mythic_plus_alternate_runs?: MythicPlusRun[];
+  mythic_plus_highest_level_runs?: MythicPlusRun[];
 }
 
 export interface Gear {

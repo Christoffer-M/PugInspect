@@ -23,6 +23,10 @@ enum CharacterFieldKey {
   MythicPlusRanks = "mythic_plus_ranks",
   RaidProgression = "raid_progression",
   Gear = "gear",
+  MythicPlusRecentRuns = "mythic_plus_recent_runs",
+  MythicPlusHighestLevelRuns = "mythic_plus_highest_level_runs",
+  MythicPlusAlternateRuns = "mythic_plus_alternate_runs",
+  MythicPlusBestRuns = "mythic_plus_best_runs",
 }
 
 type CharacterField = {
@@ -32,7 +36,8 @@ type CharacterField = {
 
 const fields: CharacterField[] = [
   { key: CharacterFieldKey.MythicPlusScoresBySeason, value: "current" },
-  { key: CharacterFieldKey.MythicPlusRanks },
+  { key: CharacterFieldKey.MythicPlusBestRuns },
+  { key: CharacterFieldKey.Gear },
   { key: CharacterFieldKey.RaidProgression },
 ];
 

@@ -37,11 +37,13 @@ enum Metric {
 
 type MythicPlusRun {
   background_image_url: String!
+  challange_mode_id: Int!
   completed_at: String!
   dungeon: String!
   icon_url: String!
   key_level: Int!
   keystone_upgrades: Int!
+  short_name: String!
   url: String!
 }
 

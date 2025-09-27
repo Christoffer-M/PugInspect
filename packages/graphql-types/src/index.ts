@@ -57,11 +57,13 @@ export type Metric =
 export type MythicPlusRun = {
   __typename?: 'MythicPlusRun';
   background_image_url: Scalars['String']['output'];
+  challange_mode_id: Scalars['Int']['output'];
   completed_at: Scalars['String']['output'];
   dungeon: Scalars['String']['output'];
   icon_url: Scalars['String']['output'];
   key_level: Scalars['Int']['output'];
   keystone_upgrades: Scalars['Int']['output'];
+  short_name: Scalars['String']['output'];
   url: Scalars['String']['output'];
 };
 

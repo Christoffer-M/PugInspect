@@ -24,6 +24,17 @@ export const CharacterDataQuery = graphql(`
         race
         class
         specialization
+        bestMythicPlusRuns {
+          dungeon
+          short_name
+          challange_mode_id
+          key_level
+          completed_at
+          icon_url
+          background_image_url
+          url
+          keystone_upgrades
+        }
         raidProgression {
           raid
           total_bosses

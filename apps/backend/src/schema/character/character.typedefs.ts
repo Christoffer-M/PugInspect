@@ -60,6 +60,8 @@ export const characterTypedefs = gql`
 
   type MythicPlusRun {
     dungeon: String!
+    short_name: String!
+    challange_mode_id: Int!
     key_level: Int!
     completed_at: String!
     icon_url: String!

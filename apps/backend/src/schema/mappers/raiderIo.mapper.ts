@@ -23,6 +23,8 @@ export function mapRaiderIo(
 
   const bestMythicPlusRuns = rioProfile.mythic_plus_best_runs?.map((run) => ({
     dungeon: run.dungeon,
+    short_name: run.short_name,
+    challange_mode_id: run.map_challenge_mode_id,
     key_level: run.mythic_level,
     completed_at: run.completed_at,
     icon_url: run.icon_url,

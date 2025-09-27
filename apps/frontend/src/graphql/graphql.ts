@@ -61,11 +61,13 @@ export enum Metric {
 export type MythicPlusRun = {
   __typename?: 'MythicPlusRun';
   background_image_url: Scalars['String']['output'];
+  challange_mode_id: Scalars['Int']['output'];
   completed_at: Scalars['String']['output'];
   dungeon: Scalars['String']['output'];
   icon_url: Scalars['String']['output'];
   key_level: Scalars['Int']['output'];
   keystone_upgrades: Scalars['Int']['output'];
+  short_name: Scalars['String']['output'];
   url: Scalars['String']['output'];
 };
 
@@ -174,7 +176,7 @@ export type CharacterSummaryQueryVariables = Exact<{
 }>;
 
 
-export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null } | null, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, all?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
+export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null } | null, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, all?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -250,6 +252,17 @@ export const CharacterSummaryDocument = new TypedDocumentString(`
       race
       class
       specialization
+      bestMythicPlusRuns {
+        dungeon
+        short_name
+        challange_mode_id
+        key_level
+        completed_at
+        icon_url
+        background_image_url
+        url
+        keystone_upgrades
+      }
       raidProgression {
         raid
         total_bosses

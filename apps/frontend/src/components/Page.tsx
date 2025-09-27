@@ -27,7 +27,7 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <AppShell header={{ height: 60 }}>
       <Typography>
         <Header />
-        <AppShell.Main>{children}</AppShell.Main>
+        <AppShell.Main pb={"lg"}>{children}</AppShell.Main>
       </Typography>
     </AppShell>
   );
