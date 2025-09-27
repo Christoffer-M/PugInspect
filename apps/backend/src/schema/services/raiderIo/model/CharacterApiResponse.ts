@@ -1,4 +1,4 @@
-export interface CharacterApiResponse {
+export interface RaiderIoCharacterApiResponse {
   name: string;
   race: string;
   class: string;

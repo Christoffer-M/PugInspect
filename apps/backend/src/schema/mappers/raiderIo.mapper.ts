@@ -1,7 +1,9 @@
 import { RaiderIo, Maybe, Segment } from "@repo/graphql-types";
-import { CharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
+import { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
 
-export function mapRaiderIo(rioProfile: CharacterApiResponse): RaiderIo | null {
+export function mapRaiderIo(
+  rioProfile: RaiderIoCharacterApiResponse
+): RaiderIo | null {
   if (!rioProfile) return null;
 
   const base = {

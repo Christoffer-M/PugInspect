@@ -57,6 +57,7 @@ export type Metric =
 export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
+  characterSuggestions: Array<SearchResult>;
 };
 
 
@@ -67,6 +68,12 @@ export type QueryCharacterArgs = {
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
   role?: InputMaybe<RoleType>;
+};
+
+
+export type QueryCharacterSuggestionsArgs = {
+  region: Scalars['String']['input'];
+  searchString: Scalars['String']['input'];
 };
 
 export type RaidProgressionDetail = {
@@ -108,6 +115,13 @@ export type RoleType =
   | 'DPS'
   | 'Healer'
   | 'Tank';
+
+export type SearchResult = {
+  __typename?: 'SearchResult';
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+};
 
 export type Segment = {
   __typename?: 'Segment';

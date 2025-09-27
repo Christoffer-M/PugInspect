@@ -37,6 +37,7 @@ enum Metric {
 
 type Query {
   character(difficulty: Difficulty, metric: Metric, name: String!, realm: String!, region: String!, role: RoleType): Character
+  characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
 }
 
 type RaidProgressionDetail {
@@ -75,6 +76,12 @@ enum RoleType {
   DPS
   Healer
   Tank
+}
+
+type SearchResult {
+  name: String!
+  realm: String!
+  region: String!
 }
 
 type Segment {

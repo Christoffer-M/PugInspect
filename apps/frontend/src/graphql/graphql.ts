@@ -61,6 +61,7 @@ export enum Metric {
 export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
+  characterSuggestions: Array<SearchResult>;
 };
 
 
@@ -71,6 +72,12 @@ export type QueryCharacterArgs = {
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
   role?: InputMaybe<RoleType>;
+};
+
+
+export type QueryCharacterSuggestionsArgs = {
+  region: Scalars['String']['input'];
+  searchString: Scalars['String']['input'];
 };
 
 export type RaidProgressionDetail = {
@@ -114,6 +121,13 @@ export enum RoleType {
   Tank = 'Tank'
 }
 
+export type SearchResult = {
+  __typename?: 'SearchResult';
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+};
+
 export type Segment = {
   __typename?: 'Segment';
   color: Scalars['String']['output'];
@@ -131,6 +145,14 @@ export type CharacterLogsQueryVariables = Exact<{
 
 
 export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
+
+export type CharacterSearchQueryVariables = Exact<{
+  searchString: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+}>;
+
+
+export type CharacterSearchQuery = { __typename?: 'Query', characterSuggestions: Array<{ __typename?: 'SearchResult', name: string, realm: string, region: string }> };
 
 export type CharacterSummaryQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -190,6 +212,15 @@ export const CharacterLogsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<CharacterLogsQuery, CharacterLogsQueryVariables>;
+export const CharacterSearchDocument = new TypedDocumentString(`
+    query CharacterSearch($searchString: String!, $region: String!) {
+  characterSuggestions(searchString: $searchString, region: $region) {
+    name
+    realm
+    region
+  }
+}
+    `) as unknown as TypedDocumentString<CharacterSearchQuery, CharacterSearchQueryVariables>;
 export const CharacterSummaryDocument = new TypedDocumentString(`
     query CharacterSummary($name: String!, $realm: String!, $region: String!) {
   character(name: $name, realm: $realm, region: $region) {

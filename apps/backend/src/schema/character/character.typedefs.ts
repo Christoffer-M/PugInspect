@@ -10,6 +10,16 @@ export const characterTypedefs = gql`
       metric: Metric
       difficulty: Difficulty
     ): Character
+    characterSuggestions(
+      region: String!
+      searchString: String!
+    ): [SearchResult!]!
+  }
+
+  type SearchResult {
+    name: String!
+    realm: String!
+    region: String!
   }
 
   enum Difficulty {

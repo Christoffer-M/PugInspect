@@ -1,11 +1,22 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import type { RequestInit } from "node-fetch";
-import { CharacterApiResponse } from "./model/CharacterApiResponse.js";
 import { GraphQLError } from "graphql";
-import { QueryCharacterArgs } from "@repo/graphql-types";
+import {
+  QueryCharacterArgs,
+  QueryCharacterSuggestionsArgs,
+} from "@repo/graphql-types";
+import { RaiderIoCharacterSearchApiResponse } from "./model/CharacterSearchResponse.js";
+import { RaiderIoCharacterApiResponse } from "./model/CharacterApiResponse.js";
 
 const baseUrl = "https://raider.io/api/v1";
+const baseApiUrl = "https://raider.io/api";
+
+export type CharacterSearchResponse = {
+  name: string;
+  realm: string;
+  region: string;
+};
 
 enum CharacterFieldKey {
   MythicPlusScoresBySeason = "mythic_plus_scores_by_season",
@@ -36,9 +47,57 @@ export class RaiderIOService {
     return url.toString();
   }
 
+  static async getCharacterSuggestions(
+    args: QueryCharacterSuggestionsArgs
+  ): Promise<CharacterSearchResponse[]> {
+    const options: RequestInit = {
+      method: "GET",
+    };
+
+    const apiKey = config.raiderIoApiKey;
+    if (!apiKey) {
+      throw new Error("RaiderIO API key is not configured.");
+    }
+
+    const query: Record<string, string | number | boolean> = {
+      term: args.searchString,
+      region: args.region,
+    };
+
+    const url = this.buildUrlWithQueries(`${baseApiUrl}/search`, query);
+
+    try {
+      var response = await fetcher<RaiderIoCharacterSearchApiResponse>(
+        url,
+        options
+      );
+      const filteredMatches = response.matches.filter(
+        (m) => m.type === "character"
+      );
+
+      return filteredMatches.map((r) => ({
+        name: r.name,
+        realm: r.data.realm.name,
+        region: r.data.region.short_name,
+      }));
+    } catch (error) {
+      console.log("error", error);
+
+      throw new GraphQLError(
+        "Failed to fetch character suggestions from RaiderIO",
+        {
+          extensions: {
+            code: "NOT_FOUND",
+            originalError: error instanceof Error ? error : undefined,
+          },
+        }
+      );
+    }
+  }
+
   static async getCharacterProfile(
     args: QueryCharacterArgs
-  ): Promise<CharacterApiResponse> {
+  ): Promise<RaiderIoCharacterApiResponse> {
     const { name, realm, region } = args;
     const options: RequestInit = {
       method: "GET",
@@ -65,7 +124,7 @@ export class RaiderIOService {
     );
 
     try {
-      var response = await fetcher<CharacterApiResponse>(url, options);
+      var response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
       return response;
     } catch (error) {
       throw new GraphQLError(

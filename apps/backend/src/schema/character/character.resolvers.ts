@@ -1,10 +1,18 @@
 import { GraphQLError, GraphQLResolveInfo } from "graphql";
-import { Character, QueryCharacterArgs } from "@repo/graphql-types";
+import {
+  Character,
+  QueryCharacterArgs,
+  QueryCharacterSuggestionsArgs,
+} from "@repo/graphql-types";
 import { parseResolveInfo } from "graphql-parse-resolve-info";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { mapRaiderIo } from "../mappers/raiderIo.mapper.js";
 import { mapWarcraftLogs } from "../mappers/warcraftLogs.mapper.js";
 import { isFieldRequested } from "../utils/fetcher.js";
+import {
+  CharacterSearchResponse,
+  RaiderIOService,
+} from "../services/raiderIo/raiderio.services.js";
 
 export default {
   Query: {
@@ -42,6 +50,23 @@ export default {
             ? mapWarcraftLogs(warcraftLogsProfile)
             : null,
       };
+    },
+    characterSuggestions: async (
+      _: any,
+      args: QueryCharacterSuggestionsArgs,
+      _context: any,
+      _info: GraphQLResolveInfo
+    ): Promise<CharacterSearchResponse[]> => {
+      if (args.searchString.length < 3) {
+        throw new GraphQLError(
+          "Search string must be at least 3 characters long",
+          {
+            extensions: { code: "BAD_USER_INPUT" },
+          }
+        );
+      }
+
+      return await RaiderIOService.getCharacterSuggestions(args);
     },
   },
 };
