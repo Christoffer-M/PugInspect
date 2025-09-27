@@ -22,6 +22,10 @@ export function isFieldRequested(
   const parsed = parseResolveInfo(info) as ResolveTree;
   if (!parsed) return false;
 
+  console.log(
+    "Parsed Resolve Info:",
+    JSON.stringify(parsed.fieldsByTypeName?.Character)
+  );
   // Look into the Character type fields being requested
   return Boolean(parsed.fieldsByTypeName?.Character?.[field]);
 }

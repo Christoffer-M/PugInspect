@@ -33,8 +33,6 @@ const CharacterSearchInput: React.FC = () => {
   const [errorText, setErrorText] = useState("");
   const router = useRouter();
 
-  console.log(`${initialName}-${initialRealm}`);
-
   const { data: searchResults, isLoading } = useCharacterSearchQuery(
     debouncedSearch,
     region,
@@ -49,8 +47,6 @@ const CharacterSearchInput: React.FC = () => {
       );
       setRegion(parsed.region.toUpperCase());
     } else {
-      console.log("handleRaiderIoUrl - Invalid URL:", url);
-
       setErrorText("Invalid Raider.IO URL");
     }
   };
@@ -130,8 +126,6 @@ const CharacterSearchInput: React.FC = () => {
           setSearchTerm(search);
         }}
         onOptionSubmit={(selectedValue) => {
-          console.log("onOptionSubmit", selectedValue);
-
           ignoreNextOnChange.current = true;
           setSearchTerm(selectedValue);
           navigateToCharacter(selectedValue);

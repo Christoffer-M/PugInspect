@@ -21,6 +21,16 @@ export function mapRaiderIo(
     })
   );
 
+  const bestMythicPlusRuns = rioProfile.mythic_plus_best_runs?.map((run) => ({
+    dungeon: run.dungeon,
+    key_level: run.mythic_level,
+    completed_at: run.completed_at,
+    icon_url: run.icon_url,
+    background_image_url: run.background_image_url,
+    url: run.url,
+    keystone_upgrades: run.num_keystone_upgrades,
+  }));
+
   const getSegment = (seg?: {
     color?: string;
     score?: number;
@@ -30,6 +40,7 @@ export function mapRaiderIo(
   return {
     ...base,
     raidProgression,
+    bestMythicPlusRuns,
     all: getSegment(segments?.all),
     dps: getSegment(segments?.dps),
     healer: getSegment(segments?.healer),

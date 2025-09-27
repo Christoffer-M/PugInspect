@@ -54,6 +54,17 @@ export type Metric =
   | 'dps'
   | 'hps';
 
+export type MythicPlusRun = {
+  __typename?: 'MythicPlusRun';
+  background_image_url: Scalars['String']['output'];
+  completed_at: Scalars['String']['output'];
+  dungeon: Scalars['String']['output'];
+  icon_url: Scalars['String']['output'];
+  key_level: Scalars['Int']['output'];
+  keystone_upgrades: Scalars['Int']['output'];
+  url: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
@@ -100,8 +111,10 @@ export type RaidRanking = {
 export type RaiderIo = {
   __typename?: 'RaiderIo';
   all?: Maybe<Segment>;
+  bestMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
   class?: Maybe<Scalars['String']['output']>;
   dps?: Maybe<Segment>;
+  gear?: Maybe<Scalars['String']['output']>;
   healer?: Maybe<Segment>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;

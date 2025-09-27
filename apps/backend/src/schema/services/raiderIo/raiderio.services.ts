@@ -22,6 +22,7 @@ enum CharacterFieldKey {
   MythicPlusScoresBySeason = "mythic_plus_scores_by_season",
   MythicPlusRanks = "mythic_plus_ranks",
   RaidProgression = "raid_progression",
+  Gear = "gear",
 }
 
 type CharacterField = {

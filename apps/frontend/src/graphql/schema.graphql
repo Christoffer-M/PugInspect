@@ -35,6 +35,16 @@ enum Metric {
   hps
 }
 
+type MythicPlusRun {
+  background_image_url: String!
+  completed_at: String!
+  dungeon: String!
+  icon_url: String!
+  key_level: Int!
+  keystone_upgrades: Int!
+  url: String!
+}
+
 type Query {
   character(difficulty: Difficulty, metric: Metric, name: String!, realm: String!, region: String!, role: RoleType): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
@@ -61,8 +71,10 @@ type RaidRanking {
 
 type RaiderIo {
   all: Segment
+  bestMythicPlusRuns: [MythicPlusRun!]
   class: String
   dps: Segment
+  gear: String
   healer: Segment
   race: String
   raidProgression: [RaidProgressionDetail!]

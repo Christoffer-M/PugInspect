@@ -49,11 +49,23 @@ export const characterTypedefs = gql`
     thumbnailUrl: String
     specialization: String
     raidProgression: [RaidProgressionDetail!]
+    bestMythicPlusRuns: [MythicPlusRun!]
     race: String
+    gear: String
     all: Segment
     dps: Segment
     healer: Segment
     tank: Segment
+  }
+
+  type MythicPlusRun {
+    dungeon: String!
+    key_level: Int!
+    completed_at: String!
+    icon_url: String!
+    background_image_url: String!
+    url: String!
+    keystone_upgrades: Int!
   }
 
   type RaidProgressionDetail {
