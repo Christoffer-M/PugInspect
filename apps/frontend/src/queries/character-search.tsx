@@ -13,10 +13,14 @@ export const CharacterDataQuery = graphql(`
   }
 `);
 
-export const useCharacterSearchQuery = (searchString: string, region: string) =>
+export const useCharacterSearchQuery = (
+  searchString: string,
+  region: string,
+  disabled: boolean = false,
+) =>
   useQuery({
     queryKey: ["character-search", searchString, region],
-    enabled: searchString.length >= 3,
+    enabled: searchString.length >= 3 && !disabled,
     retry: false,
     queryFn: async (): Promise<SearchResult[]> => {
       const response = await execute(CharacterDataQuery, {

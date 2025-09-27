@@ -33,9 +33,12 @@ const CharacterSearchInput: React.FC = () => {
   const [errorText, setErrorText] = useState("");
   const router = useRouter();
 
+  console.log(`${initialName}-${initialRealm}`);
+
   const { data: searchResults, isLoading } = useCharacterSearchQuery(
     debouncedSearch,
     region,
+    !!errorText || searchTerm === `${initialName}-${initialRealm}`,
   );
 
   const handleRaiderIoUrl = (url: string) => {
