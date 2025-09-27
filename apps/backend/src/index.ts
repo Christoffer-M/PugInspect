@@ -24,6 +24,12 @@ app.use(
   expressMiddleware(server)
 );
 
+// For Analytics
+app.get("/stats.js", async (req, res) => {
+  const scriptText = await fetch("https://cloud.umami.is/script.js");
+  res.send(await scriptText.text());
+});
+
 // Modified server startup
 await new Promise<void>((resolve) =>
   httpServer.listen({ port: config.port }, resolve)
