@@ -7,9 +7,10 @@ export const GetWarcraftLogRankingColors = (
 ) => {
   if (percent < 25) return theme.colors.gray[7];
   if (percent < 50) return theme.colors.green[5];
-  if (percent < 75) return theme.colors.blue[5];
+  if (percent < 75) return theme.colors.blue[6];
   if (percent < 95) return theme.colors.violet[5];
-  if (percent < 100) return theme.colors.orange[5];
+  if (percent < 99) return theme.colors.orange[5];
+  if (percent < 100) return theme.colors.pink[4];
   return theme.colors.yellow[2];
 };
 
