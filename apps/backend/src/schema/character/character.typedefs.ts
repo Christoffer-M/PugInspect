@@ -46,6 +46,7 @@ export const characterTypedefs = gql`
 
   type RaiderIo {
     class: String
+    itlvl: Float
     thumbnailUrl: String
     specialization: String
     raidProgression: [RaidProgressionDetail!]

@@ -78,6 +78,7 @@ type RaiderIo {
   dps: Segment
   gear: String
   healer: Segment
+  itlvl: Int
   race: String
   raidProgression: [RaidProgressionDetail!]
   specialization: String

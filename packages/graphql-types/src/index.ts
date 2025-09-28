@@ -118,6 +118,7 @@ export type RaiderIo = {
   dps?: Maybe<Segment>;
   gear?: Maybe<Scalars['String']['output']>;
   healer?: Maybe<Segment>;
+  itlvl?: Maybe<Scalars['Int']['output']>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   specialization?: Maybe<Scalars['String']['output']>;

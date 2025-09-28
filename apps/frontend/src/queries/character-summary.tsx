@@ -24,6 +24,7 @@ export const CharacterDataQuery = graphql(`
         race
         class
         specialization
+        itlvl
         bestMythicPlusRuns {
           dungeon
           short_name

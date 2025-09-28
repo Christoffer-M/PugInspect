@@ -6,11 +6,12 @@ export function mapRaiderIo(
 ): RaiderIo | null {
   if (!rioProfile) return null;
 
-  const base = {
+  const base: RaiderIo = {
     thumbnailUrl: rioProfile.thumbnail_url,
     race: rioProfile.race,
     class: rioProfile.class,
     specialization: rioProfile.active_spec_name,
+    itlvl: rioProfile.gear?.item_level_equipped,
   };
 
   const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;

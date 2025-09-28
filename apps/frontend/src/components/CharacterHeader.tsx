@@ -125,6 +125,12 @@ export const CharacterHeader: React.FC<{
             }
             isLoading={loading}
           />
+          <RankingGroup
+            label="Item level:"
+            value={raiderIoInfo?.itlvl?.toFixed(2)}
+            color={undefined}
+            isLoading={loading}
+          />
         </Stack>
       </Group>
     </Paper>
