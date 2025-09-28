@@ -84,7 +84,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
       </Group>
 
       <Grid>
-        <Grid.Col span={4}>
+        <Grid.Col span={4} pb={0}>
           <Paper withBorder p={0} shadow="sm" style={{ textAlign: "center" }}>
             <Center>
               <RingProgress
@@ -110,7 +110,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
             </Center>
           </Paper>
         </Grid.Col>
-        <Grid.Col span={4}>
+        <Grid.Col span={4} pb={0}>
           <Paper withBorder p={0} shadow="sm" style={{ textAlign: "center" }}>
             <Center>
               <RingProgress
@@ -136,7 +136,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
             </Center>
           </Paper>
         </Grid.Col>
-        <Grid.Col span={4}>
+        <Grid.Col span={4} pb={0}>
           <Paper withBorder p={0} shadow="sm" style={{ textAlign: "center" }}>
             <Center>
               <RingProgress

@@ -103,7 +103,7 @@ function CharacterPage() {
               </Tooltip>
             </Group>
           </Group>
-          <Stack gap={"md"} w={"100%"} align="center">
+          <Stack gap={"lg"} w={"100%"} align="center">
             <CharacterHeader
               name={name}
               region={region}
