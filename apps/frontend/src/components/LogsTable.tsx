@@ -11,6 +11,7 @@ import {
   Grid,
   Group,
   Image,
+  Center,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import {
@@ -214,7 +215,52 @@ export const LogsTable: React.FC<LogsTableProps> = ({
             </Stack>
           </Grid.Col>
         </Grid>
+        <Center>
+          <Group p={"xs"} gap={100} align={"center"}>
+            <Stack gap={0} align="center">
+              <Text m="0" fw={500} w={"fit-content"}>
+                Best average
+              </Text>
 
+              <Title
+                order={2}
+                m={0}
+                c={
+                  logs?.bestPerformanceAverage
+                    ? GetWarcraftLogRankingColors(
+                        logs.bestPerformanceAverage,
+                        theme,
+                      )
+                    : undefined
+                }
+                fw={700}
+              >
+                {logs?.bestPerformanceAverage || 0}
+              </Title>
+            </Stack>
+            <Stack gap={0} align="center">
+              <Text m="0" fw={500} w={"fit-content"}>
+                Median average
+              </Text>
+
+              <Title
+                order={2}
+                m={0}
+                c={
+                  logs?.medianPerformanceAverage
+                    ? GetWarcraftLogRankingColors(
+                        logs.medianPerformanceAverage,
+                        theme,
+                      )
+                    : undefined
+                }
+                fw={700}
+              >
+                {logs?.medianPerformanceAverage || 0}
+              </Title>
+            </Stack>
+          </Group>
+        </Center>
         <Table verticalSpacing={0} horizontalSpacing={"md"}>
           <Table.Thead>
             <Table.Tr>

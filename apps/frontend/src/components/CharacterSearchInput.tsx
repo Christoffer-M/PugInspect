@@ -19,7 +19,6 @@ const CharacterSearchInput: React.FC = () => {
   const initialRegion = params?.region;
   const initialRealm = params?.realm;
   const initialName = params?.name;
-  const ignoreNextOnChange = useRef(false);
   const dropdownOpen = useRef(false);
   const [searchTerm, setSearchTerm] = useState(
     initialName && initialRealm ? `${initialName}-${initialRealm}` : "",
@@ -46,6 +45,9 @@ const CharacterSearchInput: React.FC = () => {
         `${upperCaseFirstLetter(parsed.name)}-${upperCaseFirstLetter(parsed.realm)}`,
       );
       setRegion(parsed.region.toUpperCase());
+      navigateToCharacter(
+        `${upperCaseFirstLetter(parsed.name)}-${upperCaseFirstLetter(parsed.realm)}`,
+      );
     } else {
       setErrorText("Invalid Raider.IO URL");
     }
@@ -104,30 +106,16 @@ const CharacterSearchInput: React.FC = () => {
         data={
           searchResults?.map((r) => ({
             value: `${r.name}-${r.realm}`,
-            label: `(${r.region}) ${r.name}-${r.realm}`,
+            label: `${r.name}-${r.realm}`,
           })) || []
         }
         value={searchTerm}
         onChange={(search) => {
           if (errorText) setErrorText("");
 
-          if (ignoreNextOnChange.current) {
-            ignoreNextOnChange.current = false;
-            return;
-          }
-
-          const trimmed = search.trim();
-
-          if (trimmed.toLowerCase().startsWith("https://raider.io/")) {
-            handleRaiderIoUrl(trimmed);
-            return;
-          }
-
           setSearchTerm(search);
         }}
         onOptionSubmit={(selectedValue) => {
-          ignoreNextOnChange.current = true;
-          setSearchTerm(selectedValue);
           navigateToCharacter(selectedValue);
         }}
         onDropdownOpen={() => {
@@ -150,7 +138,11 @@ const CharacterSearchInput: React.FC = () => {
           }
         }}
         onPaste={(e) => {
-          e.stopPropagation();
+          const pastedText = e.clipboardData?.getData("text") || "";
+          if (pastedText.toLowerCase().startsWith("https://raider.io/")) {
+            handleRaiderIoUrl(pastedText);
+            return;
+          }
         }}
         rightSection={isLoading ? <Loader size="sm" /> : null}
       />
