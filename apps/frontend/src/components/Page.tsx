@@ -57,7 +57,6 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               title: "Already on this character",
               message: annoyedMessages[messageIndex],
               color: "yellow",
-
               autoClose: 2500,
             });
 
