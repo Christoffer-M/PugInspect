@@ -81,6 +81,7 @@ type RaiderIo {
   itlvl: Float
   race: String
   raidProgression: [RaidProgressionDetail!]
+  recentMythicPlusRuns: [MythicPlusRun!]
   specialization: String
   tank: Segment
   thumbnailUrl: String

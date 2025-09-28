@@ -52,6 +52,7 @@ export const characterTypedefs = gql`
     specialization: String
     raidProgression: [RaidProgressionDetail!]
     bestMythicPlusRuns: [MythicPlusRun!]
+    recentMythicPlusRuns: [MythicPlusRun!]
     race: String
     gear: String
     all: Segment

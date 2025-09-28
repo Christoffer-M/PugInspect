@@ -16,7 +16,8 @@ import { IconReload } from "@tabler/icons-react";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterLogs } from "../queries/character-logs";
 import { RaidProgression } from "../components/RaidProgression";
-import { MythicPlusRunsTable } from "../components/MythicPlusRunsTable";
+import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
+import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
 
 export type CharacterQueryParams = {
   roleType: RoleType;
@@ -121,12 +122,20 @@ function CharacterPage() {
               isFetching={isFetchingLogs}
               class={characterSummaryData?.raiderIo?.class}
             />
-            <MythicPlusRunsTable
-              isFetching={isFetchingSummary}
-              characterRuns={
-                characterSummaryData?.raiderIo?.bestMythicPlusRuns ?? []
-              }
-            />
+            <Group w={"100%"} align="flex-start" justify="space-between">
+              <BestMythicPlusRunsTable
+                isFetching={isFetchingSummary}
+                characterRuns={
+                  characterSummaryData?.raiderIo?.bestMythicPlusRuns ?? []
+                }
+              />
+              <RecentMythicPlusRunsTable
+                isFetching={isFetchingSummary}
+                characterRuns={
+                  characterSummaryData?.raiderIo?.recentMythicPlusRuns ?? []
+                }
+              />
+            </Group>
           </Stack>
         </Stack>
       </Container>

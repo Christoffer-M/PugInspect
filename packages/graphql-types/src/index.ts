@@ -123,6 +123,7 @@ export type RaiderIo = {
   itlvl?: Maybe<Scalars['Float']['output']>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
+  recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
   specialization?: Maybe<Scalars['String']['output']>;
   tank?: Maybe<Segment>;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;

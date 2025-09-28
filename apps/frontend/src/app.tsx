@@ -10,7 +10,7 @@ import { routeTree } from "./routeTree.gen.ts";
 
 import reportWebVitals from "./reportWebVitals.ts";
 
-import { MantineProvider } from "@mantine/core";
+import { createTheme, MantineProvider } from "@mantine/core";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   QueryCache,
@@ -54,6 +54,10 @@ const queryClient = new QueryClient({
   },
 });
 
+const theme = createTheme({
+  primaryColor: "gray",
+});
+
 // Render the app
 const rootElement = document.getElementById("app");
 if (rootElement && !rootElement.innerHTML) {
@@ -62,7 +66,7 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <ReactQueryDevtools initialIsOpen={false} />
-        <MantineProvider defaultColorScheme="dark">
+        <MantineProvider defaultColorScheme="dark" theme={theme}>
           <Notifications />
           <RouterProvider router={router} />
         </MantineProvider>

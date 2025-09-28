@@ -1,5 +1,24 @@
-import { RaiderIo, Maybe, Segment } from "@repo/graphql-types";
+import { RaiderIo, Maybe, Segment, MythicPlusRun } from "@repo/graphql-types";
 import { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
+
+function mapMythicPlusRuns(
+  runs?: RaiderIoCharacterApiResponse[
+    | "mythic_plus_best_runs"
+    | "mythic_plus_recent_runs"]
+): MythicPlusRun[] | undefined {
+  if (!runs) return undefined;
+  return runs.map((run) => ({
+    dungeon: run.dungeon,
+    short_name: run.short_name,
+    challange_mode_id: run.map_challenge_mode_id,
+    key_level: run.mythic_level,
+    completed_at: run.completed_at,
+    icon_url: run.icon_url,
+    background_image_url: run.background_image_url,
+    url: run.url,
+    keystone_upgrades: run.num_keystone_upgrades,
+  }));
+}
 
 export function mapRaiderIo(
   rioProfile: RaiderIoCharacterApiResponse
@@ -22,18 +41,6 @@ export function mapRaiderIo(
     })
   );
 
-  const bestMythicPlusRuns = rioProfile.mythic_plus_best_runs?.map((run) => ({
-    dungeon: run.dungeon,
-    short_name: run.short_name,
-    challange_mode_id: run.map_challenge_mode_id,
-    key_level: run.mythic_level,
-    completed_at: run.completed_at,
-    icon_url: run.icon_url,
-    background_image_url: run.background_image_url,
-    url: run.url,
-    keystone_upgrades: run.num_keystone_upgrades,
-  }));
-
   const getSegment = (seg?: {
     color?: string;
     score?: number;
@@ -43,7 +50,8 @@ export function mapRaiderIo(
   return {
     ...base,
     raidProgression,
-    bestMythicPlusRuns,
+    bestMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_best_runs),
+    recentMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_recent_runs),
     all: getSegment(segments?.all),
     dps: getSegment(segments?.dps),
     healer: getSegment(segments?.healer),

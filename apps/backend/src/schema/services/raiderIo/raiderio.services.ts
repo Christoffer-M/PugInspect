@@ -39,6 +39,7 @@ const fields: CharacterField[] = [
   { key: CharacterFieldKey.MythicPlusBestRuns },
   { key: CharacterFieldKey.Gear },
   { key: CharacterFieldKey.RaidProgression },
+  { key: CharacterFieldKey.MythicPlusRecentRuns },
 ];
 
 export class RaiderIOService {
