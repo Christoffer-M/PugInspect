@@ -22,6 +22,7 @@ const query = graphql(`
     $role: RoleType
     $metric: Metric
     $difficulty: Difficulty
+    $byBracket: Boolean
   ) {
     character(
       name: $name
@@ -30,6 +31,7 @@ const query = graphql(`
       role: $role
       metric: $metric
       difficulty: $difficulty
+      byBracket: $byBracket
     ) {
       warcraftLogs {
         bestPerformanceAverage
@@ -59,6 +61,7 @@ export const useCharacterLogs = ({
   role,
   metric,
   difficulty,
+  byBracket,
 }: CharacterLogsQueryVariables) =>
   useQuery({
     queryKey: queryKeys.characterLogs(
@@ -68,8 +71,10 @@ export const useCharacterLogs = ({
       role as RoleType | undefined,
       metric as Metric | undefined,
       difficulty as Difficulty | undefined,
+      byBracket as boolean | undefined,
     ),
     retry: false,
+    placeholderData: (prev) => prev,
     queryFn: async (): Promise<CharacterLogsWarcraftLogs> => {
       const response = await execute<
         CharacterLogsQuery,
@@ -81,6 +86,7 @@ export const useCharacterLogs = ({
         role,
         metric,
         difficulty,
+        byBracket,
       });
 
       return response.character?.warcraftLogs;

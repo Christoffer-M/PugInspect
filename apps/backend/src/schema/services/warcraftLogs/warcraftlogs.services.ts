@@ -8,7 +8,12 @@ import {
 } from "./generated/index.js";
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { GraphQLError } from "graphql";
-import { Difficulty, Metric, RoleType } from "@repo/graphql-types";
+import {
+  Difficulty,
+  Metric,
+  QueryCharacterArgs,
+  RoleType,
+} from "@repo/graphql-types";
 
 export class WarcraftLogsService {
   private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
@@ -74,15 +79,12 @@ export class WarcraftLogsService {
   }
 
   static async getCharacterProfile(
-    name: string,
-    realm: string,
-    region: string,
-    role?: InputMaybe<RoleType>,
-    metric?: InputMaybe<Metric>,
-    difficulty?: InputMaybe<Difficulty>
+    args: QueryCharacterArgs
   ): Promise<CharacterProfileQuery["characterData"]> {
     const token = await this.getAccessToken();
     if (!token) throw new Error("API token not configured.");
+
+    const { name, realm, region, role, metric, difficulty, byBracket } = args;
 
     const variables: CharacterProfileQueryVariables = {
       name,
@@ -92,6 +94,7 @@ export class WarcraftLogsService {
       difficulty: this.mapDifficulty(difficulty),
       role,
       metric,
+      byBracket,
     };
 
     const options: RequestInit = {

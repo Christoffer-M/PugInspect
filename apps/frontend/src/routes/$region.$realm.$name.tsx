@@ -18,10 +18,11 @@ import { useCharacterLogs } from "../queries/character-logs";
 import { RaidProgression } from "../components/RaidProgression";
 import { MythicPlusRunsTable } from "../components/MythicPlusRunsTable";
 
-type CharacterQueryParams = {
+export type CharacterQueryParams = {
   roleType: RoleType;
   metric?: Metric;
   difficulty?: Difficulty;
+  bracket?: boolean;
 };
 
 export const Route = createFileRoute("/$region/$realm/$name")({
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/$region/$realm/$name")({
     roleType: (search.roleType as RoleType) || RoleType.Any,
     metric: search.metric as Metric | undefined,
     difficulty: search.difficulty as Difficulty | undefined,
+    bracket: search.bracket === true || false,
   }),
 });
 
@@ -39,6 +41,7 @@ function CharacterPage() {
     roleType: searchRoleType,
     metric: searchMetric,
     difficulty: searchDifficulty,
+    bracket: searchBracket,
   } = useSearch({
     from: Route.id,
   });
@@ -65,6 +68,7 @@ function CharacterPage() {
     role: searchRoleType,
     metric: searchMetric,
     difficulty: searchDifficulty,
+    byBracket: searchBracket,
   });
 
   const refetchData = () => {

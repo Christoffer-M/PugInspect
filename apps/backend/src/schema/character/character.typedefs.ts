@@ -9,6 +9,7 @@ export const characterTypedefs = gql`
       role: RoleType
       metric: Metric
       difficulty: Difficulty
+      byBracket: Boolean
     ): Character
     characterSuggestions(
       region: String!
@@ -41,7 +42,7 @@ export const characterTypedefs = gql`
     realm: String!
     region: String!
     raiderIo: RaiderIo
-    warcraftLogs(role: RoleType, metric: Metric): Logs
+    warcraftLogs(role: RoleType, metric: Metric, byBracket: Boolean): Logs
   }
 
   type RaiderIo {

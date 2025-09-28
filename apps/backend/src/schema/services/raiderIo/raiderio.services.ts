@@ -87,8 +87,6 @@ export class RaiderIOService {
         region: r.data.region.short_name,
       }));
     } catch (error) {
-      console.log("error", error);
-
       throw new GraphQLError(
         "Failed to fetch character suggestions from RaiderIO",
         {

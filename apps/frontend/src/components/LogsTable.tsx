@@ -12,6 +12,7 @@ import {
   Group,
   Image,
   Center,
+  Switch,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
 import {
@@ -22,6 +23,7 @@ import {
   RoleType,
 } from "../graphql/graphql";
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { CharacterQueryParams } from "../routes/$region.$realm.$name";
 
 export type CharacterLogsWarcraftLogs = NonNullable<
   CharacterLogsQuery["character"]
@@ -49,6 +51,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
     roleType: searchRoleType,
     metric: searchMetric,
     difficulty: searchDifficulty,
+    bracket: searchBracket,
   } = useSearch({
     from: "/$region/$realm/$name",
   });
@@ -121,23 +124,20 @@ export const LogsTable: React.FC<LogsTableProps> = ({
     </Table.Tr>
   ));
 
-  const skeletonRows = Array.from({ length: 5 }).map((_, idx) => (
-    <Table.Tr key={idx}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Table.Td key={i}>
-          <Skeleton height={20} />
-        </Table.Td>
-      ))}
-    </Table.Tr>
-  ));
+  const numberOfSkeletons = rows.length > 0 ? rows.length : 5;
+  const skeletonRows = Array.from({ length: numberOfSkeletons }).map(
+    (_, idx) => (
+      <Table.Tr key={idx}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Table.Td key={i}>
+            <Skeleton height={25} miw={10} />
+          </Table.Td>
+        ))}
+      </Table.Tr>
+    ),
+  );
 
-  const setSearch = (
-    partial: Partial<{
-      roleType: RoleType;
-      metric: Metric;
-      difficulty: Difficulty;
-    }>,
-  ) => {
+  const setSearch = (partial: Partial<CharacterQueryParams>) => {
     navigate({
       to: ".",
       search: (prev) => ({
@@ -145,14 +145,26 @@ export const LogsTable: React.FC<LogsTableProps> = ({
         metric: partial.metric ?? prev.metric ?? metric ?? undefined,
         difficulty:
           partial.difficulty ?? prev.difficulty ?? difficulty ?? undefined,
+        bracket: partial.bracket ?? prev.bracket ?? false,
       }),
     });
   };
 
   return (
     <Stack w={"100%"} gap={0}>
-      <Group justify="space-between" align="center" mb={"xs"}>
+      <Group justify="space-between" align="center" mb={0}>
         <Title order={3}>Raid logs</Title>
+        <Switch
+          size="sm"
+          onLabel="ON"
+          offLabel="OFF"
+          label={"By Itlvl"}
+          labelPosition="left"
+          checked={searchBracket}
+          onChange={(event) => {
+            return setSearch({ bracket: event.currentTarget.checked });
+          }}
+        />
       </Group>
 
       <Paper withBorder w="100%">
@@ -195,8 +207,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               />
             </Stack>
           </Grid.Col>
-          <Grid.Col span={"auto"}>
-            <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
+          <Grid.Col span={"content"}>
+            <Stack align="center" w={"100%"} gap={"xs"} flex={1} miw={130}>
               <Text m="0" fw={500} w={"fit-content"}>
                 Metric
               </Text>
@@ -211,10 +223,11 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                   if (value == null) return;
                   setSearch({ metric: value as Metric });
                 }}
-              />{" "}
+              />
             </Stack>
           </Grid.Col>
         </Grid>
+
         <Center>
           <Group p={"xs"} gap={100} align={"center"}>
             <Stack gap={0} align="center">

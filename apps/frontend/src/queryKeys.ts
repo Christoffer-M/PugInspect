@@ -29,6 +29,7 @@ export const queryKeys = {
     role?: RoleType,
     metric?: Metric,
     difficulty?: Difficulty,
+    byBracket?: boolean,
   ) => {
     const {
       name: normName,
@@ -43,6 +44,7 @@ export const queryKeys = {
       role,
       metric,
       difficulty,
+      byBracket,
     ];
   },
 };

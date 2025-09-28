@@ -9,6 +9,7 @@ export const CHARACTER_PROFILE = gql`
     $difficulty: Int
     $role: RoleType
     $metric: CharacterRankingMetricType
+    $byBracket: Boolean
   ) {
     characterData {
       character(name: $name, serverSlug: $server, serverRegion: $region) {
@@ -17,6 +18,7 @@ export const CHARACTER_PROFILE = gql`
           difficulty: $difficulty
           role: $role
           metric: $metric
+          byBracket: $byBracket
         )
         name
         hidden

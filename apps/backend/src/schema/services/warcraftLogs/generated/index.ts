@@ -2344,6 +2344,7 @@ export type CharacterProfileQueryVariables = Exact<{
   difficulty?: InputMaybe<Scalars['Int']['input']>;
   role?: InputMaybe<RoleType>;
   metric?: InputMaybe<CharacterRankingMetricType>;
+  byBracket?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 

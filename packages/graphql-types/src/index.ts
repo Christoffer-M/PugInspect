@@ -25,6 +25,7 @@ export type Character = {
 
 
 export type CharacterWarcraftLogsArgs = {
+  byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
 };
@@ -75,6 +76,7 @@ export type Query = {
 
 
 export type QueryCharacterArgs = {
+  byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   difficulty?: InputMaybe<Difficulty>;
   metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];
@@ -118,7 +120,7 @@ export type RaiderIo = {
   dps?: Maybe<Segment>;
   gear?: Maybe<Scalars['String']['output']>;
   healer?: Maybe<Segment>;
-  itlvl?: Maybe<Scalars['Int']['output']>;
+  itlvl?: Maybe<Scalars['Float']['output']>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   specialization?: Maybe<Scalars['String']['output']>;
