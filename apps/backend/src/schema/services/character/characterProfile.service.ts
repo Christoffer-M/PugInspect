@@ -1,6 +1,7 @@
 import { QueryCharacterArgs } from "@repo/graphql-types";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
+import { GraphQLError } from "graphql";
 
 export async function getCharacterProfiles(
   args: QueryCharacterArgs,
@@ -24,16 +25,28 @@ export async function getCharacterProfiles(
   }
 
   if (raiderIoRequested) {
+    const response = await RaiderIOService.getCharacterProfile(args);
+    if (response == null) {
+      throw new GraphQLError("Character Raider.IO profile not found", {
+        extensions: { code: "NOT_FOUND" },
+      });
+    }
     return {
-      rioProfile: await RaiderIOService.getCharacterProfile(args),
+      rioProfile: response,
       warcraftLogsProfile: undefined,
     };
   }
 
   if (logsRequested) {
+    const response = await WarcraftLogsService.getCharacterProfile(args);
+    if (response == null) {
+      throw new GraphQLError("Character Warcraft Logs profile not found", {
+        extensions: { code: "NOT_FOUND" },
+      });
+    }
     return {
       rioProfile: undefined,
-      warcraftLogsProfile: await WarcraftLogsService.getCharacterProfile(args),
+      warcraftLogsProfile: response,
     };
   }
 

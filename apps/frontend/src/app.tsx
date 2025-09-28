@@ -1,7 +1,9 @@
 import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { notifications, Notifications } from "@mantine/notifications";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen.ts";
@@ -10,7 +12,11 @@ import reportWebVitals from "./reportWebVitals.ts";
 
 import { MantineProvider } from "@mantine/core";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 
 // Create a new router instance
 const router = createRouter({
@@ -29,7 +35,24 @@ declare module "@tanstack/react-router" {
 }
 
 // Create a QueryClient instance
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      console.error("Global query error:", error, "on", query.queryKey);
+      notifications.show({
+        title: "Error",
+        message: `${error instanceof Error ? error.message : String(error)}`,
+        color: "red",
+      });
+    },
+  }),
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 5, // 5 minutes
+      retry: false,
+    },
+  },
+});
 
 // Render the app
 const rootElement = document.getElementById("app");
@@ -40,6 +63,7 @@ if (rootElement && !rootElement.innerHTML) {
       <QueryClientProvider client={queryClient}>
         <ReactQueryDevtools initialIsOpen={false} />
         <MantineProvider defaultColorScheme="dark">
+          <Notifications />
           <RouterProvider router={router} />
         </MantineProvider>
       </QueryClientProvider>

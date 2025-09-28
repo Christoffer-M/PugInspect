@@ -85,7 +85,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
               maximumFractionDigits: 0,
             })
-          : "N/A"}
+          : "-"}
       </Table.Td>
       <Table.Td
         c={
@@ -99,7 +99,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           ? Math.floor(ranking.medianPercent).toLocaleString(undefined, {
               maximumFractionDigits: 0,
             })
-          : "N/A"}
+          : "-"}
       </Table.Td>
       <Table.Td
         c={ranking.totalKills ? undefined : "dimmed"}
@@ -107,7 +107,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
       >
         {ranking.totalKills?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
-        }) || "N/A"}
+        }) || "-"}
       </Table.Td>
       <Table.Td>
         {ranking.spec && className && (
@@ -229,50 +229,59 @@ export const LogsTable: React.FC<LogsTableProps> = ({
         </Grid>
 
         <Center>
-          <Group p={"xs"} gap={100} align={"center"}>
-            <Stack gap={0} align="center">
-              <Text m="0" fw={500} w={"fit-content"}>
-                Best average
-              </Text>
+          <Paper flex={1} radius={0}>
+            <Group p={"xs"} w={"100%"} align={"center"} justify="space-around">
+              <Stack gap={0} align="center">
+                <Text m="0" fw={500} w={"fit-content"}>
+                  Best average
+                </Text>
+                {isFetching ? (
+                  <Skeleton height={25} miw={10} />
+                ) : (
+                  <Title
+                    order={2}
+                    m={0}
+                    c={
+                      logs?.bestPerformanceAverage
+                        ? GetWarcraftLogRankingColors(
+                            logs.bestPerformanceAverage,
+                            theme,
+                          )
+                        : undefined
+                    }
+                    fw={700}
+                  >
+                    {logs?.bestPerformanceAverage || "-"}
+                  </Title>
+                )}
+              </Stack>
 
-              <Title
-                order={2}
-                m={0}
-                c={
-                  logs?.bestPerformanceAverage
-                    ? GetWarcraftLogRankingColors(
-                        logs.bestPerformanceAverage,
-                        theme,
-                      )
-                    : undefined
-                }
-                fw={700}
-              >
-                {logs?.bestPerformanceAverage || 0}
-              </Title>
-            </Stack>
-            <Stack gap={0} align="center">
-              <Text m="0" fw={500} w={"fit-content"}>
-                Median average
-              </Text>
-
-              <Title
-                order={2}
-                m={0}
-                c={
-                  logs?.medianPerformanceAverage
-                    ? GetWarcraftLogRankingColors(
-                        logs.medianPerformanceAverage,
-                        theme,
-                      )
-                    : undefined
-                }
-                fw={700}
-              >
-                {logs?.medianPerformanceAverage || 0}
-              </Title>
-            </Stack>
-          </Group>
+              <Stack gap={0} align="center">
+                <Text m="0" fw={500} w={"fit-content"}>
+                  Median average
+                </Text>
+                {isFetching ? (
+                  <Skeleton height={25} miw={10} />
+                ) : (
+                  <Title
+                    order={2}
+                    m={0}
+                    c={
+                      logs?.medianPerformanceAverage
+                        ? GetWarcraftLogRankingColors(
+                            logs.medianPerformanceAverage,
+                            theme,
+                          )
+                        : undefined
+                    }
+                    fw={700}
+                  >
+                    {logs?.medianPerformanceAverage || "-"}
+                  </Title>
+                )}
+              </Stack>
+            </Group>
+          </Paper>
         </Center>
         <Table verticalSpacing={0} horizontalSpacing={"md"}>
           <Table.Thead>

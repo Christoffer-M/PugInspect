@@ -119,7 +119,8 @@ const CharacterSearchInput: React.FC = () => {
           navigateToCharacter(selectedValue);
         }}
         onDropdownOpen={() => {
-          dropdownOpen.current = true;
+          if (searchResults?.length != null && searchResults.length > 0)
+            dropdownOpen.current = true;
         }}
         onDropdownClose={() => {
           dropdownOpen.current = false;

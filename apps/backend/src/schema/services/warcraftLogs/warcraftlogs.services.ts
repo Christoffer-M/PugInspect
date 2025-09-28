@@ -115,6 +115,10 @@ export class WarcraftLogsService {
         options
       );
 
+      if (!response.data?.characterData?.character) {
+        return null;
+      }
+
       return response.data.characterData;
     } catch (error) {
       throw new GraphQLError(

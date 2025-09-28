@@ -21,7 +21,7 @@ export const RankingGroup: React.FC<RankingGroupProps> = ({
       <Skeleton h={15} w={50} radius={100} m={0} animate />
     ) : (
       <Text fw={700} m={0} c={color}>
-        {value ?? "N/A"}
+        {value ?? "-"}
       </Text>
     )}
   </Group>

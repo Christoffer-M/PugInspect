@@ -1,4 +1,4 @@
-import { Difficulty, Metric, RoleType } from "./graphql/graphql";
+import { CharacterLogsQueryVariables } from "./graphql/graphql";
 
 // Helper for normalizing character params
 export function normalizeCharacterParams(
@@ -22,29 +22,21 @@ export const queryKeys = {
     } = normalizeCharacterParams(name, realm, region);
     return ["character", normName, normRealm, normRegion];
   },
-  characterLogs: (
-    name: string,
-    realm: string,
-    region: string,
-    role?: RoleType,
-    metric?: Metric,
-    difficulty?: Difficulty,
-    byBracket?: boolean,
-  ) => {
+  characterLogs: (args: CharacterLogsQueryVariables) => {
     const {
       name: normName,
       realm: normRealm,
       region: normRegion,
-    } = normalizeCharacterParams(name, realm, region);
+    } = normalizeCharacterParams(args.name, args.realm, args.region);
     return [
       "characterLogs",
       normName,
       normRealm,
       normRegion,
-      role,
-      metric,
-      difficulty,
-      byBracket,
+      args.role,
+      args.metric,
+      args.difficulty,
+      args.byBracket,
     ];
   },
 };

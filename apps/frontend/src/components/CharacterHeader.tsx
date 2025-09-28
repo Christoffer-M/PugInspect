@@ -37,7 +37,7 @@ export const CharacterHeader: React.FC<{
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
       <Group justify="space-between">
         <Group h="100%">
-          {loading ? (
+          {loading || isError ? (
             <>
               <Skeleton h={85} w={85} radius={100} m={0} animate={!isError} />
               <Stack gap={"xs"}>
@@ -47,8 +47,7 @@ export const CharacterHeader: React.FC<{
               </Stack>
             </>
           ) : (
-            raiderIoInfo &&
-            !isError && (
+            raiderIoInfo && (
               <>
                 <Image
                   src={raiderIoInfo.thumbnailUrl}

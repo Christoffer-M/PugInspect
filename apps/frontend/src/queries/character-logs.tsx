@@ -4,9 +4,6 @@ import { graphql } from "../graphql";
 import {
   CharacterLogsQuery,
   CharacterLogsQueryVariables,
-  Difficulty,
-  Metric,
-  RoleType,
 } from "../graphql/graphql";
 import { queryKeys } from "../queryKeys";
 
@@ -54,40 +51,16 @@ const query = graphql(`
   }
 `);
 
-export const useCharacterLogs = ({
-  name,
-  realm,
-  region,
-  role,
-  metric,
-  difficulty,
-  byBracket,
-}: CharacterLogsQueryVariables) =>
+export const useCharacterLogs = (args: CharacterLogsQueryVariables) =>
   useQuery({
-    queryKey: queryKeys.characterLogs(
-      name,
-      realm,
-      region,
-      role as RoleType | undefined,
-      metric as Metric | undefined,
-      difficulty as Difficulty | undefined,
-      byBracket as boolean | undefined,
-    ),
+    queryKey: queryKeys.characterLogs(args),
     retry: false,
     placeholderData: (prev) => prev,
     queryFn: async (): Promise<CharacterLogsWarcraftLogs> => {
       const response = await execute<
         CharacterLogsQuery,
         CharacterLogsQueryVariables
-      >(query, {
-        name,
-        realm,
-        region,
-        role,
-        metric,
-        difficulty,
-        byBracket,
-      });
+      >(query, args);
 
       return response.character?.warcraftLogs;
     },
