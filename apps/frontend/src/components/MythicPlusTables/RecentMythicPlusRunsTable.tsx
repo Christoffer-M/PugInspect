@@ -1,4 +1,4 @@
-import { Stack, Table, Title } from "@mantine/core";
+import { Group, Stack, Table, Title, Text } from "@mantine/core";
 import { MythicPlusRun } from "../../graphql/graphql";
 import RunTableRow from "./components/RunTableRow";
 import RunTableHeader from "./components/RunTableHeader";
@@ -26,11 +26,27 @@ export const RecentMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
   });
   return (
     <Stack flex={1} gap={0}>
-      <Title order={3}>Latest M+ Runs</Title>
+      <Group gap={4} align="flex-start">
+        <Title order={3}>Latest M+ Runs </Title>
+        <Text c="dimmed" ta={"start"}>
+          ({characterRuns.length})
+        </Text>
+      </Group>
+
       <Table.ScrollContainer minWidth={300} maxHeight={400}>
         <Table stickyHeader withTableBorder>
           <RunTableHeader />
-          <Table.Tbody>{rows}</Table.Tbody>
+          <Table.Tbody>
+            {rows.length > 0 ? (
+              rows
+            ) : (
+              <Table.Tr>
+                <Table.Td colSpan={3} style={{ textAlign: "center" }}>
+                  No recent runs found
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
         </Table>
       </Table.ScrollContainer>
     </Stack>
