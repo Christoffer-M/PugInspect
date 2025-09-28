@@ -158,7 +158,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           size="sm"
           onLabel="ON"
           offLabel="OFF"
-          label={"By Itlvl"}
+          label={"By Ilvl"}
           labelPosition="left"
           checked={searchBracket}
           onChange={(event) => {
