@@ -1,6 +1,12 @@
-import { Autocomplete, Flex, Loader, Select } from "@mantine/core";
+import {
+  Autocomplete,
+  Flex,
+  Loader,
+  Select,
+  useMantineTheme,
+} from "@mantine/core";
 import { useParams, useRouter } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   parseRaiderIoUrl,
   upperCaseFirstLetter,
@@ -15,11 +21,11 @@ const CharacterSearchInput: React.FC = () => {
     from: "/$region/$realm/$name",
     shouldThrow: false,
   });
+  const theme = useMantineTheme();
 
   const initialRegion = params?.region;
   const initialRealm = params?.realm;
   const initialName = params?.name;
-  const dropdownOpen = useRef(false);
   const [searchTerm, setSearchTerm] = useState(
     initialName && initialRealm ? `${initialName}-${initialRealm}` : "",
   );
@@ -32,7 +38,7 @@ const CharacterSearchInput: React.FC = () => {
   const [errorText, setErrorText] = useState("");
   const router = useRouter();
 
-  const { data: searchResults, isLoading } = useCharacterSearchQuery(
+  const { data: searchResults = [], isLoading } = useCharacterSearchQuery(
     debouncedSearch,
     region,
     !!errorText || searchTerm === `${initialName}-${initialRealm}`,
@@ -103,12 +109,10 @@ const CharacterSearchInput: React.FC = () => {
         error={errorText}
         limit={10}
         placeholder="Ceasevoker-Kazzak"
-        data={
-          searchResults?.map((r) => ({
-            value: `${r.name}-${r.realm}`,
-            label: `${r.name}-${r.realm}`,
-          })) || []
-        }
+        data={searchResults?.map((r) => ({
+          value: `${r.name}-${r.realm}`,
+          label: `${r.name}-${r.realm}`,
+        }))}
         value={searchTerm}
         onChange={(search) => {
           if (errorText) setErrorText("");
@@ -118,13 +122,6 @@ const CharacterSearchInput: React.FC = () => {
         onOptionSubmit={(selectedValue) => {
           navigateToCharacter(selectedValue);
         }}
-        onDropdownOpen={() => {
-          if (searchResults?.length != null && searchResults.length > 0)
-            dropdownOpen.current = true;
-        }}
-        onDropdownClose={() => {
-          dropdownOpen.current = false;
-        }}
         style={{ width: 350 }}
         comboboxProps={{
           transitionProps: { transition: "pop", duration: 200 },
@@ -132,8 +129,7 @@ const CharacterSearchInput: React.FC = () => {
         onKeyDown={(event) => {
           if (event.key !== "Enter") return;
 
-          // Only navigate if dropdown is closed (i.e., not selecting an option)
-          if (!dropdownOpen.current) {
+          if (searchResults.length === 0) {
             event.preventDefault();
             navigateToCharacter(searchTerm);
           }
@@ -145,7 +141,9 @@ const CharacterSearchInput: React.FC = () => {
             return;
           }
         }}
-        rightSection={isLoading ? <Loader size="sm" /> : null}
+        rightSection={
+          isLoading ? <Loader size="sm" color={theme.colors.gray[1]} /> : null
+        }
       />
     </Flex>
   );

@@ -1,6 +1,6 @@
 import { Group, Stack, Table, Title, Text } from "@mantine/core";
 import { MythicPlusRun } from "../../graphql/graphql";
-import RunTableRow from "./components/RunTableRow";
+import RunTableRow from "./components/RunTableRow/RunTableRow";
 import RunTableHeader from "./components/RunTableHeader";
 
 type MythicPlusRunsTableProps = {
@@ -12,15 +12,13 @@ export const RecentMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
   characterRuns: characterRuns,
   isFetching = false,
 }) => {
-  const rows = characterRuns.map((run) => {
+  const rows = characterRuns.map((run, idx) => {
     return (
       <RunTableRow
-        key={run.challange_mode_id}
+        key={`best-mythic-plus-run-${run.dungeon}-${idx}`}
         mythicPlusRun={run}
         isFetching={isFetching}
-        onClick={() => {
-          console.log("clicked");
-        }}
+        url={run?.url}
       />
     );
   });
@@ -34,7 +32,7 @@ export const RecentMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
       </Group>
 
       <Table.ScrollContainer minWidth={300} maxHeight={400}>
-        <Table stickyHeader withTableBorder>
+        <Table stickyHeader withTableBorder highlightOnHover>
           <RunTableHeader />
           <Table.Tbody>
             {rows.length > 0 ? (

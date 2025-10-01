@@ -1,7 +1,7 @@
 import { Stack, Table, Title } from "@mantine/core";
 import { MythicPlusRun } from "../../graphql/graphql";
 import { TWW_S3_DUNGEONS } from "../../data/dungeons_tww_s3";
-import RunTableRow from "./components/RunTableRow";
+import RunTableRow from "./components/RunTableRow/RunTableRow";
 import RunTableHeader from "./components/RunTableHeader";
 
 type MythicPlusRunsTableProps = {
@@ -28,22 +28,20 @@ export const BestMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
 
   combinedRuns.sort((a, b) => (b?.key_level ?? 0) - (a?.key_level ?? 0));
 
-  const rows = combinedRuns.map((dungeon) => {
+  const rows = combinedRuns.map((dungeon, idx) => {
     return (
       <RunTableRow
-        key={dungeon?.challange_mode_id}
+        key={`recent-mythic-plus-run-${idx}`}
         mythicPlusRun={dungeon}
         isFetching={isFetching}
-        onClick={() => {
-          console.log("clicked");
-        }}
+        url={dungeon?.url}
       />
     );
   });
   return (
     <Stack flex={1} gap={0}>
       <Title order={3}>Top M+ Runs</Title>
-      <Table withTableBorder>
+      <Table withTableBorder highlightOnHover>
         <RunTableHeader />
         <Table.Tbody>{rows}</Table.Tbody>
       </Table>

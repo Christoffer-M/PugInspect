@@ -8,24 +8,29 @@ import {
   Table,
 } from "@mantine/core";
 import { IconStarFilled } from "@tabler/icons-react";
-import { MythicPlusRun } from "../../../graphql/graphql";
+import { MythicPlusRun } from "../../../../graphql/graphql";
+import classes from "./RunTableRow.module.css";
 
 type DungeonRowProps = {
   mythicPlusRun?: MythicPlusRun;
   isFetching: boolean;
-  onClick?: () => void;
+  url?: string;
 };
 
 const RunTableRow: React.FC<DungeonRowProps> = ({
   mythicPlusRun,
   isFetching,
-  onClick,
+  url,
 }) => {
   const completedAt = mythicPlusRun?.completed_at
     ? new Date(mythicPlusRun.completed_at).toLocaleDateString()
     : "-";
+
   return (
-    <Table.Tr key={mythicPlusRun?.challange_mode_id} onClick={onClick}>
+    <Table.Tr
+      onClick={url ? () => window.open(url, "_blank") : undefined}
+      style={{ cursor: url ? "pointer" : "default" }}
+    >
       <Table.Td>
         <Group gap={"xs"}>
           <AspectRatio ratio={1} w={25}>
@@ -37,10 +42,7 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
         </Group>
       </Table.Td>
       <Table.Td>
-        <Skeleton
-          visible={isFetching}
-          style={{ display: "flex", alignItems: "center" }}
-        >
+        <Skeleton visible={isFetching} className={classes.skeleton}>
           <Group gap={4}>
             <Text size="sm" m={0}>
               {mythicPlusRun?.key_level ?? "-"}
