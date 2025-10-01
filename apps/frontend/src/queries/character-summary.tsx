@@ -11,11 +11,6 @@ import {
 export const CharacterDataQuery = graphql(`
   query CharacterSummary($name: String!, $realm: String!, $region: String!) {
     character(name: $name, realm: $realm, region: $region) {
-      warcraftLogs {
-        bestPerformanceAverage
-        medianPerformanceAverage
-        metric
-      }
       name
       realm
       region
@@ -65,6 +60,7 @@ export const CharacterDataQuery = graphql(`
 
 export const useCharacterSummaryQuery = ({
   name,
+
   realm,
   region,
 }: CharacterSummaryQueryVariables) =>

@@ -1,5 +1,4 @@
 import {
-  useMantineTheme,
   Paper,
   Group,
   Skeleton,
@@ -8,10 +7,7 @@ import {
   Image,
   Text,
 } from "@mantine/core";
-import {
-  GetWarcraftLogRankingColors,
-  upperCaseFirstLetter,
-} from "../util/util";
+import { upperCaseFirstLetter } from "../util/util";
 import { RankingGroup } from "./RankingGroup";
 import RaiderIoIocn from "../assets/raiderio-icon.svg";
 import WarcraftLogsIcon from "../assets/warcraftlogs-icon.svg";
@@ -26,12 +22,7 @@ export const CharacterHeader: React.FC<{
   loading: boolean;
   isError: boolean;
 }> = ({ name, region, server, data, loading, isError }) => {
-  const theme = useMantineTheme();
-
-  const logs = data?.warcraftLogs;
   const raiderIoInfo = data?.raiderIo;
-  const medianPerformance = logs?.medianPerformanceAverage;
-  const bestPerformance = logs?.bestPerformanceAverage;
 
   return (
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
@@ -97,31 +88,11 @@ export const CharacterHeader: React.FC<{
           )}
         </Group>
 
-        <Stack align="flex-end" gap={0}>
+        <Stack align="flex-end" h={"100%"} gap={0}>
           <RankingGroup
             label="RIO score:"
             value={raiderIoInfo?.all?.score}
             color={raiderIoInfo?.all?.color}
-            isLoading={loading}
-          />
-          <RankingGroup
-            label="Best avg. log:"
-            value={bestPerformance}
-            color={
-              bestPerformance
-                ? GetWarcraftLogRankingColors(bestPerformance, theme)
-                : undefined
-            }
-            isLoading={loading}
-          />
-          <RankingGroup
-            label="Med. avg. log:"
-            value={medianPerformance}
-            color={
-              medianPerformance
-                ? GetWarcraftLogRankingColors(medianPerformance, theme)
-                : undefined
-            }
             isLoading={loading}
           />
           <RankingGroup
