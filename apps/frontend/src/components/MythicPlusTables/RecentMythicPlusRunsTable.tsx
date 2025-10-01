@@ -32,7 +32,7 @@ export const RecentMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
       </Group>
 
       <Table.ScrollContainer minWidth={300} maxHeight={400}>
-        <Table stickyHeader withTableBorder highlightOnHover>
+        <Table stickyHeader withTableBorder>
           <RunTableHeader />
           <Table.Tbody>
             {rows.length > 0 ? (

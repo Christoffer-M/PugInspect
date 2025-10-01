@@ -6,6 +6,7 @@ import {
   Text,
   AspectRatio,
   Table,
+  Anchor,
 } from "@mantine/core";
 import { IconStarFilled } from "@tabler/icons-react";
 import { MythicPlusRun } from "../../../../graphql/graphql";
@@ -27,18 +28,15 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
     : "-";
 
   return (
-    <Table.Tr
-      onClick={url ? () => window.open(url, "_blank") : undefined}
-      style={{ cursor: url ? "pointer" : "default" }}
-    >
+    <Table.Tr>
       <Table.Td>
         <Group gap={"xs"}>
           <AspectRatio ratio={1} w={25}>
             <Image src={mythicPlusRun?.icon_url} alt={mythicPlusRun?.dungeon} />
           </AspectRatio>
-          <Text size="sm" m={0}>
+          <Anchor size="sm" m={0} href={url} target="_blank">
             {mythicPlusRun?.dungeon}
-          </Text>
+          </Anchor>
         </Group>
       </Table.Td>
       <Table.Td>

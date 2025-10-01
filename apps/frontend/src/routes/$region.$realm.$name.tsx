@@ -6,6 +6,7 @@ import {
   ActionIcon,
   Tooltip,
   Title,
+  Grid,
 } from "@mantine/core";
 import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
@@ -122,20 +123,25 @@ function CharacterPage() {
               isFetching={isFetchingLogs}
               class={characterSummaryData?.raiderIo?.class}
             />
-            <Group w={"100%"} align="flex-start" justify="space-between">
-              <BestMythicPlusRunsTable
-                isFetching={isFetchingSummary}
-                characterRuns={
-                  characterSummaryData?.raiderIo?.bestMythicPlusRuns ?? []
-                }
-              />
-              <RecentMythicPlusRunsTable
-                isFetching={isFetchingSummary}
-                characterRuns={
-                  characterSummaryData?.raiderIo?.recentMythicPlusRuns ?? []
-                }
-              />
-            </Group>
+            <Grid w={"100%"}>
+              <Grid.Col span={{ sm: 12, md: 6 }}>
+                <BestMythicPlusRunsTable
+                  isFetching={isFetchingSummary}
+                  characterRuns={
+                    characterSummaryData?.raiderIo?.bestMythicPlusRuns ?? []
+                  }
+                />
+              </Grid.Col>
+
+              <Grid.Col span={{ sm: 12, md: 6 }}>
+                <RecentMythicPlusRunsTable
+                  isFetching={isFetchingSummary}
+                  characterRuns={
+                    characterSummaryData?.raiderIo?.recentMythicPlusRuns ?? []
+                  }
+                />
+              </Grid.Col>
+            </Grid>
           </Stack>
         </Stack>
       </Container>
