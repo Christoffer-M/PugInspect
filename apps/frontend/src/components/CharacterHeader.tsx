@@ -23,11 +23,28 @@ export const CharacterHeader: React.FC<{
   isError: boolean;
 }> = ({ name, region, server, data, loading, isError }) => {
   const raiderIoInfo = data?.raiderIo;
+  const scores = [
+    {
+      role: "Tank",
+      score: raiderIoInfo?.tank?.score,
+      color: raiderIoInfo?.tank?.color,
+    },
+    {
+      role: "Healer",
+      score: raiderIoInfo?.healer?.score,
+      color: raiderIoInfo?.healer?.color,
+    },
+    {
+      role: "DPS",
+      score: raiderIoInfo?.dps?.score,
+      color: raiderIoInfo?.dps?.color,
+    },
+  ].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
   return (
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
-      <Group justify="space-between">
-        <Group h="100%">
+      <Group justify="space-between" align="flex-start">
+        <Group h="100%" align="flex-start">
           {loading || isError ? (
             <>
               <Skeleton h={85} w={85} radius={100} m={0} animate={!isError} />
@@ -88,13 +105,25 @@ export const CharacterHeader: React.FC<{
           )}
         </Group>
 
-        <Stack align="flex-end" h={"100%"} gap={0}>
-          <RankingGroup
-            label="RIO score:"
-            value={raiderIoInfo?.all?.score}
-            color={raiderIoInfo?.all?.color}
-            isLoading={loading}
-          />
+        <Stack gap={4}>
+          {scores.map((score, index) => {
+            const isScoreBelowThreshold = (score?.score ?? 0) < 100;
+            if (isScoreBelowThreshold) {
+              return null;
+            }
+            return (
+              score && (
+                <RankingGroup
+                  key={index}
+                  label={`RIO Score (${score.role}):`}
+                  value={score.score}
+                  color={score.color}
+                  isLoading={loading}
+                />
+              )
+            );
+          })}
+
           <RankingGroup
             label="Item level:"
             value={raiderIoInfo?.itlvl?.toFixed(2)}
