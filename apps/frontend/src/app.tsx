@@ -60,7 +60,6 @@ const theme = createTheme({
 // Render the app
 const rootElement = document.getElementById("app");
 if (rootElement && !rootElement.innerHTML) {
-  console.log("ENV:", import.meta.env);
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
