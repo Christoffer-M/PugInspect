@@ -2,6 +2,7 @@ import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanstackDevtools } from "@tanstack/react-devtools";
 import { useEffect } from "react";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 
 const Analytics: React.FC = () => {
   useEffect(() => {
@@ -35,6 +36,10 @@ export const Route = createRootRoute({
           {
             name: "Tanstack Router",
             render: <TanStackRouterDevtoolsPanel />,
+          },
+          {
+            name: "React Query",
+            render: <ReactQueryDevtoolsPanel />,
           },
         ]}
       />
