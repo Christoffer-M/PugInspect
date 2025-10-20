@@ -1,7 +1,6 @@
 {
   "extends": "../../packages/typescript-config/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "target": "ES2022",
     "module": "nodenext",
     "moduleResolution": "NodeNext",
@@ -12,10 +11,7 @@
     "skipLibCheck": true,
     "strict": true,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "paths": {
-      "cloudflare:node": ["src/shims/cloudflare-node.ts"]
-    }
+    "resolveJsonModule": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "src/generated"]
