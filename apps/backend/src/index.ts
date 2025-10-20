@@ -3,13 +3,11 @@ import typeDefs from "./schema/typeDefs.js";
 import resolvers from "./schema/resolvers.js";
 import { config } from "./config/index.js";
 import express from "express";
-import http from "node:http";
 import cors from "cors";
 import { expressMiddleware } from "@as-integrations/express5";
+import { httpServerHandler } from "cloudflare:node";
 
 const app = express();
-
-const httpServer = http.createServer(app);
 
 const server = new ApolloServer<BaseContext>({
   typeDefs,
@@ -32,6 +30,7 @@ app.get("/stats.js", async (req, res) => {
 
 // Modified server startup
 await new Promise<void>((resolve) =>
-  httpServer.listen({ port: config.port }, resolve)
+  app.listen({ port: config.port }, () => resolve())
 );
 console.log(`🚀 Server ready on port ${config.port}`);
+export default httpServerHandler({ port: config.port });
