@@ -28,9 +28,8 @@ app.get("/stats.js", async (req, res) => {
   res.send(await scriptText.text());
 });
 
-// Modified server startup
-await new Promise<void>((resolve) =>
-  app.listen({ port: config.port }, () => resolve())
-);
+app.listen({ port: config.port });
+
 console.log(`🚀 Server ready on port ${config.port}`);
+
 export default httpServerHandler({ port: config.port });

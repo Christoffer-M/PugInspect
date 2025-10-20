@@ -10,7 +10,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "build": "tsc",
-    "dev": "npm run build && node ./dist/index.js",
+    "dev": "pnpm run build && wrangler dev --local --port 4000",
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "keywords": [],
