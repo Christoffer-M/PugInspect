@@ -15,6 +15,11 @@ const server = new ApolloServer<BaseContext>({
 });
 
 await server.start();
+
+app.get("/", (_, res) => {
+  res.redirect("/graphql");
+});
+
 app.use(
   "/graphql",
   cors<cors.CorsRequest>(),
@@ -23,7 +28,7 @@ app.use(
 );
 
 // For Analytics
-app.get("/stats.js", async (req, res) => {
+app.get("/stats.js", async (_, res) => {
   const scriptText = await fetch("https://cloud.umami.is/script.js");
   res.send(await scriptText.text());
 });
