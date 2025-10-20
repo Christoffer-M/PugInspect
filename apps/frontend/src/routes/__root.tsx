@@ -1,7 +1,7 @@
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
-import { TanStackDevtools } from "@tanstack/react-devtools";
+import { TanstackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 
 const Analytics: React.FC = () => {
@@ -28,7 +28,7 @@ export const Route = createRootRoute({
     <>
       <Analytics />
       <Outlet />
-      <TanStackDevtools
+      <TanstackDevtools
         config={{
           position: "bottom-left",
         }}
