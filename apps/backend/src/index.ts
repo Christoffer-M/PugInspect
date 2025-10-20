@@ -6,6 +6,7 @@ import express from "express";
 import http from "node:http";
 import cors from "cors";
 import { expressMiddleware } from "@as-integrations/express5";
+import { httpServerHandler } from "cloudflare:node";
 
 const app = express();
 
@@ -31,8 +32,8 @@ app.get("/stats.js", async (req, res) => {
 });
 
 // Modified server startup
-await new Promise<void>((resolve) =>
-  httpServer.listen({ port: config.port }, resolve)
-);
+// await new Promise<void>((resolve) =>
+//   httpServer.listen({ port: config.port }, resolve)
+// );
 console.log(`🚀 Server ready on port ${config.port}`);
-export default httpServer;
+export default httpServerHandler({ port: config.port });
