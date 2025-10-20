@@ -1,7 +1,8 @@
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { TanstackDevtools } from "@tanstack/react-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 
 const Analytics: React.FC = () => {
   useEffect(() => {
@@ -27,8 +28,21 @@ export const Route = createRootRoute({
     <>
       <Analytics />
       <Outlet />
-      <TanStackRouterDevtools />
-      <ReactQueryDevtools />
+      <TanstackDevtools
+        config={{
+          position: "bottom-left",
+        }}
+        plugins={[
+          {
+            name: "Tanstack Router",
+            render: <TanStackRouterDevtoolsPanel />,
+          },
+          {
+            name: "React Query",
+            render: <ReactQueryDevtoolsPanel />,
+          },
+        ]}
+      />
     </>
   ),
 });

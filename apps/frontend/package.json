@@ -17,6 +17,7 @@
     "@mantine/hooks": "^8.3.5",
     "@mantine/notifications": "^8.3.5",
     "@tabler/icons-react": "^3.35.0",
+    "@tanstack/devtools": "https://pkg.pr.new/TanStack/devtools/@tanstack/devtools@219",
     "@tanstack/devtools-vite": "^0.3.7",
     "@tanstack/react-query": "^5.90.5",
     "@tanstack/react-router": "^1.133.13",
