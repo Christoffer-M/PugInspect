@@ -1,9 +1,18 @@
 {
-  "extends": ["//"],
+  "$schema": "https://v2-8-10.turborepo.dev/schema.json",
+  "extends": [
+    "//"
+  ],
   "tasks": {
     "build": {
-      "env": ["RAIDERIO_API_KEY", "WARCRAFTLOGS_BEARER_TOKEN"],
-      "inputs": [".env", "tsconfig.json"]
+      "env": [
+        "RAIDERIO_API_KEY",
+        "WARCRAFTLOGS_BEARER_TOKEN"
+      ],
+      "inputs": [
+        ".env",
+        "tsconfig.json"
+      ]
     }
   }
 }

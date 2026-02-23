@@ -1,9 +1,17 @@
 {
-  "extends": ["//"],
+  "$schema": "https://v2-8-10.turborepo.dev/schema.json",
+  "extends": [
+    "//"
+  ],
   "tasks": {
     "codegen": {
-      "dependsOn": ["backend#codegen"],
-      "inputs": [".env", "tsconfig.json"]
+      "dependsOn": [
+        "backend#codegen"
+      ],
+      "inputs": [
+        ".env",
+        "tsconfig.json"
+      ]
     }
   }
 }
