@@ -8,7 +8,7 @@ export const CHARACTER_PROFILE = gql`
     $zoneID: Int
     $difficulty: Int
     $role: RoleType
-    $metric: CharacterRankingMetricType
+    $metric: CharacterPageRankingMetricType
     $byBracket: Boolean
   ) {
     characterData {

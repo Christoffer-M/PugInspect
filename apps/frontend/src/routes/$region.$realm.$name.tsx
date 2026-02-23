@@ -47,6 +47,7 @@ function CharacterPage() {
   } = useSearch({
     from: Route.id,
   });
+
   const {
     data: characterSummaryData,
     isFetching: isFetchingSummary,

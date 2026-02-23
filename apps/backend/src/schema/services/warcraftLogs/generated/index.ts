@@ -33,6 +33,9 @@ export type ArchonViewModels = {
   buildsSpecPageSlugs?: Maybe<Scalars['JSON']['output']>;
   buildsZonePage?: Maybe<Scalars['JSON']['output']>;
   buildsZonePageSlugs?: Maybe<Scalars['JSON']['output']>;
+  characterCustomizationOptions?: Maybe<Scalars['JSON']['output']>;
+  characterEncounterRankings?: Maybe<Scalars['JSON']['output']>;
+  characterIndexPage?: Maybe<Scalars['JSON']['output']>;
   characterPage?: Maybe<Scalars['JSON']['output']>;
   characterPageContent?: Maybe<Scalars['JSON']['output']>;
   cmsNavigation?: Maybe<Scalars['JSON']['output']>;
@@ -110,22 +113,68 @@ export type ArchonViewModelsBuildsZonePageArgs = {
 };
 
 
-export type ArchonViewModelsCharacterPageArgs = {
+export type ArchonViewModelsCharacterCustomizationOptionsArgs = {
+  characterSlug: Scalars['String']['input'];
+  userId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type ArchonViewModelsCharacterEncounterRankingsArgs = {
+  aggregateEncounterId: Scalars['String']['input'];
+  byBracketSlug?: InputMaybe<Scalars['String']['input']>;
   categorySlug: Scalars['String']['input'];
   characterSlug: Scalars['String']['input'];
+  difficultySlug?: InputMaybe<Scalars['String']['input']>;
   gameSlug: Scalars['String']['input'];
+  metricSlug?: InputMaybe<Scalars['String']['input']>;
+  partitionSlug?: InputMaybe<Scalars['String']['input']>;
+  privateSlug?: InputMaybe<Scalars['String']['input']>;
+  showMore?: InputMaybe<Scalars['Boolean']['input']>;
+  sizeSlug?: InputMaybe<Scalars['String']['input']>;
+  specSlug?: InputMaybe<Scalars['String']['input']>;
   userId?: InputMaybe<Scalars['Int']['input']>;
-  zoneSlug?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type ArchonViewModelsCharacterIndexPageArgs = {
+  gameSlug: Scalars['String']['input'];
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type ArchonViewModelsCharacterPageArgs = {
+  byBracketSlug?: InputMaybe<Scalars['String']['input']>;
+  categorySlug: Scalars['String']['input'];
+  characterSlug: Scalars['String']['input'];
+  difficultySlug?: InputMaybe<Scalars['String']['input']>;
+  gameSlug: Scalars['String']['input'];
+  loadoutSourceSlug?: InputMaybe<Scalars['String']['input']>;
+  loadoutSourceTypeSlug?: InputMaybe<Scalars['String']['input']>;
+  metricSlug?: InputMaybe<Scalars['String']['input']>;
+  partitionSlug?: InputMaybe<Scalars['String']['input']>;
+  privateSlug?: InputMaybe<Scalars['String']['input']>;
+  sizeSlug?: InputMaybe<Scalars['String']['input']>;
+  specSlug?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
 export type ArchonViewModelsCharacterPageContentArgs = {
+  byBracketSlug?: InputMaybe<Scalars['String']['input']>;
   categorySlug: Scalars['String']['input'];
   characterSlug: Scalars['String']['input'];
+  difficultySlug?: InputMaybe<Scalars['String']['input']>;
   gameSlug: Scalars['String']['input'];
+  loadoutSourceSlug?: InputMaybe<Scalars['String']['input']>;
+  loadoutSourceTypeSlug?: InputMaybe<Scalars['String']['input']>;
+  metricSlug?: InputMaybe<Scalars['String']['input']>;
+  partitionSlug?: InputMaybe<Scalars['String']['input']>;
+  privateSlug?: InputMaybe<Scalars['String']['input']>;
   sectionComponentNames: Array<Scalars['String']['input']>;
+  sizeSlug?: InputMaybe<Scalars['String']['input']>;
+  specSlug?: InputMaybe<Scalars['String']['input']>;
   userId?: InputMaybe<Scalars['Int']['input']>;
-  zoneSlug?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -142,6 +191,7 @@ export type ArchonViewModelsFightPageArgs = {
   gameSlug: Scalars['String']['input'];
   phaseSlug?: InputMaybe<Scalars['String']['input']>;
   playerSlug?: InputMaybe<Scalars['String']['input']>;
+  pullSlug?: InputMaybe<Scalars['String']['input']>;
   reportSlug: Scalars['String']['input'];
   throughputSlug?: InputMaybe<Scalars['String']['input']>;
   userId?: InputMaybe<Scalars['Int']['input']>;
@@ -156,10 +206,16 @@ export type ArchonViewModelsFightPageContentArgs = {
   gameSlug: Scalars['String']['input'];
   phaseSlug?: InputMaybe<Scalars['String']['input']>;
   playerSlug?: InputMaybe<Scalars['String']['input']>;
+  pullSlug?: InputMaybe<Scalars['String']['input']>;
   reportSlug: Scalars['String']['input'];
   sectionComponentNames: Array<Scalars['String']['input']>;
   throughputSlug?: InputMaybe<Scalars['String']['input']>;
   userId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type ArchonViewModelsGameArgs = {
+  buildsZoneTypeSlug?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -286,7 +342,7 @@ export type CharacterZoneRankingsArgs = {
   compare?: InputMaybe<RankingCompareType>;
   difficulty?: InputMaybe<Scalars['Int']['input']>;
   includePrivateLogs?: InputMaybe<Scalars['Boolean']['input']>;
-  metric?: InputMaybe<CharacterRankingMetricType>;
+  metric?: InputMaybe<CharacterPageRankingMetricType>;
   partition?: InputMaybe<Scalars['Int']['input']>;
   role?: InputMaybe<RoleType>;
   size?: InputMaybe<Scalars['Int']['input']>;
@@ -320,6 +376,75 @@ export type CharacterDataCharactersArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   page?: InputMaybe<Scalars['Int']['input']>;
 };
+
+/** All character ranking metrics, plus combined metrics for points and damage/healing that are displayed on character pages. */
+export type CharacterPageRankingMetricType =
+  /** Boss cDPS is unique to FFXIV and is damage done to the boss adjusted for raid-contributing buffs and debuffs. */
+  | 'bosscdps'
+  /** Boss damage per second. */
+  | 'bossdps'
+  /** Boss nDPS is unique to FFXIV and is damage done to the boss adjusted for raid-contributing buffs and debuffs. */
+  | 'bossndps'
+  /** Boss rDPS is unique to FFXIV and is damage done to the boss adjusted for raid-contributing buffs and debuffs. */
+  | 'bossrdps'
+  /** cDPS is unique to FFXIV and is damage done adjusted for raid-contributing buffs and debuffs. */
+  | 'cdps'
+  /** Choose an appropriate default depending on the other selected parameters. */
+  | 'default'
+  /** Damage per second. */
+  | 'dps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombinedbosscdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombinedbossdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombinedbossndps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombinedbossrdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombinedcdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombineddps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombinedndps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of healers in eight player content. */
+  | 'healercombinedrdps'
+  /** Healing per second. */
+  | 'hps'
+  /** Survivability ranking for tanks. Deprecated. Only supported for some older WoW zones. */
+  | 'krsi'
+  /** nDPS is unique to FFXIV and is damage done adjusted for raid-contributing buffs and debuffs. */
+  | 'ndps'
+  /** Score. Used by WoW Mythic dungeons and by ESO trials. */
+  | 'playerscore'
+  /** Speed. Not supported by every zone. */
+  | 'playerspeed'
+  /** Combined score and damage. Used by WoW Mythic+ and Fellowship. Returns score rankings plus an additional throughputRankings field with damage data filtered by key and item level. */
+  | 'points_and_damage'
+  /** Combined score and healing. Used by WoW Mythic+ and Fellowship. Returns score rankings plus an additional throughputRankings field with healing data filtered by key and item level. */
+  | 'points_and_healing'
+  /** rDPS is unique to FFXIV and is damage done adjusted for raid-contributing buffs and debuffs. */
+  | 'rdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombinedbosscdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombinedbossdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombinedbossndps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombinedbossrdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombinedcdps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombineddps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombinedndps'
+  /** Unique to FFXIV. Represents the combined ranking for a pair of tanks in eight player content. */
+  | 'tankcombinedrdps'
+  /** Healing done per second to tanks. */
+  | 'tankhps'
+  /** Weighted damage per second. Unique to WoW currently. Used to remove pad damage and reward damage done to high priority targets. */
+  | 'wdps';
 
 export type CharacterPagination = {
   __typename?: 'CharacterPagination';
@@ -445,6 +570,7 @@ export type EncounterCharacterRankingsArgs = {
   filter?: InputMaybe<Scalars['String']['input']>;
   hardModeLevel?: InputMaybe<HardModeLevelRankFilter>;
   includeCombatantInfo?: InputMaybe<Scalars['Boolean']['input']>;
+  includeOtherPlayers?: InputMaybe<Scalars['Boolean']['input']>;
   leaderboard?: InputMaybe<LeaderboardRank>;
   metric?: InputMaybe<CharacterRankingMetricType>;
   page?: InputMaybe<Scalars['Int']['input']>;
@@ -2343,7 +2469,7 @@ export type CharacterProfileQueryVariables = Exact<{
   zoneID?: InputMaybe<Scalars['Int']['input']>;
   difficulty?: InputMaybe<Scalars['Int']['input']>;
   role?: InputMaybe<RoleType>;
-  metric?: InputMaybe<CharacterRankingMetricType>;
+  metric?: InputMaybe<CharacterPageRankingMetricType>;
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
