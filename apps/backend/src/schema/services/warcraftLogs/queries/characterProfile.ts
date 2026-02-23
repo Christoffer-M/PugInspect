@@ -1,6 +1,7 @@
 import { gql } from "graphql-tag";
+import { DocumentNode } from "graphql";
 
-export const CHARACTER_PROFILE = gql`
+export const CHARACTER_PROFILE: DocumentNode = gql`
   query CharacterProfile(
     $name: String!
     $server: String!
