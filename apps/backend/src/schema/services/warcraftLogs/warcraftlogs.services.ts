@@ -1,6 +1,6 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
-import { logger } from "../../utils/logger.js";
+import { createLogger } from "../../utils/logger.js";
 import { RequestInit } from "node-fetch";
 import {
   CharacterProfileQuery,
@@ -11,11 +11,10 @@ import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { GraphQLError } from "graphql";
 import {
   Difficulty,
-  Metric,
   QueryCharacterArgs,
-  RoleType,
 } from "@repo/graphql-types";
 
+const logger = createLogger({ service: "WarcraftLogs" });
 export class WarcraftLogsService {
   private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
 

@@ -1,6 +1,6 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
-import { logger } from "../../utils/logger.js";
+import { createLogger } from "../../utils/logger.js";
 import type { RequestInit } from "node-fetch";
 import { GraphQLError } from "graphql";
 import {
@@ -42,6 +42,8 @@ const fields: CharacterField[] = [
   { key: CharacterFieldKey.RaidProgression },
   { key: CharacterFieldKey.MythicPlusRecentRuns },
 ];
+
+const logger = createLogger({ service: "RaiderIO" });
 
 export class RaiderIOService {
   private static buildUrlWithQueries(

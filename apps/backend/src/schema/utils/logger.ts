@@ -11,8 +11,10 @@ function log(level: "info" | "warn" | "error", message: string, data?: LogData) 
   }
 }
 
-export const logger = {
-  info: (message: string, data?: LogData) => log("info", message, data),
-  warn: (message: string, data?: LogData) => log("warn", message, data),
-  error: (message: string, data?: LogData) => log("error", message, data),
-};
+export function createLogger(context: LogData) {
+  return {
+    info: (message: string, data?: LogData) => log("info", message, { ...context, ...data }),
+    warn: (message: string, data?: LogData) => log("warn", message, { ...context, ...data }),
+    error: (message: string, data?: LogData) => log("error", message, { ...context, ...data }),
+  };
+}

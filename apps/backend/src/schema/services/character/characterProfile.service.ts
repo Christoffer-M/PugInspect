@@ -2,7 +2,9 @@ import { QueryCharacterArgs } from "@repo/graphql-types";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
 import { GraphQLError } from "graphql";
-import { logger } from "../../utils/logger.js";
+import { createLogger } from "../../utils/logger.js";
+
+const logger = createLogger({ service: "CharacterProfile" });
 
 export async function getCharacterProfiles(
   args: QueryCharacterArgs,
