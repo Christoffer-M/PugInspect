@@ -12,6 +12,8 @@ import {
 import { IconCirclePlus, IconQuestionMark, IconShield, IconStarFilled, IconSword } from "@tabler/icons-react";
 import { MythicPlusRun } from "../../../../graphql/graphql";
 import classes from "./RunTableRow.module.css";
+import { DungeonNameMaxWidth } from "../RunTableHeader";
+
 
 export function mapRoleToIcon(role?: string) {
   if (!role) return <IconQuestionMark />;
@@ -44,19 +46,17 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
 
   return (
     <Table.Tr>
-      <Table.Td w={100}>
-
-        <Group gap={"xs"} >
-          <AspectRatio ratio={1} w={25} >
+      <Table.Td w={DungeonNameMaxWidth} style={{ maxWidth: 150, overflow: 'hidden' }}>
+        <Group gap={"xs"} wrap="nowrap">
+          <AspectRatio ratio={1} w={25} style={{ flexShrink: 0 }}>
             <Image src={mythicPlusRun?.icon_url} alt={mythicPlusRun?.dungeon} />
           </AspectRatio>
-          <Tooltip label={mythicPlusRun?.dungeon ?? "Unknown Dungeon"} withArrow openDelay={50}  >
-            <Anchor size="sm" m={0} href={url} target="_blank" truncate='end'  >
+          <Tooltip label={mythicPlusRun?.dungeon ?? "Unknown Dungeon"} withArrow openDelay={50} style={{ minWidth: 0, flex: 1 }} >
+            <Anchor size="sm" m={0} href={url} target="_blank" truncate='end' style={{ display: 'block' }}>
               {mythicPlusRun?.dungeon}
             </Anchor>
           </Tooltip>
         </Group>
-
       </Table.Td>
       <Table.Td>
         <Skeleton visible={isFetching} className={classes.skeleton}>
