@@ -7,10 +7,25 @@ import {
   AspectRatio,
   Table,
   Anchor,
+  Tooltip,
 } from "@mantine/core";
-import { IconStarFilled } from "@tabler/icons-react";
+import { IconCirclePlus, IconQuestionMark, IconShield, IconStarFilled, IconSword } from "@tabler/icons-react";
 import { MythicPlusRun } from "../../../../graphql/graphql";
 import classes from "./RunTableRow.module.css";
+
+export function mapRoleToIcon(role?: string) {
+  if (!role) return <IconQuestionMark />;
+  switch (role.toLowerCase()) {
+    case "tank":
+      return <IconShield />;
+    case "healer":
+      return <IconCirclePlus />;
+    case "dps":
+      return <IconSword />;
+    default:
+      return <IconQuestionMark />;
+  }
+}
 
 type DungeonRowProps = {
   mythicPlusRun?: MythicPlusRun;
@@ -29,15 +44,19 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
 
   return (
     <Table.Tr>
-      <Table.Td>
-        <Group gap={"xs"}>
-          <AspectRatio ratio={1} w={25}>
+      <Table.Td w={100}>
+
+        <Group gap={"xs"} >
+          <AspectRatio ratio={1} w={25} >
             <Image src={mythicPlusRun?.icon_url} alt={mythicPlusRun?.dungeon} />
           </AspectRatio>
-          <Anchor size="sm" m={0} href={url} target="_blank">
-            {mythicPlusRun?.dungeon}
-          </Anchor>
+          <Tooltip label={mythicPlusRun?.dungeon ?? "Unknown Dungeon"} withArrow openDelay={50}  >
+            <Anchor size="sm" m={0} href={url} target="_blank" truncate='end'  >
+              {mythicPlusRun?.dungeon}
+            </Anchor>
+          </Tooltip>
         </Group>
+
       </Table.Td>
       <Table.Td>
         <Skeleton visible={isFetching} className={classes.skeleton}>
@@ -55,9 +74,11 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
       </Table.Td>
       <Table.Td>
         <Skeleton visible={isFetching} className={classes.skeleton}>
-          <Text size="sm" m={0}>
-            {mythicPlusRun?.role ? mythicPlusRun.role.toUpperCase() : "-"}
-          </Text>
+          <Tooltip label={mythicPlusRun?.role ?? "Unknown Role"} withArrow openDelay={50}>
+            <Text size="sm" m={0}>
+              {mapRoleToIcon(mythicPlusRun?.role)}
+            </Text>
+          </Tooltip>
         </Skeleton>
       </Table.Td>
       <Table.Td>
