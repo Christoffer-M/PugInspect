@@ -54,6 +54,13 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
         </Skeleton>
       </Table.Td>
       <Table.Td>
+        <Skeleton visible={isFetching} className={classes.skeleton}>
+          <Text size="sm" m={0}>
+            {mythicPlusRun?.role ? mythicPlusRun.role.toUpperCase() : "-"}
+          </Text>
+        </Skeleton>
+      </Table.Td>
+      <Table.Td>
         <Skeleton visible={isFetching}>
           <Text size="sm" m={0}>
             {completedAt}

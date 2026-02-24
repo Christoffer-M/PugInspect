@@ -68,8 +68,22 @@ export type MythicPlusRun = {
   icon_url: Scalars['String']['output'];
   key_level: Scalars['Int']['output'];
   keystone_upgrades: Scalars['Int']['output'];
+  role: Scalars['String']['output'];
   short_name: Scalars['String']['output'];
+  spec: MythicPlusSpec;
   url: Scalars['String']['output'];
+};
+
+export type MythicPlusSpec = {
+  __typename?: 'MythicPlusSpec';
+  class_id?: Maybe<Scalars['Int']['output']>;
+  id?: Maybe<Scalars['Int']['output']>;
+  is_melee?: Maybe<Scalars['Boolean']['output']>;
+  name: Scalars['String']['output'];
+  ordinal?: Maybe<Scalars['Int']['output']>;
+  patch?: Maybe<Scalars['String']['output']>;
+  role?: Maybe<Scalars['String']['output']>;
+  slug: Scalars['String']['output'];
 };
 
 export type Query = {
@@ -181,7 +195,7 @@ export type CharacterSummaryQueryVariables = Exact<{
 }>;
 
 
-export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, itlvl?: number | null, bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number }> | null, recentMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
+export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, itlvl?: number | null, bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec: { __typename?: 'MythicPlusSpec', name: string, slug: string } }> | null, recentMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec: { __typename?: 'MythicPlusSpec', name: string, slug: string } }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -264,6 +278,11 @@ export const CharacterSummaryDocument = new TypedDocumentString(`
         background_image_url
         url
         keystone_upgrades
+        role
+        spec {
+          name
+          slug
+        }
       }
       recentMythicPlusRuns {
         dungeon
@@ -275,6 +294,11 @@ export const CharacterSummaryDocument = new TypedDocumentString(`
         background_image_url
         url
         keystone_upgrades
+        role
+        spec {
+          name
+          slug
+        }
       }
       raidProgression {
         raid

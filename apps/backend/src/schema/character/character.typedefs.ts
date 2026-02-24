@@ -71,6 +71,19 @@ export const characterTypedefs = gql`
     background_image_url: String!
     url: String!
     keystone_upgrades: Int!
+    role: String!
+    spec: MythicPlusSpec!
+  }
+
+  type MythicPlusSpec {
+    id: Int
+    name: String!
+    slug: String!
+    class_id: Int
+    role: String
+    is_melee: Boolean
+    patch: String
+    ordinal: Int
   }
 
   type RaidProgressionDetail {

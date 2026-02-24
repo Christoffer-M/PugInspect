@@ -6,6 +6,7 @@ const RunTableHeader: React.FC = () => (
     <Table.Tr>
       <Table.Th>Dungeon Name</Table.Th>
       <Table.Th>Level</Table.Th>
+      <Table.Th>Role</Table.Th>
       <Table.Th>Date</Table.Th>
     </Table.Tr>
   </Table.Thead>

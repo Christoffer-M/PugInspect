@@ -17,6 +17,17 @@ function mapMythicPlusRuns(
     background_image_url: run.background_image_url,
     url: run.url,
     keystone_upgrades: run.num_keystone_upgrades,
+    role: run.role,
+    spec: {
+      id: run.spec.id,
+      name: run.spec.name,
+      slug: run.spec.slug,
+      class_id: run.spec.class_id,
+      role: run.spec.role,
+      is_melee: run.spec.is_melee,
+      patch: run.spec.patch,
+      ordinal: run.spec.ordinal,
+    },
   }));
 }
 

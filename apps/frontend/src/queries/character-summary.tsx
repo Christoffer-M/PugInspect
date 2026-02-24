@@ -30,6 +30,11 @@ export const CharacterDataQuery = graphql(`
           background_image_url
           url
           keystone_upgrades
+          role
+          spec {
+            name
+            slug
+          }
         }
         recentMythicPlusRuns {
           dungeon
@@ -41,6 +46,11 @@ export const CharacterDataQuery = graphql(`
           background_image_url
           url
           keystone_upgrades
+          role
+          spec {
+            name
+            slug
+          }
         }
         raidProgression {
           raid
@@ -72,7 +82,6 @@ export const CharacterDataQuery = graphql(`
 
 export const useCharacterSummaryQuery = ({
   name,
-
   realm,
   region,
 }: CharacterSummaryQueryVariables) =>

@@ -43,8 +43,21 @@ type MythicPlusRun {
   icon_url: String!
   key_level: Int!
   keystone_upgrades: Int!
+  role: String!
   short_name: String!
+  spec: MythicPlusSpec!
   url: String!
+}
+
+type MythicPlusSpec {
+  class_id: Int
+  id: Int
+  is_melee: Boolean
+  name: String!
+  ordinal: Int
+  patch: String
+  role: String
+  slug: String!
 }
 
 type Query {

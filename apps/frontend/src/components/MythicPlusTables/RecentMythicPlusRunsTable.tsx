@@ -39,7 +39,7 @@ export const RecentMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
               rows
             ) : (
               <Table.Tr>
-                <Table.Td colSpan={3} style={{ textAlign: "center" }}>
+                <Table.Td colSpan={4} style={{ textAlign: "center" }}>
                   No recent runs found
                 </Table.Td>
               </Table.Tr>

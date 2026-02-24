@@ -96,6 +96,19 @@ export interface MythicPlusRun {
   score: number;
   url: string;
   affixes: MythicPlusAffix[];
+  spec: MythicPlusSpec;
+  role: string;
+}
+
+export interface MythicPlusSpec {
+  id: number;
+  name: string;
+  slug: string;
+  class_id: number;
+  role: string;
+  is_melee: boolean;
+  patch: string;
+  ordinal: number;
 }
 
 export interface MythicPlusAffix {

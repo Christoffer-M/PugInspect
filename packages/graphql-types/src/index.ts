@@ -64,8 +64,22 @@ export type MythicPlusRun = {
   icon_url: Scalars['String']['output'];
   key_level: Scalars['Int']['output'];
   keystone_upgrades: Scalars['Int']['output'];
+  role: Scalars['String']['output'];
   short_name: Scalars['String']['output'];
+  spec: MythicPlusSpec;
   url: Scalars['String']['output'];
+};
+
+export type MythicPlusSpec = {
+  __typename?: 'MythicPlusSpec';
+  class_id?: Maybe<Scalars['Int']['output']>;
+  id?: Maybe<Scalars['Int']['output']>;
+  is_melee?: Maybe<Scalars['Boolean']['output']>;
+  name: Scalars['String']['output'];
+  ordinal?: Maybe<Scalars['Int']['output']>;
+  patch?: Maybe<Scalars['String']['output']>;
+  role?: Maybe<Scalars['String']['output']>;
+  slug: Scalars['String']['output'];
 };
 
 export type Query = {
