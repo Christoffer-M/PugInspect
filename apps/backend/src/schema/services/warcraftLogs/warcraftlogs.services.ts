@@ -1,5 +1,6 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
+import { logger } from "../../utils/logger.js";
 import { RequestInit } from "node-fetch";
 import {
   CharacterProfileQuery,
@@ -28,14 +29,18 @@ export class WarcraftLogsService {
     const now = Math.floor(Date.now() / 1000);
 
     if (this.cachedToken && this.tokenExpiry && now < this.tokenExpiry) {
+      logger.info("WarcraftLogs token cache hit");
       return this.cachedToken;
     }
 
     const url = "https://www.warcraftlogs.com/oauth/token";
 
     if (!this.clientId || !this.clientSecret) {
+      logger.error("WarcraftLogs client credentials not configured");
       throw new Error("Warcraft Logs client ID or secret not configured.");
     }
+
+    logger.info("Fetching new WarcraftLogs OAuth token");
 
     const body = new URLSearchParams({
       grant_type: "client_credentials",
@@ -50,6 +55,7 @@ export class WarcraftLogsService {
     });
 
     if (!res.ok) {
+      logger.error("WarcraftLogs token request failed", { status: res.status, statusText: res.statusText });
       throw new Error(`Failed to fetch token: ${res.status} ${res.statusText}`);
     }
 
@@ -58,6 +64,7 @@ export class WarcraftLogsService {
     this.cachedToken = data.access_token;
     this.tokenExpiry = now + data.expires_in - 60;
 
+    logger.info("WarcraftLogs OAuth token acquired", { expiresIn: data.expires_in });
     return this.cachedToken;
   }
 
@@ -85,6 +92,8 @@ export class WarcraftLogsService {
     if (!token) throw new Error("API token not configured.");
 
     const { name, realm, region, role, metric, difficulty, byBracket } = args;
+
+    logger.info("WarcraftLogs character profile request", { name, realm, region });
 
     const variables: CharacterProfileQueryVariables = {
       name,
@@ -116,11 +125,19 @@ export class WarcraftLogsService {
       );
 
       if (!response.data?.characterData?.character) {
+        logger.warn("WarcraftLogs character not found", { name, realm, region });
         return null;
       }
 
+      logger.info("WarcraftLogs character profile fetched", { name, realm, region });
       return response.data.characterData;
     } catch (error) {
+      logger.error("WarcraftLogs character profile fetch failed", {
+        name,
+        realm,
+        region,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new GraphQLError(
         "Failed to fetch character profile from Warcraft Logs",
         {

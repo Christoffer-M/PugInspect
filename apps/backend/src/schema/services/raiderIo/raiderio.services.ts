@@ -1,5 +1,6 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
+import { logger } from "../../utils/logger.js";
 import type { RequestInit } from "node-fetch";
 import { GraphQLError } from "graphql";
 import {
@@ -63,6 +64,7 @@ export class RaiderIOService {
 
     const apiKey = config.raiderIoApiKey;
     if (!apiKey) {
+      logger.error("RaiderIO API key not configured");
       throw new Error("RaiderIO API key is not configured.");
     }
 
@@ -70,6 +72,8 @@ export class RaiderIOService {
       term: args.searchString,
       region: args.region,
     };
+
+    logger.info("RaiderIO character suggestions request", { searchString: args.searchString, region: args.region });
 
     const url = this.buildUrlWithQueries(`${baseApiUrl}/search`, query);
 
@@ -82,12 +86,18 @@ export class RaiderIOService {
         (m) => m.type === "character"
       );
 
+      logger.info("RaiderIO character suggestions fetched", { count: filteredMatches.length });
       return filteredMatches.map((r) => ({
         name: r.name,
         realm: r.data.realm.name,
         region: r.data.region.short_name,
       }));
     } catch (error) {
+      logger.error("RaiderIO character suggestions fetch failed", {
+        searchString: args.searchString,
+        region: args.region,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new GraphQLError(
         "Failed to fetch character suggestions from RaiderIO",
         {
@@ -110,8 +120,11 @@ export class RaiderIOService {
 
     const apiKey = config.raiderIoApiKey;
     if (!apiKey) {
+      logger.error("RaiderIO API key not configured");
       throw new Error("RaiderIO API key is not configured.");
     }
+
+    logger.info("RaiderIO character profile request", { name, realm, region });
 
     const query: Record<string, string | number | boolean> = {
       name,
@@ -130,8 +143,15 @@ export class RaiderIOService {
 
     try {
       var response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
+      logger.info("RaiderIO character profile fetched", { name, realm, region });
       return response;
     } catch (error) {
+      logger.error("RaiderIO character profile fetch failed", {
+        name,
+        realm,
+        region,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new GraphQLError(
         "Failed to fetch character profile from RaiderIO",
         {
