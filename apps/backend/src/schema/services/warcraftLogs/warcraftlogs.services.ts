@@ -106,6 +106,7 @@ export class WarcraftLogsService {
       byBracket,
     };
 
+
     const options: RequestInit = {
       method: "POST",
       headers: {
@@ -124,12 +125,14 @@ export class WarcraftLogsService {
         options
       );
 
+      const rateLimitInfo = response.data?.rateLimitData;
+
       if (!response.data?.characterData?.character) {
-        logger.warn("WarcraftLogs character not found", { name, realm, region });
+        logger.warn("WarcraftLogs character not found", { name, realm, region, rateLimit: rateLimitInfo });
         return null;
       }
 
-      logger.info("WarcraftLogs character profile fetched", { name, realm, region });
+      logger.info("WarcraftLogs character profile fetched", { name, realm, region, rateLimit: rateLimitInfo });
       return response.data.characterData;
     } catch (error) {
       logger.error("WarcraftLogs character profile fetch failed", {
