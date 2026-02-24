@@ -1,5 +1,5 @@
 import { ActionIcon, AppShell, Container, Flex, Group } from "@mantine/core";
-import { IconHome } from "@tabler/icons-react";
+import { IconBrandGithub, IconHome } from "@tabler/icons-react";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import CharacterSearchInput from "./CharacterSearchInput";
 
@@ -10,7 +10,7 @@ const Header: React.FC = () => {
   return (
     <AppShell.Header>
       <Container h="100%">
-        <Group h="100%">
+        <Group h="100%" justify="space-between">
           <ActionIcon
             variant="outline"
             onClick={() => navigate({ to: "/" })}
@@ -24,6 +24,17 @@ const Header: React.FC = () => {
               <CharacterSearchInput />
             </Flex>
           )}
+          <ActionIcon
+            variant="outline"
+            component="a"
+            href="https://github.com/Christoffer-M/PugInspect"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Go to GitHub repository"
+            size="lg"
+          >
+            <IconBrandGithub />
+          </ActionIcon>
         </Group>
       </Container>
     </AppShell.Header>
