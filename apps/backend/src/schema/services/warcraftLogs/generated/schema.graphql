@@ -794,6 +794,11 @@ type Encounter {
     hardModeLevel: HardModeLevelRankFilter = Any
 
     """
+    Optional. Whether to include the other characters cleared with in the results.
+    """
+    includeOtherPlayers: Boolean = false
+
+    """
     Optional. Controls whether to include ranks without backing logs in games & content types that support this. Ignored if unsupported.
     """
     leaderboard: LeaderboardRank = Any

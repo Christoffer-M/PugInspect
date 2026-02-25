@@ -55,10 +55,17 @@ export type Metric =
   | 'dps'
   | 'hps';
 
+export type MythicPlusClass = {
+  __typename?: 'MythicPlusClass';
+  name: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+};
+
 export type MythicPlusRun = {
   __typename?: 'MythicPlusRun';
   background_image_url: Scalars['String']['output'];
   challange_mode_id: Scalars['Int']['output'];
+  class?: Maybe<MythicPlusClass>;
   completed_at: Scalars['String']['output'];
   dungeon: Scalars['String']['output'];
   icon_url: Scalars['String']['output'];
@@ -66,19 +73,13 @@ export type MythicPlusRun = {
   keystone_upgrades: Scalars['Int']['output'];
   role: Scalars['String']['output'];
   short_name: Scalars['String']['output'];
-  spec: MythicPlusSpec;
+  spec?: Maybe<MythicPlusSpec>;
   url: Scalars['String']['output'];
 };
 
 export type MythicPlusSpec = {
   __typename?: 'MythicPlusSpec';
-  class_id?: Maybe<Scalars['Int']['output']>;
-  id?: Maybe<Scalars['Int']['output']>;
-  is_melee?: Maybe<Scalars['Boolean']['output']>;
   name: Scalars['String']['output'];
-  ordinal?: Maybe<Scalars['Int']['output']>;
-  patch?: Maybe<Scalars['String']['output']>;
-  role?: Maybe<Scalars['String']['output']>;
   slug: Scalars['String']['output'];
 };
 

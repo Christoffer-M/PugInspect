@@ -13,7 +13,7 @@ import { IconCirclePlus, IconQuestionMark, IconShield, IconStarFilled, IconSword
 import { MythicPlusRun } from "../../../../graphql/graphql";
 import classes from "./RunTableRow.module.css";
 import { DungeonNameMaxWidth } from "../RunTableHeader";
-
+import { getClassIconSrc } from "../../../../assets/classIcons";
 
 export function mapRoleToIcon(role?: string) {
   if (!role) return <IconQuestionMark />;
@@ -29,6 +29,7 @@ export function mapRoleToIcon(role?: string) {
   }
 }
 
+
 type DungeonRowProps = {
   mythicPlusRun?: MythicPlusRun;
   isFetching: boolean;
@@ -40,6 +41,16 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
   isFetching,
   url,
 }) => {
+
+  const classNameSlug = mythicPlusRun?.class?.slug || "unknown";
+  const specName = mythicPlusRun?.spec?.name || "Unknown Spec";
+  const specSlug = mythicPlusRun?.spec?.slug || "unknown";
+
+  const getClassImageSrc = () => {
+    if (!mythicPlusRun?.class?.slug || !mythicPlusRun?.spec?.slug) return null;
+    return getClassIconSrc(classNameSlug, specSlug);
+  };
+
   const completedAt = mythicPlusRun?.completed_at
     ? new Date(mythicPlusRun.completed_at).toLocaleDateString()
     : "-";
@@ -74,10 +85,15 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
       </Table.Td>
       <Table.Td>
         <Skeleton visible={isFetching} className={classes.skeleton}>
-          <Tooltip label={mythicPlusRun?.role ?? "Unknown Role"} withArrow openDelay={50}>
-            <Text size="sm" m={0}>
-              {mapRoleToIcon(mythicPlusRun?.role)}
-            </Text>
+          <Tooltip label={specName} withArrow openDelay={50}>
+            <Image
+              h={22}
+              w={22}
+              fit="contain"
+              radius={"xs"}
+              alt={`${classNameSlug}-${specSlug}`}
+              src={getClassImageSrc()}
+            />
           </Tooltip>
         </Skeleton>
       </Table.Td>

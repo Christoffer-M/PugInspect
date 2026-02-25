@@ -35,9 +35,15 @@ enum Metric {
   hps
 }
 
+type MythicPlusClass {
+  name: String!
+  slug: String!
+}
+
 type MythicPlusRun {
   background_image_url: String!
   challange_mode_id: Int!
+  class: MythicPlusClass
   completed_at: String!
   dungeon: String!
   icon_url: String!
@@ -45,18 +51,12 @@ type MythicPlusRun {
   keystone_upgrades: Int!
   role: String!
   short_name: String!
-  spec: MythicPlusSpec!
+  spec: MythicPlusSpec
   url: String!
 }
 
 type MythicPlusSpec {
-  class_id: Int
-  id: Int
-  is_melee: Boolean
   name: String!
-  ordinal: Int
-  patch: String
-  role: String
   slug: String!
 }
 

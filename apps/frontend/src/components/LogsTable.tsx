@@ -15,6 +15,7 @@ import {
   Switch,
 } from "@mantine/core";
 import { GetWarcraftLogRankingColors } from "../util/util";
+import { getClassIconSrc } from "../assets/classIcons";
 import {
   CharacterLogsQuery,
   Difficulty,
@@ -37,11 +38,6 @@ type LogsTableProps = {
   isFetching: boolean;
 };
 
-const icons = import.meta.glob("/src/assets/class-icons/*.svg", {
-  eager: true,
-  import: "default",
-});
-
 export const LogsTable: React.FC<LogsTableProps> = ({
   logs,
   isFetching,
@@ -62,8 +58,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
 
   const getClassImageSrc = (spec: string | undefined | null) => {
     if (!className || !spec) return null;
-    const key = `/src/assets/class-icons/classicon_${className.replace(/\s+/g, "").toLowerCase()}_${spec.toLowerCase()}.svg`;
-    return icons[key] as string | undefined;
+    return getClassIconSrc(className, spec);
   };
 
   const navigate = useNavigate();

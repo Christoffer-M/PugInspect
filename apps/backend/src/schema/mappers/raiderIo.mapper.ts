@@ -1,4 +1,29 @@
 import { RaiderIo, Maybe, Segment, MythicPlusRun } from "@repo/graphql-types";
+
+const CLASS_NAMES: Record<number, string> = {
+  1: "Warrior",
+  2: "Paladin",
+  3: "Hunter",
+  4: "Rogue",
+  5: "Priest",
+  6: "Death Knight",
+  7: "Shaman",
+  8: "Mage",
+  9: "Warlock",
+  10: "Monk",
+  11: "Druid",
+  12: "Demon Hunter",
+  13: "Evoker",
+};
+
+export function mapClassIdToName(classId: number): string {
+  return CLASS_NAMES[classId] ?? "Unknown";
+}
+
+export function mapClassIdToSlug(classId: number): string {
+  return mapClassIdToName(classId).toLowerCase().replace(/ /g, "");
+}
+
 import { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
 
 function mapMythicPlusRuns(
@@ -19,14 +44,12 @@ function mapMythicPlusRuns(
     keystone_upgrades: run.num_keystone_upgrades,
     role: run.role,
     spec: {
-      id: run.spec.id,
       name: run.spec.name,
       slug: run.spec.slug,
-      class_id: run.spec.class_id,
-      role: run.spec.role,
-      is_melee: run.spec.is_melee,
-      patch: run.spec.patch,
-      ordinal: run.spec.ordinal,
+    },
+    class: {
+      name: mapClassIdToName(run.spec.class_id),
+      slug: mapClassIdToSlug(run.spec.class_id),
     },
   }));
 }

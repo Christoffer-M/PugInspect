@@ -35,6 +35,10 @@ export const CharacterDataQuery = graphql(`
             name
             slug
           }
+          class {
+            name
+            slug
+          }
         }
         recentMythicPlusRuns {
           dungeon
@@ -48,6 +52,10 @@ export const CharacterDataQuery = graphql(`
           keystone_upgrades
           role
           spec {
+            name
+            slug
+          }
+          class {
             name
             slug
           }

@@ -589,6 +589,7 @@ export type EncounterFightRankingsArgs = {
   difficulty?: InputMaybe<Scalars['Int']['input']>;
   filter?: InputMaybe<Scalars['String']['input']>;
   hardModeLevel?: InputMaybe<HardModeLevelRankFilter>;
+  includeOtherPlayers?: InputMaybe<Scalars['Boolean']['input']>;
   leaderboard?: InputMaybe<LeaderboardRank>;
   metric?: InputMaybe<FightRankingMetricType>;
   page?: InputMaybe<Scalars['Int']['input']>;
