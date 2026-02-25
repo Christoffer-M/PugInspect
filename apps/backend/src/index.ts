@@ -6,6 +6,7 @@ import express from "express";
 import cors from "cors";
 import { expressMiddleware } from "@as-integrations/express5";
 import { httpServerHandler } from "cloudflare:node";
+import { rateLimit } from "express-rate-limit";
 
 const app = express();
 
@@ -16,6 +17,14 @@ const server = new ApolloServer<BaseContext>({
 
 await server.start();
 
+const graphqlRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { errors: [{ message: "Too many requests, please try again later." }] },
+});
+
 app.get("/", (_, res) => {
   res.redirect("/graphql");
 });
@@ -24,6 +33,7 @@ app.use(
   "/graphql",
   cors<cors.CorsRequest>(),
   express.json(),
+  graphqlRateLimiter,
   expressMiddleware(server)
 );
 
