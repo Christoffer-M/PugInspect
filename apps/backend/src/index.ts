@@ -45,7 +45,8 @@ const nodeHandler = httpServerHandler({ port: config.port });
 
 export default {
   ...nodeHandler,
-  async fetch(request: Request, env: unknown, ctx: unknown): Promise<Response> {
+  async fetch(...args: Parameters<NonNullable<typeof nodeHandler.fetch>>): Promise<Response> {
+    const [request] = args;
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/graphql")) {
@@ -69,6 +70,6 @@ export default {
       }
     }
 
-    return nodeHandler.fetch!(request as never, env as never, ctx as never);
+    return nodeHandler.fetch!(...args);
   },
 };
