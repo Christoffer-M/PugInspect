@@ -16,7 +16,7 @@ const server = new ApolloServer<BaseContext>({
 
 await server.start();
 
-const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 100;
 const ipHitMap = new Map<string, { count: number; resetAt: number }>();
 
