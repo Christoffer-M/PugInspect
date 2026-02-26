@@ -12,14 +12,14 @@ export const RAID_ZONE_IDS: Record<string, number> = {
   "manaforge-omega": 44, // TWW Season 3
   "liberation-of-undermine": 42, // TWW Season 2
   "blackrock-depths": 40, // TWW Season 1 (alt)
-  "nerub-ar-palace": 38, // TWW Season 1
+  "nerubar-palace": 38, // TWW Season 1
 };
 
 export const RAID_DISPLAY_NAMES: Record<string, string> = {
   "manaforge-omega": "Manaforge Omega",
   "liberation-of-undermine": "Liberation of Undermine",
   "blackrock-depths": "Blackrock Depths",
-  "nerub-ar-palace": "Nerub-ar Palace",
+  "nerubar-palace": "Nerub-ar Palace",
 };
 
 /** Returns the WarcraftLogs zone ID for a Raider.IO raid slug, or undefined if unknown. */
