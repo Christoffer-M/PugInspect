@@ -11,8 +11,8 @@ const Home: React.FC = () => {
           <Flex direction="column" align="center">
             <Flex direction="column" align="center">
               <Title order={1}>Welcome to PugInspect</Title>
-              <Title order={4} style={{ textAlign: "center" }} mt={10} w={500}>
-                The ultimate character search tool for World of Warcraft
+              <Title order={4} style={{ textAlign: "center" }} mt="sm">
+                Quickly view WoW character stats, RIO scores, and raid logs
               </Title>
             </Flex>
             <Flex direction="column" align="center" mt="xl">
