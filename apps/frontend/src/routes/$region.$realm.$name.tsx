@@ -69,10 +69,6 @@ function CharacterPage() {
   const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
   const effectiveRaid = searchRaid ?? raidProgression[0]?.raid ?? null;
 
-  const handleRaidChange = (raid: string | null) => {
-    navigate({ search: (prev) => ({ ...prev, raid: raid ?? undefined }) });
-  };
-
   const {
     data: logsData,
     isFetching: isFetchingLogs,
@@ -91,6 +87,10 @@ function CharacterPage() {
   const refetchData = () => {
     refetchSummary();
     refetchLogs();
+  };
+
+  const handleRaidChange = (raid: string | null) => {
+    navigate({ search: (prev) => ({ ...prev, raid: raid ?? undefined }) });
   };
 
   return (

@@ -55,9 +55,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
   }, [raidData]);
 
   const handleOnChange = (raid: string | null) => {
-    if (onRaidChange) {
-      onRaidChange(raid);
-    }
+    onRaidChange?.(raid);
   }
 
   const normalBossesKilled =
