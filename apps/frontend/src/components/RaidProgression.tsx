@@ -9,14 +9,8 @@ import {
   Title,
 } from "@mantine/core";
 import { RaidProgressionDetail } from "../graphql/graphql";
+import { getRaidDisplayName } from "../data/raidZones";
 import { useMemo, useEffect } from "react";
-
-const TextMapper: Record<string, string> = {
-  "manaforge-omega": "Manaforge Omega",
-  "liberation-of-undermine": "Liberation of Undermine",
-  "blackrock-depths": "Blackrock Depths",
-  "nerubar-palace": "Nerub-ar Palace",
-};
 
 type RaidProgressionProps = {
   raidData: RaidProgressionDetail[];
@@ -38,7 +32,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
     () =>
       raidData.map((raid) => ({
         value: raid.raid,
-        label: TextMapper[raid.raid] || raid.raid,
+        label: getRaidDisplayName(raid.raid),
       })) ?? [],
     [raidData],
   );

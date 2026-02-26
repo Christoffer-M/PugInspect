@@ -15,9 +15,20 @@ export const RAID_ZONE_IDS: Record<string, number> = {
   "nerub-ar-palace": 38, // TWW Season 1
 };
 
+export const RAID_DISPLAY_NAMES: Record<string, string> = {
+  "manaforge-omega": "Manaforge Omega",
+  "liberation-of-undermine": "Liberation of Undermine",
+  "blackrock-depths": "Blackrock Depths",
+  "nerub-ar-palace": "Nerub-ar Palace",
+};
 
 /** Returns the WarcraftLogs zone ID for a Raider.IO raid slug, or undefined if unknown. */
 export function getZoneIdForRaid(raidSlug: string | null | undefined): number | undefined {
   if (!raidSlug) return undefined;
   return RAID_ZONE_IDS[raidSlug];
+}
+
+/** Returns the display name for a Raider.IO raid slug, falling back to the slug itself. */
+export function getRaidDisplayName(raidSlug: string): string {
+  return RAID_DISPLAY_NAMES[raidSlug] ?? raidSlug;
 }
