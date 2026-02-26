@@ -8,7 +8,7 @@ import {
   Title,
   Grid,
 } from "@mantine/core";
-import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
@@ -19,7 +19,6 @@ import { useCharacterLogs } from "../queries/character-logs";
 import { RaidProgression } from "../components/RaidProgression";
 import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
 import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
-import { useState } from "react";
 import { getZoneIdForRaid } from "../data/raidZones";
 
 export type CharacterQueryParams = {
@@ -27,6 +26,7 @@ export type CharacterQueryParams = {
   metric?: Metric;
   difficulty?: Difficulty;
   bracket?: boolean;
+  raid?: string;
 };
 
 export const Route = createFileRoute("/$region/$realm/$name")({
@@ -36,6 +36,7 @@ export const Route = createFileRoute("/$region/$realm/$name")({
     metric: search.metric as Metric | undefined,
     difficulty: search.difficulty as Difficulty | undefined,
     bracket: search.bracket === true || false,
+    raid: search.raid as string | undefined,
   }),
 });
 
@@ -46,9 +47,12 @@ function CharacterPage() {
     metric: searchMetric,
     difficulty: searchDifficulty,
     bracket: searchBracket,
+    raid: searchRaid,
   } = useSearch({
     from: Route.id,
   });
+
+  const navigate = useNavigate({ from: Route.id });
 
   const {
     data: characterSummaryData,
@@ -63,12 +67,11 @@ function CharacterPage() {
   });
 
   const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
-  // Tracks the raid the user explicitly picks; null means "use the first available".
-  const [selectedRaid, setSelectedRaid] = useState<string | null>(null);
-  const effectiveRaid = selectedRaid ?? raidProgression[0]?.raid ?? null;
+  const effectiveRaid = searchRaid ?? raidProgression[0]?.raid ?? null;
 
-
-  console.log(getZoneIdForRaid(effectiveRaid));
+  const handleRaidChange = (raid: string | null) => {
+    navigate({ search: (prev) => ({ ...prev, raid: raid ?? undefined }) });
+  };
 
   const {
     data: logsData,
@@ -129,7 +132,8 @@ function CharacterPage() {
             <RaidProgression
               raidData={raidProgression}
               isLoading={isFetchingSummary}
-              onRaidChange={setSelectedRaid}
+              selectedRaid={effectiveRaid}
+              onRaidChange={handleRaidChange}
             />
             <LogsTable
               logs={logsData}

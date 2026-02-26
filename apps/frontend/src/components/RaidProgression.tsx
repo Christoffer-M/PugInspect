@@ -9,7 +9,7 @@ import {
   Title,
 } from "@mantine/core";
 import { RaidProgressionDetail } from "../graphql/graphql";
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 
 const TextMapper: Record<string, string> = {
   "manaforge-omega": "Manaforge Omega",
@@ -21,16 +21,18 @@ const TextMapper: Record<string, string> = {
 type RaidProgressionProps = {
   raidData: RaidProgressionDetail[];
   isLoading: boolean;
+  selectedRaid?: string | null;
   onRaidChange?: (raid: string | null) => void;
 };
 
 export const RaidProgression: React.FC<RaidProgressionProps> = ({
   raidData,
   isLoading,
+  selectedRaid: selectedRaidProp,
   onRaidChange,
 }) => {
   const defaultValue = raidData[0]?.raid ?? null;
-  const [selectedRaid, setSelectedRaid] = useState<string | null>(defaultValue);
+  const selectedRaid = selectedRaidProp ?? defaultValue;
 
   const raidOptions = useMemo(
     () =>
@@ -47,13 +49,12 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
   );
 
   useEffect(() => {
-    if (raidData.length > 0 && !selectedRaid) {
-      setSelectedRaid(defaultValue);
+    if (raidData.length > 0 && !selectedRaid && onRaidChange) {
+      onRaidChange(defaultValue);
     }
   }, [raidData]);
 
   const handleOnChange = (raid: string | null) => {
-    setSelectedRaid(raid);
     if (onRaidChange) {
       onRaidChange(raid);
     }

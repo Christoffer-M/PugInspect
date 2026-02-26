@@ -78,8 +78,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
       >
         {ranking.rankPercent != null
           ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
-              maximumFractionDigits: 0,
-            })
+            maximumFractionDigits: 0,
+          })
           : "-"}
       </Table.Td>
       <Table.Td
@@ -92,8 +92,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
       >
         {ranking.medianPercent != null
           ? Math.floor(ranking.medianPercent).toLocaleString(undefined, {
-              maximumFractionDigits: 0,
-            })
+            maximumFractionDigits: 0,
+          })
           : "-"}
       </Table.Td>
       <Table.Td
@@ -141,6 +141,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
         difficulty:
           partial.difficulty ?? prev.difficulty ?? difficulty ?? undefined,
         bracket: partial.bracket ?? prev.bracket ?? false,
+        raid: partial.raid ?? prev.raid ?? undefined, // Don't reset raid on other search changes
       }),
     });
   };
@@ -239,9 +240,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                     c={
                       logs?.bestPerformanceAverage
                         ? GetWarcraftLogRankingColors(
-                            logs.bestPerformanceAverage,
-                            theme,
-                          )
+                          logs.bestPerformanceAverage,
+                          theme,
+                        )
                         : undefined
                     }
                     fw={700}
@@ -264,9 +265,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                     c={
                       logs?.medianPerformanceAverage
                         ? GetWarcraftLogRankingColors(
-                            logs.medianPerformanceAverage,
-                            theme,
-                          )
+                          logs.medianPerformanceAverage,
+                          theme,
+                        )
                         : undefined
                     }
                     fw={700}
