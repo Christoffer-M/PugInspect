@@ -44,10 +44,13 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
 
   const classNameSlug = mythicPlusRun?.class?.slug || "unknown";
   const specName = mythicPlusRun?.spec?.name || "Unknown Spec";
-  const specSlug = mythicPlusRun?.spec?.slug || "unknown";
+  const specSlug = mythicPlusRun?.spec?.slug?.replace(/-/g, "") || "unknown";
 
   const getClassImageSrc = () => {
     if (!mythicPlusRun?.class?.slug || !mythicPlusRun?.spec?.slug) return null;
+
+    console.log("getClassImageSrc", classNameSlug, specSlug);
+
     return getClassIconSrc(classNameSlug, specSlug);
   };
 
