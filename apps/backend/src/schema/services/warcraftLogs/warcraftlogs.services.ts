@@ -90,15 +90,15 @@ export class WarcraftLogsService {
     const token = await this.getAccessToken();
     if (!token) throw new Error("API token not configured.");
 
-    const { name, realm, region, role, metric, difficulty, byBracket } = args;
+    const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
-    logger.info("WarcraftLogs character profile request", { name, realm, region });
+    logger.info("WarcraftLogs character profile request", { name, realm, region, zoneId });
 
     const variables: CharacterProfileQueryVariables = {
       name,
       server: realm,
       region,
-      zoneID: undefined,
+      zoneID: zoneId ?? undefined,
       difficulty: this.mapDifficulty(difficulty),
       role,
       metric,

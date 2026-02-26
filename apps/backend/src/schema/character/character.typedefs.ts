@@ -10,6 +10,7 @@ export const characterTypedefs = gql`
       metric: Metric
       difficulty: Difficulty
       byBracket: Boolean
+      zoneId: Int
     ): Character
     characterSuggestions(
       region: String!

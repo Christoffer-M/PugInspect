@@ -37,6 +37,7 @@ export const queryKeys = {
       args.metric,
       args.difficulty,
       args.byBracket,
+      args.zoneId,
     ];
   },
 };

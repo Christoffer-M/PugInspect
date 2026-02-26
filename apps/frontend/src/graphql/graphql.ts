@@ -102,6 +102,7 @@ export type QueryCharacterArgs = {
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
   role?: InputMaybe<RoleType>;
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -176,6 +177,7 @@ export type CharacterLogsQueryVariables = Exact<{
   metric?: InputMaybe<Metric>;
   difficulty?: InputMaybe<Difficulty>;
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -218,7 +220,7 @@ export class TypedDocumentString<TResult, TVariables>
 }
 
 export const CharacterLogsDocument = new TypedDocumentString(`
-    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty, $byBracket: Boolean) {
+    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty, $byBracket: Boolean, $zoneId: Int) {
   character(
     name: $name
     realm: $realm
@@ -227,6 +229,7 @@ export const CharacterLogsDocument = new TypedDocumentString(`
     metric: $metric
     difficulty: $difficulty
     byBracket: $byBracket
+    zoneId: $zoneId
   ) {
     warcraftLogs {
       bestPerformanceAverage

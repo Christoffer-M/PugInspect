@@ -98,6 +98,7 @@ export type QueryCharacterArgs = {
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
   role?: InputMaybe<RoleType>;
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 

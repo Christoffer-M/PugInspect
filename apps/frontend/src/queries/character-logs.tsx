@@ -20,6 +20,7 @@ const query = graphql(`
     $metric: Metric
     $difficulty: Difficulty
     $byBracket: Boolean
+    $zoneId: Int
   ) {
     character(
       name: $name
@@ -29,6 +30,7 @@ const query = graphql(`
       metric: $metric
       difficulty: $difficulty
       byBracket: $byBracket
+      zoneId: $zoneId
     ) {
       warcraftLogs {
         bestPerformanceAverage

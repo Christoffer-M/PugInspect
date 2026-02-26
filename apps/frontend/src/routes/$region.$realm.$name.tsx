@@ -19,6 +19,8 @@ import { useCharacterLogs } from "../queries/character-logs";
 import { RaidProgression } from "../components/RaidProgression";
 import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
 import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
+import { useState } from "react";
+import { getZoneIdForRaid } from "../data/raidZones";
 
 export type CharacterQueryParams = {
   roleType: RoleType;
@@ -60,6 +62,14 @@ function CharacterPage() {
     region,
   });
 
+  const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
+  // Tracks the raid the user explicitly picks; null means "use the first available".
+  const [selectedRaid, setSelectedRaid] = useState<string | null>(null);
+  const effectiveRaid = selectedRaid ?? raidProgression[0]?.raid ?? null;
+
+
+  console.log(getZoneIdForRaid(effectiveRaid));
+
   const {
     data: logsData,
     isFetching: isFetchingLogs,
@@ -72,6 +82,7 @@ function CharacterPage() {
     metric: searchMetric,
     difficulty: searchDifficulty,
     byBracket: searchBracket,
+    zoneId: getZoneIdForRaid(effectiveRaid),
   });
 
   const refetchData = () => {
@@ -116,8 +127,9 @@ function CharacterPage() {
               isError={isError}
             />
             <RaidProgression
-              raidData={characterSummaryData?.raiderIo?.raidProgression ?? []}
+              raidData={raidProgression}
               isLoading={isFetchingSummary}
+              onRaidChange={setSelectedRaid}
             />
             <LogsTable
               logs={logsData}

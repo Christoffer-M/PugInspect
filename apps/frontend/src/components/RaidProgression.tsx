@@ -21,11 +21,13 @@ const TextMapper: Record<string, string> = {
 type RaidProgressionProps = {
   raidData: RaidProgressionDetail[];
   isLoading: boolean;
+  onRaidChange?: (raid: string | null) => void;
 };
 
 export const RaidProgression: React.FC<RaidProgressionProps> = ({
   raidData,
   isLoading,
+  onRaidChange,
 }) => {
   const defaultValue = raidData[0]?.raid ?? null;
   const [selectedRaid, setSelectedRaid] = useState<string | null>(defaultValue);
@@ -49,6 +51,13 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
       setSelectedRaid(defaultValue);
     }
   }, [raidData]);
+
+  const handleOnChange = (raid: string | null) => {
+    setSelectedRaid(raid);
+    if (onRaidChange) {
+      onRaidChange(raid);
+    }
+  }
 
   const normalBossesKilled =
     !isLoading && raidDataItem?.normal_bosses_killed
@@ -77,7 +86,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
           }}
           value={selectedRaid}
           data={raidOptions}
-          onChange={setSelectedRaid}
+          onChange={handleOnChange}
           defaultValue={defaultValue}
           style={{ width: 200 }}
         />
