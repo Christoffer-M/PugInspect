@@ -49,8 +49,6 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
   const getClassImageSrc = () => {
     if (!mythicPlusRun?.class?.slug || !mythicPlusRun?.spec?.slug) return null;
 
-    console.log("getClassImageSrc", classNameSlug, specSlug);
-
     return getClassIconSrc(classNameSlug, specSlug);
   };
 
