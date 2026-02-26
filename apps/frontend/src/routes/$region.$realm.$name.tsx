@@ -98,7 +98,7 @@ function CharacterPage() {
       <Container>
         <Stack mt="md" align="center" justify="center" gap={0}>
           <Group justify="space-between" w={"100%"} align="flex-start">
-            <Title order={3}>Profile</Title>
+            <Title order={2}>Profile</Title>
 
             <Group>
               <Text size="sm" c="dimmed" m={0}>
