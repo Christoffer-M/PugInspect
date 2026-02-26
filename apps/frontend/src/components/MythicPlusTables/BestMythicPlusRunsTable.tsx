@@ -42,10 +42,12 @@ export const BestMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
   return (
     <Stack flex={1} gap={0}>
       <Title order={3}>Top M+ Runs</Title>
-      <Table withTableBorder>
-        <RunTableHeader />
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
+      <Table.ScrollContainer minWidth={350}>
+        <Table withTableBorder>
+          <RunTableHeader />
+          <Table.Tbody>{rows}</Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
     </Stack>
   );
 };

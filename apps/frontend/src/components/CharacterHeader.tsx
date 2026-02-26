@@ -43,8 +43,8 @@ export const CharacterHeader: React.FC<{
 
   return (
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
-      <Group justify="space-between" align="flex-start">
-        <Group h="100%" align="flex-start">
+      <Group justify="space-between" align="flex-start" wrap="wrap">
+        <Group h="100%" align="flex-start" style={{ flex: 1, minWidth: 200 }}>
           {loading || isError ? (
             <>
               <Skeleton h={85} w={85} radius={100} m={0} animate={!isError} />

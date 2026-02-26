@@ -91,7 +91,7 @@ const CharacterSearchInput: React.FC = () => {
   };
 
   return (
-    <Flex gap="xs">
+    <Flex gap="xs" w="100%">
       <Select
         placeholder="EU"
         data={regions}
@@ -122,7 +122,7 @@ const CharacterSearchInput: React.FC = () => {
         onOptionSubmit={(selectedValue) => {
           navigateToCharacter(selectedValue);
         }}
-        style={{ width: 350 }}
+        style={{ flex: 1, minWidth: 0 }}
         comboboxProps={{
           transitionProps: { transition: "pop", duration: 200 },
         }}

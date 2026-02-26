@@ -148,7 +148,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
 
   return (
     <Stack w={"100%"} gap={0}>
-      <Group justify="space-between" align="center" mb={0}>
+      <Group justify="space-between" align="center" mb={0} wrap="wrap">
         <Title order={3}>Raid logs</Title>
         <Switch
           size="sm"
@@ -165,7 +165,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
 
       <Paper withBorder w="100%">
         <Grid gutter={"md"} p={"xs"}>
-          <Grid.Col span={"auto"}>
+          <Grid.Col span={{ base: 12, sm: "auto" }}>
             <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
               <Text m="0" fw={500} w={"fit-content"}>
                 Difficulty
@@ -184,7 +184,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               />
             </Stack>
           </Grid.Col>
-          <Grid.Col span={"auto"}>
+          <Grid.Col span={{ base: 12, sm: "auto" }}>
             <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
               <Text m="0" fw={500} w={"fit-content"}>
                 Role
@@ -203,8 +203,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               />
             </Stack>
           </Grid.Col>
-          <Grid.Col span={"content"}>
-            <Stack align="center" w={"100%"} gap={"xs"} flex={1} miw={130}>
+          <Grid.Col span={{ base: 12, sm: "content" }}>
+            <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
               <Text m="0" fw={500} w={"fit-content"}>
                 Metric
               </Text>
@@ -279,30 +279,32 @@ export const LogsTable: React.FC<LogsTableProps> = ({
             </Group>
           </Paper>
         </Center>
-        <Table verticalSpacing={0} horizontalSpacing={"md"}>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Encounter</Table.Th>
-              <Table.Th>Rank Percent</Table.Th>
-              <Table.Th>Median Percent</Table.Th>
-              <Table.Th>Kills</Table.Th>
-              <Table.Th>Spec</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {isFetching ? (
-              skeletonRows
-            ) : rows.length > 0 ? (
-              rows
-            ) : (
+        <Table.ScrollContainer minWidth={480}>
+          <Table verticalSpacing={0} horizontalSpacing={"md"}>
+            <Table.Thead>
               <Table.Tr>
-                <Table.Td colSpan={5} style={{ textAlign: "center" }}>
-                  No logs available.
-                </Table.Td>
+                <Table.Th>Encounter</Table.Th>
+                <Table.Th>Rank %</Table.Th>
+                <Table.Th>Median %</Table.Th>
+                <Table.Th>Kills</Table.Th>
+                <Table.Th>Spec</Table.Th>
               </Table.Tr>
-            )}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {isFetching ? (
+                skeletonRows
+              ) : rows.length > 0 ? (
+                rows
+              ) : (
+                <Table.Tr>
+                  <Table.Td colSpan={5} style={{ textAlign: "center" }}>
+                    No logs available.
+                  </Table.Td>
+                </Table.Tr>
+              )}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       </Paper>
     </Stack>
   );

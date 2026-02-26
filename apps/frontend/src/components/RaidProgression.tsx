@@ -69,7 +69,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
 
   return (
     <Stack w={"100%"} gap={0}>
-      <Group justify="space-between" m={0}>
+      <Group justify="space-between" m={0} wrap="wrap" gap="xs">
         <Title order={2} m={0}>
           Raid Progression
         </Title>
@@ -81,12 +81,13 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
           data={raidOptions}
           onChange={handleOnChange}
           defaultValue={defaultValue}
-          style={{ width: 200 }}
+          maw={200}
+          w="100%"
         />
       </Group>
 
       <Grid>
-        <Grid.Col span={4} pb={0}>
+        <Grid.Col span={{ base: 12, sm: 4 }} pb={0}>
           <Paper withBorder p={0} shadow="sm" style={{ textAlign: "center" }}>
             <Center>
               <RingProgress
@@ -112,7 +113,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
             </Center>
           </Paper>
         </Grid.Col>
-        <Grid.Col span={4} pb={0}>
+        <Grid.Col span={{ base: 12, sm: 4 }} pb={0}>
           <Paper withBorder p={0} shadow="sm" style={{ textAlign: "center" }}>
             <Center>
               <RingProgress
@@ -138,7 +139,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
             </Center>
           </Paper>
         </Grid.Col>
-        <Grid.Col span={4} pb={0}>
+        <Grid.Col span={{ base: 12, sm: 4 }} pb={0}>
           <Paper withBorder p={0} shadow="sm" style={{ textAlign: "center" }}>
             <Center>
               <RingProgress
