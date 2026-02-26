@@ -85,19 +85,18 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
       </Table.Td>
       <Table.Td>
         <Skeleton visible={isFetching} className={classes.skeleton}>
-          <Tooltip label={specName} withArrow openDelay={50}>
-
-
-            <Image
-              h={22}
-              w={22}
-              fit="contain"
-              radius={"xs"}
-              alt={`${classNameSlug}-${specSlug}`}
-              src={getClassImageSrc()}
-            />
-
-          </Tooltip>
+          {getClassImageSrc() && (
+            <Tooltip label={specName} withArrow openDelay={50}>
+              <Image
+                h={22}
+                w={22}
+                fit="contain"
+                radius={"xs"}
+                alt={`${classNameSlug}-${specSlug}`}
+                src={getClassImageSrc()}
+              />
+            </Tooltip>
+          )}
         </Skeleton>
       </Table.Td>
       <Table.Td>
