@@ -130,18 +130,16 @@ export type RaidRanking = {
 
 export type RaiderIo = {
   __typename?: 'RaiderIo';
-  all?: Maybe<Segment>;
   bestMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
   class?: Maybe<Scalars['String']['output']>;
-  dps?: Maybe<Segment>;
+  currentSeason?: Maybe<SeasonScores>;
   gear?: Maybe<Scalars['String']['output']>;
-  healer?: Maybe<Segment>;
   itlvl?: Maybe<Scalars['Float']['output']>;
+  previousSeason?: Maybe<SeasonScores>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
   specialization?: Maybe<Scalars['String']['output']>;
-  tank?: Maybe<Segment>;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
 
@@ -156,6 +154,14 @@ export type SearchResult = {
   name: Scalars['String']['output'];
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
+};
+
+export type SeasonScores = {
+  __typename?: 'SeasonScores';
+  all?: Maybe<Segment>;
+  dps?: Maybe<Segment>;
+  healer?: Maybe<Segment>;
+  tank?: Maybe<Segment>;
 };
 
 export type Segment = {

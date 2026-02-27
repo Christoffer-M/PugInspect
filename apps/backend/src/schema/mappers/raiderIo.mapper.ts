@@ -67,7 +67,8 @@ export function mapRaiderIo(
     itlvl: rioProfile.gear?.item_level_equipped,
   };
 
-  const segments = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
+  const segmentsCurrentSeason = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
+  const segmentsPreviousSeason = rioProfile.mythic_plus_scores_by_season?.[1]?.segments;
   const raidProgression = Object.entries(rioProfile.raid_progression || {}).map(
     ([raid, details]) => ({
       raid,
@@ -86,9 +87,17 @@ export function mapRaiderIo(
     raidProgression,
     bestMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_best_runs),
     recentMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_recent_runs),
-    all: getSegment(segments?.all),
-    dps: getSegment(segments?.dps),
-    healer: getSegment(segments?.healer),
-    tank: getSegment(segments?.tank),
+    currentSeason: {
+      all: getSegment(segmentsCurrentSeason?.all),
+      dps: getSegment(segmentsCurrentSeason?.dps),
+      healer: getSegment(segmentsCurrentSeason?.healer),
+      tank: getSegment(segmentsCurrentSeason?.tank),
+    },
+    previousSeason: {
+      all: getSegment(segmentsPreviousSeason?.all),
+      dps: getSegment(segmentsPreviousSeason?.dps),
+      healer: getSegment(segmentsPreviousSeason?.healer),
+      tank: getSegment(segmentsPreviousSeason?.tank),
+    },
   };
 }

@@ -85,18 +85,16 @@ type RaidRanking {
 }
 
 type RaiderIo {
-  all: Segment
   bestMythicPlusRuns: [MythicPlusRun!]
   class: String
-  dps: Segment
+  currentSeason: SeasonScores
   gear: String
-  healer: Segment
   itlvl: Float
+  previousSeason: SeasonScores
   race: String
   raidProgression: [RaidProgressionDetail!]
   recentMythicPlusRuns: [MythicPlusRun!]
   specialization: String
-  tank: Segment
   thumbnailUrl: String
 }
 
@@ -111,6 +109,13 @@ type SearchResult {
   name: String!
   realm: String!
   region: String!
+}
+
+type SeasonScores {
+  all: Segment
+  dps: Segment
+  healer: Segment
+  tank: Segment
 }
 
 type Segment {

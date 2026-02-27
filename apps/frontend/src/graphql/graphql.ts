@@ -134,18 +134,16 @@ export type RaidRanking = {
 
 export type RaiderIo = {
   __typename?: 'RaiderIo';
-  all?: Maybe<Segment>;
   bestMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
   class?: Maybe<Scalars['String']['output']>;
-  dps?: Maybe<Segment>;
+  currentSeason?: Maybe<SeasonScores>;
   gear?: Maybe<Scalars['String']['output']>;
-  healer?: Maybe<Segment>;
   itlvl?: Maybe<Scalars['Float']['output']>;
+  previousSeason?: Maybe<SeasonScores>;
   race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
   specialization?: Maybe<Scalars['String']['output']>;
-  tank?: Maybe<Segment>;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
 
@@ -161,6 +159,14 @@ export type SearchResult = {
   name: Scalars['String']['output'];
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
+};
+
+export type SeasonScores = {
+  __typename?: 'SeasonScores';
+  all?: Maybe<Segment>;
+  dps?: Maybe<Segment>;
+  healer?: Maybe<Segment>;
+  tank?: Maybe<Segment>;
 };
 
 export type Segment = {
@@ -198,7 +204,7 @@ export type CharacterSummaryQueryVariables = Exact<{
 }>;
 
 
-export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, itlvl?: number | null, bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, recentMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null };
+export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, itlvl?: number | null, bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, recentMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null }> | null, currentSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null, previousSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -319,21 +325,41 @@ export const CharacterSummaryDocument = new TypedDocumentString(`
         mythic_bosses_killed
         normal_bosses_killed
       }
-      all {
-        score
-        color
+      currentSeason {
+        all {
+          score
+          color
+        }
+        dps {
+          score
+          color
+        }
+        healer {
+          score
+          color
+        }
+        tank {
+          score
+          color
+        }
       }
-      dps {
-        score
-        color
-      }
-      healer {
-        score
-        color
-      }
-      tank {
-        score
-        color
+      previousSeason {
+        all {
+          score
+          color
+        }
+        dps {
+          score
+          color
+        }
+        healer {
+          score
+          color
+        }
+        tank {
+          score
+          color
+        }
       }
     }
   }

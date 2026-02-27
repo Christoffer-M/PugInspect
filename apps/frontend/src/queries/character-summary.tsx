@@ -67,22 +67,42 @@ export const CharacterDataQuery = graphql(`
           mythic_bosses_killed
           normal_bosses_killed
         }
-        all {
-          score
-          color
+        currentSeason {
+           all {
+             score
+             color
+           }
+           dps {
+             score
+             color
+           }
+           healer {
+             score
+             color
+           }
+           tank {
+             score
+             color
+           }
         }
-        dps {
-          score
-          color
-        }
-        healer {
-          score
-          color
-        }
-        tank {
-          score
-          color
-        }
+        previousSeason {
+           all {
+             score
+             color
+           }
+           dps {
+             score
+             color
+           }
+           healer {
+             score
+             color
+           }
+           tank {
+             score
+             color
+           }
+         }
       }
     }
   }

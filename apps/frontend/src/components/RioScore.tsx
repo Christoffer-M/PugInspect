@@ -7,23 +7,23 @@ interface RankingGroupProps {
   color?: string;
 }
 
-export const RankingGroup: React.FC<RankingGroupProps> = ({
+export const RioScore: React.FC<RankingGroupProps> = ({
   label,
   value,
   isLoading = false,
   color,
 }) => (
   <Skeleton visible={isLoading} animate>
-    <Group justify="space-between" w="100%" align="center">
-      <Text fw={700} m={0}>
-        {label}
-      </Text>
+    <Group justify="space-between" w="100%" align="flex-start" >
       {isLoading ? (
         <Skeleton h={15} w={50} radius={100} m={0} animate />
       ) : (
-        <Text fw={700} m={0} c={color}>
-          {value ?? "-"}
-        </Text>
+        <Group justify="flex-start" gap={2}>
+          <Text fw={700} m={0} c={color}>
+            {value ?? "N/A"}
+          </Text>
+          {label && <Text size="xs" c='dimmed' m={0}> {label}</Text>}
+        </Group>
       )}
     </Group>
   </Skeleton>

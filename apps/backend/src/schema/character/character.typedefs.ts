@@ -56,12 +56,16 @@ export const characterTypedefs = gql`
     recentMythicPlusRuns: [MythicPlusRun!]
     race: String
     gear: String
+    currentSeason: SeasonScores
+    previousSeason: SeasonScores
+  }
+  
+  type SeasonScores {
     all: Segment
     dps: Segment
     healer: Segment
     tank: Segment
   }
-
   type MythicPlusRun {
     dungeon: String!
     short_name: String!
