@@ -80,7 +80,6 @@ function CharacterPage() {
       region,
       class: characterSummaryData.raiderIo.class ?? undefined,
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [characterSummaryData?.raiderIo?.class]);
 
   const {
