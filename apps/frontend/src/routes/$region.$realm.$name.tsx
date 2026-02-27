@@ -73,16 +73,19 @@ function CharacterPage() {
     data: logsData,
     isFetching: isFetchingLogs,
     refetch: refetchLogs,
-  } = useCharacterLogs({
-    name,
-    realm,
-    region,
-    role: searchRoleType,
-    metric: searchMetric,
-    difficulty: searchDifficulty,
-    byBracket: searchBracket,
-    zoneId: getZoneIdForRaid(effectiveRaid),
-  });
+  } = useCharacterLogs(
+    {
+      name,
+      realm,
+      region,
+      role: searchRoleType,
+      metric: searchMetric,
+      difficulty: searchDifficulty,
+      byBracket: searchBracket,
+      // Only include the raid slug if it's explicitly set in the search params, otherwise let the API default to the most recent raid
+      zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : undefined,
+    }
+  );
 
   const refetchData = () => {
     refetchSummary();

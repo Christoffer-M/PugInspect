@@ -53,7 +53,9 @@ const query = graphql(`
   }
 `);
 
-export const useCharacterLogs = (args: CharacterLogsQueryVariables) =>
+export const useCharacterLogs = (
+  args: CharacterLogsQueryVariables
+) =>
   useQuery({
     queryKey: queryKeys.characterLogs(args),
     retry: false,
