@@ -22,7 +22,7 @@ export const ExternalLinkIcon: React.FC<ExternalLinkIconProps> = ({
     size={`${size}px`}
   >
     <ActionIcon variant="subtle" size={size} aria-label={label}>
-      <Image src={icon} />
+      <Image src={icon} h={size} w={size} fit="contain" />
     </ActionIcon>
   </Anchor>
 );
