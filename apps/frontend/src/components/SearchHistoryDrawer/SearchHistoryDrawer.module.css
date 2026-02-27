@@ -1,0 +1,52 @@
+.item {
+  border-radius: var(--mantine-radius-sm);
+  padding: 6px 8px;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.item:hover {
+  background-color: var(--mantine-color-dark-6);
+}
+
+.trash {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.item:hover .trash {
+  opacity: 1;
+}
+
+.drawerHeader {
+  background-color: var(--mantine-color-dark-8);
+  border-bottom: 1px solid rgba(61, 79, 110, 0.5);
+}
+
+.drawerBody {
+  background-color: var(--mantine-color-dark-8);
+  padding: 12px 8px;
+}
+
+.drawerOverlay {
+  backdrop-filter: blur(2px);
+}
+
+.itemButton {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemStack {
+  min-width: 0;
+  flex: 1;
+}
+
+.itemBadge {
+  flex-shrink: 0;
+}
+
+.itemTime {
+  flex-shrink: 0;
+}

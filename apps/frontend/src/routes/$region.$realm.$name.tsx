@@ -9,6 +9,7 @@ import {
   Grid,
 } from "@mantine/core";
 import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
@@ -20,6 +21,7 @@ import { RaidProgression } from "../components/RaidProgression";
 import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
 import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
 import { getZoneIdForRaid } from "../data/raidZones";
+import { useSearchHistory } from "../hooks/useSearchHistory";
 
 export type CharacterQueryParams = {
   roleType: RoleType;
@@ -68,6 +70,18 @@ function CharacterPage() {
 
   const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
   const effectiveRaid = searchRaid ?? raidProgression[0]?.raid ?? null;
+
+  const { add: addToHistory } = useSearchHistory();
+  useEffect(() => {
+    if (!characterSummaryData?.raiderIo) return;
+    addToHistory({
+      name,
+      realm,
+      region,
+      class: characterSummaryData.raiderIo.class ?? undefined,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characterSummaryData?.raiderIo?.class]);
 
   const {
     data: logsData,
