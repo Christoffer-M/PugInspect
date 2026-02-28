@@ -9,7 +9,7 @@
 
 *   🔍 **Character Search** — Find any WoW character by name and realm.
     
-*   📊 **Raider.IO Integration** — View Mythic+ scores, dungeon runs, and rankings.
+*   📊 **Raider.IO Integration** — View Mythic+ scores & dungeon runs.
     
 *   📜 **WarcraftLogs Data** — Check raid logs, parses, and performance insights.
     
