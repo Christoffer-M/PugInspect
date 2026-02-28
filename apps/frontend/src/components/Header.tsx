@@ -24,7 +24,7 @@ const Logo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     onKeyDown={(e) => e.key === "Enter" && onClick()}
     style={{ cursor: "pointer", userSelect: "none", flexShrink: 0 }}
   >
-    <Text fw={700} size="xl" hiddenFrom="xs" style={logoTextStyle}>
+    <Text fw={700} size="xl" hiddenFrom="xs" m={0} style={logoTextStyle}>
       PI
     </Text>
     <Text fw={700} size="xl" visibleFrom="xs" style={logoTextStyle}>
