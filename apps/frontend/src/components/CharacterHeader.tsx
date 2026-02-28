@@ -51,6 +51,8 @@ export const CharacterHeader: React.FC<{
   const hasValidCurrentSeasonScore = currentSeasonScores.some(score => score.score !== undefined && score.score >= 100);
   const hasValidPreviousSeasonScore = previousSeasonScore.some(score => score.score !== undefined && score.score >= 100);
 
+  const normalizeRealm = server.trim().toLowerCase().replace(/\s+/g, "-").replace(/-+/g, "-");
+
   return (
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
       <Group justify="space-between" align="flex-start" wrap="wrap">
@@ -89,13 +91,13 @@ export const CharacterHeader: React.FC<{
                       {upperCaseFirstLetter(data?.name || name)}
                     </Title>
                     <ExternalLinkIcon
-                      href={`https://raider.io/characters/${region}/${server}/${name}`}
+                      href={`https://raider.io/characters/${region}/${normalizeRealm}/${name}`}
                       icon={RaiderIoIocn}
                       size={22}
                     />
 
                     <ExternalLinkIcon
-                      href={`https://www.warcraftlogs.com/character/${region}/${server}/${name}`}
+                      href={`https://www.warcraftlogs.com/character/${region}/${normalizeRealm}/${name}`}
                       icon={WarcraftLogsIcon}
                       size={22}
                     />
