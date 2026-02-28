@@ -3,6 +3,7 @@ schema {
 }
 
 type Character {
+  fetchedAt: String
   name: String!
   raiderIo: RaiderIo
   realm: String!
@@ -61,7 +62,7 @@ type MythicPlusSpec {
 }
 
 type Query {
-  character(byBracket: Boolean, difficulty: Difficulty, metric: Metric, name: String!, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
+  character(byBracket: Boolean, bypassCache: Boolean, difficulty: Difficulty, metric: Metric, name: String!, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
 }
 

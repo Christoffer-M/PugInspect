@@ -11,6 +11,7 @@ export const characterTypedefs = gql`
       difficulty: Difficulty
       byBracket: Boolean
       zoneId: Int
+      bypassCache: Boolean
     ): Character
     characterSuggestions(
       region: String!
@@ -42,6 +43,7 @@ export const characterTypedefs = gql`
     name: String!
     realm: String!
     region: String!
+    fetchedAt: String
     raiderIo: RaiderIo
     warcraftLogs(role: RoleType, metric: Metric, byBracket: Boolean): Logs
   }

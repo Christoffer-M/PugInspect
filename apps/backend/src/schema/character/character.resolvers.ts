@@ -25,11 +25,12 @@ export default {
       const logsRequested = isFieldRequested(info, "warcraftLogs");
       const raiderIoRequested = isFieldRequested(info, "raiderIo");
 
-      const { rioProfile, warcraftLogsProfile } = await getCharacterProfiles(
+      const { rioProfile, rioFetchedAt, warcraftLogsProfile, logsFetchedAt } = await getCharacterProfiles(
         args,
         {
           logsRequested: logsRequested ?? false,
           raiderIoRequested: raiderIoRequested ?? false,
+          bypassCache: args.bypassCache ?? false,
         }
       );
 
@@ -39,10 +40,19 @@ export default {
         });
       }
 
+      const fetchedAtSeconds = Math.min(
+        rioFetchedAt ?? Infinity,
+        logsFetchedAt ?? Infinity
+      );
+      const fetchedAt = isFinite(fetchedAtSeconds)
+        ? new Date(fetchedAtSeconds * 1000).toISOString()
+        : undefined;
+
       return {
         name: rioProfile ? rioProfile.name : args.name,
         realm: rioProfile ? rioProfile.realm : args.realm,
         region: rioProfile ? rioProfile.region : args.region,
+        fetchedAt,
         raiderIo:
           raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
         warcraftLogs:

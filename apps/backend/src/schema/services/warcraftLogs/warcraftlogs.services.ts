@@ -124,18 +124,19 @@ export class WarcraftLogsService {
   }
 
   static async getCharacterProfile(
-    args: QueryCharacterArgs
-  ): Promise<CharacterProfileQuery["characterData"]> {
+    args: QueryCharacterArgs,
+    bypassCache = false
+  ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
     const cacheKey = `wcl:${region}:${realm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
     const kv = getResponseKV();
 
-    if (kv) {
-      const cached = await kv.get<CharacterProfileQuery["characterData"]>(cacheKey, "json");
-      if (cached) {
+    if (kv && !bypassCache) {
+      const entry = await kv.get<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>(cacheKey, "json");
+      if (entry) {
         logger.info("WarcraftLogs character profile cache hit", { name, realm, region });
-        return cached;
+        return entry;
       }
     }
 
@@ -177,17 +178,18 @@ export class WarcraftLogsService {
 
       if (!response.data?.characterData?.character) {
         logger.warn("WarcraftLogs character not found", { name, realm, region, rateLimit: rateLimitInfo });
-        return null;
+        return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
       }
 
       logger.info("WarcraftLogs character profile fetched", { name, realm, region, rateLimit: rateLimitInfo });
       const characterData = response.data.characterData;
+      const fetchedAt = Math.floor(Date.now() / 1000);
 
       if (kv) {
-        await kv.put(cacheKey, JSON.stringify(characterData), { expirationTtl: 900 });
+        await kv.put(cacheKey, JSON.stringify({ data: characterData, fetchedAt }), { expirationTtl: 900 });
       }
 
-      return characterData;
+      return { data: characterData, fetchedAt };
     } catch (error) {
       logger.error("WarcraftLogs character profile fetch failed", {
         name,

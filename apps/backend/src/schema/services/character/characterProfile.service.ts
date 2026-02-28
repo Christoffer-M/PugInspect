@@ -11,15 +11,16 @@ export async function getCharacterProfiles(
   {
     logsRequested,
     raiderIoRequested,
-  }: { logsRequested: boolean; raiderIoRequested: boolean }
+    bypassCache,
+  }: { logsRequested: boolean; raiderIoRequested: boolean; bypassCache: boolean }
 ) {
   const { name, realm, region } = args;
-  logger.info("Character profile request", { name, realm, region, logsRequested, raiderIoRequested });
+  logger.info("Character profile request", { name, realm, region, logsRequested, raiderIoRequested, bypassCache });
 
   if (logsRequested && raiderIoRequested) {
     const [rioResult, logsResult] = await Promise.allSettled([
-      RaiderIOService.getCharacterProfile(args),
-      WarcraftLogsService.getCharacterProfile(args),
+      RaiderIOService.getCharacterProfile(args, bypassCache),
+      WarcraftLogsService.getCharacterProfile(args, bypassCache),
     ]);
 
     if (rioResult.status === "rejected") {
@@ -36,30 +37,32 @@ export async function getCharacterProfiles(
     }
 
     return {
-      rioProfile:
-        rioResult.status === "fulfilled" ? rioResult.value : undefined,
-      warcraftLogsProfile:
-        logsResult.status === "fulfilled" ? logsResult.value : undefined,
+      rioProfile: rioResult.status === "fulfilled" ? rioResult.value.data : undefined,
+      rioFetchedAt: rioResult.status === "fulfilled" ? rioResult.value.fetchedAt : undefined,
+      warcraftLogsProfile: logsResult.status === "fulfilled" ? logsResult.value.data : undefined,
+      logsFetchedAt: logsResult.status === "fulfilled" ? logsResult.value.fetchedAt : undefined,
     };
   }
 
   if (raiderIoRequested) {
-    const response = await RaiderIOService.getCharacterProfile(args);
-    if (response == null) {
+    const result = await RaiderIOService.getCharacterProfile(args, bypassCache);
+    if (result.data == null) {
       logger.warn("RaiderIO character profile not found", { name, realm, region });
       throw new GraphQLError("Character Raider.IO profile not found", {
         extensions: { code: "NOT_FOUND" },
       });
     }
     return {
-      rioProfile: response,
+      rioProfile: result.data,
+      rioFetchedAt: result.fetchedAt,
       warcraftLogsProfile: undefined,
+      logsFetchedAt: undefined,
     };
   }
 
   if (logsRequested) {
-    const response = await WarcraftLogsService.getCharacterProfile(args);
-    if (response == null) {
+    const result = await WarcraftLogsService.getCharacterProfile(args, bypassCache);
+    if (result.data == null) {
       logger.warn("WarcraftLogs character profile not found", { name, realm, region });
       throw new GraphQLError("Character Warcraft Logs profile not found", {
         extensions: { code: "NOT_FOUND" },
@@ -67,9 +70,11 @@ export async function getCharacterProfiles(
     }
     return {
       rioProfile: undefined,
-      warcraftLogsProfile: response,
+      rioFetchedAt: undefined,
+      warcraftLogsProfile: result.data,
+      logsFetchedAt: result.fetchedAt,
     };
   }
 
-  return { rioProfile: undefined, warcraftLogsProfile: undefined };
+  return { rioProfile: undefined, rioFetchedAt: undefined, warcraftLogsProfile: undefined, logsFetchedAt: undefined };
 }

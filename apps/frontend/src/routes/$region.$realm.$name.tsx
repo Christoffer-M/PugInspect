@@ -9,7 +9,7 @@ import {
   Grid,
 } from "@mantine/core";
 import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
@@ -56,16 +56,18 @@ function CharacterPage() {
 
   const navigate = useNavigate({ from: Route.id });
 
+  const bypassCacheRef = useRef(false);
+
   const {
     data: characterSummaryData,
     isFetching: isFetchingSummary,
     isError,
-    dataUpdatedAt,
     refetch: refetchSummary,
   } = useCharacterSummaryQuery({
     name,
     realm,
     region,
+    bypassCacheRef,
   });
 
   const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
@@ -86,23 +88,23 @@ function CharacterPage() {
     data: logsData,
     isFetching: isFetchingLogs,
     refetch: refetchLogs,
-  } = useCharacterLogs(
-    {
-      name,
-      realm,
-      region,
-      role: searchRoleType,
-      metric: searchMetric,
-      difficulty: searchDifficulty,
-      byBracket: searchBracket,
-      // Only include the raid slug if it's explicitly set in the search params, otherwise let the API default to the most recent raid
-      zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : undefined,
-    }
-  );
+  } = useCharacterLogs({
+    name,
+    realm,
+    region,
+    role: searchRoleType,
+    metric: searchMetric,
+    difficulty: searchDifficulty,
+    byBracket: searchBracket,
+    // Only include the raid slug if it's explicitly set in the search params, otherwise let the API default to the most recent raid
+    zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : undefined,
+    bypassCacheRef,
+  });
 
-  const refetchData = () => {
-    refetchSummary();
-    refetchLogs();
+  const refetchData = async () => {
+    bypassCacheRef.current = true;
+    await Promise.all([refetchSummary(), refetchLogs()]);
+    bypassCacheRef.current = false;
   };
 
   const handleRaidChange = (raid: string | null) => {
@@ -118,7 +120,7 @@ function CharacterPage() {
 
             <Group>
               <Text size="sm" c="dimmed" m={0}>
-                {`Last updated:  ${characterSummaryData ? new Date(dataUpdatedAt).toLocaleTimeString() : "--:--:--"}`}
+                {`Last updated:  ${characterSummaryData?.fetchedAt ? new Date(characterSummaryData.fetchedAt).toLocaleTimeString() : "--:--:--"}`}
               </Text>
               <Tooltip label={"Refresh data"} withArrow openDelay={150}>
                 <ActionIcon

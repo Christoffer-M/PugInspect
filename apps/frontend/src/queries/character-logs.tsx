@@ -1,3 +1,4 @@
+import { RefObject } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { execute } from "../api/graphqlClient";
 import { graphql } from "../graphql";
@@ -21,6 +22,7 @@ const query = graphql(`
     $difficulty: Difficulty
     $byBracket: Boolean
     $zoneId: Int
+    $bypassCache: Boolean
   ) {
     character(
       name: $name
@@ -31,7 +33,9 @@ const query = graphql(`
       difficulty: $difficulty
       byBracket: $byBracket
       zoneId: $zoneId
+      bypassCache: $bypassCache
     ) {
+      fetchedAt
       warcraftLogs {
         bestPerformanceAverage
         medianPerformanceAverage
@@ -53,9 +57,12 @@ const query = graphql(`
   }
 `);
 
-export const useCharacterLogs = (
-  args: CharacterLogsQueryVariables
-) =>
+export const useCharacterLogs = ({
+  bypassCacheRef,
+  ...args
+}: Omit<CharacterLogsQueryVariables, "bypassCache"> & {
+  bypassCacheRef?: RefObject<boolean>;
+}) =>
   useQuery({
     queryKey: queryKeys.characterLogs(args),
     retry: false,
@@ -64,7 +71,7 @@ export const useCharacterLogs = (
       const response = await execute<
         CharacterLogsQuery,
         CharacterLogsQueryVariables
-      >(query, args);
+      >(query, { ...args, bypassCache: bypassCacheRef?.current ?? false });
 
       return response.character?.warcraftLogs;
     },

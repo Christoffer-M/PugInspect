@@ -114,8 +114,9 @@ export class RaiderIOService {
   }
 
   static async getCharacterProfile(
-    args: QueryCharacterArgs
-  ): Promise<RaiderIoCharacterApiResponse> {
+    args: QueryCharacterArgs,
+    bypassCache = false
+  ): Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }> {
     const { name, realm, region } = args;
     const options: RequestInit = {
       method: "GET",
@@ -130,11 +131,11 @@ export class RaiderIOService {
     const cacheKey = `rio:${region}:${realm}:${name}`.toLowerCase();
     const kv = getResponseKV();
 
-    if (kv) {
-      const cached = await kv.get<RaiderIoCharacterApiResponse>(cacheKey, "json");
-      if (cached) {
+    if (kv && !bypassCache) {
+      const entry = await kv.get<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }>(cacheKey, "json");
+      if (entry) {
         logger.info("RaiderIO character profile cache hit", { name, realm, region });
-        return cached;
+        return entry;
       }
     }
 
@@ -157,11 +158,12 @@ export class RaiderIOService {
 
     try {
       var response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
+      const fetchedAt = Math.floor(Date.now() / 1000);
       logger.info("RaiderIO character profile fetched", { name, realm, region });
       if (kv) {
-        await kv.put(cacheKey, JSON.stringify(response), { expirationTtl: 300 });
+        await kv.put(cacheKey, JSON.stringify({ data: response, fetchedAt }), { expirationTtl: 300 });
       }
-      return response;
+      return { data: response, fetchedAt };
     } catch (error) {
       logger.error("RaiderIO character profile fetch failed", {
         name,

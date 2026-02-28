@@ -16,6 +16,7 @@ export type Scalars = {
 
 export type Character = {
   __typename?: 'Character';
+  fetchedAt?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
@@ -92,6 +93,7 @@ export type Query = {
 
 export type QueryCharacterArgs = {
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
+  bypassCache?: InputMaybe<Scalars['Boolean']['input']>;
   difficulty?: InputMaybe<Difficulty>;
   metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];

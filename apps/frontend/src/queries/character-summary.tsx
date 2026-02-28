@@ -1,3 +1,4 @@
+import { RefObject } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { graphql } from "../graphql";
 import { execute } from "../api/graphqlClient";
@@ -9,11 +10,12 @@ import {
 } from "../graphql/graphql";
 
 export const CharacterDataQuery = graphql(`
-  query CharacterSummary($name: String!, $realm: String!, $region: String!) {
-    character(name: $name, realm: $realm, region: $region) {
+  query CharacterSummary($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
+    character(name: $name, realm: $realm, region: $region, bypassCache: $bypassCache) {
       name
       realm
       region
+      fetchedAt
       raiderIo {
         thumbnailUrl
         race
@@ -112,7 +114,10 @@ export const useCharacterSummaryQuery = ({
   name,
   realm,
   region,
-}: CharacterSummaryQueryVariables) =>
+  bypassCacheRef,
+}: Pick<CharacterSummaryQueryVariables, "name" | "realm" | "region"> & {
+  bypassCacheRef?: RefObject<boolean>;
+}) =>
   useQuery({
     queryKey: queryKeys.character(name, realm, region),
     retry: false,
@@ -124,6 +129,7 @@ export const useCharacterSummaryQuery = ({
         name,
         realm,
         region,
+        bypassCache: bypassCacheRef?.current ?? false,
       });
 
       return response.character;
