@@ -1,6 +1,7 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
+import { getResponseKV } from "../../../kv.js";
 import type { RequestInit } from "node-fetch";
 import { GraphQLError } from "graphql";
 import {
@@ -126,6 +127,17 @@ export class RaiderIOService {
       throw new Error("RaiderIO API key is not configured.");
     }
 
+    const cacheKey = `rio:${region}:${realm}:${name}`.toLowerCase();
+    const kv = getResponseKV();
+
+    if (kv) {
+      const cached = await kv.get<RaiderIoCharacterApiResponse>(cacheKey, "json");
+      if (cached) {
+        logger.info("RaiderIO character profile cache hit", { name, realm, region });
+        return cached;
+      }
+    }
+
     logger.info("RaiderIO character profile request", { name, realm, region });
 
     const query: Record<string, string | number | boolean> = {
@@ -146,6 +158,9 @@ export class RaiderIOService {
     try {
       var response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
       logger.info("RaiderIO character profile fetched", { name, realm, region });
+      if (kv) {
+        await kv.put(cacheKey, JSON.stringify(response), { expirationTtl: 300 });
+      }
       return response;
     } catch (error) {
       logger.error("RaiderIO character profile fetch failed", {

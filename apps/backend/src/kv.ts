@@ -1,9 +1,15 @@
-let _kv: KVNamespace | undefined;
+let _tokenKV: KVNamespace | undefined;
+let _responseKV: KVNamespace | undefined;
 
-export function initKV(kv: KVNamespace | undefined): void {
-  _kv = kv;
+export function initKV(token: KVNamespace | undefined, response: KVNamespace | undefined): void {
+  _tokenKV = token;
+  _responseKV = response;
 }
 
 export function getKV(): KVNamespace | undefined {
-  return _kv;
+  return _tokenKV;
+}
+
+export function getResponseKV(): KVNamespace | undefined {
+  return _responseKV;
 }

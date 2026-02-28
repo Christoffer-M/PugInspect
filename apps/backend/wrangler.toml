@@ -9,6 +9,12 @@ binding = "TOKEN_CACHE"
 id = "6d36c806a9294c3aba100949b7e7ef2c"
 preview_id = "30400b57c1ba4f93b0984b019f6fa3f7"
 
+# Run `wrangler kv namespace create RESPONSE_CACHE` to create and fill in the ids below.
+[[kv_namespaces]]
+binding = "RESPONSE_CACHE"
+id = "cc85ef0bb2434ffebb3043e29c7aea97"
+preview_id = "b3935ea6d6264e939ce5b109d5c1dafb"
+
 [observability]
 enabled = false
 head_sampling_rate = 1

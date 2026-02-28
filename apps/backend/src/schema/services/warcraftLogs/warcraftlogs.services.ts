@@ -1,7 +1,7 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
-import { getKV } from "../../../kv.js";
+import { getKV, getResponseKV } from "../../../kv.js";
 import { RequestInit } from "node-fetch";
 import {
   CharacterProfileQuery,
@@ -126,10 +126,21 @@ export class WarcraftLogsService {
   static async getCharacterProfile(
     args: QueryCharacterArgs
   ): Promise<CharacterProfileQuery["characterData"]> {
+    const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
+
+    const cacheKey = `wcl:${region}:${realm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
+    const kv = getResponseKV();
+
+    if (kv) {
+      const cached = await kv.get<CharacterProfileQuery["characterData"]>(cacheKey, "json");
+      if (cached) {
+        logger.info("WarcraftLogs character profile cache hit", { name, realm, region });
+        return cached;
+      }
+    }
+
     const token = await this.getAccessToken();
     if (!token) throw new Error("API token not configured.");
-
-    const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
     logger.info("WarcraftLogs character profile request", { name, realm, region, zoneId });
 
@@ -143,7 +154,6 @@ export class WarcraftLogsService {
       metric,
       byBracket,
     };
-
 
     const options: RequestInit = {
       method: "POST",
@@ -171,7 +181,13 @@ export class WarcraftLogsService {
       }
 
       logger.info("WarcraftLogs character profile fetched", { name, realm, region, rateLimit: rateLimitInfo });
-      return response.data.characterData;
+      const characterData = response.data.characterData;
+
+      if (kv) {
+        await kv.put(cacheKey, JSON.stringify(characterData), { expirationTtl: 900 });
+      }
+
+      return characterData;
     } catch (error) {
       logger.error("WarcraftLogs character profile fetch failed", {
         name,

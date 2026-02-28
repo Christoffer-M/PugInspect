@@ -47,8 +47,8 @@ const nodeHandler = httpServerHandler({ port: config.port });
 export default {
   ...nodeHandler,
   async fetch(...args: Parameters<NonNullable<typeof nodeHandler.fetch>>): Promise<Response> {
-    const [request, env] = args as [Request, { TOKEN_CACHE?: KVNamespace }, ExecutionContext];
-    initKV(env.TOKEN_CACHE);
+    const [request, env] = args as [Request, { TOKEN_CACHE?: KVNamespace; RESPONSE_CACHE?: KVNamespace }, ExecutionContext];
+    initKV(env.TOKEN_CACHE, env.RESPONSE_CACHE);
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/graphql") && request.method !== "OPTIONS") {
