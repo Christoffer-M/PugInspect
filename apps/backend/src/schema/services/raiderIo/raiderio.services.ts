@@ -161,7 +161,7 @@ export class RaiderIOService {
       const fetchedAt = Math.floor(Date.now() / 1000);
       logger.info("RaiderIO character profile fetched", { name, realm, region });
       if (kv) {
-        await kv.put(cacheKey, JSON.stringify({ data: response, fetchedAt }), { expirationTtl: 300 });
+        await kv.put(cacheKey, JSON.stringify({ data: response, fetchedAt }), { expirationTtl: 900 });
       }
       return { data: response, fetchedAt };
     } catch (error) {
