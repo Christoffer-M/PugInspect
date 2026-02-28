@@ -27,6 +27,7 @@
 .drawerBody {
   background-color: var(--mantine-color-dark-8);
   padding: 12px 8px;
+  height: 100%;
 }
 
 .drawerOverlay {

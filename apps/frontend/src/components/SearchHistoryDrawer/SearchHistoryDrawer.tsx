@@ -161,7 +161,7 @@ export function SearchHistoryDrawer({ opened, onClose }: Props) {
           ))}
 
           <Button
-            variant="subtle"
+            variant="light"
             color="red"
             size="xs"
             mt="md"
