@@ -2,7 +2,7 @@
 
 **PugInspect** is a World of Warcraft companion app that allows players to quickly look up characters and view their **Raider.IO** scores and **WarcraftLogs** data — all in one convenient interface.
 
-[Link to site](https://puginspect-frontend.pages.dev/)
+[Link to site](https://puginspect.com/)
 
 ## 🚀 Features
 
