@@ -1,6 +1,7 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
+import { getKV } from "../../../kv.js";
 import { RequestInit } from "node-fetch";
 import {
   CharacterProfileQuery,
@@ -20,6 +21,7 @@ export class WarcraftLogsService {
 
   private static cachedToken: string | null = null;
   private static tokenExpiry: number | null = null;
+  private static tokenFetchInFlight: Promise<string> | null = null;
 
   private static clientId = config.warcraftLogsClientId;
   private static clientSecret = config.warcraftLogsClientSecret;
@@ -27,12 +29,38 @@ export class WarcraftLogsService {
   private static async getAccessToken(): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
 
+    // Fast path: valid token already in this isolate's memory.
     if (this.cachedToken && this.tokenExpiry && now < this.tokenExpiry) {
-      logger.info("WarcraftLogs token cache hit");
+      logger.info("WarcraftLogs token cache hit (memory)");
       return this.cachedToken;
     }
 
-    const url = "https://www.warcraftlogs.com/oauth/token";
+    // Deduplicate: if a fetch is already in flight within this isolate,
+    // await it instead of firing a second request to the token endpoint.
+    if (this.tokenFetchInFlight) {
+      logger.info("WarcraftLogs token fetch already in progress, awaiting");
+      return this.tokenFetchInFlight;
+    }
+
+    this.tokenFetchInFlight = this.acquireToken(now).finally(() => {
+      this.tokenFetchInFlight = null;
+    });
+
+    return this.tokenFetchInFlight;
+  }
+
+  private static async acquireToken(now: number): Promise<string> {
+    // KV path: token may have been fetched by another isolate already.
+    const kv = getKV();
+    if (kv) {
+      const stored = await kv.get<{ token: string; expiry: number }>("wcl_oauth_token", "json");
+      if (stored && stored.expiry > now) {
+        logger.info("WarcraftLogs token cache hit (KV)");
+        this.cachedToken = stored.token;
+        this.tokenExpiry = stored.expiry;
+        return stored.token;
+      }
+    }
 
     if (!this.clientId || !this.clientSecret) {
       logger.error("WarcraftLogs client credentials not configured");
@@ -47,7 +75,7 @@ export class WarcraftLogsService {
       client_secret: this.clientSecret,
     });
 
-    const res = await fetch(url, {
+    const res = await fetch("https://www.warcraftlogs.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
@@ -59,11 +87,22 @@ export class WarcraftLogsService {
     }
 
     const data: { access_token: string; expires_in: number } = await res.json();
+    const expiry = now + data.expires_in - 60;
 
     this.cachedToken = data.access_token;
-    this.tokenExpiry = now + data.expires_in - 60;
+    this.tokenExpiry = expiry;
 
-    logger.info("WarcraftLogs OAuth token acquired", { expiresIn: data.expires_in });
+    if (kv) {
+      await kv.put(
+        "wcl_oauth_token",
+        JSON.stringify({ token: data.access_token, expiry }),
+        { expirationTtl: data.expires_in - 60 }
+      );
+      logger.info("WarcraftLogs OAuth token acquired and persisted to KV", { expiresIn: data.expires_in });
+    } else {
+      logger.info("WarcraftLogs OAuth token acquired (no KV binding)", { expiresIn: data.expires_in });
+    }
+
     return this.cachedToken;
   }
 

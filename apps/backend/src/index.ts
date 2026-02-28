@@ -6,6 +6,7 @@ import express from "express";
 import cors from "cors";
 import { expressMiddleware } from "@as-integrations/express5";
 import { httpServerHandler } from "cloudflare:node";
+import { initKV } from "./kv.js";
 
 const app = express();
 
@@ -46,7 +47,8 @@ const nodeHandler = httpServerHandler({ port: config.port });
 export default {
   ...nodeHandler,
   async fetch(...args: Parameters<NonNullable<typeof nodeHandler.fetch>>): Promise<Response> {
-    const [request] = args;
+    const [request, env] = args as [Request, { TOKEN_CACHE?: KVNamespace }, ExecutionContext];
+    initKV(env.TOKEN_CACHE);
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/graphql") && request.method !== "OPTIONS") {

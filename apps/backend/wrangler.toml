@@ -3,6 +3,12 @@ main = "src/index.ts"
 compatibility_flags = ["nodejs_compat"]
 compatibility_date = "2025-09-23"
 
+# Run `wrangler kv namespace create TOKEN_CACHE` to create and fill in the ids below.
+[[kv_namespaces]]
+binding = "TOKEN_CACHE"
+id = "6d36c806a9294c3aba100949b7e7ef2c"
+preview_id = "30400b57c1ba4f93b0984b019f6fa3f7"
+
 [observability]
 enabled = false
 head_sampling_rate = 1
