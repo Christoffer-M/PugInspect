@@ -140,8 +140,8 @@ function CharacterPage() {
                     size: "xs",
                     type: "dots",
                   }}
-                  disabled={disableRefresh && !isFetchingSummary && !isFetchingLogs}
-                  loading={isFetchingSummary || isFetchingLogs}
+                  disabled={disableRefresh && !isFetchingSummary}
+                  loading={isFetchingSummary}
                 >
                   <IconReload size={18} />
                 </ActionIcon>
