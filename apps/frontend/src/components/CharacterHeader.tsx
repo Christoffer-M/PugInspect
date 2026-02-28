@@ -171,26 +171,25 @@ export const CharacterHeader: React.FC<{
                     No valid scores
                   </Text>
                 )}
-                <Stack align="flex-start" gap={50}>
-                  {previousSeasonScore.map((score, index) => {
-                    const isBelowThreshold = score.score !== undefined && score.score < 100;
-                    if (isBelowThreshold) {
-                      return null
-                    }
+                {previousSeasonScore.map((score, index) => {
+                  const isBelowThreshold = score.score !== undefined && score.score < 100;
+                  if (isBelowThreshold) {
+                    return null
+                  }
 
-                    return (
-                      score && (
-                        <RioScore
-                          key={index}
-                          label={`(${score.role})`}
-                          value={score.score}
-                          color={score.color}
-                          isLoading={loading}
-                        />
-                      )
-                    );
-                  })}
-                </Stack>
+                  return (
+                    score && (
+                      <RioScore
+                        key={index}
+                        label={`(${score.role})`}
+                        value={score.score}
+                        color={score.color}
+                        isLoading={loading}
+                      />
+                    )
+                  );
+                })}
+
 
               </Skeleton>
 
