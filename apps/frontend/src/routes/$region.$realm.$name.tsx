@@ -141,7 +141,7 @@ function CharacterPage() {
                     type: "dots",
                   }}
                   // Disable the button if data was fetched less than 5 minutes ago to prevent excessive API calls, but still allow manual refresh if needed
-                  disabled={disableRefresh}
+                  disabled={disableRefresh && !isFetchingSummary && !isFetchingLogs}
                   loading={isFetchingSummary}
                 >
                   <IconReload size={18} />
