@@ -129,7 +129,11 @@ export class WarcraftLogsService {
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
-    const cacheKey = `wcl:${region}:${realm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
+    var normalizedRealm = realm.trim().toLowerCase();
+    // Handle realms with spaces or dashes by normalizing them to just dashes, since WCL seems to do this
+    normalizedRealm = normalizedRealm.replace(/\s+/g, "-").replace(/-+/g, "-");
+
+    const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
     const kv = getResponseKV();
 
     if (kv && !bypassCache) {
@@ -147,7 +151,7 @@ export class WarcraftLogsService {
 
     const variables: CharacterProfileQueryVariables = {
       name,
-      server: realm,
+      server: normalizedRealm,
       region,
       zoneID: zoneId ?? undefined,
       difficulty: this.mapDifficulty(difficulty),
