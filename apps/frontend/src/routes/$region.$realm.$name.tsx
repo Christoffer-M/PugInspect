@@ -111,6 +111,15 @@ function CharacterPage() {
     navigate({ search: (prev) => ({ ...prev, raid: raid ?? undefined }) });
   };
 
+  const fetchedAt = characterSummaryData?.fetchedAt
+    ? new Date(characterSummaryData.fetchedAt).toLocaleTimeString()
+    : undefined;
+
+  // Disable the refresh button if data was fetched less than 5 minutes ago to prevent excessive API calls, but still allow manual refresh if needed
+  const disableRefresh = characterSummaryData?.fetchedAt
+    ? new Date().getTime() - new Date(characterSummaryData.fetchedAt).getTime() < 5 * 60 * 1000
+    : false;
+
   return (
     <Page>
       <Container>
@@ -120,9 +129,9 @@ function CharacterPage() {
 
             <Group>
               <Text size="sm" c="dimmed" m={0}>
-                {`Last updated:  ${characterSummaryData?.fetchedAt ? new Date(characterSummaryData.fetchedAt).toLocaleTimeString() : "--:--:--"}`}
+                {`Last updated:  ${fetchedAt ?? "--:--:--"}`}
               </Text>
-              <Tooltip label={"Refresh data"} withArrow openDelay={150}>
+              <Tooltip label={disableRefresh ? "Data is fresh, refresh disabled until 5 minutes have passed" : "Refresh data"} withArrow openDelay={150}>
                 <ActionIcon
                   size={"md"}
                   variant="outline"
@@ -131,6 +140,8 @@ function CharacterPage() {
                     size: "xs",
                     type: "dots",
                   }}
+                  // Disable the button if data was fetched less than 5 minutes ago to prevent excessive API calls, but still allow manual refresh if needed
+                  disabled={disableRefresh}
                   loading={isFetchingSummary}
                 >
                   <IconReload size={18} />
