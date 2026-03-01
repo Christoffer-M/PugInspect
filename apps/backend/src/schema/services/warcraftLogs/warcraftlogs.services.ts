@@ -1,5 +1,4 @@
 import { config } from "../../../config/index.js";
-import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
 import { getKV, getResponseKV } from "../../../kv.js";
 import {
@@ -24,6 +23,10 @@ export class WarcraftLogsService {
     string,
     Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>
   >();
+
+  // Circuit breaker: timestamp (ms) until which WCL calls are suppressed after a 429.
+  // Isolate-scoped fast path; cross-isolate state is persisted to KV under "wcl:circuit".
+  private static wclCircuitOpenUntil: number | null = null;
 
   private static clientId = config.warcraftLogsClientId;
   private static clientSecret = config.warcraftLogsClientSecret;
@@ -173,43 +176,91 @@ export class WarcraftLogsService {
       }
     }
 
+    // Circuit breaker — in-memory fast path (this isolate already knows about a lockout).
+    const circuitNow = Date.now();
+    if (this.wclCircuitOpenUntil !== null && circuitNow < this.wclCircuitOpenUntil) {
+      const retryAfterMs = this.wclCircuitOpenUntil - circuitNow;
+      logger.warn("WCL_CIRCUIT_OPEN", { cacheKey, retryAfterMs });
+      throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
+        extensions: { code: "RATE_LIMITED", retryAfterMs },
+      });
+    }
+
+    // Circuit breaker — KV cross-isolate path (a different isolate may have recorded a lockout).
+    if (kv) {
+      const circuitEntry = await kv.get<{ openUntil: number }>("wcl:circuit", "json");
+      if (circuitEntry && circuitNow < circuitEntry.openUntil) {
+        this.wclCircuitOpenUntil = circuitEntry.openUntil;
+        const retryAfterMs = circuitEntry.openUntil - circuitNow;
+        logger.warn("WCL_CIRCUIT_OPEN_KV", { cacheKey, retryAfterMs });
+        throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
+          extensions: { code: "RATE_LIMITED", retryAfterMs },
+        });
+      }
+    }
+
     const token = await this.getAccessToken();
     if (!token) throw new Error("API token not configured.");
 
     logger.info("WarcraftLogs character profile request", { name, realm: normalizedRealm, region, zoneId });
 
-    const variables: CharacterProfileQueryVariables = {
-      name,
-      server: normalizedRealm,
-      region,
-      zoneID: zoneId ?? undefined,
-      difficulty: this.mapDifficulty(difficulty),
-      role,
-      metric,
-      byBracket,
-    };
-
-    const options: RequestInit = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        query: CHARACTER_PROFILE.loc?.source.body,
-        variables,
-      }),
-    };
+    const body = JSON.stringify({
+      query: CHARACTER_PROFILE.loc?.source.body,
+      variables: {
+        name,
+        server: normalizedRealm,
+        region,
+        zoneID: zoneId ?? undefined,
+        difficulty: this.mapDifficulty(difficulty),
+        role,
+        metric,
+        byBracket,
+      } satisfies CharacterProfileQueryVariables,
+    });
 
     const wclCallStart = Date.now();
     logger.info("WCL_CALL_START", { cacheKey, name, realm: normalizedRealm, region });
 
     try {
-      const response = await fetcher<{ data: CharacterProfileQuery }>(
-        "https://www.warcraftlogs.com/api/v2/client",
-        options
-      );
+      const wclRes = await fetch("https://www.warcraftlogs.com/api/v2/client", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body,
+      });
 
+      // 429: open the circuit breaker and propagate a RATE_LIMITED error.
+      // The 60-second buffer on the KV TTL ensures the entry outlives the lockout window.
+      if (wclRes.status === 429) {
+        const durationMs = Date.now() - wclCallStart;
+        const retryAfterHeader = wclRes.headers.get("Retry-After");
+        const waitMs = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : 51 * 60 * 1000;
+        this.wclCircuitOpenUntil = Date.now() + waitMs;
+        if (kv) {
+          await kv.put(
+            "wcl:circuit",
+            JSON.stringify({ openUntil: this.wclCircuitOpenUntil }),
+            { expirationTtl: Math.ceil(waitMs / 1000) + 60 }
+          );
+        }
+        logger.warn("WCL_CIRCUIT_OPENED", {
+          cacheKey,
+          durationMs,
+          waitMs,
+          openUntil: new Date(this.wclCircuitOpenUntil).toISOString(),
+        });
+        throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
+          extensions: { code: "RATE_LIMITED", retryAfterMs: waitMs },
+        });
+      }
+
+      if (!wclRes.ok) {
+        throw new Error(`WCL request failed: ${wclRes.status} ${wclRes.statusText}`);
+      }
+
+      const response = await wclRes.json() as { data: CharacterProfileQuery };
       const durationMs = Date.now() - wclCallStart;
       const rateLimitInfo = response.data?.rateLimitData;
 
@@ -229,6 +280,9 @@ export class WarcraftLogsService {
 
       return { data: characterData, fetchedAt };
     } catch (error) {
+      // Re-throw GraphQLErrors (e.g. RATE_LIMITED) directly — do not wrap them.
+      if (error instanceof GraphQLError) throw error;
+
       logger.error("WCL_CALL_ERROR", {
         cacheKey,
         durationMs: Date.now() - wclCallStart,
