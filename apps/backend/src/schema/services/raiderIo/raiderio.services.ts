@@ -128,7 +128,11 @@ export class RaiderIOService {
       throw new Error("RaiderIO API key is not configured.");
     }
 
-    const cacheKey = `rio:${region}:${realm}:${name}`.toLowerCase();
+    // Remove all special characters and extra spaces from realm and name to prevent issues with the API, since it seems to be very picky about formatting
+    const normalizedRealm = realm.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
+    const normalizedName = name.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
+
+    const cacheKey = `rio:${region}:${normalizedRealm}:${normalizedName}`.toLowerCase();
     const kv = getResponseKV();
 
     if (kv && !bypassCache) {
@@ -139,11 +143,11 @@ export class RaiderIOService {
       }
     }
 
-    logger.info("RaiderIO character profile request", { name, realm, region });
+    logger.info("RaiderIO character profile request", { normalizedName, normalizedRealm, region });
 
     const query: Record<string, string | number | boolean> = {
-      name,
-      realm,
+      name: normalizedName,
+      realm: normalizedRealm,
       region,
       access_key: apiKey,
       fields: fields
