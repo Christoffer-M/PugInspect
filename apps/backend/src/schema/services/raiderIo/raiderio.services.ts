@@ -129,8 +129,8 @@ export class RaiderIOService {
     }
 
     // Remove all special characters and extra spaces from realm and name to prevent issues with the API, since it seems to be very picky about formatting
-    const normalizedRealm = realm.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
-    const normalizedName = name.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
+    const normalizedRealm = realm.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '').toLowerCase();
+    const normalizedName = name.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '').toLowerCase();
 
     const cacheKey = `rio:${region}:${normalizedRealm}:${normalizedName}`.toLowerCase();
     const kv = getResponseKV();
