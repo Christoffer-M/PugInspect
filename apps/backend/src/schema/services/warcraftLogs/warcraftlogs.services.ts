@@ -131,7 +131,7 @@ export class WarcraftLogsService {
     const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
     // Handle realms with spaces or dashes by normalizing them to just dashes, since WCL seems to do this
-    const normalizedRealm = realm.trim().toLowerCase().replace(/[\s`~!@#$%^&*()_|+\-=?;:'",.<>{}\[\]\\\/]+/gi, '-');
+    const normalizedRealm = realm.trim().toLowerCase().replace(/\s+/g, "-");
 
     const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
     const kv = getResponseKV();
