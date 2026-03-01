@@ -203,20 +203,25 @@ export class WarcraftLogsService {
       }),
     };
 
+    const wclCallStart = Date.now();
+    logger.info("WCL_CALL_START", { cacheKey, name, realm: normalizedRealm, region });
+
     try {
       const response = await fetcher<{ data: CharacterProfileQuery }>(
         this.endpoint,
         options
       );
 
+      const durationMs = Date.now() - wclCallStart;
       const rateLimitInfo = response.data?.rateLimitData;
 
       if (!response.data?.characterData?.character) {
-        logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, rateLimit: rateLimitInfo });
+        logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo });
         return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
       }
 
-      logger.info("WarcraftLogs character profile fetched", { name, realm: normalizedRealm, region, rateLimit: rateLimitInfo });
+      logger.info("WCL_CALL_END", { cacheKey, durationMs, rateLimit: rateLimitInfo });
+      logger.info("WarcraftLogs character profile fetched", { name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo });
       const characterData = response.data.characterData;
       const fetchedAt = Math.floor(Date.now() / 1000);
 
@@ -226,6 +231,11 @@ export class WarcraftLogsService {
 
       return { data: characterData, fetchedAt };
     } catch (error) {
+      logger.error("WCL_CALL_ERROR", {
+        cacheKey,
+        durationMs: Date.now() - wclCallStart,
+        error: error instanceof Error ? error.message : String(error),
+      });
       logger.error("WarcraftLogs character profile fetch failed", {
         name,
         realm: normalizedRealm,
