@@ -14,7 +14,9 @@ import {
 } from "../util/util";
 import { useCharacterSearchQuery } from "../queries/character-search";
 
-export const regions = ["EU", "US", "KR", "TW", "CN"];
+export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
+const disabledRegions = ["OCE", "SA", "RU"]; // Regions that are currently disabled due to raider.io API limitations
+
 
 const CharacterSearchInput: React.FC = () => {
   const params = useParams({
@@ -41,7 +43,7 @@ const CharacterSearchInput: React.FC = () => {
   const { data: searchResults = [], isLoading } = useCharacterSearchQuery(
     debouncedSearch,
     region,
-    !!errorText || searchTerm === `${initialName}-${initialRealm}`,
+    !!errorText || searchTerm === `${initialName}-${initialRealm}` || disabledRegions.includes(region),
   );
 
   const handleRaiderIoUrl = (url: string) => {
