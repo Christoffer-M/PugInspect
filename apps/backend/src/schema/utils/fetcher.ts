@@ -1,7 +1,6 @@
 
 import { GraphQLResolveInfo } from "graphql";
 import { parseResolveInfo, ResolveTree } from "graphql-parse-resolve-info";
-import fetch, { RequestInit } from "node-fetch";
 
 export async function fetcher<T>(
   url: string,

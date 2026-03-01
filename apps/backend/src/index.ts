@@ -49,6 +49,9 @@ export default {
   async fetch(...args: Parameters<NonNullable<typeof nodeHandler.fetch>>): Promise<Response> {
     const [request, env] = args as [Request, { TOKEN_CACHE?: KVNamespace; RESPONSE_CACHE?: KVNamespace }, ExecutionContext];
     initKV(env.TOKEN_CACHE, env.RESPONSE_CACHE);
+    if (!env.TOKEN_CACHE || !env.RESPONSE_CACHE) {
+      console.error("CRITICAL: KV bindings missing — all caching disabled");
+    }
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/graphql") && request.method !== "OPTIONS") {

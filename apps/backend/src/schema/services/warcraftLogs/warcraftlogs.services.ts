@@ -2,7 +2,6 @@ import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
 import { getKV, getResponseKV } from "../../../kv.js";
-import { RequestInit } from "node-fetch";
 import {
   CharacterProfileQuery,
   CharacterProfileQueryVariables,

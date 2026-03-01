@@ -36,6 +36,7 @@ declare module "@tanstack/react-router" {
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
+
   queryCache: new QueryCache({
     onError: (error, query) => {
       console.error("Global query error:", error, "on", query.queryKey);
@@ -47,7 +48,9 @@ const queryClient = new QueryClient({
     },
   }),
   defaultOptions: {
+
     queries: {
+      refetchOnWindowFocus: false,
       gcTime: 1000 * 60 * 5, // 5 minutes
       retry: false,
     },

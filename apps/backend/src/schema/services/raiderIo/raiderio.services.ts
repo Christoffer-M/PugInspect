@@ -2,7 +2,6 @@ import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
 import { getResponseKV } from "../../../kv.js";
-import type { RequestInit } from "node-fetch";
 import { GraphQLError } from "graphql";
 import {
   QueryCharacterArgs,

@@ -103,8 +103,13 @@ function CharacterPage() {
 
   const refetchData = async () => {
     bypassCacheRef.current = true;
-    await Promise.all([refetchSummary(), refetchLogs()]);
-    bypassCacheRef.current = false;
+    try {
+      await Promise.all([refetchSummary(), refetchLogs()]);
+    } finally {
+      bypassCacheRef.current = false;
+    }
+
+
   };
 
   const handleRaidChange = (raid: string | null) => {
