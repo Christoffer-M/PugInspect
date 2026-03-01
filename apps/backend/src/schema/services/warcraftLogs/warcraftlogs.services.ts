@@ -16,8 +16,6 @@ import {
 
 const logger = createLogger({ service: "WarcraftLogs" });
 export class WarcraftLogsService {
-  private static endpoint = "https://www.warcraftlogs.com/api/v2/client";
-
   private static cachedToken: string | null = null;
   private static tokenExpiry: number | null = null;
   private static tokenFetchInFlight: Promise<string> | null = null;
@@ -208,7 +206,7 @@ export class WarcraftLogsService {
 
     try {
       const response = await fetcher<{ data: CharacterProfileQuery }>(
-        this.endpoint,
+        "https://www.warcraftlogs.com/api/v2/client",
         options
       );
 
