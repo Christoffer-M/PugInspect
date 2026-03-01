@@ -14,7 +14,7 @@ import {
 } from "../util/util";
 import { useCharacterSearchQuery } from "../queries/character-search";
 
-export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
+export const regions = ["EU", "US", "KR", "TW", "CN"];
 
 const CharacterSearchInput: React.FC = () => {
   const params = useParams({
