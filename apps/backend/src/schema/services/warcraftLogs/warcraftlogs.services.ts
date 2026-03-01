@@ -22,6 +22,11 @@ export class WarcraftLogsService {
   private static tokenExpiry: number | null = null;
   private static tokenFetchInFlight: Promise<string> | null = null;
 
+  private static profileFetchInFlight = new Map<
+    string,
+    Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>
+  >();
+
   private static clientId = config.warcraftLogsClientId;
   private static clientSecret = config.warcraftLogsClientSecret;
 
@@ -133,12 +138,39 @@ export class WarcraftLogsService {
     const normalizedRealm = realm.trim().toLowerCase().replace(/\s+/g, "-");
 
     const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
+
+    // Singleflight: if a fetch for this key is already in flight within this isolate,
+    // await the existing promise instead of firing a second request to WCL.
+    if (!bypassCache) {
+      const inFlight = this.profileFetchInFlight.get(cacheKey);
+      if (inFlight) {
+        logger.info("WarcraftLogs profile fetch already in flight, awaiting", { name, realm, region });
+        return inFlight;
+      }
+
+      const promise = this.acquireCharacterProfile(cacheKey, args, normalizedRealm).finally(() => {
+        this.profileFetchInFlight.delete(cacheKey);
+      });
+      this.profileFetchInFlight.set(cacheKey, promise);
+      return promise;
+    }
+
+    return this.acquireCharacterProfile(cacheKey, args, normalizedRealm, bypassCache);
+  }
+
+  private static async acquireCharacterProfile(
+    cacheKey: string,
+    args: QueryCharacterArgs,
+    normalizedRealm: string,
+    bypassCache = false
+  ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
+    const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
     const kv = getResponseKV();
 
     if (kv && !bypassCache) {
       const entry = await kv.get<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>(cacheKey, "json");
       if (entry) {
-        logger.info("WarcraftLogs character profile cache hit", { name, realm, region });
+        logger.info("WarcraftLogs character profile cache hit", { name, realm: normalizedRealm, region });
         return entry;
       }
     }
@@ -146,7 +178,7 @@ export class WarcraftLogsService {
     const token = await this.getAccessToken();
     if (!token) throw new Error("API token not configured.");
 
-    logger.info("WarcraftLogs character profile request", { name, realm, region, zoneId });
+    logger.info("WarcraftLogs character profile request", { name, realm: normalizedRealm, region, zoneId });
 
     const variables: CharacterProfileQueryVariables = {
       name,
@@ -180,11 +212,11 @@ export class WarcraftLogsService {
       const rateLimitInfo = response.data?.rateLimitData;
 
       if (!response.data?.characterData?.character) {
-        logger.warn("WarcraftLogs character not found", { name, realm, region, rateLimit: rateLimitInfo });
+        logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, rateLimit: rateLimitInfo });
         return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
       }
 
-      logger.info("WarcraftLogs character profile fetched", { name, realm, region, rateLimit: rateLimitInfo });
+      logger.info("WarcraftLogs character profile fetched", { name, realm: normalizedRealm, region, rateLimit: rateLimitInfo });
       const characterData = response.data.characterData;
       const fetchedAt = Math.floor(Date.now() / 1000);
 
@@ -196,7 +228,7 @@ export class WarcraftLogsService {
     } catch (error) {
       logger.error("WarcraftLogs character profile fetch failed", {
         name,
-        realm,
+        realm: normalizedRealm,
         region,
         error: error instanceof Error ? error.message : String(error),
       });
