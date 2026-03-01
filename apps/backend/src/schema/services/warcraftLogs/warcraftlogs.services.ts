@@ -135,8 +135,10 @@ export class WarcraftLogsService {
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
-    // Handle realms with spaces or dashes by normalizing them to just dashes, since WCL seems to do this
-    const normalizedRealm = realm.trim().toLowerCase().replace(/\s+/g, "-");
+    const normalizedRealm = realm.trim().toLowerCase()
+      .replace(/['’]/g, "")  // remove apostrophe
+      .replace(/\s+/g, "-")  // collapse multiple spaces into one and replace with dash
+      .trim();
 
     const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
 
