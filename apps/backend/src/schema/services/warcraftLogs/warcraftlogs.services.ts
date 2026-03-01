@@ -52,8 +52,9 @@ export class WarcraftLogsService {
   private static async acquireToken(now: number): Promise<string> {
     // KV path: token may have been fetched by another isolate already.
     const kv = getKV();
+    const tokenKey = "wcl_oauth_token";
     if (kv) {
-      const stored = await kv.get<{ token: string; expiry: number }>("wcl_oauth_token", "json");
+      const stored = await kv.get<{ token: string; expiry: number }>(tokenKey, "json");
       if (stored && stored.expiry > now) {
         logger.info("WarcraftLogs token cache hit (KV)");
         this.cachedToken = stored.token;
@@ -94,7 +95,7 @@ export class WarcraftLogsService {
 
     if (kv) {
       await kv.put(
-        "wcl_oauth_token",
+        tokenKey,
         JSON.stringify({ token: data.access_token, expiry }),
         { expirationTtl: data.expires_in - 60 }
       );
