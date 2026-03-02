@@ -17,10 +17,6 @@ const server = new ApolloServer<BaseContext>({
 
 await server.start();
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX = 300;
-const ipHitMap = new Map<string, { count: number; resetAt: number }>();
-
 app.get("/", (_, res) => {
   res.redirect("/graphql");
 });
@@ -47,35 +43,11 @@ const nodeHandler = httpServerHandler({ port: config.port });
 export default {
   ...nodeHandler,
   async fetch(...args: Parameters<NonNullable<typeof nodeHandler.fetch>>): Promise<Response> {
-    const [request, env] = args as [Request, { TOKEN_CACHE?: KVNamespace; RESPONSE_CACHE?: KVNamespace }, ExecutionContext];
+    const [, env] = args as [Request, { TOKEN_CACHE?: KVNamespace; RESPONSE_CACHE?: KVNamespace }, ExecutionContext];
     initKV(env.TOKEN_CACHE, env.RESPONSE_CACHE);
     if (!env.TOKEN_CACHE || !env.RESPONSE_CACHE) {
       console.error("CRITICAL: KV bindings missing — all caching disabled");
     }
-    const url = new URL(request.url);
-
-    if (url.pathname.startsWith("/graphql") && request.method !== "OPTIONS") {
-      // CF-Connecting-IP is set by Cloudflare and cannot be spoofed,
-      // unlike X-Forwarded-For that Express's req.ip relies on.
-      // Fall back to a random key in dev so all traffic isn't collapsed into one bucket.
-      const ip = request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For") ?? "unknown";
-      const now = Date.now();
-      const entry = ipHitMap.get(ip);
-
-      if (entry && now < entry.resetAt && entry.count >= RATE_LIMIT_MAX) {
-        return new Response(
-          JSON.stringify({ errors: [{ message: "Too many requests, please try again later." }] }),
-          { status: 429, headers: { "Content-Type": "application/json" } }
-        );
-      }
-
-      if (!entry || now >= entry.resetAt) {
-        ipHitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-      } else {
-        entry.count++;
-      }
-    }
-
     return nodeHandler.fetch!(...args);
   },
 };
