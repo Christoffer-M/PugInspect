@@ -247,7 +247,7 @@ export class WarcraftLogsService {
             { expirationTtl: Math.ceil(waitMs / 1000) + 60 }
           );
         }
-        logger.warn("WCL_CIRCUIT_OPENED", {
+        logger.warn("WCL_CIRCUIT_OPENED_START", {
           cacheKey,
           durationMs,
           waitMs,
