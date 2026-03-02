@@ -236,14 +236,13 @@ export class WarcraftLogsService {
       // The 60-second buffer on the KV TTL ensures the entry outlives the lockout window.
       if (wclRes.status === 429) {
         const durationMs = Date.now() - wclCallStart;
-        const retryAfterHeader = wclRes.headers.get("Retry-After");
-        const waitMs = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : 51 * 60 * 1000;
+        const waitMs = 2 * 60 * 1000; // 2 minutes; Retry-After header from WCL is unreliable
         this.wclCircuitOpenUntil = Date.now() + waitMs;
         if (kv) {
           await kv.put(
             "wcl:circuit",
             JSON.stringify({ openUntil: this.wclCircuitOpenUntil }),
-            { expirationTtl: Math.ceil(waitMs / 1000) + 60 }
+            { expirationTtl: 300 }
           );
         }
         logger.warn("WCL_CIRCUIT_OPENED_START", {
