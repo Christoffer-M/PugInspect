@@ -64,9 +64,11 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
             <Image src={mythicPlusRun?.icon_url} alt={mythicPlusRun?.dungeon} />
           </AspectRatio>
           <Tooltip label={mythicPlusRun?.dungeon ?? "Unknown Dungeon"} withArrow openDelay={50} style={{ minWidth: 0, flex: 1 }} >
-            <Anchor size="sm" m={0} href={url} target="_blank" truncate='end' style={{ display: 'block' }}>
+            {url ? <Anchor size="sm" m={0} href={url} target="_blank" truncate='end' style={{ display: 'block' }} >
               {mythicPlusRun?.dungeon}
-            </Anchor>
+            </Anchor> : <Text size="sm" m={0} style={{ display: 'block' }} truncate='end'  >
+              {mythicPlusRun?.dungeon}
+            </Text>}
           </Tooltip>
         </Group>
       </Table.Td>
