@@ -265,12 +265,19 @@ export class WarcraftLogsService {
       const durationMs = Date.now() - wclCallStart;
       const rateLimitInfo = response.data?.rateLimitData;
 
+      const rateLimitHeaderInfo = {
+        rateLimitRemaining: wclRes.headers.get("x-ratelimit-remaining"),
+        rateLimitLimit: wclRes.headers.get("x-ratelimit-limit")
+      }
+
       if (!response.data?.characterData?.character) {
-        logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo });
+        logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo, rateLimitHeaderInfo });
         return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
       }
 
-      logger.info("WarcraftLogs character profile fetched", { name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo });
+      logger.info("WarcraftLogs character profile fetched", {
+        name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo, rateLimitHeaderInfo
+      });
       const characterData = response.data.characterData;
       const fetchedAt = Math.floor(Date.now() / 1000);
 
