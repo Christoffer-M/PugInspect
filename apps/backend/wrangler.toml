@@ -24,7 +24,7 @@ id = "cc85ef0bb2434ffebb3043e29c7aea97"
 preview_id = "b3935ea6d6264e939ce5b109d5c1dafb"
 
 [observability]
-enabled = false
+enabled = true
 head_sampling_rate = 1
 
 [observability.logs]
@@ -34,6 +34,6 @@ persist = true
 invocation_logs = true
 
 [observability.traces]
-enabled = false
+enabled = true
 persist = true
 head_sampling_rate = 1
