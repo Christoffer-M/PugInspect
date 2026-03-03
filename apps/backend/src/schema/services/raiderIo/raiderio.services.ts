@@ -39,7 +39,7 @@ const fields: CharacterField[] = [
   { key: CharacterFieldKey.MythicPlusScoresBySeason, value: "current:previous" },
   { key: CharacterFieldKey.MythicPlusBestRuns },
   { key: CharacterFieldKey.Gear },
-  { key: CharacterFieldKey.RaidProgression },
+  { key: CharacterFieldKey.RaidProgression, value: '10' },
   { key: CharacterFieldKey.MythicPlusRecentRuns },
 ];
 
