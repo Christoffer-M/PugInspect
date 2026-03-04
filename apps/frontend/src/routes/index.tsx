@@ -10,7 +10,7 @@ const Home: React.FC = () => {
         <Center h={"80vh"}>
           <Flex direction="column" align="center" ta={'center'}>
             <Flex direction="column" align="center">
-              <Title order={1} >Welcome to PugInspect</Title>
+              <Title order={1} >Welcome to PugInspect!</Title>
               <Title order={4} mt="sm">
                 Quickly view WoW character stats, RIO scores, and raid logs
               </Title>
