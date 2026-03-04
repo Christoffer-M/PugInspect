@@ -9,7 +9,8 @@ export async function execute<TResult, TVariables>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/graphql-response+json",
+      Accept: "application/json",
+
     },
     body: JSON.stringify({
       query,
