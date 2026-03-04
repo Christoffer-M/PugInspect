@@ -10,12 +10,9 @@ git pull origin main
 echo "==> Installing dependencies..."
 pnpm install --frozen-lockfile
 
-echo "==> Building backend..."
-pnpm run build:backend -- --mode production
-
-echo "==> Building frontend..."
+echo "==> Building..."
 sudo chown -R "$USER":"$USER" apps/frontend/dist 2>/dev/null || true
-pnpm run build:frontend
+pnpm build
 chmod -R 755 apps/frontend/dist
 
 echo "==> Restarting PM2..."
