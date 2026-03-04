@@ -10,8 +10,6 @@ const warcraftLogsClientId = process.env.WARCRAFTLOGS_CLIENT_ID;
 const warcraftLogsClientSecret = process.env.WARCRAFTLOGS_CLIENT_SECRET;
 const port = Number.parseInt(process.env.PORT ?? "4000");
 
-console.log("RAIDERIO_API_KEY:", process.env.RAIDERIO_API_KEY);
-
 export const config = {
   raiderIoApiKey,
   warcraftLogsClientId,
