@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
-dotenv.config();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: resolve(__dirname, "../../.env") });
 
 const raiderIoApiKey = process.env.RAIDERIO_API_KEY;
 const warcraftLogsClientId = process.env.WARCRAFTLOGS_CLIENT_ID;
