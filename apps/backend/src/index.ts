@@ -5,8 +5,6 @@ import { config } from "./config/index.js";
 import express from "express";
 import cors from "cors";
 import { expressMiddleware } from "@as-integrations/express5";
-import { httpServerHandler } from "cloudflare:node";
-import { initKV } from "./kv.js";
 
 const app = express();
 
@@ -37,17 +35,3 @@ app.get("/stats.js", async (_, res) => {
 app.listen({ port: config.port });
 
 console.log(`🚀 Server ready on port ${config.port}`);
-
-const nodeHandler = httpServerHandler({ port: config.port });
-
-export default {
-  ...nodeHandler,
-  async fetch(...args: Parameters<NonNullable<typeof nodeHandler.fetch>>): Promise<Response> {
-    const [, env] = args as [Request, { TOKEN_CACHE?: KVNamespace; RESPONSE_CACHE?: KVNamespace }, ExecutionContext];
-    initKV(env.TOKEN_CACHE, env.RESPONSE_CACHE);
-    if (!env.TOKEN_CACHE || !env.RESPONSE_CACHE) {
-      console.error("CRITICAL: KV bindings missing — all caching disabled");
-    }
-    return nodeHandler.fetch!(...args);
-  },
-};

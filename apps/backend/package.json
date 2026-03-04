@@ -10,7 +10,8 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "build": "tsc",
-    "dev": "pnpm run build && wrangler dev --local --port 4000",
+    "dev": "pnpm run build && node dist/index.js",
+    "start": "node dist/index.js",
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "keywords": [],
@@ -28,7 +29,6 @@
     "graphql-tag": "^2.12.6"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260302.0",
     "@graphql-codegen/cli": "6.0.0",
     "@graphql-codegen/typescript": "5.0.0",
     "@graphql-codegen/typescript-operations": "^5.0.8",
@@ -37,7 +37,6 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.13",
-    "typescript": "^5.9.3",
-    "wrangler": "^4.67.0"
+    "typescript": "^5.9.3"
   }
 }

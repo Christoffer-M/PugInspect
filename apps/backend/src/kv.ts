@@ -1,15 +1,36 @@
-let _tokenKV: KVNamespace | undefined;
-let _responseKV: KVNamespace | undefined;
+type CacheEntry = {
+  value: string;
+  expiresAt: number;
+};
 
-export function initKV(token: KVNamespace | undefined, response: KVNamespace | undefined): void {
-  _tokenKV = token;
-  _responseKV = response;
+class InMemoryKV {
+  private store = new Map<string, CacheEntry>();
+
+  async get<T>(key: string, _type: "json"): Promise<T | null> {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.store.delete(key);
+      return null;
+    }
+    return JSON.parse(entry.value) as T;
+  }
+
+  async put(key: string, value: string, opts: { expirationTtl: number }): Promise<void> {
+    this.store.set(key, {
+      value,
+      expiresAt: Date.now() + opts.expirationTtl * 1000,
+    });
+  }
 }
 
-export function getKV(): KVNamespace | undefined {
-  return _tokenKV;
+const tokenKV = new InMemoryKV();
+const responseKV = new InMemoryKV();
+
+export function getKV(): InMemoryKV {
+  return tokenKV;
 }
 
-export function getResponseKV(): KVNamespace | undefined {
-  return _responseKV;
+export function getResponseKV(): InMemoryKV {
+  return responseKV;
 }
