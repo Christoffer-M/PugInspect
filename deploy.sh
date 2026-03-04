@@ -1,8 +1,5 @@
-#!/bin/bash
+#!/bin/bash -l
 set -euo pipefail
-
-# Load chris's profile to get pnpm, node, etc. in PATH
-export PATH="/home/chris/.local/share/pnpm:$PATH"
 
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DEPLOY_DIR"
