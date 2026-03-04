@@ -1,5 +1,11 @@
-#!/bin/bash -l
+#!/bin/bash
 set -euo pipefail
+
+# Load user environment (pnpm, node, pm2)
+# shellcheck source=/dev/null
+source /home/chris/.bashrc 2>/dev/null || true
+export PNPM_HOME="/home/chris/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
 
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DEPLOY_DIR"
