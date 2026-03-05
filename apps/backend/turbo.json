@@ -10,6 +10,7 @@
         "WARCRAFTLOGS_BEARER_TOKEN"
       ],
       "inputs": [
+        "$TURBO_DEFAULT$",
         ".env",
         "tsconfig.json"
       ]
