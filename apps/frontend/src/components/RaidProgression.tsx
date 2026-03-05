@@ -33,7 +33,6 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
     }
     return Object.entries(groups).map(([group, items]) => ({ group, items }));
   }, [raidData]);
-  console.log(raidOptions);
 
   const raidDataItem = useMemo(
     () => raidData.find((raid) => raid.raid === selectedRaid),
