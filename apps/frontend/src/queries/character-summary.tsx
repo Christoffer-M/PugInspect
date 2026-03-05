@@ -68,6 +68,7 @@ export const CharacterDataQuery = graphql(`
           heroic_bosses_killed
           mythic_bosses_killed
           normal_bosses_killed
+          expansion_id
         }
         currentSeason {
            all {

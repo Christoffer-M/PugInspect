@@ -20,7 +20,7 @@ import { useCharacterLogs } from "../queries/character-logs";
 import { RaidProgression } from "../components/RaidProgression";
 import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
 import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
-import { getZoneIdForRaid } from "../data/raidZones";
+import { getZoneIdForRaid, DEFAULT_RAID, RAIDS } from "../data/raidZones";
 import { useSearchHistory } from "../hooks/useSearchHistory";
 
 export type CharacterQueryParams = {
@@ -70,9 +70,6 @@ function CharacterPage() {
     bypassCacheRef,
   });
 
-  const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
-  const effectiveRaid = searchRaid ?? raidProgression[0]?.raid ?? null;
-
   const { add: addToHistory } = useSearchHistory();
   useEffect(() => {
     if (!characterSummaryData?.raiderIo) return;
@@ -83,6 +80,8 @@ function CharacterPage() {
       class: characterSummaryData.raiderIo.class ?? undefined,
     });
   }, [characterSummaryData?.raiderIo?.class]);
+
+  const defaultZoneId = RAIDS[DEFAULT_RAID]?.zoneId;
 
   const {
     data: logsData,
@@ -97,7 +96,7 @@ function CharacterPage() {
     difficulty: searchDifficulty,
     byBracket: searchBracket,
     // Only include the raid slug if it's explicitly set in the search params, otherwise let the API default to the most recent raid
-    zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : undefined,
+    zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : defaultZoneId,
     bypassCacheRef,
   });
 
@@ -124,6 +123,10 @@ function CharacterPage() {
   const disableRefresh = characterSummaryData?.fetchedAt
     ? new Date().getTime() - new Date(characterSummaryData.fetchedAt).getTime() < 5 * 60 * 1000
     : false;
+
+  const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
+  const effectiveRaid = searchRaid ?? DEFAULT_RAID ?? null;
+
 
   return (
     <Page>

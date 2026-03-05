@@ -9,8 +9,8 @@ import {
   Title,
 } from "@mantine/core";
 import { RaidProgressionDetail } from "../graphql/graphql";
-import { getRaidDisplayName } from "../data/raidZones";
-import { useMemo, useEffect } from "react";
+import { getRaidDisplayName, getRaidExpansion } from "../data/raidZones";
+import { useMemo } from "react";
 
 type RaidProgressionProps = {
   raidData: RaidProgressionDetail[];
@@ -22,31 +22,24 @@ type RaidProgressionProps = {
 export const RaidProgression: React.FC<RaidProgressionProps> = ({
   raidData,
   isLoading,
-  selectedRaid: selectedRaidProp,
+  selectedRaid,
   onRaidChange,
 }) => {
-  const defaultValue = raidData[0]?.raid ?? null;
-  const selectedRaid = selectedRaidProp ?? defaultValue;
-
-  const raidOptions = useMemo(
-    () =>
-      raidData.map((raid) => ({
-        value: raid.raid,
-        label: getRaidDisplayName(raid.raid),
-      })) ?? [],
-    [raidData],
-  );
+  const raidOptions = useMemo(() => {
+    const groups: Record<string, { value: string; label: string }[]> = {};
+    for (const raid of raidData) {
+      const group = raid.expansion_id != null ? getRaidExpansion(raid.expansion_id) ?? "Other" : "Other";
+      (groups[group] ??= []).push({ value: raid.raid, label: getRaidDisplayName(raid.raid) });
+    }
+    return Object.entries(groups).map(([group, items]) => ({ group, items }));
+  }, [raidData]);
+  console.log(raidOptions);
 
   const raidDataItem = useMemo(
     () => raidData.find((raid) => raid.raid === selectedRaid),
     [raidData, selectedRaid],
   );
 
-  useEffect(() => {
-    if (raidData.length > 0 && !selectedRaid && onRaidChange) {
-      onRaidChange(defaultValue);
-    }
-  }, [raidData]);
 
   const handleOnChange = (raid: string | null) => {
     onRaidChange?.(raid);
@@ -74,15 +67,13 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
           Raid Progression
         </Title>
         <Select
-          comboboxProps={{
-            transitionProps: { transition: "pop", duration: 200 },
-          }}
+          comboboxProps={{ transitionProps: { transition: "pop", duration: 200 }, width: "auto" }}
+          w="auto"
           value={selectedRaid}
           data={raidOptions}
           onChange={handleOnChange}
-          defaultValue={defaultValue}
-          maw={200}
-          w="100%"
+          defaultValue={selectedRaid}
+
         />
       </Group>
 

@@ -1,34 +1,67 @@
+type RaidInfo = {
+  zoneId: number;
+  displayName: string;
+  expansion: number;
+};
+
 /**
- * Maps Raider.IO raid slugs to WarcraftLogs zone IDs.
+ * Maps Raider.IO raid slugs to raid metadata.
  *
  * When a new raid tier launches:
  *  1. Add the Raider.IO slug (the key used in raid_progression responses)
  *  2. Set the WarcraftLogs zone ID (visible in WCL URLs, e.g. /zone/rankings/44)
+ *  3. Set the expansion name
  *
  * Slugs without a zone ID entry will fall back to `undefined`, which tells
  * the WarcraftLogs API to use its default (most recent zone).
  */
-export const RAID_ZONE_IDS: Record<string, number> = {
-  "manaforge-omega": 44, // TWW Season 3
-  "liberation-of-undermine": 42, // TWW Season 2
-  "blackrock-depths": 40, // TWW Season 1 (alt)
-  "nerubar-palace": 38, // TWW Season 1
+export const DEFAULT_RAID = "manaforge-omega";
+
+export const RAIDS: Record<string, RaidInfo> = {
+  "tier-mn-1": {
+    zoneId: 46,
+    displayName: "The Voidspire, The Dreamrift, March on Quel'Danas",
+    expansion: 11,
+  },
+  "manaforge-omega": {
+    zoneId: 44,
+    displayName: "Manaforge Omega",
+    expansion: 10,
+  },
+  "liberation-of-undermine": {
+    zoneId: 42,
+    displayName: "Liberation of Undermine",
+    expansion: 10,
+  },
+  "blackrock-depths": {
+    zoneId: 40,
+    displayName: "Blackrock Depths",
+    expansion: 10,
+  },
+  "nerubar-palace": {
+    zoneId: 38,
+    displayName: "Nerub-ar Palace",
+    expansion: 10,
+  },
 };
 
-export const RAID_DISPLAY_NAMES: Record<string, string> = {
-  "manaforge-omega": "Manaforge Omega",
-  "liberation-of-undermine": "Liberation of Undermine",
-  "blackrock-depths": "Blackrock Depths",
-  "nerubar-palace": "Nerub-ar Palace",
+const EXPANSION_DISPLAY_NAMES: Record<number, string> = {
+  10: "The War Within",
+  11: "Midnight",
 };
 
 /** Returns the WarcraftLogs zone ID for a Raider.IO raid slug, or undefined if unknown. */
-export function getZoneIdForRaid(raidSlug: string | null | undefined): number | undefined {
+export function getZoneIdForRaid(raidSlug: string): number | undefined {
   if (!raidSlug) return undefined;
-  return RAID_ZONE_IDS[raidSlug];
+  return RAIDS[raidSlug]?.zoneId;
 }
 
 /** Returns the display name for a Raider.IO raid slug, falling back to the slug itself. */
 export function getRaidDisplayName(raidSlug: string): string {
-  return RAID_DISPLAY_NAMES[raidSlug] ?? raidSlug;
+  return RAIDS[raidSlug]?.displayName ?? raidSlug;
+}
+
+/** Returns the expansion name for a Raider.IO raid slug, or undefined if unknown. */
+export function getRaidExpansion(raidNumber: number): string | undefined {
+  return EXPANSION_DISPLAY_NAMES[raidNumber];
 }
