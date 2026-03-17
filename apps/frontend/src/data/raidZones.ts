@@ -15,7 +15,7 @@ type RaidInfo = {
  * Slugs without a zone ID entry will fall back to `undefined`, which tells
  * the WarcraftLogs API to use its default (most recent zone).
  */
-export const DEFAULT_RAID = "manaforge-omega";
+export const DEFAULT_RAID = "tier-mn-1";
 
 export const RAIDS: Record<string, RaidInfo> = {
   "tier-mn-1": {
