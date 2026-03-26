@@ -1,6 +1,6 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
-import { getKV, getResponseKV } from "../../../kv.js";
+import { getCachedWclProfile, persistWclProfile } from "../../../db/persistence.js";
 import {
   CharacterProfileQuery,
   CharacterProfileQueryVariables,
@@ -25,7 +25,6 @@ export class WarcraftLogsService {
   >();
 
   // Circuit breaker: timestamp (ms) until which WCL calls are suppressed after a 429.
-  // Isolate-scoped fast path; cross-isolate state is persisted to KV under "wcl:circuit".
   private static wclCircuitOpenUntil: number | null = null;
 
   private static clientId = config.warcraftLogsClientId;
@@ -34,14 +33,11 @@ export class WarcraftLogsService {
   private static async getAccessToken(): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
 
-    // Fast path: valid token already in this isolate's memory.
     if (this.cachedToken && this.tokenExpiry && now < this.tokenExpiry) {
-      logger.info("WarcraftLogs token cache hit (memory)");
+      logger.info("WarcraftLogs token cache hit");
       return this.cachedToken;
     }
 
-    // Deduplicate: if a fetch is already in flight within this isolate,
-    // await it instead of firing a second request to the token endpoint.
     if (this.tokenFetchInFlight) {
       logger.info("WarcraftLogs token fetch already in progress, awaiting");
       return this.tokenFetchInFlight;
@@ -55,24 +51,6 @@ export class WarcraftLogsService {
   }
 
   private static async acquireToken(now: number): Promise<string> {
-    // KV path: token may have been fetched by another isolate already.
-    const kv = getKV();
-    const tokenKey = "wcl_oauth_token";
-    if (kv) {
-      const stored = await kv.get<{ token: string; expiry: number }>(tokenKey, "json");
-      if (stored && stored.expiry > now) {
-        logger.info("WarcraftLogs token cache hit (KV)");
-        this.cachedToken = stored.token;
-        this.tokenExpiry = stored.expiry;
-        return stored.token;
-      }
-    }
-
-    if (!this.clientId || !this.clientSecret) {
-      logger.error("WarcraftLogs client credentials not configured");
-      throw new Error("Warcraft Logs client ID or secret not configured.");
-    }
-
     logger.info("Fetching new WarcraftLogs OAuth token");
 
     const body = new URLSearchParams({
@@ -98,17 +76,7 @@ export class WarcraftLogsService {
     this.cachedToken = data.access_token;
     this.tokenExpiry = expiry;
 
-    if (kv) {
-      await kv.put(
-        tokenKey,
-        JSON.stringify({ token: data.access_token, expiry }),
-        { expirationTtl: data.expires_in - 60 }
-      );
-      logger.info("WarcraftLogs OAuth token acquired and persisted to KV", { expiresIn: data.expires_in });
-    } else {
-      logger.info("WarcraftLogs OAuth token acquired (no KV binding)", { expiresIn: data.expires_in });
-    }
-
+    logger.info("WarcraftLogs OAuth token acquired", { expiresIn: data.expires_in });
     return this.cachedToken;
   }
 
@@ -136,14 +104,12 @@ export class WarcraftLogsService {
     const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
     const normalizedRealm = realm.trim().toLowerCase()
-      .replace(/['’]/g, "")  // remove apostrophe
-      .replace(/\s+/g, "-")  // collapse multiple spaces into one and replace with dash
-      .trim();
+      .replace(/['']/g, "")
+      .replace(/\s+/g, "-");
 
     const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
 
-    // Singleflight: if a fetch for this key is already in flight within this isolate,
-    // await the existing promise instead of firing a second request to WCL.
+    // Singleflight: deduplicate concurrent in-flight requests for the same key
     if (!bypassCache) {
       const inFlight = this.profileFetchInFlight.get(cacheKey);
       if (inFlight) {
@@ -168,17 +134,25 @@ export class WarcraftLogsService {
     bypassCache = false
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
-    const kv = getResponseKV();
 
-    if (kv && !bypassCache) {
-      const entry = await kv.get<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>(cacheKey, "json");
-      if (entry) {
+    if (!bypassCache) {
+      const cached = await getCachedWclProfile(
+        { region, realm: normalizedRealm, name },
+        {
+          zoneId: zoneId ?? 0,
+          difficulty: difficulty ?? "",
+          metric: metric ?? "",
+          role: role ?? "",
+          byBracket: byBracket ?? false,
+        }
+      );
+      if (cached) {
         logger.info("WarcraftLogs character profile cache hit", { name, realm: normalizedRealm, region });
-        return entry;
+        return cached;
       }
     }
 
-    // Circuit breaker — in-memory fast path (this isolate already knows about a lockout).
+    // Circuit breaker
     const circuitNow = Date.now();
     if (this.wclCircuitOpenUntil !== null && circuitNow < this.wclCircuitOpenUntil) {
       const retryAfterMs = this.wclCircuitOpenUntil - circuitNow;
@@ -186,19 +160,6 @@ export class WarcraftLogsService {
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
       });
-    }
-
-    // Circuit breaker — KV cross-isolate path (a different isolate may have recorded a lockout).
-    if (kv) {
-      const circuitEntry = await kv.get<{ openUntil: number }>("wcl:circuit", "json");
-      if (circuitEntry && circuitNow < circuitEntry.openUntil) {
-        this.wclCircuitOpenUntil = circuitEntry.openUntil;
-        const retryAfterMs = circuitEntry.openUntil - circuitNow;
-        logger.warn("WCL_CIRCUIT_OPEN_KV", { cacheKey, retryAfterMs });
-        throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
-          extensions: { code: "RATE_LIMITED", retryAfterMs },
-        });
-      }
     }
 
     const token = await this.getAccessToken();
@@ -232,20 +193,11 @@ export class WarcraftLogsService {
         body,
       });
 
-      // 429: open the circuit breaker and propagate a RATE_LIMITED error.
-      // The 60-second buffer on the KV TTL ensures the entry outlives the lockout window.
       if (wclRes.status === 429) {
         const durationMs = Date.now() - wclCallStart;
-        const waitMs = 2 * 60 * 1000; // 2 minutes; Retry-After header from WCL is unreliable
+        const waitMs = 2 * 60 * 1000;
         this.wclCircuitOpenUntil = Date.now() + waitMs;
-        if (kv) {
-          await kv.put(
-            "wcl:circuit",
-            JSON.stringify({ openUntil: this.wclCircuitOpenUntil }),
-            { expirationTtl: 300 }
-          );
-        }
-        logger.warn("WCL_CIRCUIT_OPENED_START", {
+        logger.warn("WCL_CIRCUIT_OPENED", {
           cacheKey,
           durationMs,
           waitMs,
@@ -267,7 +219,7 @@ export class WarcraftLogsService {
       const rateLimitHeaderInfo = {
         rateLimitRemaining: wclRes.headers.get("x-ratelimit-remaining"),
         rateLimitLimit: wclRes.headers.get("x-ratelimit-limit")
-      }
+      };
 
       if (!response.data?.characterData?.character) {
         logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo, rateLimitHeaderInfo });
@@ -280,13 +232,23 @@ export class WarcraftLogsService {
       const characterData = response.data.characterData;
       const fetchedAt = Math.floor(Date.now() / 1000);
 
-      if (kv) {
-        await kv.put(cacheKey, JSON.stringify({ data: characterData, fetchedAt }), { expirationTtl: 900 });
-      }
+      persistWclProfile(
+        { region, realm: normalizedRealm, name },
+        {
+          zoneId: zoneId ?? 0,
+          difficulty: difficulty ?? "",
+          metric: metric ?? "",
+          role: role ?? "",
+          byBracket: byBracket ?? false,
+        },
+        characterData,
+        fetchedAt
+      ).catch((err: unknown) => {
+        logger.warn("Failed to persist WCL profile to DB cache", { name, realm: normalizedRealm, region, error: String(err) });
+      });
 
       return { data: characterData, fetchedAt };
     } catch (error) {
-      // Re-throw GraphQLErrors (e.g. RATE_LIMITED) directly — do not wrap them.
       if (error instanceof GraphQLError) throw error;
 
       logger.error("WarcraftLogs character profile fetch failed", {

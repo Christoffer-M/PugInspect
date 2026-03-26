@@ -1,7 +1,7 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
-import { getResponseKV } from "../../../kv.js";
+import { getCachedRioProfile, persistRioProfile } from "../../../db/persistence.js";
 import { GraphQLError } from "graphql";
 import {
   QueryCharacterArgs,
@@ -64,12 +64,6 @@ export class RaiderIOService {
       method: "GET",
     };
 
-    const apiKey = config.raiderIoApiKey;
-    if (!apiKey) {
-      logger.error("RaiderIO API key not configured");
-      throw new Error("RaiderIO API key is not configured.");
-    }
-
     const query: Record<string, string | number | boolean> = {
       term: args.searchString,
       region: args.region,
@@ -118,24 +112,15 @@ export class RaiderIOService {
       method: "GET",
     };
 
-    const apiKey = config.raiderIoApiKey;
-    if (!apiKey) {
-      logger.error("RaiderIO API key not configured");
-      throw new Error("RaiderIO API key is not configured.");
-    }
-
     // Remove all special characters and extra spaces from realm and name to prevent issues with the API, since it seems to be very picky about formatting
     const normalizedRealm = realm.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '').toLowerCase();
     const normalizedName = name.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '').toLowerCase();
 
-    const cacheKey = `rio:${region}:${normalizedRealm}:${normalizedName}`.toLowerCase();
-    const kv = getResponseKV();
-
-    if (kv && !bypassCache) {
-      const entry = await kv.get<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }>(cacheKey, "json");
-      if (entry) {
+    if (!bypassCache) {
+      const cached = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName });
+      if (cached) {
         logger.info("RaiderIO character profile cache hit", { name, realm, region });
-        return entry;
+        return cached;
       }
     }
 
@@ -145,7 +130,7 @@ export class RaiderIOService {
       name: normalizedName,
       realm: normalizedRealm,
       region,
-      access_key: apiKey,
+      access_key: config.raiderIoApiKey,
       fields: fields
         .map((f) => `${f.key}${f.value ? `:${f.value}` : ""}`)
         .join(","),
@@ -160,9 +145,9 @@ export class RaiderIOService {
       const response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
       const fetchedAt = Math.floor(Date.now() / 1000);
       logger.info("RaiderIO character profile fetched", { name, realm, region });
-      if (kv) {
-        await kv.put(cacheKey, JSON.stringify({ data: response, fetchedAt }), { expirationTtl: 900 });
-      }
+      persistRioProfile({ region, realm: normalizedRealm, name: normalizedName }, response, fetchedAt).catch((err: unknown) => {
+        logger.warn("Failed to persist RIO profile to DB cache", { name, realm, region, error: String(err) });
+      });
       return { data: response, fetchedAt };
     } catch (error) {
       logger.error("RaiderIO character profile fetch failed", {

@@ -17,4 +17,5 @@ export const config = {
   warcraftLogsClientSecret: required("WARCRAFTLOGS_CLIENT_SECRET"),
   port: Number.parseInt(process.env.PORT ?? "4000"),
   allowedOrigins: (process.env.ALLOWED_ORIGINS ?? "").split(",").filter(Boolean),
+  databaseUrl: required("DATABASE_URL"),
 };

@@ -12,7 +12,11 @@
     "build": "tsc",
     "dev": "pnpm run build && node dist/index.js",
     "start": "node dist/index.js",
-    "codegen": "graphql-codegen --config codegen.ts"
+    "codegen": "graphql-codegen --config codegen.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node dist/db/migrate.js",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "keywords": [],
   "author": "",
@@ -23,10 +27,12 @@
     "@repo/graphql-types": "workspace:*",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
     "graphql": "^16.12.0",
     "graphql-parse-resolve-info": "^4.14.1",
-    "graphql-tag": "^2.12.6"
+    "graphql-tag": "^2.12.6",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "6.0.0",
@@ -37,6 +43,8 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.13",
+    "@types/pg": "^8.11.15",
+    "drizzle-kit": "^0.31.1",
     "typescript": "^5.9.3"
   }
 }

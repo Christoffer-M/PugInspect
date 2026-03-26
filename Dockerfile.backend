@@ -28,6 +28,7 @@ COPY packages/graphql-types/package.json ./packages/graphql-types/
 COPY apps/backend/package.json ./apps/backend/
 RUN pnpm install --frozen-lockfile --prod
 COPY --from=build /app/apps/backend/dist ./apps/backend/dist
+COPY --from=build /app/apps/backend/drizzle ./apps/backend/drizzle
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser

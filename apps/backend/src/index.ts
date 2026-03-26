@@ -2,6 +2,8 @@ import { ApolloServer, BaseContext } from "@apollo/server";
 import typeDefs from "./schema/typeDefs.js";
 import resolvers from "./schema/resolvers.js";
 import { config } from "./config/index.js";
+import { initDb } from "./db/index.js";
+import { runMigrations } from "./db/migrate.js";
 import express from "express";
 import cors from "cors";
 import { expressMiddleware } from "@as-integrations/express5";
@@ -73,6 +75,16 @@ function maxFieldCount(maxFields: number): ValidationRule {
 // Simple per-IP rate limiter: max requests per sliding window
 function createRateLimiter(maxRequests: number, windowMs: number) {
   const store = new Map<string, { count: number; resetAt: number }>();
+
+  // Sweep expired entries periodically to prevent unbounded memory growth
+  // from IPs that make requests and then stop (never naturally evicted).
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of store) {
+      if (now > entry.resetAt) store.delete(ip);
+    }
+  }, windowMs).unref();
+
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const ip = req.ip ?? "unknown";
     const now = Date.now();
@@ -89,6 +101,10 @@ function createRateLimiter(maxRequests: number, windowMs: number) {
     next();
   };
 }
+
+await runMigrations(config.databaseUrl);
+initDb(config.databaseUrl);
+console.log("[db] Database ready");
 
 const app = express();
 app.set("trust proxy", 1);
