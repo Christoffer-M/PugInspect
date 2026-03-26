@@ -78,8 +78,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
       >
         {ranking.rankPercent != null
           ? Math.floor(ranking.rankPercent).toLocaleString(undefined, {
-            maximumFractionDigits: 0,
-          })
+              maximumFractionDigits: 0,
+            })
           : "-"}
       </Table.Td>
       <Table.Td
@@ -92,8 +92,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
       >
         {ranking.medianPercent != null
           ? Math.floor(ranking.medianPercent).toLocaleString(undefined, {
-            maximumFractionDigits: 0,
-          })
+              maximumFractionDigits: 0,
+            })
           : "-"}
       </Table.Td>
       <Table.Td
@@ -103,6 +103,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
         {ranking.totalKills?.toLocaleString(undefined, {
           maximumFractionDigits: 2,
         }) || "-"}
+      </Table.Td>
+      <Table.Td c={ranking.bestRank?.ilvl ? undefined : "dimmed"}>
+        {ranking.bestRank?.ilvl ?? "-"}
       </Table.Td>
       <Table.Td>
         {ranking.spec && className && (
@@ -115,9 +118,6 @@ export const LogsTable: React.FC<LogsTableProps> = ({
             src={getClassImageSrc(ranking.spec)}
           />
         )}
-      </Table.Td>
-      <Table.Td c={ranking.bestRank?.ilvl ? undefined : "dimmed"}>
-        {ranking.bestRank?.ilvl ?? "-"}
       </Table.Td>
     </Table.Tr>
   ));
@@ -243,9 +243,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                     c={
                       logs?.bestPerformanceAverage
                         ? GetWarcraftLogRankingColors(
-                          logs.bestPerformanceAverage,
-                          theme,
-                        )
+                            logs.bestPerformanceAverage,
+                            theme,
+                          )
                         : undefined
                     }
                     fw={700}
@@ -268,9 +268,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                     c={
                       logs?.medianPerformanceAverage
                         ? GetWarcraftLogRankingColors(
-                          logs.medianPerformanceAverage,
-                          theme,
-                        )
+                            logs.medianPerformanceAverage,
+                            theme,
+                          )
                         : undefined
                     }
                     fw={700}
@@ -290,8 +290,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                 <Table.Th>Rank %</Table.Th>
                 <Table.Th>Median %</Table.Th>
                 <Table.Th>Kills</Table.Th>
-                <Table.Th>Spec</Table.Th>
                 <Table.Th>Ilvl</Table.Th>
+                <Table.Th>Spec</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
