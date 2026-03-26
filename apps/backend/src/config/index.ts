@@ -5,14 +5,16 @@ import { dirname, resolve } from "path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: resolve(__dirname, "../../.env") });
 
-const raiderIoApiKey = process.env.RAIDERIO_API_KEY;
-const warcraftLogsClientId = process.env.WARCRAFTLOGS_CLIENT_ID;
-const warcraftLogsClientSecret = process.env.WARCRAFTLOGS_CLIENT_SECRET;
-const port = Number.parseInt(process.env.PORT ?? "4000");
+function required(name: string): string {
+  const val = process.env[name];
+  if (!val) throw new Error(`Missing required environment variable: ${name}`);
+  return val;
+}
 
 export const config = {
-  raiderIoApiKey,
-  warcraftLogsClientId,
-  warcraftLogsClientSecret,
-  port,
+  raiderIoApiKey: required("RAIDERIO_API_KEY"),
+  warcraftLogsClientId: required("WARCRAFTLOGS_CLIENT_ID"),
+  warcraftLogsClientSecret: required("WARCRAFTLOGS_CLIENT_SECRET"),
+  port: Number.parseInt(process.env.PORT ?? "4000"),
+  allowedOrigins: (process.env.ALLOWED_ORIGINS ?? "").split(",").filter(Boolean),
 };

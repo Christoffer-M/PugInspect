@@ -1,5 +1,8 @@
+ARG PNPM_VERSION=10.18.3
+
 FROM node:24-alpine AS base
-RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
+ARG PNPM_VERSION
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 FROM base AS deps
 WORKDIR /app
