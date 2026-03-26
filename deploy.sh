@@ -1,27 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# Load user environment (pnpm, node, pm2)
-# shellcheck source=/dev/null
-source /home/chris/.bashrc 2>/dev/null || true
-export PNPM_HOME="/home/chris/.local/share/pnpm"
-export PATH="$PNPM_HOME:$PATH"
-
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DEPLOY_DIR"
 
 echo "==> Pulling latest changes..."
 git pull origin main
 
-echo "==> Installing dependencies..."
-pnpm install --frozen-lockfile
-
-echo "==> Building..."
-sudo chown -R "$USER":"$USER" apps/frontend/dist 2>/dev/null || true
-pnpm build
-chmod -R 755 apps/frontend/dist
-
-echo "==> Restarting PM2..."
-pm2 restart ecosystem.config.cjs --update-env
+echo "==> Building and restarting containers..."
+docker compose build --pull
+docker compose up -d --remove-orphans
 
 echo "==> Done."

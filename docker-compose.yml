@@ -7,9 +7,7 @@ services:
       - apps/backend/.env
     environment:
       PORT: "4000"
-      # Comma-separated list of allowed CORS origins.
-      # For production set this to your domain: https://puginspect.com,https://www.puginspect.com
-      ALLOWED_ORIGINS: "http://localhost,http://localhost:80"
+      ALLOWED_ORIGINS: "https://puginspect.com,https://www.puginspect.com"
     restart: unless-stopped
     healthcheck:
       test:
@@ -29,7 +27,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     ports:
-      - "80:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       backend:
         condition: service_healthy
