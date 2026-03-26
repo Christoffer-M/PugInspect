@@ -1,0 +1,32 @@
+FROM node:24-alpine AS base
+RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
+
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/graphql-types/package.json ./packages/graphql-types/
+COPY apps/backend/package.json ./apps/backend/
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS build
+COPY packages/ ./packages/
+COPY apps/backend/ ./apps/backend/
+WORKDIR /app/apps/backend
+RUN pnpm run build
+
+FROM node:24-alpine AS runner
+RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/graphql-types/package.json ./packages/graphql-types/
+COPY apps/backend/package.json ./apps/backend/
+# Copy source for workspace package (needed at runtime via pnpm symlink)
+COPY packages/graphql-types/src/ ./packages/graphql-types/src/
+RUN pnpm install --frozen-lockfile --prod
+COPY --from=build /app/apps/backend/dist ./apps/backend/dist
+
+WORKDIR /app/apps/backend
+EXPOSE 4000
+CMD ["node", "dist/index.js"]
