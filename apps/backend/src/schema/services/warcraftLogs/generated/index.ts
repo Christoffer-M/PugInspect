@@ -40,6 +40,7 @@ export type ArchonViewModels = {
   characterPageContent?: Maybe<Scalars['JSON']['output']>;
   cmsNavigation?: Maybe<Scalars['JSON']['output']>;
   contactPage?: Maybe<Scalars['JSON']['output']>;
+  downloadPage?: Maybe<Scalars['JSON']['output']>;
   fightPage?: Maybe<Scalars['JSON']['output']>;
   fightPageContent?: Maybe<Scalars['JSON']['output']>;
   footer?: Maybe<Scalars['JSON']['output']>;
@@ -2016,12 +2017,16 @@ export type ReportFight = {
   enemyPlayers?: Maybe<Array<Maybe<Scalars['Int']['output']>>>;
   /** The actual completion percentage of the fight. This is the field used to indicate how far into a fight a wipe was, since fights can be complicated and have multiple bosses, no bosses, bosses that heal, etc. */
   fightPercentage?: Maybe<Scalars['Float']['output']>;
+  /** The item levels of all players involved in a fight. These item levels match with the friendlyPlayers array exactly. */
+  friendlyItemLevels?: Maybe<Array<Maybe<Scalars['Int']['output']>>>;
   /** Information about friendly NPCs involved in the fight. Includes report IDs, instance counts, and instance group counts for each NPC. */
   friendlyNPCs?: Maybe<Array<Maybe<ReportFightNpc>>>;
   /** Information about friendly pets involved in the fight. Includes report IDs, instance counts, and instance group counts for each pet. */
   friendlyPets?: Maybe<Array<Maybe<ReportFightNpc>>>;
   /** The IDs of all players involved in a fight. These players can be referenced in the master data actors table to get detailed information about each participant. */
   friendlyPlayers?: Maybe<Array<Maybe<Scalars['Int']['output']>>>;
+  /** The specs of all players involved in a fight. These specs match with the friendlyPlayers array exactly. */
+  friendlySpecs?: Maybe<Array<Maybe<Scalars['Int']['output']>>>;
   /** The game zone the fight takes place in. This should not be confused with the zones used by the sites for rankings. This is the actual in-game zone info. */
   gameZone?: Maybe<GameZone>;
   /** The hard mode level of the fight. Most fights don't support optional hard modes. This only applies to bosses like Sartharion. */

@@ -22,6 +22,7 @@ type ArchonViewModels {
   characterPageContent(byBracketSlug: String, categorySlug: String!, characterSlug: String!, difficultySlug: String, gameSlug: String!, loadoutSourceSlug: String, loadoutSourceTypeSlug: String, metricSlug: String, partitionSlug: String, privateSlug: String, sectionComponentNames: [String!]!, sizeSlug: String, specSlug: String, userId: Int): JSON
   cmsNavigation(currentSlug: String): JSON
   contactPage: JSON
+  downloadPage: JSON
   fightPage(categorySlug: String!, cutoffSlug: Int, deathSlug: Int = null, fightSlug: String!, gameSlug: String!, phaseSlug: String, playerSlug: String, pullSlug: String, reportSlug: String!, throughputSlug: String, userId: Int): JSON
   fightPageContent(categorySlug: String!, cutoffSlug: Int, deathSlug: Int = null, fightSlug: String!, gameSlug: String!, phaseSlug: String, playerSlug: String, pullSlug: String, reportSlug: String!, sectionComponentNames: [String!]!, throughputSlug: String, userId: Int): JSON
   footer: JSON
@@ -3158,6 +3159,11 @@ type ReportFight {
   fightPercentage: Float
 
   """
+  The item levels of all players involved in a fight. These item levels match with the friendlyPlayers array exactly.
+  """
+  friendlyItemLevels: [Int]
+
+  """
   Information about friendly NPCs involved in the fight. Includes report IDs, instance counts, and instance group counts for each NPC.
   """
   friendlyNPCs: [ReportFightNPC]
@@ -3171,6 +3177,11 @@ type ReportFight {
   The IDs of all players involved in a fight. These players can be referenced in the master data actors table to get detailed information about each participant.
   """
   friendlyPlayers: [Int]
+
+  """
+  The specs of all players involved in a fight. These specs match with the friendlyPlayers array exactly.
+  """
+  friendlySpecs: [Int]
 
   """
   The game zone the fight takes place in. This should not be confused with the zones used by the sites for rankings. This is the actual in-game zone info.

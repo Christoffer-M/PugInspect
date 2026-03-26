@@ -120,6 +120,10 @@ export const characterTypedefs = gql`
     hps
   }
 
+  type BestRank {
+    ilvl: Int
+  }
+
   type RaidRanking {
     encounter: Encounter
     rankPercent: Float
@@ -127,6 +131,7 @@ export const characterTypedefs = gql`
     bestAmount: Float
     totalKills: Int
     spec: String
+    bestRank: BestRank
   }
 
   type Encounter {

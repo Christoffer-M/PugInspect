@@ -42,5 +42,8 @@ export type ZoneRanking = {
     spec?: string;
     bestSpec?: string;
     bestAmount?: number;
+    bestRank?: {
+      ilvl?: number;
+    };
   }[];
 };

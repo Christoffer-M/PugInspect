@@ -31,6 +31,7 @@ export function mapWarcraftLogs(
       bestAmount: toFixedNumber(ranking.bestAmount),
       totalKills: toFixedNumber(ranking.totalKills),
       spec: ranking.spec,
+      bestRank: ranking.bestRank?.ilvl != null ? { ilvl: ranking.bestRank.ilvl } : null,
     })),
   };
 }

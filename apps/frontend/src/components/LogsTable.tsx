@@ -116,6 +116,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           />
         )}
       </Table.Td>
+      <Table.Td c={ranking.bestRank?.ilvl ? undefined : "dimmed"}>
+        {ranking.bestRank?.ilvl ?? "-"}
+      </Table.Td>
     </Table.Tr>
   ));
 
@@ -123,7 +126,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   const skeletonRows = Array.from({ length: numberOfSkeletons }).map(
     (_, idx) => (
       <Table.Tr key={idx}>
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 6 }).map((_, i) => (
           <Table.Td key={i}>
             <Skeleton height={25} miw={10} />
           </Table.Td>
@@ -288,6 +291,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                 <Table.Th>Median %</Table.Th>
                 <Table.Th>Kills</Table.Th>
                 <Table.Th>Spec</Table.Th>
+                <Table.Th>Ilvl</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -297,7 +301,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
                 rows
               ) : (
                 <Table.Tr>
-                  <Table.Td colSpan={5} style={{ textAlign: "center" }}>
+                  <Table.Td colSpan={6} style={{ textAlign: "center" }}>
                     No logs available.
                   </Table.Td>
                 </Table.Tr>

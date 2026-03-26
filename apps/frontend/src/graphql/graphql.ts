@@ -16,6 +16,11 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type BestRank = {
+  __typename?: 'BestRank';
+  ilvl?: Maybe<Scalars['Int']['output']>;
+};
+
 export type Character = {
   __typename?: 'Character';
   fetchedAt?: Maybe<Scalars['String']['output']>;
@@ -127,6 +132,7 @@ export type RaidProgressionDetail = {
 export type RaidRanking = {
   __typename?: 'RaidRanking';
   bestAmount?: Maybe<Scalars['Float']['output']>;
+  bestRank?: Maybe<BestRank>;
   encounter?: Maybe<Encounter>;
   medianPercent?: Maybe<Scalars['Float']['output']>;
   rankPercent?: Maybe<Scalars['Float']['output']>;
@@ -190,7 +196,7 @@ export type CharacterLogsQueryVariables = Exact<{
 }>;
 
 
-export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', fetchedAt?: string | null, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
+export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', fetchedAt?: string | null, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null, bestRank?: { __typename?: 'BestRank', ilvl?: number | null } | null }> | null } | null } | null };
 
 export type CharacterSearchQueryVariables = Exact<{
   searchString: Scalars['String']['input'];
@@ -258,6 +264,9 @@ export const CharacterLogsDocument = new TypedDocumentString(`
         medianPercent
         bestAmount
         totalKills
+        bestRank {
+          ilvl
+        }
       }
     }
   }

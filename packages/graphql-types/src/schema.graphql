@@ -2,6 +2,10 @@ schema {
   query: Query
 }
 
+type BestRank {
+  ilvl: Int
+}
+
 type Character {
   fetchedAt: String
   name: String!
@@ -78,6 +82,7 @@ type RaidProgressionDetail {
 
 type RaidRanking {
   bestAmount: Float
+  bestRank: BestRank
   encounter: Encounter
   medianPercent: Float
   rankPercent: Float

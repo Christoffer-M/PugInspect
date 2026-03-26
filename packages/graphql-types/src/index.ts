@@ -14,6 +14,11 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type BestRank = {
+  __typename?: 'BestRank';
+  ilvl?: Maybe<Scalars['Int']['output']>;
+};
+
 export type Character = {
   __typename?: 'Character';
   fetchedAt?: Maybe<Scalars['String']['output']>;
@@ -123,6 +128,7 @@ export type RaidProgressionDetail = {
 export type RaidRanking = {
   __typename?: 'RaidRanking';
   bestAmount?: Maybe<Scalars['Float']['output']>;
+  bestRank?: Maybe<BestRank>;
   encounter?: Maybe<Encounter>;
   medianPercent?: Maybe<Scalars['Float']['output']>;
   rankPercent?: Maybe<Scalars['Float']['output']>;

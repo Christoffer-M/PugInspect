@@ -41,6 +41,7 @@ const query = graphql(`
         medianPerformanceAverage
         metric
         difficulty
+
         raidRankings {
           spec
           encounter {
@@ -51,6 +52,9 @@ const query = graphql(`
           medianPercent
           bestAmount
           totalKills
+          bestRank {
+            ilvl
+          }
         }
       }
     }
