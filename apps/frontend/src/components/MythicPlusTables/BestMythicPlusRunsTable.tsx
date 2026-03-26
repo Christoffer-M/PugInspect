@@ -2,7 +2,7 @@ import { Stack, Table, Title } from "@mantine/core";
 import { MythicPlusRun } from "../../graphql/graphql";
 import RunTableRow from "./components/RunTableRow/RunTableRow";
 import RunTableHeader from "./components/RunTableHeader";
-import { MID_S1_DUNGEONS } from "../../data/dungeons/dungeons_mid_s1";
+import { CURRENT_DUNGEONS } from "../../data/dungeons/dungeons_mid_s1";
 
 type MythicPlusRunsTableProps = {
   characterRuns: MythicPlusRun[];
@@ -13,7 +13,7 @@ export const BestMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
   characterRuns: characterRuns,
   isFetching = false,
 }) => {
-  const combinedRuns: (MythicPlusRun | undefined)[] = MID_S1_DUNGEONS.map(
+  const combinedRuns: (MythicPlusRun | undefined)[] = CURRENT_DUNGEONS.map(
     (dungeon) => {
       const run = characterRuns.find(
         (run) => run.challange_mode_id === dungeon.challenge_mode_id,

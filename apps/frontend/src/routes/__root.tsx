@@ -6,11 +6,11 @@ import { config } from "../config ";
 
 const Analytics: React.FC = () => {
   useEffect(() => {
-    if (import.meta.env.PROD) {
+    if (import.meta.env.PROD && config.umamiWebsiteId) {
       const script = document.createElement("script");
       script.src = config.apiUrl + "/stats.js";
       script.defer = true;
-      script.dataset.websiteId = "92e835c5-3bbb-43a8-a358-5049b60d3b8c";
+      script.dataset.websiteId = config.umamiWebsiteId;
       document.head.appendChild(script);
 
       return () => {
@@ -27,8 +27,8 @@ export const Route = createRootRoute({
     <>
       <Analytics />
       <Outlet />
-      <TanStackRouterDevtools />
-      <ReactQueryDevtools />
+      {import.meta.env.DEV && <TanStackRouterDevtools />}
+      {import.meta.env.DEV && <ReactQueryDevtools />}
     </>
   ),
 });

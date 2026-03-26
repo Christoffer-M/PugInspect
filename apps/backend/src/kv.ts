@@ -6,6 +6,16 @@ type CacheEntry = {
 class InMemoryKV {
   private store = new Map<string, CacheEntry>();
 
+  constructor() {
+    // Sweep expired entries every 5 minutes to prevent unbounded memory growth
+    setInterval(() => {
+      const now = Date.now();
+      for (const [key, entry] of this.store) {
+        if (now > entry.expiresAt) this.store.delete(key);
+      }
+    }, 5 * 60 * 1000).unref();
+  }
+
   async get<T>(key: string, _type: "json"): Promise<T | null> {
     const entry = this.store.get(key);
     if (!entry) return null;

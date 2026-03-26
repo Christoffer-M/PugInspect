@@ -298,10 +298,7 @@ export class WarcraftLogsService {
       throw new GraphQLError(
         "Failed to fetch character profile from Warcraft Logs",
         {
-          extensions: {
-            code: "NOT_FOUND",
-            originalError: error instanceof Error ? error : undefined,
-          },
+          extensions: { code: "NOT_FOUND" },
         }
       );
     }

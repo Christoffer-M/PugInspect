@@ -3,7 +3,7 @@ import { execute } from "../api/graphqlClient";
 import { graphql } from "../graphql";
 import { SearchResult } from "../graphql/graphql";
 
-export const CharacterDataQuery = graphql(`
+export const CharacterSearchQuery = graphql(`
   query CharacterSearch($searchString: String!, $region: String!) {
     characterSuggestions(searchString: $searchString, region: $region) {
       name
@@ -23,7 +23,7 @@ export const useCharacterSearchQuery = (
     enabled: searchString.length >= 3 && !disabled,
     retry: false,
     queryFn: async (): Promise<SearchResult[]> => {
-      const response = await execute(CharacterDataQuery, {
+      const response = await execute(CharacterSearchQuery, {
         searchString,
         region,
       });

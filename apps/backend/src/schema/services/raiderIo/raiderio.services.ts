@@ -80,7 +80,7 @@ export class RaiderIOService {
     const url = this.buildUrlWithQueries(`${baseApiUrl}/search`, query);
 
     try {
-      var response = await fetcher<RaiderIoCharacterSearchApiResponse>(
+      const response = await fetcher<RaiderIoCharacterSearchApiResponse>(
         url,
         options
       );
@@ -103,10 +103,7 @@ export class RaiderIOService {
       throw new GraphQLError(
         "Failed to fetch character suggestions from RaiderIO",
         {
-          extensions: {
-            code: "NOT_FOUND",
-            originalError: error instanceof Error ? error : undefined,
-          },
+          extensions: { code: "NOT_FOUND" },
         }
       );
     }
@@ -160,7 +157,7 @@ export class RaiderIOService {
     );
 
     try {
-      var response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
+      const response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
       const fetchedAt = Math.floor(Date.now() / 1000);
       logger.info("RaiderIO character profile fetched", { name, realm, region });
       if (kv) {
@@ -177,10 +174,7 @@ export class RaiderIOService {
       throw new GraphQLError(
         "Failed to fetch character profile from RaiderIO",
         {
-          extensions: {
-            code: "NOT_FOUND",
-            originalError: error instanceof Error ? error : undefined,
-          },
+          extensions: { code: "NOT_FOUND" },
         }
       );
     }

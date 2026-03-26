@@ -14,14 +14,22 @@ import {
   RaiderIOService,
 } from "../services/raiderIo/raiderio.services.js";
 
+const VALID_REGIONS = new Set(["eu", "us", "kr", "tw", "cn"]);
+
 export default {
   Query: {
     character: async (
-      _: any,
+      _: unknown,
       args: QueryCharacterArgs,
-      _context: any,
+      _context: unknown,
       info: GraphQLResolveInfo
     ): Promise<Character> => {
+      if (!VALID_REGIONS.has(args.region.toLowerCase())) {
+        throw new GraphQLError("Invalid region", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
       const logsRequested = isFieldRequested(info, "warcraftLogs");
       const raiderIoRequested = isFieldRequested(info, "raiderIo");
 
@@ -62,11 +70,17 @@ export default {
       };
     },
     characterSuggestions: async (
-      _: any,
+      _: unknown,
       args: QueryCharacterSuggestionsArgs,
-      _context: any,
+      _context: unknown,
       _info: GraphQLResolveInfo
     ): Promise<CharacterSearchResponse[]> => {
+      if (!VALID_REGIONS.has(args.region.toLowerCase())) {
+        throw new GraphQLError("Invalid region", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
       if (args.searchString.length < 3) {
         throw new GraphQLError(
           "Search string must be at least 3 characters long",

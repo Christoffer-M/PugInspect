@@ -17,7 +17,6 @@ import {
 import { GetWarcraftLogRankingColors } from "../util/util";
 import { getClassIconSrc } from "../assets/classIcons";
 import {
-  CharacterLogsQuery,
   Difficulty,
   Maybe,
   Metric,
@@ -25,10 +24,7 @@ import {
 } from "../graphql/graphql";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../routes/$region.$realm.$name";
-
-export type CharacterLogsWarcraftLogs = NonNullable<
-  CharacterLogsQuery["character"]
->["warcraftLogs"];
+import { CharacterLogsWarcraftLogs } from "../queries/character-logs";
 
 const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
 

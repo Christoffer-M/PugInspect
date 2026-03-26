@@ -40,6 +40,36 @@ function maxQueryDepth(maxDepth: number): ValidationRule {
   });
 }
 
+// Simple field count limit — prevents wide queries that fan out to multiple upstream APIs
+function maxFieldCount(maxFields: number): ValidationRule {
+  function countFields(selectionSet: SelectionSetNode | undefined): number {
+    if (!selectionSet?.selections.length) return 0;
+    return selectionSet.selections.reduce((sum, s) => {
+      if (s.kind === "Field") return sum + 1 + countFields(s.selectionSet);
+      if (s.kind === "InlineFragment") return sum + countFields(s.selectionSet);
+      return sum;
+    }, 0);
+  }
+
+  return (validationContext) => ({
+    Document: {
+      enter(node) {
+        for (const definition of node.definitions) {
+          if (definition.kind !== "OperationDefinition") continue;
+          const count = countFields(definition.selectionSet);
+          if (count > maxFields) {
+            validationContext.reportError(
+              new GraphQLError(`Query exceeds maximum field count of ${maxFields}`, {
+                nodes: definition,
+              })
+            );
+          }
+        }
+      },
+    },
+  });
+}
+
 // Simple per-IP rate limiter: max requests per sliding window
 function createRateLimiter(maxRequests: number, windowMs: number) {
   const store = new Map<string, { count: number; resetAt: number }>();
@@ -61,11 +91,13 @@ function createRateLimiter(maxRequests: number, windowMs: number) {
 }
 
 const app = express();
+app.set("trust proxy", 1);
 
 const server = new ApolloServer<BaseContext>({
   typeDefs,
   resolvers,
-  validationRules: [maxQueryDepth(8)],
+  validationRules: [maxQueryDepth(8), maxFieldCount(120)],
+  introspection: process.env.NODE_ENV !== "production",
 });
 
 await server.start();

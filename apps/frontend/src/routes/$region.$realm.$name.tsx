@@ -8,7 +8,12 @@ import {
   Title,
   Grid,
 } from "@mantine/core";
-import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+  useSearch,
+} from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
@@ -79,7 +84,7 @@ function CharacterPage() {
       region,
       class: characterSummaryData.raiderIo.class ?? undefined,
     });
-  }, [characterSummaryData?.raiderIo?.class]);
+  }, [characterSummaryData?.raiderIo?.class, name, realm, region]);
 
   const defaultZoneId = RAIDS[DEFAULT_RAID]?.zoneId;
 
@@ -107,8 +112,6 @@ function CharacterPage() {
     } finally {
       bypassCacheRef.current = false;
     }
-
-
   };
 
   const handleRaidChange = (raid: string | null) => {
@@ -121,12 +124,13 @@ function CharacterPage() {
 
   // Disable the refresh button if data was fetched less than 5 minutes ago to prevent excessive API calls, but still allow manual refresh if needed
   const disableRefresh = characterSummaryData?.fetchedAt
-    ? new Date().getTime() - new Date(characterSummaryData.fetchedAt).getTime() < 5 * 60 * 1000
+    ? new Date().getTime() -
+        new Date(characterSummaryData.fetchedAt).getTime() <
+      5 * 60 * 1000
     : false;
 
   const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
   const effectiveRaid = searchRaid ?? DEFAULT_RAID ?? null;
-
 
   return (
     <Page>
@@ -139,11 +143,19 @@ function CharacterPage() {
               <Text size="sm" c="dimmed" m={0}>
                 {`Last updated:  ${fetchedAt ?? "--:--:--"}`}
               </Text>
-              <Tooltip label={disableRefresh ? "Data is fresh, refresh disabled until 5 minutes have passed" : "Refresh data"} withArrow openDelay={150}>
+              <Tooltip
+                label={
+                  disableRefresh
+                    ? "Data is fresh, refresh disabled until 5 minutes have passed"
+                    : "Refresh data"
+                }
+                withArrow
+                openDelay={150}
+              >
                 <ActionIcon
                   size={"md"}
                   variant="outline"
-                  onClick={() => refetchData()}
+                  onClick={refetchData}
                   loaderProps={{
                     size: "xs",
                     type: "dots",

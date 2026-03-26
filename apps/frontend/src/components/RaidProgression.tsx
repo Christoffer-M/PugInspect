@@ -40,10 +40,6 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
   );
 
 
-  const handleOnChange = (raid: string | null) => {
-    onRaidChange?.(raid);
-  }
-
   const normalBossesKilled =
     !isLoading && raidDataItem?.normal_bosses_killed
       ? raidDataItem.normal_bosses_killed
@@ -70,8 +66,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
           w="auto"
           value={selectedRaid}
           data={raidOptions}
-          onChange={handleOnChange}
-          defaultValue={selectedRaid}
+          onChange={onRaidChange}
 
         />
       </Group>
@@ -96,7 +91,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
                       ((normalBossesKilled || 0) /
                         (raidDataItem?.total_bosses || 1)) *
                       100,
-                    color: "green",
+                    color: "#22c55e",
                   },
                 ]}
               />
@@ -122,7 +117,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
                       ((heroicBossesKilled || 0) /
                         (raidDataItem?.total_bosses || 1)) *
                       100,
-                    color: "blue",
+                    color: "#3b82f6",
                   },
                 ]}
               />
@@ -148,7 +143,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
                       ((mythicBossesKilled || 0) /
                         (raidDataItem?.total_bosses || 1)) *
                       100,
-                    color: "yellow",
+                    color: "#f4a50e",
                   },
                 ]}
               />

@@ -9,7 +9,7 @@ import {
 } from "@mantine/core";
 import { upperCaseFirstLetter } from "../util/util";
 import { RioScore } from "./RioScore";
-import RaiderIoIocn from "../assets/raiderio-icon.svg";
+import RaiderIoIcon from "../assets/raiderio-icon.svg";
 import WarcraftLogsIcon from "../assets/warcraftlogs-icon.svg";
 import { ExternalLinkIcon } from "./ExternalLinkIcon";
 import { Character, Maybe, SeasonScores } from "../graphql/graphql";
@@ -92,7 +92,7 @@ export const CharacterHeader: React.FC<{
                     </Title>
                     <ExternalLinkIcon
                       href={`https://raider.io/characters/${region}/${normalizeRealm}/${name}`}
-                      icon={RaiderIoIocn}
+                      icon={RaiderIoIcon}
                       size={22}
                     />
 

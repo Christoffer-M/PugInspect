@@ -98,3 +98,6 @@ export const MID_S1_DUNGEONS: Dungeon[] = [
       "https://cdn.raiderio.net/images/dungeons/expansion11/base/windrunner-spire.jpg",
   },
 ];
+
+// Re-export as the current season's dungeon pool — update this when the season changes
+export { MID_S1_DUNGEONS as CURRENT_DUNGEONS };
