@@ -1,8 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Container, List, Stack, Text, Title } from "@mantine/core";
 import { Page } from "../components/Page";
+import { useEffect } from "react";
 
 const PrivacyPolicy: React.FC = () => {
+  useEffect(() => {
+    document.title = "Privacy Policy | PugInspect";
+  }, []);
+
   return (
     <Page>
       <Container py="xl" maw={720}>

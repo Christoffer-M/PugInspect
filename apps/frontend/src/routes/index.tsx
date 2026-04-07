@@ -2,8 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Center, Flex, Title, Container, Text } from "@mantine/core";
 import CharacterSearchInput from "../components/CharacterSearchInput";
 import { Page } from "../components/Page";
+import { useEffect } from "react";
 
 const Home: React.FC = () => {
+  useEffect(() => {
+    document.title = "PugInspect - WoW Character Inspector";
+  }, []);
+
   return (
     <Page>
       <Container>

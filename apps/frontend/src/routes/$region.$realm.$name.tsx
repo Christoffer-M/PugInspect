@@ -49,6 +49,11 @@ export const Route = createFileRoute("/$region/$realm/$name")({
 
 function CharacterPage() {
   const { region, name, realm } = useParams({ from: Route.id });
+
+  useEffect(() => {
+    document.title = `${name}-${realm} | PugInspect`;
+  }, [name, realm]);
+
   const {
     roleType: searchRoleType,
     metric: searchMetric,
