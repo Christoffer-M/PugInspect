@@ -17,7 +17,6 @@ import { useCharacterSearchQuery } from "../queries/character-search";
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
 const disabledRegions = ["OCE", "SA", "RU"]; // Regions that are currently disabled due to raider.io API limitations
 
-
 const CharacterSearchInput: React.FC = () => {
   const params = useParams({
     from: "/$region/$realm/$name",
@@ -28,9 +27,7 @@ const CharacterSearchInput: React.FC = () => {
   const initialRegion = params?.region;
   const initialRealm = params?.realm;
   const initialName = params?.name;
-  const [searchTerm, setSearchTerm] = useState(
-    initialName && initialRealm ? `${initialName}-${initialRealm}` : "",
-  );
+  const [searchTerm, setSearchTerm] = useState("");
   const [region, setRegion] = useState(
     initialRegion?.toUpperCase() || localStorage.getItem("region") || "EU",
   );
@@ -43,15 +40,14 @@ const CharacterSearchInput: React.FC = () => {
   const { data: searchResults = [], isLoading } = useCharacterSearchQuery(
     debouncedSearch,
     region,
-    !!errorText || searchTerm === `${initialName}-${initialRealm}` || disabledRegions.includes(region),
+    !!errorText ||
+      searchTerm === `${initialName}-${initialRealm}` ||
+      disabledRegions.includes(region),
   );
 
   const handleRaiderIoUrl = (url: string) => {
     const parsed = parseRaiderIoUrl(url);
     if (parsed) {
-      setSearchTerm(
-        `${upperCaseFirstLetter(parsed.name)}-${upperCaseFirstLetter(parsed.realm)}`,
-      );
       setRegion(parsed.region.toUpperCase());
       navigateToCharacter(
         `${upperCaseFirstLetter(parsed.name)}-${upperCaseFirstLetter(parsed.realm)}`,
@@ -62,9 +58,6 @@ const CharacterSearchInput: React.FC = () => {
   };
 
   useEffect(() => {
-    if (initialName && initialRealm) {
-      setSearchTerm(`${initialName}-${initialRealm}`);
-    }
     if (initialRegion) {
       setRegion(initialRegion.toUpperCase());
     }
@@ -84,9 +77,11 @@ const CharacterSearchInput: React.FC = () => {
     const realm = trimmed.slice(dashIndex + 1).trim();
 
     if (name && realm) {
-      router.navigate({
-        to: `/${region.toLowerCase()}/${realm.toLowerCase()}/${name.toLowerCase()}`,
-      });
+      router
+        .navigate({
+          to: `/${region.toLowerCase()}/${realm.toLowerCase()}/${name.toLowerCase()}`,
+        })
+        .then(() => setSearchTerm(""));
     } else {
       setErrorText("Invalid character or realm");
     }
@@ -110,7 +105,7 @@ const CharacterSearchInput: React.FC = () => {
       <Autocomplete
         error={errorText}
         limit={10}
-        placeholder="Ceasevoker-Kazzak"
+        placeholder="Ceases-Kazzak"
         data={searchResults?.map((r) => ({
           value: `${r.name}-${r.realm}`,
           label: `${r.name}-${r.realm}`,
