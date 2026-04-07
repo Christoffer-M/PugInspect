@@ -1,6 +1,7 @@
 import { config } from "../../../config/index.js";
 import { fetcher } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
+import { normalizeRealm, normalizeName } from "../../utils/helpers.js";
 import { getCachedRioProfile, persistRioProfile } from "../../../db/persistence.js";
 import { GraphQLError } from "graphql";
 import {
@@ -112,9 +113,8 @@ export class RaiderIOService {
       method: "GET",
     };
 
-    // Remove all special characters and extra spaces from realm and name to prevent issues with the API, since it seems to be very picky about formatting
-    const normalizedRealm = realm.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '').toLowerCase();
-    const normalizedName = name.trim().replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '').toLowerCase();
+    const normalizedRealm = normalizeRealm(realm);
+    const normalizedName = normalizeName(name);
 
     if (!bypassCache) {
       const cached = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName });

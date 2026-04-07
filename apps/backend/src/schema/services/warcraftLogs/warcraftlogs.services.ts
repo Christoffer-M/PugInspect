@@ -1,5 +1,6 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
+import { normalizeRealm } from "../../utils/helpers.js";
 import { getCachedWclProfile, persistWclProfile } from "../../../db/persistence.js";
 import {
   CharacterProfileQuery,
@@ -103,9 +104,7 @@ export class WarcraftLogsService {
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, realm, region, role, metric, difficulty, byBracket, zoneId } = args;
 
-    const normalizedRealm = realm.trim().toLowerCase()
-      .replace(/['']/g, "")
-      .replace(/\s+/g, "-");
+    const normalizedRealm = normalizeRealm(realm);
 
     const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}`.toLowerCase();
 

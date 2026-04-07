@@ -1,5 +1,19 @@
 import { Difficulty, InputMaybe } from "@repo/graphql-types";
 
+/** Canonical WoW realm slug: lowercase, apostrophes removed, spaces → dashes. Dashes are preserved. */
+export function normalizeRealm(realm: string): string {
+  return realm
+    .trim()
+    .toLowerCase()
+    .replace(/[''`]/g, "")
+    .replace(/\s+/g, "-");
+}
+
+/** Canonical character name: lowercase, trimmed. */
+export function normalizeName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
 export const mapDifficultyIdToName = (
   difficulty?: number | InputMaybe<number>
 ): Difficulty | null => {
