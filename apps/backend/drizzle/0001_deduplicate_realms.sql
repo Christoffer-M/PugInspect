@@ -53,9 +53,8 @@ BEGIN
   LOOP
 
     -- RIO snapshots: one per character (unique index on character_id).
-    -- If the kept character already has a snapshot that is older than the
-    -- dropped character's snapshot, delete the kept one first so we can
-    -- re-point the fresher one.
+    -- If drop's snapshot is newer than keep's, delete keep's so we can
+    -- re-point the fresher one.  Otherwise just delete drop's below.
     DELETE FROM character_rio_snapshots
     WHERE character_id = rec.keep_id
       AND EXISTS (
@@ -69,9 +68,17 @@ BEGIN
                )
       );
 
+    -- Re-point drop's snapshot only if keep no longer has one
     UPDATE character_rio_snapshots
     SET    character_id = rec.keep_id
-    WHERE  character_id = rec.drop_id;
+    WHERE  character_id = rec.drop_id
+      AND  NOT EXISTS (
+             SELECT 1 FROM character_rio_snapshots
+             WHERE character_id = rec.keep_id
+           );
+
+    -- Clean up any remaining snapshot on the drop side
+    DELETE FROM character_rio_snapshots WHERE character_id = rec.drop_id;
 
     -- WCL snapshots: unique per (character_id, zone_id, difficulty, metric,
     -- role, by_bracket).  Handle each overlapping slot individually.
