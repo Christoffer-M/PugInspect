@@ -45,18 +45,29 @@ export const CharacterHeader: React.FC<{
   isError: boolean;
 }> = ({ name, region, server, data, loading, isError }) => {
   const raiderIoInfo = data?.raiderIo;
-  const previousSeasonScore = createSeasonScoreMap(raiderIoInfo?.previousSeason);
+  const previousSeasonScore = createSeasonScoreMap(
+    raiderIoInfo?.previousSeason,
+  );
   const currentSeasonScores = createSeasonScoreMap(raiderIoInfo?.currentSeason);
 
-  const hasValidCurrentSeasonScore = currentSeasonScores.some(score => score.score !== undefined && score.score >= 100);
-  const hasValidPreviousSeasonScore = previousSeasonScore.some(score => score.score !== undefined && score.score >= 100);
+  const hasValidCurrentSeasonScore = currentSeasonScores.some(
+    (score) => score.score !== undefined && score.score >= 100,
+  );
+  const hasValidPreviousSeasonScore = previousSeasonScore.some(
+    (score) => score.score !== undefined && score.score >= 100,
+  );
 
   const characterClass = data?.class;
   const characterSpec = data?.activeSpec;
   const characterRace = data?.race;
   const characterIlvl = data?.equippedItemLevel;
+  const characterGuild = data?.guild;
 
-  const normalizeRealm = server.trim().toLowerCase().replace(/\s+/g, "-").replace(/-+/g, "-");
+  const normalizeRealm = server
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 
   return (
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
@@ -107,10 +118,14 @@ export const CharacterHeader: React.FC<{
                       size={22}
                     />
                   </Group>
+                  {characterGuild && (
+                    <Text size="sm" m={0}>
+                      {`<${characterGuild.name}>`}
+                    </Text>
+                  )}
 
                   <Text size="sm" m={0}>
                     ({data.region.toUpperCase()}) {data.realm}
-                    {data.guild && <> — {data.guild.name} ({data.guild.realm})</>}
                   </Text>
 
                   <Text size="sm" m={0}>
@@ -118,22 +133,20 @@ export const CharacterHeader: React.FC<{
                   </Text>
 
                   <Text size="sm" m={0}>
-                    <b>Item Level:</b> {characterIlvl != null ? characterIlvl.toFixed(0) : "-"}
+                    <b>Item Level:</b>{" "}
+                    {characterIlvl != null ? characterIlvl.toFixed(0) : "-"}
                   </Text>
-
                 </Stack>
               </>
             )
           )}
         </Group>
 
-        <Stack gap={8} align="flex-start" >
+        <Stack gap={8} align="flex-start">
           <Text size="md" m={0} fw={700}>
             Raider.IO Score
           </Text>
           <Group align="flex-start" gap={50}>
-
-
             <Stack gap={2}>
               <Text size="xs" m={0} fw={700}>
                 Current Season
@@ -146,9 +159,10 @@ export const CharacterHeader: React.FC<{
                 )}
 
                 {currentSeasonScores.map((score, index) => {
-                  const isBelowThreshold = score.score !== undefined && score.score < 100;
+                  const isBelowThreshold =
+                    score.score !== undefined && score.score < 100;
                   if (isBelowThreshold) {
-                    return null
+                    return null;
                   }
                   return (
                     score && (
@@ -162,10 +176,7 @@ export const CharacterHeader: React.FC<{
                     )
                   );
                 })}
-
               </Skeleton>
-
-
             </Stack>
 
             <Stack gap={2}>
@@ -179,9 +190,10 @@ export const CharacterHeader: React.FC<{
                   </Text>
                 )}
                 {previousSeasonScore.map((score, index) => {
-                  const isBelowThreshold = score.score !== undefined && score.score < 100;
+                  const isBelowThreshold =
+                    score.score !== undefined && score.score < 100;
                   if (isBelowThreshold) {
-                    return null
+                    return null;
                   }
 
                   return (
@@ -196,17 +208,10 @@ export const CharacterHeader: React.FC<{
                     )
                   );
                 })}
-
-
               </Skeleton>
-
-
-
             </Stack>
           </Group>
         </Stack>
-
-
       </Group>
     </Paper>
   );
