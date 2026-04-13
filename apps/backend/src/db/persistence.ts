@@ -4,9 +4,11 @@ import {
   characters,
   characterRioSnapshots,
   characterWclSnapshots,
+  characterBlizzardSnapshots,
 } from "./schema.js";
 import type { RaiderIoCharacterApiResponse } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
+import type { BlizzardCharacterProfile } from "../schema/services/blizzard/model/CharacterProfile.js";
 import type { ZoneRanking } from "../schema/services/warcraftLogs/model/ZoneRankings.js";
 import { createLogger } from "../schema/utils/logger.js";
 
@@ -236,5 +238,79 @@ export async function persistWclProfile(
       })
   } catch (err) {
     logger.error("DB cache write failed (wcl)", { key, query, error: String(err) });
+  }
+}
+
+export async function getCachedBlizzardProfile(
+  key: CharacterKey
+): Promise<{ data: BlizzardCharacterProfile; fetchedAt: number } | null> {
+  try {
+    const rows = await getDb()
+      .select({
+        rawData: characterBlizzardSnapshots.rawData,
+        fetchedAt: characterBlizzardSnapshots.fetchedAt,
+      })
+      .from(characterBlizzardSnapshots)
+      .innerJoin(characters, eq(characterBlizzardSnapshots.characterId, characters.id))
+      .where(
+        and(
+          eq(characters.region, key.region),
+          eq(characters.realm, key.realm),
+          eq(characters.name, key.name),
+          gt(characterBlizzardSnapshots.expiresAt, new Date())
+        )
+      )
+      .limit(1);
+
+    if (!rows[0]) return null;
+
+    return {
+      data: rows[0].rawData,
+      fetchedAt: Math.floor(rows[0].fetchedAt.getTime() / 1000),
+    };
+  } catch (err) {
+    logger.error("DB cache read failed (blizzard)", { key, error: String(err) });
+    return null;
+  }
+}
+
+export async function persistBlizzardProfile(
+  key: CharacterKey,
+  data: BlizzardCharacterProfile,
+  fetchedAt: number
+): Promise<void> {
+  try {
+    const db = getDb();
+    const characterId = await upsertCharacter(db, key, {
+      class: data.character_class.name,
+      specialization: data.active_spec.name,
+      race: data.race.name,
+      thumbnailUrl: null, // media endpoint is a separate call; not available in the summary
+      itemLevel: data.equipped_item_level,
+    });
+
+    const fetchedAtDate = new Date(fetchedAt * 1000);
+    const expiresAtDate = new Date((fetchedAt + CACHE_TTL_SECONDS) * 1000);
+
+    await db
+      .insert(characterBlizzardSnapshots)
+      .values({
+        characterId,
+        fetchedAt: fetchedAtDate,
+        expiresAt: expiresAtDate,
+        rawData: data,
+        equippedItemLevel: data.equipped_item_level,
+      })
+      .onConflictDoUpdate({
+        target: characterBlizzardSnapshots.characterId,
+        set: {
+          fetchedAt: fetchedAtDate,
+          expiresAt: expiresAtDate,
+          rawData: data,
+          equippedItemLevel: data.equipped_item_level,
+        },
+      });
+  } catch (err) {
+    logger.error("DB cache write failed (blizzard)", { key, error: String(err) });
   }
 }
