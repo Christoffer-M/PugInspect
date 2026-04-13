@@ -51,6 +51,11 @@ export const CharacterHeader: React.FC<{
   const hasValidCurrentSeasonScore = currentSeasonScores.some(score => score.score !== undefined && score.score >= 100);
   const hasValidPreviousSeasonScore = previousSeasonScore.some(score => score.score !== undefined && score.score >= 100);
 
+  const characterClass = data?.class;
+  const characterSpec = data?.activeSpec;
+  const characterRace = data?.race;
+  const characterIlvl = data?.equippedItemLevel;
+
   const normalizeRealm = server.trim().toLowerCase().replace(/\s+/g, "-").replace(/-+/g, "-");
 
   return (
@@ -67,10 +72,10 @@ export const CharacterHeader: React.FC<{
               </Stack>
             </>
           ) : (
-            raiderIoInfo && (
+            data && (
               <>
                 <Image
-                  src={raiderIoInfo.thumbnailUrl}
+                  src={raiderIoInfo?.thumbnailUrl}
                   alt={name}
                   h={85}
                   w={85}
@@ -88,7 +93,7 @@ export const CharacterHeader: React.FC<{
                 >
                   <Group gap="xs" justify="flex-start" align="center">
                     <Title order={3} m={0}>
-                      {upperCaseFirstLetter(data?.name || name)}
+                      {upperCaseFirstLetter(data.name || name)}
                     </Title>
                     <ExternalLinkIcon
                       href={`https://raider.io/characters/${region}/${normalizeRealm}/${name}`}
@@ -105,15 +110,15 @@ export const CharacterHeader: React.FC<{
 
                   <Text size="sm" m={0}>
                     ({data.region.toUpperCase()}) {data.realm}
+                    {data.guild && <> — {data.guild.name} ({data.guild.realm})</>}
                   </Text>
 
                   <Text size="sm" m={0}>
-                    {raiderIoInfo.race} {raiderIoInfo.specialization}{" "}
-                    {raiderIoInfo.class}
+                    {characterRace} {characterSpec} {characterClass}
                   </Text>
 
                   <Text size="sm" m={0}>
-                    <b>Item Level:</b> {raiderIoInfo.itlvl ? raiderIoInfo.itlvl.toFixed(2) : "-"}
+                    <b>Item Level:</b> {characterIlvl != null ? characterIlvl.toFixed(0) : "-"}
                   </Text>
 
                 </Stack>

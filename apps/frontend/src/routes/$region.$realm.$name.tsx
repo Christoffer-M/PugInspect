@@ -82,14 +82,14 @@ function CharacterPage() {
 
   const { add: addToHistory } = useSearchHistory();
   useEffect(() => {
-    if (!characterSummaryData?.raiderIo) return;
+    if (!characterSummaryData) return;
     addToHistory({
       name,
       realm,
       region,
-      class: characterSummaryData.raiderIo.class ?? undefined,
+      class: characterSummaryData.class ?? undefined,
     });
-  }, [characterSummaryData?.raiderIo?.class, name, realm, region]);
+  }, [characterSummaryData?.class, name, realm, region]);
 
   const defaultZoneId = RAIDS[DEFAULT_RAID]?.zoneId;
 
@@ -191,7 +191,7 @@ function CharacterPage() {
             <LogsTable
               logs={logsData}
               isFetching={isFetchingLogs}
-              class={characterSummaryData?.raiderIo?.class}
+              class={characterSummaryData?.class}
             />
             <Grid w={"100%"}>
               <Grid.Col span={{ sm: 12, md: 6 }}>

@@ -16,12 +16,21 @@ export const CharacterDataQuery = graphql(`
       realm
       region
       fetchedAt
+      class
+      race
+      activeSpec
+      faction
+      gender
+      level
+      equippedItemLevel
+      averageItemLevel
+      achievementPoints
+      guild {
+        name
+        realm
+      }
       raiderIo {
         thumbnailUrl
-        race
-        class
-        specialization
-        itlvl
         bestMythicPlusRuns {
           dungeon
           short_name
