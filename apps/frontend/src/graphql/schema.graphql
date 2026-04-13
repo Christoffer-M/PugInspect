@@ -7,8 +7,18 @@ type BestRank {
 }
 
 type Character {
+  achievementPoints: Int
+  activeSpec: String
+  averageItemLevel: Float
+  class: String
+  equippedItemLevel: Float
+  faction: String
   fetchedAt: String
+  gender: String
+  guild: Guild
+  level: Int
   name: String!
+  race: String
   raiderIo: RaiderIo
   realm: String!
   region: String!
@@ -25,6 +35,11 @@ enum Difficulty {
 type Encounter {
   id: Int!
   name: String!
+}
+
+type Guild {
+  name: String!
+  realm: String!
 }
 
 type Logs {

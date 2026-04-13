@@ -4,8 +4,8 @@ import {
   QueryCharacterArgs,
   QueryCharacterSuggestionsArgs,
 } from "@repo/graphql-types";
-import { parseResolveInfo } from "graphql-parse-resolve-info";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
+import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
 import { mapRaiderIo } from "../mappers/raiderIo.mapper.js";
 import { mapWarcraftLogs } from "../mappers/warcraftLogs.mapper.js";
 import { isFieldRequested } from "../utils/fetcher.js";
@@ -33,36 +33,30 @@ export default {
       const logsRequested = isFieldRequested(info, "warcraftLogs");
       const raiderIoRequested = isFieldRequested(info, "raiderIo");
 
-      const { rioProfile, rioFetchedAt, warcraftLogsProfile, logsFetchedAt } = await getCharacterProfiles(
-        args,
-        {
+      const { blizzardProfile, blizzardFetchedAt, rioProfile, rioFetchedAt, warcraftLogsProfile, logsFetchedAt } =
+        await getCharacterProfiles(args, {
           logsRequested: logsRequested ?? false,
           raiderIoRequested: raiderIoRequested ?? false,
           bypassCache: args.bypassCache ?? false,
-        }
-      );
-
-      if (!rioProfile && !warcraftLogsProfile) {
-        throw new GraphQLError("Character not found", {
-          extensions: { code: "NOT_FOUND" },
         });
-      }
 
       const fetchedAtSeconds = Math.min(
+        blizzardFetchedAt,
         rioFetchedAt ?? Infinity,
         logsFetchedAt ?? Infinity
       );
-      const fetchedAt = isFinite(fetchedAtSeconds)
-        ? new Date(fetchedAtSeconds * 1000).toISOString()
-        : undefined;
+      const fetchedAt = new Date(fetchedAtSeconds * 1000).toISOString();
 
       return {
-        name: rioProfile ? rioProfile.name : args.name,
-        realm: rioProfile ? rioProfile.realm : args.realm,
-        region: rioProfile ? rioProfile.region : args.region,
+        // Identity — canonical name and realm come from Blizzard
+        name: blizzardProfile.name,
+        realm: blizzardProfile.realm.name,
+        region: args.region,
         fetchedAt,
-        raiderIo:
-          raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
+        // Character info from Blizzard
+        ...mapBlizzardCharacter(blizzardProfile),
+        // Sub-service data
+        raiderIo: raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
         warcraftLogs:
           logsRequested && warcraftLogsProfile
             ? mapWarcraftLogs(warcraftLogsProfile)

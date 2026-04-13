@@ -23,8 +23,18 @@ export type BestRank = {
 
 export type Character = {
   __typename?: 'Character';
+  achievementPoints?: Maybe<Scalars['Int']['output']>;
+  activeSpec?: Maybe<Scalars['String']['output']>;
+  averageItemLevel?: Maybe<Scalars['Float']['output']>;
+  class?: Maybe<Scalars['String']['output']>;
+  equippedItemLevel?: Maybe<Scalars['Float']['output']>;
+  faction?: Maybe<Scalars['String']['output']>;
   fetchedAt?: Maybe<Scalars['String']['output']>;
+  gender?: Maybe<Scalars['String']['output']>;
+  guild?: Maybe<Guild>;
+  level?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
+  race?: Maybe<Scalars['String']['output']>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -49,6 +59,12 @@ export type Encounter = {
   __typename?: 'Encounter';
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+};
+
+export type Guild = {
+  __typename?: 'Guild';
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
 };
 
 export type Logs = {
