@@ -1,5 +1,6 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
+import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { normalizeRealm } from "../../utils/helpers.js";
 import { getCachedWclProfile, persistWclProfile } from "../../../db/persistence.js";
 import {
@@ -16,48 +17,13 @@ import {
 
 const logger = createLogger({ service: "WarcraftLogs" });
 export class WarcraftLogsService {
-  private static cachedToken: string | null = null;
-  private static tokenExpiry: number | null = null;
-  private static tokenFetchInFlight: Promise<string> | null = null;
-
-  private static profileFetchInFlight = new Map<
-    string,
-    Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>
-  >();
-
-  // Circuit breaker: timestamp (ms) until which WCL calls are suppressed after a 429.
-  private static wclCircuitOpenUntil: number | null = null;
-
-  private static clientId = config.warcraftLogsClientId;
-  private static clientSecret = config.warcraftLogsClientSecret;
-
-  private static async getAccessToken(): Promise<string> {
-    const now = Math.floor(Date.now() / 1000);
-
-    if (this.cachedToken && this.tokenExpiry && now < this.tokenExpiry) {
-      logger.info("WarcraftLogs token cache hit");
-      return this.cachedToken;
-    }
-
-    if (this.tokenFetchInFlight) {
-      logger.info("WarcraftLogs token fetch already in progress, awaiting");
-      return this.tokenFetchInFlight;
-    }
-
-    this.tokenFetchInFlight = this.acquireToken(now).finally(() => {
-      this.tokenFetchInFlight = null;
-    });
-
-    return this.tokenFetchInFlight;
-  }
-
-  private static async acquireToken(now: number): Promise<string> {
+  private static readonly tokens = new OAuthTokenManager(async () => {
     logger.info("Fetching new WarcraftLogs OAuth token");
 
     const body = new URLSearchParams({
       grant_type: "client_credentials",
-      client_id: this.clientId,
-      client_secret: this.clientSecret,
+      client_id: config.warcraftLogsClientId,
+      client_secret: config.warcraftLogsClientSecret,
     });
 
     const res = await fetch("https://www.warcraftlogs.com/oauth/token", {
@@ -71,15 +37,17 @@ export class WarcraftLogsService {
       throw new Error(`Failed to fetch token: ${res.status} ${res.statusText}`);
     }
 
-    const data: { access_token: string; expires_in: number } = await res.json();
-    const expiry = now + data.expires_in - 60;
+    logger.info("WarcraftLogs OAuth token acquired");
+    return res.json() as Promise<{ access_token: string; expires_in: number }>;
+  });
 
-    this.cachedToken = data.access_token;
-    this.tokenExpiry = expiry;
+  private static profileFetchInFlight = new Map<
+    string,
+    Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>
+  >();
 
-    logger.info("WarcraftLogs OAuth token acquired", { expiresIn: data.expires_in });
-    return this.cachedToken;
-  }
+  // Circuit breaker: timestamp (ms) until which WCL calls are suppressed after a 429.
+  private static wclCircuitOpenUntil: number | null = null;
 
   private static mapDifficulty(
     difficulty?: InputMaybe<Difficulty>
@@ -161,8 +129,7 @@ export class WarcraftLogsService {
       });
     }
 
-    const token = await this.getAccessToken();
-    if (!token) throw new Error("API token not configured.");
+    const token = await this.tokens.getToken();
 
     logger.info("WarcraftLogs character profile request", { name, realm: normalizedRealm, region, zoneId });
 

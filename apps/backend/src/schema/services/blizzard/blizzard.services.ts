@@ -1,5 +1,6 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
+import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { normalizeRealm } from "../../utils/helpers.js";
 import { getCachedBlizzardProfile, persistBlizzardProfile } from "../../../db/persistence.js";
 import type { BlizzardCharacterProfile } from "./model/CharacterProfile.js";
@@ -9,36 +10,8 @@ import type { QueryCharacterArgs } from "@repo/graphql-types";
 const logger = createLogger({ service: "Blizzard" });
 
 export class BlizzardService {
-  // Per-region token cache: region → { token, expiry (unix seconds) }
-  private static tokenCache = new Map<string, { token: string; expiry: number }>();
-
-  // Per-region in-flight deduplication for token fetches
-  private static tokenFetchInFlight = new Map<string, Promise<string>>();
-
-  private static async getAccessToken(region: string): Promise<string> {
-    const now = Math.floor(Date.now() / 1000);
-    const cached = this.tokenCache.get(region);
-
-    if (cached && now < cached.expiry) {
-      logger.info("Blizzard token cache hit", { region });
-      return cached.token;
-    }
-
-    const inFlight = this.tokenFetchInFlight.get(region);
-    if (inFlight) {
-      logger.info("Blizzard token fetch already in progress, awaiting", { region });
-      return inFlight;
-    }
-
-    const promise = this.acquireToken(region, now).finally(() => {
-      this.tokenFetchInFlight.delete(region);
-    });
-
-    this.tokenFetchInFlight.set(region, promise);
-    return promise;
-  }
-
-  private static async acquireToken(region: string, now: number): Promise<string> {
+  // Per-region token management: the manager keys by region automatically.
+  private static readonly tokens = new OAuthTokenManager(async (region) => {
     logger.info("Fetching new Blizzard OAuth token", { region });
 
     const body = new URLSearchParams({
@@ -58,14 +31,9 @@ export class BlizzardService {
       throw new Error(`Failed to fetch Blizzard token: ${res.status} ${res.statusText}`);
     }
 
-    const data: { access_token: string; expires_in: number } = await res.json();
-    const expiry = now + data.expires_in - 60;
-
-    this.tokenCache.set(region, { token: data.access_token, expiry });
-
-    logger.info("Blizzard OAuth token acquired", { region, expiresIn: data.expires_in });
-    return data.access_token;
-  }
+    logger.info("Blizzard OAuth token acquired", { region });
+    return res.json() as Promise<{ access_token: string; expires_in: number }>;
+  });
 
   static async getCharacterProfile(
     args: QueryCharacterArgs,
@@ -82,7 +50,7 @@ export class BlizzardService {
       }
     }
 
-    const token = await this.getAccessToken(region);
+    const token = await this.tokens.getToken(region);
 
     const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}?namespace=profile-${region}&locale=en_US`;
 
