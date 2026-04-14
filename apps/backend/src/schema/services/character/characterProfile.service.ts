@@ -29,8 +29,6 @@ export async function getCharacterProfiles(
       : Promise.resolve(null),
   ]);
 
-
-  
   // Blizzard failure is fatal — character either doesn't exist or is unreachable.
   if (blizzardResult.status === "rejected") {
     logger.error("Blizzard profile failed", {
@@ -58,9 +56,9 @@ export async function getCharacterProfiles(
     blizzardProfile: blizzardResult.value.data,
     blizzardAvatarUrl: blizzardResult.value.avatarUrl,
     blizzardFetchedAt: blizzardResult.value.fetchedAt,
-    rioProfile: rioResult.status === "fulfilled" ? rioResult.value?.data ?? undefined : undefined,
-    rioFetchedAt: rioResult.status === "fulfilled" ? rioResult.value?.fetchedAt ?? undefined : undefined,
-    warcraftLogsProfile: logsResult.status === "fulfilled" ? logsResult.value?.data ?? undefined : undefined,
-    logsFetchedAt: logsResult.status === "fulfilled" ? logsResult.value?.fetchedAt ?? undefined : undefined,
+    rioProfile: rioResult.status === "fulfilled" ? rioResult.value?.data : undefined,
+    rioFetchedAt: rioResult.status === "fulfilled" ? rioResult.value?.fetchedAt : undefined,
+    warcraftLogsProfile: logsResult.status === "fulfilled" ? logsResult.value?.data : undefined,
+    logsFetchedAt: logsResult.status === "fulfilled" ? logsResult.value?.fetchedAt : undefined,
   };
 }

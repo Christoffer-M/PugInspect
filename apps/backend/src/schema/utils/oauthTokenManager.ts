@@ -28,13 +28,15 @@ export class OAuthTokenManager {
     const existing = this.inFlight.get(key);
     if (existing) return existing;
 
-    const promise = this.acquire(key, now).finally(() => this.inFlight.delete(key));
+    const promise = this.acquire(key).finally(() => this.inFlight.delete(key));
     this.inFlight.set(key, promise);
     return promise;
   }
 
-  private async acquire(key: string, now: number): Promise<string> {
+  private async acquire(key: string): Promise<string> {
     const { access_token, expires_in } = await this.fetchToken(key);
+    // Recapture time after the network round-trip so expiry is based on when the token was received
+    const now = Math.floor(Date.now() / 1000);
     this.cache.set(key, { token: access_token, expiry: now + expires_in - 60 });
     return access_token;
   }

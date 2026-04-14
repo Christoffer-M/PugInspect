@@ -9,8 +9,9 @@ import type { QueryCharacterArgs } from "@repo/graphql-types";
 
 const logger = createLogger({ service: "Blizzard" });
 
+const VALID_REGIONS = new Set(["eu", "us", "kr", "tw", "cn"]);
+
 export class BlizzardService {
-  // Per-region token management: the manager keys by region automatically.
   private static readonly tokens = new OAuthTokenManager(async (region) => {
     logger.info("Fetching new Blizzard OAuth token", { region });
 
@@ -41,6 +42,11 @@ export class BlizzardService {
   ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number }> {
     const { name, realm, region } = args;
     const normalizedRealm = normalizeRealm(realm);
+
+    // Defense in depth — the resolver validates region, but guard here too since this is a public static method
+    if (!VALID_REGIONS.has(region.toLowerCase())) {
+      throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
+    }
 
     if (!bypassCache) {
       const cached = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name });
@@ -100,7 +106,7 @@ export class BlizzardService {
         error: error instanceof Error ? error.message : String(error),
       });
       throw new GraphQLError("Failed to fetch character profile from Blizzard", {
-        extensions: { code: "NOT_FOUND" },
+        extensions: { code: "INTERNAL_SERVER_ERROR" },
       });
     }
   }

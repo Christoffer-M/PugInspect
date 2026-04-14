@@ -35,8 +35,8 @@ export default {
 
       const { blizzardProfile, blizzardAvatarUrl, blizzardFetchedAt, rioProfile, rioFetchedAt, warcraftLogsProfile, logsFetchedAt } =
         await getCharacterProfiles(args, {
-          logsRequested: logsRequested ?? false,
-          raiderIoRequested: raiderIoRequested ?? false,
+          logsRequested,
+          raiderIoRequested,
           bypassCache: args.bypassCache ?? false,
         });
 
@@ -48,14 +48,11 @@ export default {
       const fetchedAt = new Date(fetchedAtSeconds * 1000).toISOString();
 
       return {
-        // Identity — canonical name and realm come from Blizzard
         name: blizzardProfile.name,
         realm: blizzardProfile.realm.name,
         region: args.region,
         fetchedAt,
-        // Character info from Blizzard
         ...mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl),
-        // Sub-service data
         raiderIo: raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
         warcraftLogs:
           logsRequested && warcraftLogsProfile
