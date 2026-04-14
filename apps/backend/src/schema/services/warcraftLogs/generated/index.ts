@@ -222,6 +222,7 @@ export type ArchonViewModelsGameArgs = {
 
 export type ArchonViewModelsHeaderArgs = {
   gameSlug?: InputMaybe<Scalars['String']['input']>;
+  locale?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1180,12 +1181,18 @@ export type Guild = {
   members: CharacterPagination;
   /** The name of the guild. */
   name: Scalars['String']['output'];
+  /** The owning parent guild for this team, if one exists. */
+  parentGuild?: Maybe<Guild>;
   /** The server that the guild belongs to. */
   server: Server;
   /** Whether or not the guild has stealth mode enabled. */
   stealthMode: Scalars['Boolean']['output'];
   /** The tags used to label reports. In the site UI, these are called raid teams. */
   tags?: Maybe<Array<Maybe<GuildTag>>>;
+  /** The raid/mythic+ teams that belong to this guild. */
+  teams: Array<Maybe<Guild>>;
+  /** The type of the guild. A value of 0 indicates a guild. A value of 1 indicates a raid/mythic+ team. */
+  type: Scalars['Int']['output'];
   /** The guild's ranking for a zone. If `zoneId` is unset or null, uses the latest zone. */
   zoneRanking: GuildZoneRankings;
 };
@@ -2026,7 +2033,7 @@ export type ReportFight = {
   /** The IDs of all players involved in a fight. These players can be referenced in the master data actors table to get detailed information about each participant. */
   friendlyPlayers?: Maybe<Array<Maybe<Scalars['Int']['output']>>>;
   /** The specs of all players involved in a fight. These specs match with the friendlyPlayers array exactly. */
-  friendlySpecs?: Maybe<Array<Maybe<Scalars['Int']['output']>>>;
+  friendlySpecs?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
   /** The game zone the fight takes place in. This should not be confused with the zones used by the sites for rankings. This is the actual in-game zone info. */
   gameZone?: Maybe<GameZone>;
   /** The hard mode level of the fight. Most fights don't support optional hard modes. This only applies to bosses like Sartharion. */

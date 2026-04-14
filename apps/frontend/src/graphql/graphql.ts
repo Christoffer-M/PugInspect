@@ -23,8 +23,19 @@ export type BestRank = {
 
 export type Character = {
   __typename?: 'Character';
+  achievementPoints?: Maybe<Scalars['Int']['output']>;
+  activeSpec?: Maybe<Scalars['String']['output']>;
+  avatarUrl?: Maybe<Scalars['String']['output']>;
+  averageItemLevel?: Maybe<Scalars['Float']['output']>;
+  class?: Maybe<Scalars['String']['output']>;
+  equippedItemLevel?: Maybe<Scalars['Float']['output']>;
+  faction?: Maybe<Scalars['String']['output']>;
   fetchedAt?: Maybe<Scalars['String']['output']>;
+  gender?: Maybe<Scalars['String']['output']>;
+  guild?: Maybe<Guild>;
+  level?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
+  race?: Maybe<Scalars['String']['output']>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -49,6 +60,12 @@ export type Encounter = {
   __typename?: 'Encounter';
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+};
+
+export type Guild = {
+  __typename?: 'Guild';
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
 };
 
 export type Logs = {
@@ -143,16 +160,10 @@ export type RaidRanking = {
 export type RaiderIo = {
   __typename?: 'RaiderIo';
   bestMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
-  class?: Maybe<Scalars['String']['output']>;
   currentSeason?: Maybe<SeasonScores>;
-  gear?: Maybe<Scalars['String']['output']>;
-  itlvl?: Maybe<Scalars['Float']['output']>;
   previousSeason?: Maybe<SeasonScores>;
-  race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
-  specialization?: Maybe<Scalars['String']['output']>;
-  thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export enum RoleType {
@@ -183,6 +194,16 @@ export type Segment = {
   score: Scalars['Float']['output'];
 };
 
+export type CharacterInfoQueryVariables = Exact<{
+  name: Scalars['String']['input'];
+  realm: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+  bypassCache?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, fetchedAt?: string | null, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null } | null };
+
 export type CharacterLogsQueryVariables = Exact<{
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
@@ -197,6 +218,16 @@ export type CharacterLogsQueryVariables = Exact<{
 
 
 export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', fetchedAt?: string | null, warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null, bestRank?: { __typename?: 'BestRank', ilvl?: number | null } | null }> | null } | null } | null };
+
+export type CharacterRaiderIoQueryVariables = Exact<{
+  name: Scalars['String']['input'];
+  realm: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+  bypassCache?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type CharacterRaiderIoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', raiderIo?: { __typename?: 'RaiderIo', bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, recentMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null, expansion_id?: number | null }> | null, currentSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null, previousSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null } | null };
 
 export type CharacterSearchQueryVariables = Exact<{
   searchString: Scalars['String']['input'];
@@ -214,7 +245,7 @@ export type CharacterSummaryQueryVariables = Exact<{
 }>;
 
 
-export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, fetchedAt?: string | null, raiderIo?: { __typename?: 'RaiderIo', thumbnailUrl?: string | null, race?: string | null, class?: string | null, specialization?: string | null, itlvl?: number | null, bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, recentMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null, expansion_id?: number | null }> | null, currentSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null, previousSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null } | null };
+export type CharacterSummaryQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, fetchedAt?: string | null, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null, raiderIo?: { __typename?: 'RaiderIo', bestMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, recentMythicPlusRuns?: Array<{ __typename?: 'MythicPlusRun', dungeon: string, short_name: string, challange_mode_id: number, key_level: number, completed_at: string, icon_url: string, background_image_url: string, url: string, keystone_upgrades: number, role: string, spec?: { __typename?: 'MythicPlusSpec', name: string, slug: string } | null, class?: { __typename?: 'MythicPlusClass', name: string, slug: string } | null }> | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null, normal_bosses_killed?: number | null, expansion_id?: number | null }> | null, currentSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null, previousSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null, dps?: { __typename?: 'Segment', score: number, color: string } | null, healer?: { __typename?: 'Segment', score: number, color: string } | null, tank?: { __typename?: 'Segment', score: number, color: string } | null } | null } | null } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -235,6 +266,35 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const CharacterInfoDocument = new TypedDocumentString(`
+    query CharacterInfo($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
+  character(
+    name: $name
+    realm: $realm
+    region: $region
+    bypassCache: $bypassCache
+  ) {
+    name
+    realm
+    region
+    fetchedAt
+    class
+    race
+    activeSpec
+    faction
+    gender
+    level
+    equippedItemLevel
+    averageItemLevel
+    achievementPoints
+    guild {
+      name
+      realm
+    }
+    avatarUrl
+  }
+}
+    `) as unknown as TypedDocumentString<CharacterInfoQuery, CharacterInfoQueryVariables>;
 export const CharacterLogsDocument = new TypedDocumentString(`
     query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty, $byBracket: Boolean, $zoneId: Int, $bypassCache: Boolean) {
   character(
@@ -272,6 +332,103 @@ export const CharacterLogsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<CharacterLogsQuery, CharacterLogsQueryVariables>;
+export const CharacterRaiderIoDocument = new TypedDocumentString(`
+    query CharacterRaiderIo($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
+  character(
+    name: $name
+    realm: $realm
+    region: $region
+    bypassCache: $bypassCache
+  ) {
+    raiderIo {
+      bestMythicPlusRuns {
+        dungeon
+        short_name
+        challange_mode_id
+        key_level
+        completed_at
+        icon_url
+        background_image_url
+        url
+        keystone_upgrades
+        role
+        spec {
+          name
+          slug
+        }
+        class {
+          name
+          slug
+        }
+      }
+      recentMythicPlusRuns {
+        dungeon
+        short_name
+        challange_mode_id
+        key_level
+        completed_at
+        icon_url
+        background_image_url
+        url
+        keystone_upgrades
+        role
+        spec {
+          name
+          slug
+        }
+        class {
+          name
+          slug
+        }
+      }
+      raidProgression {
+        raid
+        total_bosses
+        heroic_bosses_killed
+        mythic_bosses_killed
+        normal_bosses_killed
+        expansion_id
+      }
+      currentSeason {
+        all {
+          score
+          color
+        }
+        dps {
+          score
+          color
+        }
+        healer {
+          score
+          color
+        }
+        tank {
+          score
+          color
+        }
+      }
+      previousSeason {
+        all {
+          score
+          color
+        }
+        dps {
+          score
+          color
+        }
+        healer {
+          score
+          color
+        }
+        tank {
+          score
+          color
+        }
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<CharacterRaiderIoQuery, CharacterRaiderIoQueryVariables>;
 export const CharacterSearchDocument = new TypedDocumentString(`
     query CharacterSearch($searchString: String!, $region: String!) {
   characterSuggestions(searchString: $searchString, region: $region) {
@@ -293,12 +450,21 @@ export const CharacterSummaryDocument = new TypedDocumentString(`
     realm
     region
     fetchedAt
+    class
+    race
+    activeSpec
+    faction
+    gender
+    level
+    equippedItemLevel
+    averageItemLevel
+    achievementPoints
+    guild {
+      name
+      realm
+    }
+    avatarUrl
     raiderIo {
-      thumbnailUrl
-      race
-      class
-      specialization
-      itlvl
       bestMythicPlusRuns {
         dungeon
         short_name

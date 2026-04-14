@@ -7,8 +7,19 @@ type BestRank {
 }
 
 type Character {
+  achievementPoints: Int
+  activeSpec: String
+  avatarUrl: String
+  averageItemLevel: Float
+  class: String
+  equippedItemLevel: Float
+  faction: String
   fetchedAt: String
+  gender: String
+  guild: Guild
+  level: Int
   name: String!
+  race: String
   raiderIo: RaiderIo
   realm: String!
   region: String!
@@ -25,6 +36,11 @@ enum Difficulty {
 type Encounter {
   id: Int!
   name: String!
+}
+
+type Guild {
+  name: String!
+  realm: String!
 }
 
 type Logs {
@@ -92,16 +108,10 @@ type RaidRanking {
 
 type RaiderIo {
   bestMythicPlusRuns: [MythicPlusRun!]
-  class: String
   currentSeason: SeasonScores
-  gear: String
-  itlvl: Float
   previousSeason: SeasonScores
-  race: String
   raidProgression: [RaidProgressionDetail!]
   recentMythicPlusRuns: [MythicPlusRun!]
-  specialization: String
-  thumbnailUrl: String
 }
 
 enum RoleType {

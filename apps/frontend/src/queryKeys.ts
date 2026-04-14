@@ -13,15 +13,16 @@ export function normalizeCharacterParams(
   };
 }
 
+const characterKey =
+  (namespace: string) =>
+  (name: string, realm: string, region: string) => {
+    const { name: normName, realm: normRealm, region: normRegion } = normalizeCharacterParams(name, realm, region);
+    return [namespace, normName, normRealm, normRegion];
+  };
+
 export const queryKeys = {
-  character: (name: string, realm: string, region: string) => {
-    const {
-      name: normName,
-      realm: normRealm,
-      region: normRegion,
-    } = normalizeCharacterParams(name, realm, region);
-    return ["character", normName, normRealm, normRegion];
-  },
+  character: characterKey("character"),
+  characterRaiderIo: characterKey("characterRaiderIo"),
   characterLogs: (args: CharacterLogsQueryVariables) => {
     const {
       name: normName,

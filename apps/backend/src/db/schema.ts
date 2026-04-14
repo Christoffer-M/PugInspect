@@ -14,6 +14,7 @@ import {
 import { relations } from "drizzle-orm";
 import type { RaiderIoCharacterApiResponse } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
+import type { BlizzardCharacterProfile } from "../schema/services/blizzard/model/CharacterProfile.js";
 
 // ---------------------------------------------------------------------------
 // characters
@@ -126,11 +127,40 @@ export type CharacterWclSnapshot = typeof characterWclSnapshots.$inferSelect;
 export type NewCharacterWclSnapshot = typeof characterWclSnapshots.$inferInsert;
 
 // ---------------------------------------------------------------------------
+// character_blizzard_snapshots
+// One row per character (upsert semantics, refreshed on cache expiry).
+// Stores the full Blizzard character summary response.  Intended to become
+// the primary source of truth for character identity, replacing RaiderIO.
+// ---------------------------------------------------------------------------
+export const characterBlizzardSnapshots = pgTable(
+  "character_blizzard_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    rawData: jsonb("raw_data").$type<BlizzardCharacterProfile>().notNull(),
+    // Extracted for lightweight queries without JSON path operators
+    equippedItemLevel: real("equipped_item_level"),
+  },
+  (t) => [
+    uniqueIndex("blizzard_snapshots_character_unique").on(t.characterId),
+    index("blizzard_snapshots_character_expires_idx").on(t.characterId, t.expiresAt),
+  ]
+);
+
+export type CharacterBlizzardSnapshot = typeof characterBlizzardSnapshots.$inferSelect;
+export type NewCharacterBlizzardSnapshot = typeof characterBlizzardSnapshots.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // Relations (used by Drizzle's relational query API)
 // ---------------------------------------------------------------------------
 export const charactersRelations = relations(characters, ({ many }) => ({
   rioSnapshots: many(characterRioSnapshots),
   wclSnapshots: many(characterWclSnapshots),
+  blizzardSnapshots: many(characterBlizzardSnapshots),
 }));
 
 export const rioSnapshotsRelations = relations(characterRioSnapshots, ({ one }) => ({
@@ -143,6 +173,13 @@ export const rioSnapshotsRelations = relations(characterRioSnapshots, ({ one }) 
 export const wclSnapshotsRelations = relations(characterWclSnapshots, ({ one }) => ({
   character: one(characters, {
     fields: [characterWclSnapshots.characterId],
+    references: [characters.id],
+  }),
+}));
+
+export const blizzardSnapshotsRelations = relations(characterBlizzardSnapshots, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterBlizzardSnapshots.characterId],
     references: [characters.id],
   }),
 }));

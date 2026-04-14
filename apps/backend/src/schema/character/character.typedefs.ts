@@ -44,20 +44,30 @@ export const characterTypedefs = gql`
     realm: String!
     region: String!
     fetchedAt: String
+    class: String
+    race: String
+    activeSpec: String
+    faction: String
+    gender: String
+    level: Int
+    equippedItemLevel: Float
+    averageItemLevel: Float
+    achievementPoints: Int
+    guild: Guild
+    avatarUrl: String
     raiderIo: RaiderIo
     warcraftLogs(role: RoleType, metric: Metric, byBracket: Boolean): Logs
   }
 
+  type Guild {
+    name: String!
+    realm: String!
+  }
+
   type RaiderIo {
-    class: String
-    itlvl: Float
-    thumbnailUrl: String
-    specialization: String
     raidProgression: [RaidProgressionDetail!]
     bestMythicPlusRuns: [MythicPlusRun!]
     recentMythicPlusRuns: [MythicPlusRun!]
-    race: String
-    gear: String
     currentSeason: SeasonScores
     previousSeason: SeasonScores
   }

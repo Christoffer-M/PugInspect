@@ -12,27 +12,15 @@ import { RioScore } from "./RioScore";
 import RaiderIoIcon from "../assets/raiderio-icon.svg";
 import WarcraftLogsIcon from "../assets/warcraftlogs-icon.svg";
 import { ExternalLinkIcon } from "./ExternalLinkIcon";
-import { Character, Maybe, SeasonScores } from "../graphql/graphql";
+import { Character, Maybe, RaiderIo, SeasonScores } from "../graphql/graphql";
 
 const createSeasonScoreMap = (seasonData: Maybe<SeasonScores> | undefined) => {
   if (!seasonData) return [];
 
   return [
-    {
-      role: "Tank",
-      score: seasonData?.tank?.score,
-      color: seasonData?.tank?.color,
-    },
-    {
-      role: "Healer",
-      score: seasonData?.healer?.score,
-      color: seasonData?.healer?.color,
-    },
-    {
-      role: "DPS",
-      score: seasonData?.dps?.score,
-      color: seasonData?.dps?.color,
-    },
+    { role: "Tank", score: seasonData.tank?.score, color: seasonData.tank?.color },
+    { role: "Healer", score: seasonData.healer?.score, color: seasonData.healer?.color },
+    { role: "DPS", score: seasonData.dps?.score, color: seasonData.dps?.color },
   ].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 };
 
@@ -40,167 +28,146 @@ export const CharacterHeader: React.FC<{
   name: string;
   region: string;
   server: string;
-  data: Character | undefined | null;
-  loading: boolean;
+  characterInfo: Character | undefined | null;
+  raiderIo: RaiderIo | undefined | null;
+  isLoadingInfo: boolean;
+  isLoadingRaiderIo: boolean;
   isError: boolean;
-}> = ({ name, region, server, data, loading, isError }) => {
-  const raiderIoInfo = data?.raiderIo;
-  const previousSeasonScore = createSeasonScoreMap(raiderIoInfo?.previousSeason);
-  const currentSeasonScores = createSeasonScoreMap(raiderIoInfo?.currentSeason);
+}> = ({ name, region, server, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError }) => {
+  const previousSeasonScores = createSeasonScoreMap(raiderIo?.previousSeason);
+  const currentSeasonScores = createSeasonScoreMap(raiderIo?.currentSeason);
 
-  const hasValidCurrentSeasonScore = currentSeasonScores.some(score => score.score !== undefined && score.score >= 100);
-  const hasValidPreviousSeasonScore = previousSeasonScore.some(score => score.score !== undefined && score.score >= 100);
+  const hasValidCurrentSeasonScore = currentSeasonScores.some(
+    (s) => s.score !== undefined && s.score >= 100,
+  );
+  const hasValidPreviousSeasonScore = previousSeasonScores.some(
+    (s) => s.score !== undefined && s.score >= 100,
+  );
 
-  const normalizeRealm = server.trim().toLowerCase().replace(/\s+/g, "-").replace(/-+/g, "-");
+  const normalizeRealm = server
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 
   return (
     <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
       <Group justify="space-between" align="flex-start" wrap="wrap">
+
+        {/* ── Identity (Blizzard) ── */}
         <Group h="100%" align="flex-start" style={{ flex: 1, minWidth: 200 }}>
-          {loading || isError ? (
+          {isLoadingInfo || isError ? (
             <>
               <Skeleton h={85} w={85} radius={100} m={0} animate={!isError} />
-              <Stack gap={"xs"}>
+              <Stack gap="xs">
                 <Skeleton height={20} width={200} animate={!isError} />
                 <Skeleton height={16} width={160} animate={!isError} />
                 <Skeleton height={16} width={160} animate={!isError} />
               </Stack>
             </>
           ) : (
-            raiderIoInfo && (
-              <>
+            characterInfo && (
+              <Group>
                 <Image
-                  src={raiderIoInfo.thumbnailUrl}
+                  src={characterInfo.avatarUrl}
                   alt={name}
-                  h={85}
-                  w={85}
+                  h={100}
+                  w={100}
                   fit="contain"
                   radius={100}
                   m={0}
-                  fallbackSrc={`https://placehold.co/85x85?text=No+Image`}
+                  fallbackSrc="https://placehold.co/100x100?text=No+Image"
                 />
-                <Stack
-                  gap={0}
-                  justify="flex-start"
-                  h="100%"
-                  flex={1}
-                  align="flex-start"
-                >
+                <Stack gap={0} justify="flex-start" h="100%" flex={1} align="flex-start">
                   <Group gap="xs" justify="flex-start" align="center">
                     <Title order={3} m={0}>
-                      {upperCaseFirstLetter(data?.name || name)}
+                      {upperCaseFirstLetter(characterInfo.name || name)}
                     </Title>
                     <ExternalLinkIcon
                       href={`https://raider.io/characters/${region}/${normalizeRealm}/${name}`}
                       icon={RaiderIoIcon}
                       size={22}
                     />
-
                     <ExternalLinkIcon
                       href={`https://www.warcraftlogs.com/character/${region}/${normalizeRealm}/${name}`}
                       icon={WarcraftLogsIcon}
                       size={22}
                     />
                   </Group>
-
+                  {characterInfo.guild && (
+                    <Text size="sm" m={0}>
+                      {`<${characterInfo.guild.name}>`}
+                    </Text>
+                  )}
                   <Text size="sm" m={0}>
-                    ({data.region.toUpperCase()}) {data.realm}
+                    ({characterInfo.region.toUpperCase()}) {characterInfo.realm}
                   </Text>
-
                   <Text size="sm" m={0}>
-                    {raiderIoInfo.race} {raiderIoInfo.specialization}{" "}
-                    {raiderIoInfo.class}
+                    {characterInfo.race} {characterInfo.activeSpec} {characterInfo.class}
                   </Text>
-
                   <Text size="sm" m={0}>
-                    <b>Item Level:</b> {raiderIoInfo.itlvl ? raiderIoInfo.itlvl.toFixed(2) : "-"}
+                    <b>Item Level:</b>{" "}
+                    {characterInfo.equippedItemLevel != null
+                      ? characterInfo.equippedItemLevel.toFixed(0)
+                      : "-"}
                   </Text>
-
                 </Stack>
-              </>
+              </Group>
             )
           )}
         </Group>
 
-        <Stack gap={8} align="flex-start" >
+        {/* ── Raider.IO Scores ── */}
+        <Stack gap={8} align="flex-start">
           <Text size="md" m={0} fw={700}>
             Raider.IO Score
           </Text>
           <Group align="flex-start" gap={50}>
-
-
             <Stack gap={2}>
               <Text size="xs" m={0} fw={700}>
                 Current Season
               </Text>
-              <Skeleton visible={loading} animate>
-                {hasValidCurrentSeasonScore ? null : (
-                  <Text size="xs" m={0} c="dimmed">
-                    No valid scores
-                  </Text>
+              <Skeleton visible={isLoadingRaiderIo} animate>
+                {!isLoadingRaiderIo && !hasValidCurrentSeasonScore && (
+                  <Text size="xs" m={0} c="dimmed">No valid scores</Text>
                 )}
-
-                {currentSeasonScores.map((score, index) => {
-                  const isBelowThreshold = score.score !== undefined && score.score < 100;
-                  if (isBelowThreshold) {
-                    return null
-                  }
-                  return (
-                    score && (
-                      <RioScore
-                        key={index}
-                        label={`(${score.role})`}
-                        value={score.score}
-                        color={score.color}
-                        isLoading={loading}
-                      />
-                    )
-                  );
-                })}
-
+                {currentSeasonScores.map((score, i) =>
+                  score.score !== undefined && score.score < 100 ? null : (
+                    <RioScore
+                      key={i}
+                      label={`(${score.role})`}
+                      value={score.score}
+                      color={score.color}
+                      isLoading={isLoadingRaiderIo}
+                    />
+                  ),
+                )}
               </Skeleton>
-
-
             </Stack>
 
             <Stack gap={2}>
               <Text size="xs" m={0} fw={700}>
                 Previous Season
               </Text>
-              <Skeleton visible={loading} animate>
-                {hasValidPreviousSeasonScore ? null : (
-                  <Text size="xs" m={0} c="dimmed">
-                    No valid scores
-                  </Text>
+              <Skeleton visible={isLoadingRaiderIo} animate>
+                {!isLoadingRaiderIo && !hasValidPreviousSeasonScore && (
+                  <Text size="xs" m={0} c="dimmed">No valid scores</Text>
                 )}
-                {previousSeasonScore.map((score, index) => {
-                  const isBelowThreshold = score.score !== undefined && score.score < 100;
-                  if (isBelowThreshold) {
-                    return null
-                  }
-
-                  return (
-                    score && (
-                      <RioScore
-                        key={index}
-                        label={`(${score.role})`}
-                        value={score.score}
-                        color={score.color}
-                        isLoading={loading}
-                      />
-                    )
-                  );
-                })}
-
-
+                {previousSeasonScores.map((score, i) =>
+                  score.score !== undefined && score.score < 100 ? null : (
+                    <RioScore
+                      key={i}
+                      label={`(${score.role})`}
+                      value={score.score}
+                      color={score.color}
+                      isLoading={isLoadingRaiderIo}
+                    />
+                  ),
+                )}
               </Skeleton>
-
-
-
             </Stack>
           </Group>
         </Stack>
-
 
       </Group>
     </Paper>

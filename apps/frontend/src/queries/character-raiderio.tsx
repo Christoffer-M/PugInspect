@@ -4,24 +4,15 @@ import { graphql } from "../graphql";
 import { execute } from "../api/graphqlClient";
 import { queryKeys } from "../queryKeys";
 import {
-  Character,
-  CharacterSummaryQuery,
-  CharacterSummaryQueryVariables,
+  CharacterRaiderIoQuery,
+  CharacterRaiderIoQueryVariables,
+  RaiderIo,
 } from "../graphql/graphql";
 
-export const CharacterDataQuery = graphql(`
-  query CharacterSummary($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
+export const CharacterRaiderIoQueryDoc = graphql(`
+  query CharacterRaiderIo($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
     character(name: $name, realm: $realm, region: $region, bypassCache: $bypassCache) {
-      name
-      realm
-      region
-      fetchedAt
       raiderIo {
-        thumbnailUrl
-        race
-        class
-        specialization
-        itlvl
         bestMythicPlusRuns {
           dungeon
           short_name
@@ -71,70 +62,45 @@ export const CharacterDataQuery = graphql(`
           expansion_id
         }
         currentSeason {
-           all {
-             score
-             color
-           }
-           dps {
-             score
-             color
-           }
-           healer {
-             score
-             color
-           }
-           tank {
-             score
-             color
-           }
+          all { score color }
+          dps { score color }
+          healer { score color }
+          tank { score color }
         }
         previousSeason {
-           all {
-             score
-             color
-           }
-           dps {
-             score
-             color
-           }
-           healer {
-             score
-             color
-           }
-           tank {
-             score
-             color
-           }
-         }
+          all { score color }
+          dps { score color }
+          healer { score color }
+          tank { score color }
+        }
       }
     }
   }
 `);
 
-export const useCharacterSummaryQuery = ({
+export const useCharacterRaiderIoQuery = ({
   name,
   realm,
   region,
   bypassCacheRef,
-}: Pick<CharacterSummaryQueryVariables, "name" | "realm" | "region"> & {
+}: Pick<CharacterRaiderIoQueryVariables, "name" | "realm" | "region"> & {
   bypassCacheRef?: RefObject<boolean>;
 }) =>
   useQuery({
-    queryKey: queryKeys.character(name, realm, region),
+    queryKey: queryKeys.characterRaiderIo(name, realm, region),
     retry: false,
-    queryFn: async (): Promise<Character | undefined | null> => {
+    queryFn: async (): Promise<RaiderIo | undefined | null> => {
       const response = await execute<
-        CharacterSummaryQuery,
-        CharacterSummaryQueryVariables
-      >(CharacterDataQuery, {
+        CharacterRaiderIoQuery,
+        CharacterRaiderIoQueryVariables
+      >(CharacterRaiderIoQueryDoc, {
         name,
         realm,
         region,
         bypassCache: bypassCacheRef?.current ?? false,
       });
-
-      return response.character;
+      return response.character?.raiderIo;
     },
-    gcTime: 1000 * 60 * 5, // 5 minutes
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 15, // 15 minutes — matches RaiderIO server-side cache
+    staleTime: 1000 * 60 * 15,
   });

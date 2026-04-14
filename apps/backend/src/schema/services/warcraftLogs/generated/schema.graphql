@@ -30,7 +30,7 @@ type ArchonViewModels {
   gamePage: JSON
   gameSlugs: JSON
   googleAnalytics: JSON
-  header(gameSlug: String): JSON
+  header(gameSlug: String, locale: String): JSON
   headerTitle: JSON
   indexPage: JSON
   pageOfArticlePreviews(articleCategorySlug: String, pageNumber: Int, siteName: String): JSON
@@ -1624,6 +1624,9 @@ type Guild {
   """The name of the guild."""
   name: String!
 
+  """The owning parent guild for this team, if one exists."""
+  parentGuild: Guild
+
   """The server that the guild belongs to."""
   server: Server!
 
@@ -1634,6 +1637,14 @@ type Guild {
   The tags used to label reports. In the site UI, these are called raid teams.
   """
   tags: [GuildTag]
+
+  """The raid/mythic+ teams that belong to this guild."""
+  teams: [Guild]!
+
+  """
+  The type of the guild. A value of 0 indicates a guild. A value of 1 indicates a raid/mythic+ team.
+  """
+  type: Int!
 
   """
   The guild's ranking for a zone. If `zoneId` is unset or null, uses the latest zone.
@@ -3181,7 +3192,7 @@ type ReportFight {
   """
   The specs of all players involved in a fight. These specs match with the friendlyPlayers array exactly.
   """
-  friendlySpecs: [Int]
+  friendlySpecs: [String]
 
   """
   The game zone the fight takes place in. This should not be confused with the zones used by the sites for rankings. This is the actual in-game zone info.
