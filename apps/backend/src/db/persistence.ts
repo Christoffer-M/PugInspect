@@ -14,7 +14,8 @@ import { createLogger } from "../schema/utils/logger.js";
 
 const logger = createLogger({ service: "DBPersistence" });
 
-const CACHE_TTL_SECONDS = 900;
+const CACHE_TTL_SECONDS = 900; // 15 minutes — RaiderIO and WarcraftLogs
+const BLIZZARD_CACHE_TTL_SECONDS = 86_400; // 24 hours — Blizzard data changes infrequently
 
 type CharacterKey = {
   region: string;
@@ -293,7 +294,7 @@ export async function persistBlizzardProfile(
     });
 
     const fetchedAtDate = new Date(fetchedAt * 1000);
-    const expiresAtDate = new Date((fetchedAt + CACHE_TTL_SECONDS) * 1000);
+    const expiresAtDate = new Date((fetchedAt + BLIZZARD_CACHE_TTL_SECONDS) * 1000);
 
     await db
       .insert(characterBlizzardSnapshots)
