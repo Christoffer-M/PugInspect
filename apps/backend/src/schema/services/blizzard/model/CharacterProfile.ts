@@ -28,6 +28,16 @@ export interface BlizzardGuild {
   faction: BlizzardTypedValue;
 }
 
+export interface BlizzardCharacterMediaAsset {
+  key: string;
+  value: string;
+}
+
+export interface BlizzardCharacterMedia {
+  _links: { self: BlizzardLink };
+  assets: BlizzardCharacterMediaAsset[];
+}
+
 export interface BlizzardCharacterProfile {
   _links: {
     self: BlizzardLink;

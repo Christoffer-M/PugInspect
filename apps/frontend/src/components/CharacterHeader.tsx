@@ -86,7 +86,7 @@ export const CharacterHeader: React.FC<{
             data && (
               <>
                 <Image
-                  src={raiderIoInfo?.thumbnailUrl}
+                  src={data.avatarUrl}
                   alt={name}
                   h={85}
                   w={85}

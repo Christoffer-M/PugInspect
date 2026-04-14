@@ -54,6 +54,7 @@ export const characterTypedefs = gql`
     averageItemLevel: Float
     achievementPoints: Int
     guild: Guild
+    avatarUrl: String
     raiderIo: RaiderIo
     warcraftLogs(role: RoleType, metric: Metric, byBracket: Boolean): Logs
   }

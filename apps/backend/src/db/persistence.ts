@@ -243,12 +243,13 @@ export async function persistWclProfile(
 
 export async function getCachedBlizzardProfile(
   key: CharacterKey
-): Promise<{ data: BlizzardCharacterProfile; fetchedAt: number } | null> {
+): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number } | null> {
   try {
     const rows = await getDb()
       .select({
         rawData: characterBlizzardSnapshots.rawData,
         fetchedAt: characterBlizzardSnapshots.fetchedAt,
+        avatarUrl: characters.thumbnailUrl,
       })
       .from(characterBlizzardSnapshots)
       .innerJoin(characters, eq(characterBlizzardSnapshots.characterId, characters.id))
@@ -266,6 +267,7 @@ export async function getCachedBlizzardProfile(
 
     return {
       data: rows[0].rawData,
+      avatarUrl: rows[0].avatarUrl,
       fetchedAt: Math.floor(rows[0].fetchedAt.getTime() / 1000),
     };
   } catch (err) {
@@ -277,7 +279,8 @@ export async function getCachedBlizzardProfile(
 export async function persistBlizzardProfile(
   key: CharacterKey,
   data: BlizzardCharacterProfile,
-  fetchedAt: number
+  fetchedAt: number,
+  avatarUrl: string | null = null
 ): Promise<void> {
   try {
     const db = getDb();
@@ -285,7 +288,7 @@ export async function persistBlizzardProfile(
       class: data.character_class.name,
       specialization: data.active_spec.name,
       race: data.race.name,
-      thumbnailUrl: null, // media endpoint is a separate call; not available in the summary
+      thumbnailUrl: avatarUrl,
       itemLevel: data.equipped_item_level,
     });
 

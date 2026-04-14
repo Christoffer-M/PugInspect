@@ -23,6 +23,7 @@ export type Character = {
   __typename?: 'Character';
   achievementPoints?: Maybe<Scalars['Int']['output']>;
   activeSpec?: Maybe<Scalars['String']['output']>;
+  avatarUrl?: Maybe<Scalars['String']['output']>;
   averageItemLevel?: Maybe<Scalars['Float']['output']>;
   class?: Maybe<Scalars['String']['output']>;
   equippedItemLevel?: Maybe<Scalars['Float']['output']>;

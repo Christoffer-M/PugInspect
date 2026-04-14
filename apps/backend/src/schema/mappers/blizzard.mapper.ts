@@ -12,9 +12,13 @@ export interface BlizzardCharacterFields {
   averageItemLevel: number;
   achievementPoints: number;
   guild: Guild | null;
+  avatarUrl: string | null;
 }
 
-export function mapBlizzardCharacter(profile: BlizzardCharacterProfile): BlizzardCharacterFields {
+export function mapBlizzardCharacter(
+  profile: BlizzardCharacterProfile,
+  avatarUrl: string | null
+): BlizzardCharacterFields {
   return {
     class: profile.character_class.name,
     race: profile.race.name,
@@ -28,5 +32,6 @@ export function mapBlizzardCharacter(profile: BlizzardCharacterProfile): Blizzar
     guild: profile.guild
       ? { name: profile.guild.name, realm: profile.guild.realm.name }
       : null,
+    avatarUrl,
   };
 }

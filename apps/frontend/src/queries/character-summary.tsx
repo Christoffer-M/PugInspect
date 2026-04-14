@@ -29,6 +29,7 @@ export const CharacterDataQuery = graphql(`
         name
         realm
       }
+      avatarUrl
       raiderIo {
         thumbnailUrl
         bestMythicPlusRuns {

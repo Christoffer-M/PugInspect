@@ -9,6 +9,7 @@ type BestRank {
 type Character {
   achievementPoints: Int
   activeSpec: String
+  avatarUrl: String
   averageItemLevel: Float
   class: String
   equippedItemLevel: Float

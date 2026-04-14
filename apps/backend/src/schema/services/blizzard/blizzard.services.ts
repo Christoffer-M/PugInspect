@@ -3,7 +3,7 @@ import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { normalizeRealm } from "../../utils/helpers.js";
 import { getCachedBlizzardProfile, persistBlizzardProfile } from "../../../db/persistence.js";
-import type { BlizzardCharacterProfile } from "./model/CharacterProfile.js";
+import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import { GraphQLError } from "graphql";
 import type { QueryCharacterArgs } from "@repo/graphql-types";
 
@@ -38,7 +38,7 @@ export class BlizzardService {
   static async getCharacterProfile(
     args: QueryCharacterArgs,
     bypassCache = false
-  ): Promise<{ data: BlizzardCharacterProfile; fetchedAt: number }> {
+  ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number }> {
     const { name, realm, region } = args;
     const normalizedRealm = normalizeRealm(realm);
 
@@ -51,37 +51,45 @@ export class BlizzardService {
     }
 
     const token = await this.tokens.getToken(region);
+    const base = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}`;
+    const ns = `namespace=profile-${region}&locale=en_US`;
 
-    const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}?namespace=profile-${region}&locale=en_US`;
+    logger.info("Blizzard character profile + media request", { name, realm: normalizedRealm, region });
 
-    logger.info("Blizzard character profile request", { name, realm: normalizedRealm, region });
+    const [profileRes, mediaRes] = await Promise.allSettled([
+      fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` } }),
+    ]);
 
     try {
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (profileRes.status === "rejected") throw profileRes.reason;
 
+      const res = profileRes.value;
       if (res.status === 404) {
         logger.warn("Blizzard character not found", { name, realm: normalizedRealm, region });
-        throw new GraphQLError("Character not found", {
-          extensions: { code: "NOT_FOUND" },
-        });
+        throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
       }
-
-      if (!res.ok) {
-        throw new Error(`Blizzard request failed: ${res.status} ${res.statusText}`);
-      }
+      if (!res.ok) throw new Error(`Blizzard profile request failed: ${res.status} ${res.statusText}`);
 
       const data = await res.json() as BlizzardCharacterProfile;
       const fetchedAt = Math.floor(Date.now() / 1000);
 
+      // Media is non-fatal — extract avatar URL if available
+      let avatarUrl: string | null = null;
+      if (mediaRes.status === "fulfilled" && mediaRes.value.ok) {
+        const media = await mediaRes.value.json() as BlizzardCharacterMedia;
+        avatarUrl = media.assets.find((a) => a.key === "avatar")?.value ?? null;
+      } else {
+        logger.warn("Blizzard character media fetch failed (non-fatal)", { name, realm: normalizedRealm, region });
+      }
+
       logger.info("Blizzard character profile fetched", { name, realm: normalizedRealm, region });
 
-      persistBlizzardProfile({ region, realm: normalizedRealm, name }, data, fetchedAt).catch((err: unknown) => {
+      persistBlizzardProfile({ region, realm: normalizedRealm, name }, data, fetchedAt, avatarUrl).catch((err: unknown) => {
         logger.warn("Failed to persist Blizzard profile to DB cache", { name, realm: normalizedRealm, region, error: String(err) });
       });
 
-      return { data, fetchedAt };
+      return { data, avatarUrl, fetchedAt };
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
 

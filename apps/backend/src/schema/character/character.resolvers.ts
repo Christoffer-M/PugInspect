@@ -33,7 +33,7 @@ export default {
       const logsRequested = isFieldRequested(info, "warcraftLogs");
       const raiderIoRequested = isFieldRequested(info, "raiderIo");
 
-      const { blizzardProfile, blizzardFetchedAt, rioProfile, rioFetchedAt, warcraftLogsProfile, logsFetchedAt } =
+      const { blizzardProfile, blizzardAvatarUrl, blizzardFetchedAt, rioProfile, rioFetchedAt, warcraftLogsProfile, logsFetchedAt } =
         await getCharacterProfiles(args, {
           logsRequested: logsRequested ?? false,
           raiderIoRequested: raiderIoRequested ?? false,
@@ -54,7 +54,7 @@ export default {
         region: args.region,
         fetchedAt,
         // Character info from Blizzard
-        ...mapBlizzardCharacter(blizzardProfile),
+        ...mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl),
         // Sub-service data
         raiderIo: raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
         warcraftLogs:
