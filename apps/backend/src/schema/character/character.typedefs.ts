@@ -65,15 +65,9 @@ export const characterTypedefs = gql`
   }
 
   type RaiderIo {
-    class: String
-    itlvl: Float
-    thumbnailUrl: String
-    specialization: String
     raidProgression: [RaidProgressionDetail!]
     bestMythicPlusRuns: [MythicPlusRun!]
     recentMythicPlusRuns: [MythicPlusRun!]
-    race: String
-    gear: String
     currentSeason: SeasonScores
     previousSeason: SeasonScores
   }

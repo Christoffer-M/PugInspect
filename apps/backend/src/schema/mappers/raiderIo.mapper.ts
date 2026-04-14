@@ -59,31 +59,16 @@ export function mapRaiderIo(
 ): RaiderIo | null {
   if (!rioProfile) return null;
 
-  const base: RaiderIo = {
-    thumbnailUrl: rioProfile.thumbnail_url,
-    race: rioProfile.race,
-    class: rioProfile.class,
-    specialization: rioProfile.active_spec_name,
-    itlvl: rioProfile.gear?.item_level_equipped,
-  };
-
   const segmentsCurrentSeason = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
   const segmentsPreviousSeason = rioProfile.mythic_plus_scores_by_season?.[1]?.segments;
   const raidProgression = Object.entries(rioProfile.raid_progression || {}).map(
-    ([raid, details]) => ({
-      raid,
-      ...details,
-    })
+    ([raid, details]) => ({ raid, ...details })
   );
 
-  const getSegment = (seg?: {
-    color?: string;
-    score?: number;
-  }): Maybe<Segment> =>
+  const getSegment = (seg?: { color?: string; score?: number }): Maybe<Segment> =>
     seg ? { color: seg.color ?? "", score: seg.score ?? 0 } : null;
 
   return {
-    ...base,
     raidProgression,
     bestMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_best_runs),
     recentMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_recent_runs),

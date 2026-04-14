@@ -31,7 +31,6 @@ export const CharacterDataQuery = graphql(`
       }
       avatarUrl
       raiderIo {
-        thumbnailUrl
         bestMythicPlusRuns {
           dungeon
           short_name

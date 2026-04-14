@@ -156,16 +156,10 @@ export type RaidRanking = {
 export type RaiderIo = {
   __typename?: 'RaiderIo';
   bestMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
-  class?: Maybe<Scalars['String']['output']>;
   currentSeason?: Maybe<SeasonScores>;
-  gear?: Maybe<Scalars['String']['output']>;
-  itlvl?: Maybe<Scalars['Float']['output']>;
   previousSeason?: Maybe<SeasonScores>;
-  race?: Maybe<Scalars['String']['output']>;
   raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
-  specialization?: Maybe<Scalars['String']['output']>;
-  thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type RoleType =

@@ -85,58 +85,60 @@ export const CharacterHeader: React.FC<{
           ) : (
             data && (
               <>
-                <Image
-                  src={data.avatarUrl}
-                  alt={name}
-                  h={85}
-                  w={85}
-                  fit="contain"
-                  radius={100}
-                  m={0}
-                  fallbackSrc={`https://placehold.co/85x85?text=No+Image`}
-                />
-                <Stack
-                  gap={0}
-                  justify="flex-start"
-                  h="100%"
-                  flex={1}
-                  align="flex-start"
-                >
-                  <Group gap="xs" justify="flex-start" align="center">
-                    <Title order={3} m={0}>
-                      {upperCaseFirstLetter(data.name || name)}
-                    </Title>
-                    <ExternalLinkIcon
-                      href={`https://raider.io/characters/${region}/${normalizeRealm}/${name}`}
-                      icon={RaiderIoIcon}
-                      size={22}
-                    />
+                <Group>
+                  <Image
+                    src={data.avatarUrl}
+                    alt={name}
+                    h={100}
+                    w={100}
+                    fit="contain"
+                    radius={100}
+                    m={0}
+                    fallbackSrc={`https://placehold.co/85x85?text=No+Image`}
+                  />
+                  <Stack
+                    gap={0}
+                    justify="flex-start"
+                    h="100%"
+                    flex={1}
+                    align="flex-start"
+                  >
+                    <Group gap="xs" justify="flex-start" align="center">
+                      <Title order={3} m={0}>
+                        {upperCaseFirstLetter(data.name || name)}
+                      </Title>
+                      <ExternalLinkIcon
+                        href={`https://raider.io/characters/${region}/${normalizeRealm}/${name}`}
+                        icon={RaiderIoIcon}
+                        size={22}
+                      />
 
-                    <ExternalLinkIcon
-                      href={`https://www.warcraftlogs.com/character/${region}/${normalizeRealm}/${name}`}
-                      icon={WarcraftLogsIcon}
-                      size={22}
-                    />
-                  </Group>
-                  {characterGuild && (
+                      <ExternalLinkIcon
+                        href={`https://www.warcraftlogs.com/character/${region}/${normalizeRealm}/${name}`}
+                        icon={WarcraftLogsIcon}
+                        size={22}
+                      />
+                    </Group>
+                    {characterGuild && (
+                      <Text size="sm" m={0}>
+                        {`<${characterGuild.name}>`}
+                      </Text>
+                    )}
+
                     <Text size="sm" m={0}>
-                      {`<${characterGuild.name}>`}
+                      ({data.region.toUpperCase()}) {data.realm}
                     </Text>
-                  )}
 
-                  <Text size="sm" m={0}>
-                    ({data.region.toUpperCase()}) {data.realm}
-                  </Text>
+                    <Text size="sm" m={0}>
+                      {characterRace} {characterSpec} {characterClass}
+                    </Text>
 
-                  <Text size="sm" m={0}>
-                    {characterRace} {characterSpec} {characterClass}
-                  </Text>
-
-                  <Text size="sm" m={0}>
-                    <b>Item Level:</b>{" "}
-                    {characterIlvl != null ? characterIlvl.toFixed(0) : "-"}
-                  </Text>
-                </Stack>
+                    <Text size="sm" m={0}>
+                      <b>Item Level:</b>{" "}
+                      {characterIlvl != null ? characterIlvl.toFixed(0) : "-"}
+                    </Text>
+                  </Stack>
+                </Group>
               </>
             )
           )}

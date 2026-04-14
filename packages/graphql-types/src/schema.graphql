@@ -108,16 +108,10 @@ type RaidRanking {
 
 type RaiderIo {
   bestMythicPlusRuns: [MythicPlusRun!]
-  class: String
   currentSeason: SeasonScores
-  gear: String
-  itlvl: Float
   previousSeason: SeasonScores
-  race: String
   raidProgression: [RaidProgressionDetail!]
   recentMythicPlusRuns: [MythicPlusRun!]
-  specialization: String
-  thumbnailUrl: String
 }
 
 enum RoleType {
