@@ -22,6 +22,14 @@ export const queryKeys = {
     } = normalizeCharacterParams(name, realm, region);
     return ["character", normName, normRealm, normRegion];
   },
+  characterRaiderIo: (name: string, realm: string, region: string) => {
+    const {
+      name: normName,
+      realm: normRealm,
+      region: normRegion,
+    } = normalizeCharacterParams(name, realm, region);
+    return ["characterRaiderIo", normName, normRealm, normRegion];
+  },
   characterLogs: (args: CharacterLogsQueryVariables) => {
     const {
       name: normName,

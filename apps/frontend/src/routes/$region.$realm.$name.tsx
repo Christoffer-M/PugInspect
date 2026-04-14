@@ -18,7 +18,8 @@ import { useEffect, useRef } from "react";
 import { CharacterHeader } from "../components/CharacterHeader";
 import { LogsTable } from "../components/LogsTable";
 import { Page } from "../components/Page";
-import { useCharacterSummaryQuery } from "../queries/character-summary";
+import { useCharacterInfoQuery } from "../queries/character-info";
+import { useCharacterRaiderIoQuery } from "../queries/character-raiderio";
 import { IconReload } from "@tabler/icons-react";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterLogs } from "../queries/character-logs";
@@ -60,39 +61,27 @@ function CharacterPage() {
     difficulty: searchDifficulty,
     bracket: searchBracket,
     raid: searchRaid,
-  } = useSearch({
-    from: Route.id,
-  });
+  } = useSearch({ from: Route.id });
 
   const navigate = useNavigate({ from: Route.id });
-
   const bypassCacheRef = useRef(false);
 
+  // Blizzard — character identity, cached 24 h
   const {
-    data: characterSummaryData,
-    isFetching: isFetchingSummary,
+    data: characterInfo,
+    isFetching: isFetchingInfo,
     isError,
-    refetch: refetchSummary,
-  } = useCharacterSummaryQuery({
-    name,
-    realm,
-    region,
-    bypassCacheRef,
-  });
+    refetch: refetchInfo,
+  } = useCharacterInfoQuery({ name, realm, region, bypassCacheRef });
 
-  const { add: addToHistory } = useSearchHistory();
-  useEffect(() => {
-    if (!characterSummaryData) return;
-    addToHistory({
-      name,
-      realm,
-      region,
-      class: characterSummaryData.class ?? undefined,
-    });
-  }, [characterSummaryData?.class, name, realm, region]);
+  // RaiderIO — M+ runs, raid progression, season scores, cached 15 min
+  const {
+    data: raiderIoData,
+    isFetching: isFetchingRaiderIo,
+    refetch: refetchRaiderIo,
+  } = useCharacterRaiderIoQuery({ name, realm, region, bypassCacheRef });
 
-  const defaultZoneId = RAIDS[DEFAULT_RAID]?.zoneId;
-
+  // WarcraftLogs — raid log performance, cached 15 min
   const {
     data: logsData,
     isFetching: isFetchingLogs,
@@ -105,15 +94,20 @@ function CharacterPage() {
     metric: searchMetric,
     difficulty: searchDifficulty,
     byBracket: searchBracket,
-    // Only include the raid slug if it's explicitly set in the search params, otherwise let the API default to the most recent raid
-    zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : defaultZoneId,
+    zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : RAIDS[DEFAULT_RAID]?.zoneId,
     bypassCacheRef,
   });
+
+  const { add: addToHistory } = useSearchHistory();
+  useEffect(() => {
+    if (!characterInfo) return;
+    addToHistory({ name, realm, region, class: characterInfo.class ?? undefined });
+  }, [characterInfo?.class, name, realm, region]);
 
   const refetchData = async () => {
     bypassCacheRef.current = true;
     try {
-      await Promise.all([refetchSummary(), refetchLogs()]);
+      await Promise.all([refetchInfo(), refetchRaiderIo(), refetchLogs()]);
     } finally {
       bypassCacheRef.current = false;
     }
@@ -123,27 +117,23 @@ function CharacterPage() {
     navigate({ search: (prev) => ({ ...prev, raid: raid ?? undefined }) });
   };
 
-  const fetchedAt = characterSummaryData?.fetchedAt
-    ? new Date(characterSummaryData.fetchedAt).toLocaleTimeString()
+  const fetchedAt = characterInfo?.fetchedAt
+    ? new Date(characterInfo.fetchedAt).toLocaleTimeString()
     : undefined;
 
-  // Disable the refresh button if data was fetched less than 5 minutes ago to prevent excessive API calls, but still allow manual refresh if needed
-  const disableRefresh = characterSummaryData?.fetchedAt
-    ? new Date().getTime() -
-        new Date(characterSummaryData.fetchedAt).getTime() <
-      5 * 60 * 1000
+  // Base refresh throttle on RaiderIO data — it's the most time-sensitive source (15 min cache)
+  const disableRefresh = characterInfo?.fetchedAt
+    ? new Date().getTime() - new Date(characterInfo.fetchedAt).getTime() < 5 * 60 * 1000
     : false;
 
-  const raidProgression = characterSummaryData?.raiderIo?.raidProgression ?? [];
-  const effectiveRaid = searchRaid ?? DEFAULT_RAID ?? null;
+  const isFetchingAny = isFetchingInfo || isFetchingRaiderIo;
 
   return (
     <Page>
       <Container>
         <Stack mt="md" align="center" justify="center" gap={0}>
-          <Group justify="space-between" w={"100%"} align="flex-start">
+          <Group justify="space-between" w="100%" align="flex-start">
             <Title order={2}>Profile</Title>
-
             <Group>
               <Text size="sm" c="dimmed" m={0}>
                 {`Last updated:  ${fetchedAt ?? "--:--:--"}`}
@@ -158,57 +148,52 @@ function CharacterPage() {
                 openDelay={150}
               >
                 <ActionIcon
-                  size={"md"}
+                  size="md"
                   variant="outline"
                   onClick={refetchData}
-                  loaderProps={{
-                    size: "xs",
-                    type: "dots",
-                  }}
-                  disabled={disableRefresh && !isFetchingSummary}
-                  loading={isFetchingSummary}
+                  loaderProps={{ size: "xs", type: "dots" }}
+                  disabled={disableRefresh && !isFetchingAny}
+                  loading={isFetchingAny}
                 >
                   <IconReload size={18} />
                 </ActionIcon>
               </Tooltip>
             </Group>
           </Group>
-          <Stack gap={"lg"} w={"100%"} align="center">
+
+          <Stack gap="lg" w="100%" align="center">
             <CharacterHeader
               name={name}
               region={region}
               server={realm}
-              data={characterSummaryData}
-              loading={isFetchingSummary}
+              characterInfo={characterInfo}
+              raiderIo={raiderIoData}
+              isLoadingInfo={isFetchingInfo}
+              isLoadingRaiderIo={isFetchingRaiderIo}
               isError={isError}
             />
             <RaidProgression
-              raidData={raidProgression}
-              isLoading={isFetchingSummary}
-              selectedRaid={effectiveRaid}
+              raidData={raiderIoData?.raidProgression ?? []}
+              isLoading={isFetchingRaiderIo}
+              selectedRaid={searchRaid ?? DEFAULT_RAID ?? null}
               onRaidChange={handleRaidChange}
             />
             <LogsTable
               logs={logsData}
               isFetching={isFetchingLogs}
-              class={characterSummaryData?.class}
+              class={characterInfo?.class}
             />
-            <Grid w={"100%"}>
+            <Grid w="100%">
               <Grid.Col span={{ sm: 12, md: 6 }}>
                 <BestMythicPlusRunsTable
-                  isFetching={isFetchingSummary}
-                  characterRuns={
-                    characterSummaryData?.raiderIo?.bestMythicPlusRuns ?? []
-                  }
+                  isFetching={isFetchingRaiderIo}
+                  characterRuns={raiderIoData?.bestMythicPlusRuns ?? []}
                 />
               </Grid.Col>
-
               <Grid.Col span={{ sm: 12, md: 6 }}>
                 <RecentMythicPlusRunsTable
-                  isFetching={isFetchingSummary}
-                  characterRuns={
-                    characterSummaryData?.raiderIo?.recentMythicPlusRuns ?? []
-                  }
+                  isFetching={isFetchingRaiderIo}
+                  characterRuns={raiderIoData?.recentMythicPlusRuns ?? []}
                 />
               </Grid.Col>
             </Grid>
