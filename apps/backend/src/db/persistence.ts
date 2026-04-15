@@ -120,13 +120,7 @@ export async function persistRioProfile(
 ): Promise<void> {
   try {
     const db = getDb();
-    const characterId = await upsertCharacter(db, key, {
-      class: data.class,
-      specialization: data.active_spec_name,
-      race: data.race,
-      thumbnailUrl: data.thumbnail_url,
-      itemLevel: data.gear?.item_level_equipped ?? null,
-    });
+    const characterId = await upsertCharacter(db, key);
 
     const fetchedAtDate = new Date(fetchedAt * 1000);
     const expiresAtDate = new Date((fetchedAt + CACHE_TTL_SECONDS) * 1000);
