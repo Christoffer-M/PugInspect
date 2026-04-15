@@ -50,7 +50,7 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
           {sorted.length} known alt{sorted.length !== 1 ? "s" : ""}
         </Badge>
       </HoverCard.Target>
-      <HoverCard.Dropdown p={0}>
+      <HoverCard.Dropdown p={0} className={classes.dropdown}>
         <Stack gap={0}>
           {sorted.map((alt, i) => (
             <Box key={`${alt.region}-${alt.realm}-${alt.name}`}>
@@ -70,7 +70,6 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
                   })
                 }
                 className={classes.altRow}
-                style={{ display: "block" }}
               >
                 <Group justify="space-between" wrap="nowrap" gap="xs">
                   <Group gap="xs" wrap="nowrap">
