@@ -16,7 +16,10 @@ export type Scalars = {
 
 export type AltCharacter = {
   __typename?: 'AltCharacter';
+  avatarUrl?: Maybe<Scalars['String']['output']>;
   class?: Maybe<Scalars['String']['output']>;
+  itemLevel?: Maybe<Scalars['Float']['output']>;
+  mythicPlusScore?: Maybe<Scalars['Float']['output']>;
   name: Scalars['String']['output'];
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];

@@ -461,10 +461,10 @@ export async function insertCharacterLink(idA: string, idB: string): Promise<voi
   }
 }
 
-/** Returns all characters linked to the given characterId. */
+/** Returns all characters linked to the given characterId, with cached ilvl and M+ score. */
 export async function getLinkedCharacters(
   characterId: string
-): Promise<{ name: string; realm: string; region: string; class: string | null }[]> {
+): Promise<{ name: string; realm: string; region: string; class: string | null; itemLevel: number | null; avatarUrl: string | null; mythicPlusScore: number | null; mythicPlusColor: string | null }[]> {
   try {
     const db = getDb();
 
@@ -496,8 +496,13 @@ export async function getLinkedCharacters(
         realm: characters.realm,
         region: characters.region,
         class: characters.class,
+        itemLevel: characters.itemLevel,
+        avatarUrl: characters.thumbnailUrl,
+        mythicPlusScore: characterRioSnapshots.mythicPlusScore,
+        mythicPlusColor: sql<string | null>`${characterRioSnapshots.rawData}->'mythic_plus_scores_by_season'->0->'segments'->'all'->>'color'`,
       })
       .from(characters)
+      .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
       .where(inArray(characters.id, linkedIds));
 
     return chars;

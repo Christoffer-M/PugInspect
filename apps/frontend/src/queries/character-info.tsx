@@ -34,6 +34,10 @@ export const CharacterInfoQueryDoc = graphql(`
         realm
         region
         class
+        avatarUrl
+        itemLevel
+        mythicPlusScore
+        mythicPlusColor
       }
     }
   }

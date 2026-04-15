@@ -3,7 +3,11 @@ schema {
 }
 
 type AltCharacter {
+  avatarUrl: String
   class: String
+  itemLevel: Float
+  mythicPlusColor: String
+  mythicPlusScore: Float
   name: String!
   realm: String!
   region: String!

@@ -64,6 +64,10 @@ export const characterTypedefs = gql`
     realm: String!
     region: String!
     class: String
+    avatarUrl: String
+    itemLevel: Float
+    mythicPlusScore: Float
+    mythicPlusColor: String
   }
 
   type Guild {
