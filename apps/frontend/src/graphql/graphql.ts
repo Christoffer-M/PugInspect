@@ -32,7 +32,6 @@ export type BestRank = {
 export type Character = {
   __typename?: 'Character';
   achievementPoints?: Maybe<Scalars['Int']['output']>;
-  achievements: Array<CharacterAchievement>;
   activeSpec?: Maybe<Scalars['String']['output']>;
   avatarUrl?: Maybe<Scalars['String']['output']>;
   averageItemLevel?: Maybe<Scalars['Float']['output']>;
@@ -52,23 +51,10 @@ export type Character = {
 };
 
 
-export type CharacterAchievementsArgs = {
-  ids: Array<Scalars['Int']['input']>;
-};
-
-
 export type CharacterWarcraftLogsArgs = {
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
-};
-
-export type CharacterAchievement = {
-  __typename?: 'CharacterAchievement';
-  /**  Unix timestamp in milliseconds. Null if the achievement has not been completed.  */
-  completedTimestamp?: Maybe<Scalars['Float']['output']>;
-  id: Scalars['Int']['output'];
-  name: Scalars['String']['output'];
 };
 
 export enum Difficulty {
@@ -224,7 +210,7 @@ export type CharacterInfoQueryVariables = Exact<{
 }>;
 
 
-export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null } | null };
+export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null, potentialAlts: Array<{ __typename?: 'AltCharacter', name: string, realm: string, region: string, class?: string | null }> } | null };
 
 export type CharacterLogsQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -303,6 +289,12 @@ export const CharacterInfoDocument = new TypedDocumentString(`
       realm
     }
     avatarUrl
+    potentialAlts {
+      name
+      realm
+      region
+      class
+    }
   }
 }
     `) as unknown as TypedDocumentString<CharacterInfoQuery, CharacterInfoQueryVariables>;

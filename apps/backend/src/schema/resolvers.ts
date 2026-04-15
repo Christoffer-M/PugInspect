@@ -4,4 +4,5 @@ export default {
   Query: {
     ...characterResolvers.Query,
   },
+  Character: characterResolvers.Character,
 };

@@ -11,30 +11,10 @@ import {
 } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
+import { getClassColor } from "../../util/util";
 import { HistoryEntry, useSearchHistory } from "../../hooks/useSearchHistory";
 import { RoleType } from "../../graphql/graphql";
 import classes from "./SearchHistoryDrawer.module.css";
-
-const CLASS_COLORS: Record<string, string> = {
-  "death knight": "#C41E3A",
-  "demon hunter": "#A330C9",
-  druid: "#FF7C0A",
-  evoker: "#33937F",
-  hunter: "#AAD372",
-  mage: "#3FC7EB",
-  monk: "#00FF98",
-  paladin: "#F48CBA",
-  priest: "#FFFFFF",
-  rogue: "#FFF468",
-  shaman: "#0070DD",
-  warlock: "#8788EE",
-  warrior: "#C69B3A",
-};
-
-function getClassColor(className?: string): string {
-  if (!className) return "#8a96aa";
-  return CLASS_COLORS[className.toLowerCase()] ?? "#8a96aa";
-}
 
 function formatRelativeTime(timestamp: number): string {
   const diffMs = Date.now() - timestamp;

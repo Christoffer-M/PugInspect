@@ -30,7 +30,6 @@ export type BestRank = {
 export type Character = {
   __typename?: 'Character';
   achievementPoints?: Maybe<Scalars['Int']['output']>;
-  achievements: Array<CharacterAchievement>;
   activeSpec?: Maybe<Scalars['String']['output']>;
   avatarUrl?: Maybe<Scalars['String']['output']>;
   averageItemLevel?: Maybe<Scalars['Float']['output']>;
@@ -50,23 +49,10 @@ export type Character = {
 };
 
 
-export type CharacterAchievementsArgs = {
-  ids: Array<Scalars['Int']['input']>;
-};
-
-
 export type CharacterWarcraftLogsArgs = {
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
-};
-
-export type CharacterAchievement = {
-  __typename?: 'CharacterAchievement';
-  /**  Unix timestamp in milliseconds. Null if the achievement has not been completed.  */
-  completedTimestamp?: Maybe<Scalars['Float']['output']>;
-  id: Scalars['Int']['output'];
-  name: Scalars['String']['output'];
 };
 
 export type Difficulty =

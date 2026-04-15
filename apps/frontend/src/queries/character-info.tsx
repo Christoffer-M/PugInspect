@@ -29,6 +29,12 @@ export const CharacterInfoQueryDoc = graphql(`
         realm
       }
       avatarUrl
+      potentialAlts {
+        name
+        realm
+        region
+        class
+      }
     }
   }
 `);
