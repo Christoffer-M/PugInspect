@@ -16,6 +16,14 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AltCharacter = {
+  __typename?: 'AltCharacter';
+  class?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+};
+
 export type BestRank = {
   __typename?: 'BestRank';
   ilvl?: Maybe<Scalars['Int']['output']>;
@@ -24,6 +32,7 @@ export type BestRank = {
 export type Character = {
   __typename?: 'Character';
   achievementPoints?: Maybe<Scalars['Int']['output']>;
+  achievements: Array<CharacterAchievement>;
   activeSpec?: Maybe<Scalars['String']['output']>;
   avatarUrl?: Maybe<Scalars['String']['output']>;
   averageItemLevel?: Maybe<Scalars['Float']['output']>;
@@ -34,6 +43,7 @@ export type Character = {
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
+  potentialAlts: Array<AltCharacter>;
   race?: Maybe<Scalars['String']['output']>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
@@ -42,10 +52,23 @@ export type Character = {
 };
 
 
+export type CharacterAchievementsArgs = {
+  ids: Array<Scalars['Int']['input']>;
+};
+
+
 export type CharacterWarcraftLogsArgs = {
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
+};
+
+export type CharacterAchievement = {
+  __typename?: 'CharacterAchievement';
+  /**  Unix timestamp in milliseconds. Null if the achievement has not been completed.  */
+  completedTimestamp?: Maybe<Scalars['Float']['output']>;
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
 };
 
 export enum Difficulty {

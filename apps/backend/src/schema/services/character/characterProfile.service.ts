@@ -55,6 +55,7 @@ export async function getCharacterProfiles(
   return {
     blizzardProfile: blizzardResult.status === "fulfilled" ? blizzardResult.value?.data : undefined,
     blizzardAvatarUrl: blizzardResult.status === "fulfilled" ? blizzardResult.value?.avatarUrl : undefined,
+    characterId: blizzardResult.status === "fulfilled" ? (blizzardResult.value?.characterId ?? null) : null,
     rioProfile: rioResult.status === "fulfilled" ? rioResult.value?.data : undefined,
     warcraftLogsProfile: logsResult.status === "fulfilled" ? logsResult.value?.data : undefined,
   };

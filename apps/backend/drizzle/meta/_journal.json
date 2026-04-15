@@ -22,6 +22,13 @@
       "when": 1776246389954,
       "tag": "0002_blizzard_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776249621934,
+      "tag": "0003_secret_nightmare",
+      "breakpoints": true
     }
   ]
 }

@@ -13,8 +13,18 @@ import {
   CharacterSearchResponse,
   RaiderIOService,
 } from "../services/raiderIo/raiderio.services.js";
+import { AchievementsService } from "../services/blizzard/achievements.service.js";
+import { getLinkedCharacters } from "../../db/persistence.js";
+
 
 const VALID_REGIONS = new Set(["eu", "us", "kr", "tw", "cn"]);
+
+/**
+ * Return type for the Query.character resolver.
+ * Omits fields handled by dedicated field resolvers (achievements, potentialAlts)
+ * and adds the internal _characterId threaded to field resolvers.
+ */
+type CharacterWithMeta = Omit<Character, "achievements" | "potentialAlts"> & { _characterId: string | null };
 
 export default {
   Query: {
@@ -23,7 +33,7 @@ export default {
       args: QueryCharacterArgs,
       _context: unknown,
       info: GraphQLResolveInfo
-    ): Promise<Character> => {
+    ): Promise<CharacterWithMeta> => {
       if (!VALID_REGIONS.has(args.region.toLowerCase())) {
         throw new GraphQLError("Invalid region", {
           extensions: { code: "BAD_USER_INPUT" },
@@ -37,7 +47,7 @@ export default {
         new Set(["raiderIo", "warcraftLogs"])
       );
 
-      const { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile } =
+      const { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId } =
         await getCharacterProfiles(args, {
           logsRequested,
           raiderIoRequested,
@@ -45,10 +55,23 @@ export default {
           bypassCache: args.bypassCache ?? false,
         });
 
+      // Background alt detection — fire-and-forget, never blocks the response
+      if (characterId) {
+        AchievementsService.enrichAndLinkAlts(characterId, {
+          name: args.name,
+          realm: args.realm,
+          region: args.region,
+        }).catch(() => {
+          // Silently swallow — alt detection is best-effort
+        });
+      }
+
       return {
         name: blizzardProfile?.name ?? args.name,
         realm: blizzardProfile?.realm.name ?? args.realm,
         region: args.region,
+        // Internal field — not in the GraphQL schema, used by field resolvers below
+        _characterId: characterId ?? null,
         ...(blizzardProfile ? mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl ?? null) : {}),
         raiderIo: raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
         warcraftLogs:
@@ -79,6 +102,13 @@ export default {
       }
 
       return await RaiderIOService.getCharacterSuggestions(args);
+    },
+  },
+
+  Character: {
+    potentialAlts: async (parent: CharacterWithMeta) => {
+      if (!parent._characterId) return [];
+      return getLinkedCharacters(parent._characterId);
     },
   },
 };

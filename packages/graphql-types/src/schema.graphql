@@ -2,6 +2,13 @@ schema {
   query: Query
 }
 
+type AltCharacter {
+  class: String
+  name: String!
+  realm: String!
+  region: String!
+}
+
 type BestRank {
   ilvl: Int
 }
@@ -18,6 +25,7 @@ type Character {
   guild: Guild
   level: Int
   name: String!
+  potentialAlts: [AltCharacter!]!
   race: String
   raiderIo: RaiderIo
   realm: String!
