@@ -25,3 +25,15 @@ export function isFieldRequested(
   // Look into the Character type fields being requested
   return Boolean(parsed.fieldsByTypeName?.Character?.[field]);
 }
+
+export function isAnyFieldRequestedBesides(
+  info: GraphQLResolveInfo,
+  excluded: Set<string>
+): boolean {
+  const parsed = parseResolveInfo(info) as ResolveTree;
+  if (!parsed) return true; // safe default: assume data is needed
+
+  return Object.keys(parsed.fieldsByTypeName?.Character ?? {}).some(
+    (f) => !excluded.has(f)
+  );
+}

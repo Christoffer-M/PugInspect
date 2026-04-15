@@ -11,16 +11,17 @@ export async function getCharacterProfiles(
   {
     logsRequested,
     raiderIoRequested,
+    blizzardRequested,
     bypassCache,
-  }: { logsRequested: boolean; raiderIoRequested: boolean; bypassCache: boolean }
+  }: { logsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; bypassCache: boolean }
 ) {
   const { name, realm, region } = args;
-  logger.info("Character profile request", { name, realm, region, logsRequested, raiderIoRequested, bypassCache });
+  logger.info("Character profile request", { name, realm, region, blizzardRequested, logsRequested, raiderIoRequested, bypassCache });
 
-  // Blizzard is always fetched — it is the primary source of truth for character identity.
-  // RaiderIO and WarcraftLogs are fetched only when their sub-fields are requested.
   const [blizzardResult, rioResult, logsResult] = await Promise.allSettled([
-    BlizzardService.getCharacterProfile(args, bypassCache),
+    blizzardRequested
+      ? BlizzardService.getCharacterProfile(args, bypassCache)
+      : Promise.resolve(null),
     raiderIoRequested
       ? RaiderIOService.getCharacterProfile(args, bypassCache)
       : Promise.resolve(null),
@@ -29,13 +30,12 @@ export async function getCharacterProfiles(
       : Promise.resolve(null),
   ]);
 
-  // Blizzard failure is fatal — character either doesn't exist or is unreachable.
+  // Blizzard failure is fatal when requested — character either doesn't exist or is unreachable.
   if (blizzardResult.status === "rejected") {
     logger.error("Blizzard profile failed", {
       name, realm, region,
       error: blizzardResult.reason instanceof Error ? blizzardResult.reason.message : String(blizzardResult.reason),
     });
-    throw blizzardResult.reason;
   }
 
   if (rioResult.status === "rejected") {
@@ -53,12 +53,9 @@ export async function getCharacterProfiles(
   }
 
   return {
-    blizzardProfile: blizzardResult.value.data,
-    blizzardAvatarUrl: blizzardResult.value.avatarUrl,
-    blizzardFetchedAt: blizzardResult.value.fetchedAt,
+    blizzardProfile: blizzardResult.status === "fulfilled" ? blizzardResult.value?.data : undefined,
+    blizzardAvatarUrl: blizzardResult.status === "fulfilled" ? blizzardResult.value?.avatarUrl : undefined,
     rioProfile: rioResult.status === "fulfilled" ? rioResult.value?.data : undefined,
-    rioFetchedAt: rioResult.status === "fulfilled" ? rioResult.value?.fetchedAt : undefined,
     warcraftLogsProfile: logsResult.status === "fulfilled" ? logsResult.value?.data : undefined,
-    logsFetchedAt: logsResult.status === "fulfilled" ? logsResult.value?.fetchedAt : undefined,
   };
 }

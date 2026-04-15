@@ -15,7 +15,6 @@ export const CharacterInfoQueryDoc = graphql(`
       name
       realm
       region
-      fetchedAt
       class
       race
       activeSpec

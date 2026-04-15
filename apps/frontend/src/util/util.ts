@@ -14,6 +14,14 @@ export const GetWarcraftLogRankingColors = (
   return theme.colors.yellow[2];
 };
 
+export const normalizeRealm = (realm: string) =>
+  realm
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-");
+
 export const upperCaseFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };

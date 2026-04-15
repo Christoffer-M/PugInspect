@@ -35,7 +35,6 @@ const query = graphql(`
       zoneId: $zoneId
       bypassCache: $bypassCache
     ) {
-      fetchedAt
       warcraftLogs {
         bestPerformanceAverage
         medianPerformanceAverage

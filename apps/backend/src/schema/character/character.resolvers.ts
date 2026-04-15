@@ -8,7 +8,7 @@ import { getCharacterProfiles } from "../services/character/characterProfile.ser
 import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
 import { mapRaiderIo } from "../mappers/raiderIo.mapper.js";
 import { mapWarcraftLogs } from "../mappers/warcraftLogs.mapper.js";
-import { isFieldRequested } from "../utils/fetcher.js";
+import { isAnyFieldRequestedBesides, isFieldRequested } from "../utils/fetcher.js";
 import {
   CharacterSearchResponse,
   RaiderIOService,
@@ -32,27 +32,24 @@ export default {
 
       const logsRequested = isFieldRequested(info, "warcraftLogs");
       const raiderIoRequested = isFieldRequested(info, "raiderIo");
+      const blizzardRequested = isAnyFieldRequestedBesides(
+        info,
+        new Set(["raiderIo", "warcraftLogs"])
+      );
 
-      const { blizzardProfile, blizzardAvatarUrl, blizzardFetchedAt, rioProfile, rioFetchedAt, warcraftLogsProfile, logsFetchedAt } =
+      const { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile } =
         await getCharacterProfiles(args, {
           logsRequested,
           raiderIoRequested,
+          blizzardRequested,
           bypassCache: args.bypassCache ?? false,
         });
 
-      const fetchedAtSeconds = Math.min(
-        blizzardFetchedAt,
-        rioFetchedAt ?? Infinity,
-        logsFetchedAt ?? Infinity
-      );
-      const fetchedAt = new Date(fetchedAtSeconds * 1000).toISOString();
-
       return {
-        name: blizzardProfile.name,
-        realm: blizzardProfile.realm.name,
+        name: blizzardProfile?.name ?? args.name,
+        realm: blizzardProfile?.realm.name ?? args.realm,
         region: args.region,
-        fetchedAt,
-        ...mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl),
+        ...(blizzardProfile ? mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl ?? null) : {}),
         raiderIo: raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
         warcraftLogs:
           logsRequested && warcraftLogsProfile

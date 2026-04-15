@@ -14,7 +14,6 @@ type Character {
   class: String
   equippedItemLevel: Float
   faction: String
-  fetchedAt: String
   gender: String
   guild: Guild
   level: Int

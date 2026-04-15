@@ -28,7 +28,6 @@ export type Character = {
   class?: Maybe<Scalars['String']['output']>;
   equippedItemLevel?: Maybe<Scalars['Float']['output']>;
   faction?: Maybe<Scalars['String']['output']>;
-  fetchedAt?: Maybe<Scalars['String']['output']>;
   gender?: Maybe<Scalars['String']['output']>;
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;

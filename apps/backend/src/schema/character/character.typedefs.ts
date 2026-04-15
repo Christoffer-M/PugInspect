@@ -43,7 +43,6 @@ export const characterTypedefs = gql`
     name: String!
     realm: String!
     region: String!
-    fetchedAt: String
     class: String
     race: String
     activeSpec: String
