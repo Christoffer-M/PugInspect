@@ -7,11 +7,8 @@ import {
   Image,
   Text,
 } from "@mantine/core";
-import { normalizeRealm, upperCaseFirstLetter } from "../util/util";
+import { upperCaseFirstLetter } from "../util/util";
 import { RioScore } from "./RioScore";
-import RaiderIoIcon from "../assets/raiderio-icon.svg";
-import WarcraftLogsIcon from "../assets/warcraftlogs-icon.png";
-import { ExternalLinkIcon } from "./ExternalLinkIcon";
 import { Character, Maybe, RaiderIo, SeasonScores } from "../graphql/graphql";
 
 const createSeasonScoreMap = (seasonData: Maybe<SeasonScores> | undefined) => {
