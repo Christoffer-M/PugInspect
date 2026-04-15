@@ -15,6 +15,13 @@
       "when": 1744070400000,
       "tag": "0001_deduplicate_realms",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776246389954,
+      "tag": "0002_blizzard_snapshots",
+      "breakpoints": true
     }
   ]
 }
