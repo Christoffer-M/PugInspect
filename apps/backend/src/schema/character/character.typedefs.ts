@@ -68,6 +68,7 @@ export const characterTypedefs = gql`
     itemLevel: Float
     mythicPlusScore: Float
     mythicPlusColor: String
+    raidProgression: [RaidProgressionDetail!]
   }
 
   type Guild {

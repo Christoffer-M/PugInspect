@@ -9,6 +9,7 @@ type AltCharacter {
   mythicPlusColor: String
   mythicPlusScore: Float
   name: String!
+  raidProgression: [RaidProgressionDetail!]
   realm: String!
   region: String!
 }

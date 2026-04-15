@@ -38,6 +38,14 @@ export const CharacterInfoQueryDoc = graphql(`
         itemLevel
         mythicPlusScore
         mythicPlusColor
+        raidProgression {
+          raid
+          summary
+          total_bosses
+          normal_bosses_killed
+          heroic_bosses_killed
+          mythic_bosses_killed
+        }
       }
     }
   }

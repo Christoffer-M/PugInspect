@@ -458,7 +458,12 @@ export async function insertCharacterLink(idA: string, idB: string): Promise<voi
 /** Returns all characters linked to the given characterId, with cached ilvl and M+ score. */
 export async function getLinkedCharacters(
   characterId: string
-): Promise<{ name: string; realm: string; region: string; class: string | null; itemLevel: number | null; avatarUrl: string | null; mythicPlusScore: number | null; mythicPlusColor: string | null }[]> {
+): Promise<{
+  name: string; realm: string; region: string; class: string | null;
+  itemLevel: number | null; avatarUrl: string | null;
+  mythicPlusScore: number | null; mythicPlusColor: string | null;
+  raidProgression: { raid: string; summary: string; expansion_id: number; total_bosses: number; normal_bosses_killed: number; heroic_bosses_killed: number; mythic_bosses_killed: number }[];
+}[]> {
   try {
     const db = getDb();
 
@@ -484,7 +489,7 @@ export async function getLinkedCharacters(
 
     const linkedIds = linked.map((r) => r.linkedId);
 
-    const chars = await db
+    const rows = await db
       .select({
         name: characters.name,
         realm: characters.realm,
@@ -494,12 +499,24 @@ export async function getLinkedCharacters(
         avatarUrl: characters.thumbnailUrl,
         mythicPlusScore: characterRioSnapshots.mythicPlusScore,
         mythicPlusColor: sql<string | null>`${characterRioSnapshots.rawData}->'mythic_plus_scores_by_season'->0->'segments'->'all'->>'color'`,
+        rioRawData: characterRioSnapshots.rawData,
       })
       .from(characters)
       .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
       .where(inArray(characters.id, linkedIds));
 
-    return chars;
+    return rows.map(({ rioRawData, ...rest }) => ({
+      ...rest,
+      raidProgression: Object.entries(rioRawData?.raid_progression ?? {}).map(([raid, data]) => ({
+        raid,
+        summary: data.summary,
+        expansion_id: data.expansion_id,
+        total_bosses: data.total_bosses,
+        normal_bosses_killed: data.normal_bosses_killed,
+        heroic_bosses_killed: data.heroic_bosses_killed,
+        mythic_bosses_killed: data.mythic_bosses_killed,
+      })),
+    }));
   } catch (err) {
     logger.error("DB query failed (getLinkedCharacters)", { characterId, error: String(err) });
     return [];
