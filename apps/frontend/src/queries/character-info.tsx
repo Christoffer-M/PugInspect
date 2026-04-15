@@ -29,6 +29,24 @@ export const CharacterInfoQueryDoc = graphql(`
         realm
       }
       avatarUrl
+      potentialAlts {
+        name
+        realm
+        region
+        class
+        avatarUrl
+        itemLevel
+        mythicPlusScore
+        mythicPlusColor
+        raidProgression {
+          raid
+          summary
+          total_bosses
+          normal_bosses_killed
+          heroic_bosses_killed
+          mythic_bosses_killed
+        }
+      }
     }
   }
 `);

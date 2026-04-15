@@ -1,10 +1,12 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./index.js";
 import {
   characters,
   characterRioSnapshots,
   characterWclSnapshots,
   characterBlizzardSnapshots,
+  characterAchievements,
+  characterLinks,
 } from "./schema.js";
 import type { RaiderIoCharacterApiResponse } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
@@ -16,6 +18,7 @@ const logger = createLogger({ service: "DBPersistence" });
 
 const CACHE_TTL_SECONDS = 900; // 15 minutes — RaiderIO and WarcraftLogs
 const BLIZZARD_CACHE_TTL_SECONDS = 86_400; // 24 hours — Blizzard data changes infrequently
+const ACHIEVEMENT_CACHE_TTL_SECONDS = 604_800; // 7 days — achievements don't un-complete
 
 type CharacterKey = {
   region: string;
@@ -117,13 +120,7 @@ export async function persistRioProfile(
 ): Promise<void> {
   try {
     const db = getDb();
-    const characterId = await upsertCharacter(db, key, {
-      class: data.class,
-      specialization: data.active_spec_name,
-      race: data.race,
-      thumbnailUrl: data.thumbnail_url,
-      itemLevel: data.gear?.item_level_equipped ?? null,
-    });
+    const characterId = await upsertCharacter(db, key);
 
     const fetchedAtDate = new Date(fetchedAt * 1000);
     const expiresAtDate = new Date((fetchedAt + CACHE_TTL_SECONDS) * 1000);
@@ -244,13 +241,14 @@ export async function persistWclProfile(
 
 export async function getCachedBlizzardProfile(
   key: CharacterKey
-): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number } | null> {
+): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string } | null> {
   try {
     const rows = await getDb()
       .select({
         rawData: characterBlizzardSnapshots.rawData,
         fetchedAt: characterBlizzardSnapshots.fetchedAt,
         avatarUrl: characters.thumbnailUrl,
+        characterId: characters.id,
       })
       .from(characterBlizzardSnapshots)
       .innerJoin(characters, eq(characterBlizzardSnapshots.characterId, characters.id))
@@ -270,6 +268,7 @@ export async function getCachedBlizzardProfile(
       data: rows[0].rawData,
       avatarUrl: rows[0].avatarUrl,
       fetchedAt: Math.floor(rows[0].fetchedAt.getTime() / 1000),
+      characterId: rows[0].characterId,
     };
   } catch (err) {
     logger.error("DB cache read failed (blizzard)", { key, error: String(err) });
@@ -282,7 +281,7 @@ export async function persistBlizzardProfile(
   data: BlizzardCharacterProfile,
   fetchedAt: number,
   avatarUrl: string | null = null
-): Promise<void> {
+): Promise<string | null> {
   try {
     const db = getDb();
     const characterId = await upsertCharacter(db, key, {
@@ -314,7 +313,212 @@ export async function persistBlizzardProfile(
           equippedItemLevel: data.equipped_item_level,
         },
       });
+
+    return characterId;
   } catch (err) {
     logger.error("DB cache write failed (blizzard)", { key, error: String(err) });
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Achievement persistence
+// ---------------------------------------------------------------------------
+
+export type AchievementInsertRow = {
+  achievementId: number;
+  achievementName: string;
+  completedTimestamp: number | null;
+};
+
+/**
+ * Returns cached achievement rows if ALL requested IDs are present and non-expired.
+ * Returns null if any ID is missing or stale — caller should re-fetch from Blizzard.
+ */
+export async function getCachedAchievements(
+  characterId: string,
+  ids: number[]
+): Promise<AchievementInsertRow[] | null> {
+  try {
+    const rows = await getDb()
+      .select({
+        achievementId: characterAchievements.achievementId,
+        achievementName: characterAchievements.achievementName,
+        completedTimestamp: characterAchievements.completedTimestamp,
+      })
+      .from(characterAchievements)
+      .where(
+        and(
+          eq(characterAchievements.characterId, characterId),
+          inArray(characterAchievements.achievementId, ids),
+          gt(characterAchievements.expiresAt, new Date())
+        )
+      );
+
+    if (rows.length !== ids.length) return null;
+
+    return rows.map((r) => ({
+      achievementId: r.achievementId,
+      achievementName: r.achievementName,
+      completedTimestamp: r.completedTimestamp ?? null,
+    }));
+  } catch (err) {
+    logger.error("DB cache read failed (achievements)", { characterId, error: String(err) });
+    return null;
+  }
+}
+
+/** Upserts individual achievement rows with a 7-day TTL. */
+export async function persistAchievements(
+  characterId: string,
+  rows: AchievementInsertRow[],
+  fetchedAt: number
+): Promise<void> {
+  if (!rows.length) return;
+  try {
+    const fetchedAtDate = new Date(fetchedAt * 1000);
+    const expiresAtDate = new Date((fetchedAt + ACHIEVEMENT_CACHE_TTL_SECONDS) * 1000);
+
+    await getDb()
+      .insert(characterAchievements)
+      .values(
+        rows.map((r) => ({
+          characterId,
+          achievementId: r.achievementId,
+          achievementName: r.achievementName,
+          completedTimestamp: r.completedTimestamp,
+          fetchedAt: fetchedAtDate,
+          expiresAt: expiresAtDate,
+        }))
+      )
+      .onConflictDoUpdate({
+        target: [characterAchievements.characterId, characterAchievements.achievementId],
+        set: {
+          achievementName: sql`excluded.achievement_name`,
+          completedTimestamp: sql`excluded.completed_timestamp`,
+          fetchedAt: fetchedAtDate,
+          expiresAt: expiresAtDate,
+        },
+      });
+  } catch (err) {
+    logger.error("DB cache write failed (achievements)", { characterId, error: String(err) });
+  }
+}
+
+/**
+ * Finds other characters that share the same (achievementId, completedTimestamp) pairs.
+ * Only matches on non-null timestamps — "not completed" can't prove shared account.
+ * Returns character IDs (excluding the current character).
+ */
+export async function findCharactersByAchievementTimestamps(
+  excludeCharacterId: string,
+  matches: { achievementId: number; completedTimestamp: number }[]
+): Promise<string[]> {
+  if (!matches.length) return [];
+  try {
+    // Build OR conditions for each (achievementId, completedTimestamp) pair
+    const conditions = matches.map((m) =>
+      and(
+        eq(characterAchievements.achievementId, m.achievementId),
+        eq(characterAchievements.completedTimestamp, m.completedTimestamp)
+      )
+    );
+
+    const rows = await getDb()
+      .selectDistinct({ characterId: characterAchievements.characterId })
+      .from(characterAchievements)
+      .where(
+        and(
+          or(...conditions)!,
+          ne(characterAchievements.characterId, excludeCharacterId)
+        )
+      );
+
+    return rows.map((r) => r.characterId);
+  } catch (err) {
+    logger.error("DB query failed (findCharactersByAchievementTimestamps)", { error: String(err) });
+    return [];
+  }
+}
+
+/** Inserts a canonical (A < B) character link, ignoring duplicates. */
+export async function insertCharacterLink(idA: string, idB: string): Promise<void> {
+  const [canonicalA, canonicalB] = idA < idB ? [idA, idB] : [idB, idA];
+  try {
+    await getDb()
+      .insert(characterLinks)
+      .values({ characterIdA: canonicalA, characterIdB: canonicalB })
+      .onConflictDoNothing();
+  } catch (err) {
+    logger.error("DB write failed (insertCharacterLink)", { idA, idB, error: String(err) });
+  }
+}
+
+/** Returns all characters linked to the given characterId, with cached ilvl and M+ score. */
+export async function getLinkedCharacters(
+  characterId: string
+): Promise<{
+  name: string; realm: string; region: string; class: string | null;
+  itemLevel: number | null; avatarUrl: string | null;
+  mythicPlusScore: number | null; mythicPlusColor: string | null;
+  raidProgression: { raid: string; summary: string; expansion_id: number; total_bosses: number; normal_bosses_killed: number; heroic_bosses_killed: number; mythic_bosses_killed: number }[];
+}[]> {
+  try {
+    const db = getDb();
+
+    // The character may appear as either A or B in the links table
+    const linked = await db
+      .select({
+        linkedId: sql<string>`
+          CASE
+            WHEN ${characterLinks.characterIdA} = ${characterId}::uuid THEN ${characterLinks.characterIdB}
+            ELSE ${characterLinks.characterIdA}
+          END
+        `,
+      })
+      .from(characterLinks)
+      .where(
+        or(
+          eq(characterLinks.characterIdA, characterId),
+          eq(characterLinks.characterIdB, characterId)
+        )
+      );
+
+    if (!linked.length) return [];
+
+    const linkedIds = linked.map((r) => r.linkedId);
+
+    const rows = await db
+      .select({
+        name: characters.name,
+        realm: characters.realm,
+        region: characters.region,
+        class: characters.class,
+        itemLevel: characters.itemLevel,
+        avatarUrl: characters.thumbnailUrl,
+        mythicPlusScore: characterRioSnapshots.mythicPlusScore,
+        mythicPlusColor: sql<string | null>`${characterRioSnapshots.rawData}->'mythic_plus_scores_by_season'->0->'segments'->'all'->>'color'`,
+        rioRawData: characterRioSnapshots.rawData,
+      })
+      .from(characters)
+      // RIO snapshot may be stale — intentional. Alt card data is best-effort display.
+      .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
+      .where(inArray(characters.id, linkedIds));
+
+    return rows.map(({ rioRawData, ...rest }) => ({
+      ...rest,
+      raidProgression: Object.entries(rioRawData?.raid_progression ?? {}).map(([raid, data]) => ({
+        raid,
+        summary: data.summary,
+        expansion_id: data.expansion_id,
+        total_bosses: data.total_bosses,
+        normal_bosses_killed: data.normal_bosses_killed,
+        heroic_bosses_killed: data.heroic_bosses_killed,
+        mythic_bosses_killed: data.mythic_bosses_killed,
+      })),
+    }));
+  } catch (err) {
+    logger.error("DB query failed (getLinkedCharacters)", { characterId, error: String(err) });
+    return [];
   }
 }

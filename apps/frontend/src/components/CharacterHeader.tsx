@@ -9,6 +9,7 @@ import {
 } from "@mantine/core";
 import { upperCaseFirstLetter } from "../util/util";
 import { RioScore } from "./RioScore";
+import { AltsHoverCard } from "./AltsHoverCard";
 import { Character, Maybe, RaiderIo, SeasonScores } from "../graphql/graphql";
 
 const createSeasonScoreMap = (seasonData: Maybe<SeasonScores> | undefined) => {
@@ -31,8 +32,6 @@ const createSeasonScoreMap = (seasonData: Maybe<SeasonScores> | undefined) => {
 
 export const CharacterHeader: React.FC<{
   name: string;
-  region: string;
-  server: string;
   characterInfo: Character | undefined | null;
   raiderIo: RaiderIo | undefined | null;
   isLoadingInfo: boolean;
@@ -113,6 +112,9 @@ export const CharacterHeader: React.FC<{
                       ? characterInfo.equippedItemLevel.toFixed(0)
                       : "-"}
                   </Text>
+                  {characterInfo.potentialAlts.length > 0 && (
+                    <AltsHoverCard alts={characterInfo.potentialAlts} />
+                  )}
                 </Stack>
               </Group>
             )

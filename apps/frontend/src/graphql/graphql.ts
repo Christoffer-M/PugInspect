@@ -16,6 +16,19 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AltCharacter = {
+  __typename?: 'AltCharacter';
+  avatarUrl?: Maybe<Scalars['String']['output']>;
+  class?: Maybe<Scalars['String']['output']>;
+  itemLevel?: Maybe<Scalars['Float']['output']>;
+  mythicPlusColor?: Maybe<Scalars['String']['output']>;
+  mythicPlusScore?: Maybe<Scalars['Float']['output']>;
+  name: Scalars['String']['output'];
+  raidProgression?: Maybe<Array<RaidProgressionDetail>>;
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+};
+
 export type BestRank = {
   __typename?: 'BestRank';
   ilvl?: Maybe<Scalars['Int']['output']>;
@@ -34,6 +47,7 @@ export type Character = {
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
+  potentialAlts: Array<AltCharacter>;
   race?: Maybe<Scalars['String']['output']>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
@@ -201,7 +215,7 @@ export type CharacterInfoQueryVariables = Exact<{
 }>;
 
 
-export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null } | null };
+export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null, potentialAlts: Array<{ __typename?: 'AltCharacter', name: string, realm: string, region: string, class?: string | null, avatarUrl?: string | null, itemLevel?: number | null, mythicPlusScore?: number | null, mythicPlusColor?: string | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, summary?: string | null, total_bosses?: number | null, normal_bosses_killed?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null }> | null }> } | null };
 
 export type CharacterLogsQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -280,6 +294,24 @@ export const CharacterInfoDocument = new TypedDocumentString(`
       realm
     }
     avatarUrl
+    potentialAlts {
+      name
+      realm
+      region
+      class
+      avatarUrl
+      itemLevel
+      mythicPlusScore
+      mythicPlusColor
+      raidProgression {
+        raid
+        summary
+        total_bosses
+        normal_bosses_killed
+        heroic_bosses_killed
+        mythic_bosses_killed
+      }
+    }
   }
 }
     `) as unknown as TypedDocumentString<CharacterInfoQuery, CharacterInfoQueryVariables>;

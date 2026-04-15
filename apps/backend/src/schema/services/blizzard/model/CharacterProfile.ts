@@ -38,6 +38,29 @@ export interface BlizzardCharacterMedia {
   assets: BlizzardCharacterMediaAsset[];
 }
 
+// ---------------------------------------------------------------------------
+// Achievements endpoint — /profile/wow/character/{realm}/{name}/achievements
+// ---------------------------------------------------------------------------
+
+export interface BlizzardAchievementEntry {
+  id: number;
+  achievement: {
+    key: BlizzardLink;
+    name: string;
+    id: number;
+  };
+  criteria?: {
+    id: number;
+    is_completed: boolean;
+  };
+  /** Unix timestamp in milliseconds. Absent if the achievement has not been completed. */
+  completed_timestamp?: number;
+}
+
+export interface BlizzardAchievementsResponse {
+  achievements: BlizzardAchievementEntry[];
+}
+
 export interface BlizzardCharacterProfile {
   _links: {
     self: BlizzardLink;

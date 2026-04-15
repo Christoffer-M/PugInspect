@@ -1,0 +1,16 @@
+.badge {
+  cursor: default;
+}
+
+.dropdown {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.altRow {
+  display: block;
+}
+
+.altRow:hover {
+  background: rgba(255, 255, 255, 0.05);
+}

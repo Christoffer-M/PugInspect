@@ -2,6 +2,18 @@ schema {
   query: Query
 }
 
+type AltCharacter {
+  avatarUrl: String
+  class: String
+  itemLevel: Float
+  mythicPlusColor: String
+  mythicPlusScore: Float
+  name: String!
+  raidProgression: [RaidProgressionDetail!]
+  realm: String!
+  region: String!
+}
+
 type BestRank {
   ilvl: Int
 }
@@ -18,6 +30,7 @@ type Character {
   guild: Guild
   level: Int
   name: String!
+  potentialAlts: [AltCharacter!]!
   race: String
   raiderIo: RaiderIo
   realm: String!

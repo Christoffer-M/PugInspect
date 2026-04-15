@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -155,12 +156,74 @@ export type CharacterBlizzardSnapshot = typeof characterBlizzardSnapshots.$infer
 export type NewCharacterBlizzardSnapshot = typeof characterBlizzardSnapshots.$inferInsert;
 
 // ---------------------------------------------------------------------------
+// character_achievements
+// One row per (character × achievementId). Stores filtered achievement
+// completion data — never the full raw dump. Used for alt detection by
+// cross-referencing completedTimestamp across characters.
+// TTL: 7 days (achievements don't un-complete, so long caching is safe).
+// ---------------------------------------------------------------------------
+export const characterAchievements = pgTable(
+  "character_achievements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    achievementId: integer("achievement_id").notNull(),
+    achievementName: varchar("achievement_name", { length: 200 }).notNull(),
+    // ms epoch; null means the achievement has not been completed
+    completedTimestamp: bigint("completed_timestamp", { mode: "number" }),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("char_achievements_char_ach_unique").on(t.characterId, t.achievementId),
+    // Fast lookup for alt detection: all chars that completed achievement X at timestamp T
+    index("char_achievements_lookup_idx").on(t.achievementId, t.completedTimestamp),
+  ]
+);
+
+export type CharacterAchievementRow = typeof characterAchievements.$inferSelect;
+export type NewCharacterAchievement = typeof characterAchievements.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// character_links
+// Persistent alt relationships discovered via achievement timestamp matching.
+// Deduped by canonical ordering: characterIdA < characterIdB (UUID lex order).
+// Once linked, never needs re-running for that pair.
+// ---------------------------------------------------------------------------
+export const characterLinks = pgTable(
+  "character_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterIdA: uuid("character_id_a")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    characterIdB: uuid("character_id_b")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    linkedAt: timestamp("linked_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("character_links_pair_unique").on(t.characterIdA, t.characterIdB),
+    index("character_links_a_idx").on(t.characterIdA),
+    index("character_links_b_idx").on(t.characterIdB),
+  ]
+);
+
+export type CharacterLink = typeof characterLinks.$inferSelect;
+export type NewCharacterLink = typeof characterLinks.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // Relations (used by Drizzle's relational query API)
 // ---------------------------------------------------------------------------
 export const charactersRelations = relations(characters, ({ many }) => ({
   rioSnapshots: many(characterRioSnapshots),
   wclSnapshots: many(characterWclSnapshots),
   blizzardSnapshots: many(characterBlizzardSnapshots),
+  achievements: many(characterAchievements),
+  linksAsA: many(characterLinks, { relationName: "characterA" }),
+  linksAsB: many(characterLinks, { relationName: "characterB" }),
 }));
 
 export const rioSnapshotsRelations = relations(characterRioSnapshots, ({ one }) => ({
@@ -181,5 +244,25 @@ export const blizzardSnapshotsRelations = relations(characterBlizzardSnapshots, 
   character: one(characters, {
     fields: [characterBlizzardSnapshots.characterId],
     references: [characters.id],
+  }),
+}));
+
+export const characterAchievementsRelations = relations(characterAchievements, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterAchievements.characterId],
+    references: [characters.id],
+  }),
+}));
+
+export const characterLinksRelations = relations(characterLinks, ({ one }) => ({
+  characterA: one(characters, {
+    fields: [characterLinks.characterIdA],
+    references: [characters.id],
+    relationName: "characterA",
+  }),
+  characterB: one(characters, {
+    fields: [characterLinks.characterIdB],
+    references: [characters.id],
+    relationName: "characterB",
   }),
 }));

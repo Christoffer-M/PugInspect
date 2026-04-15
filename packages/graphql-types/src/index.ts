@@ -14,6 +14,17 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AltCharacter = {
+  __typename?: 'AltCharacter';
+  avatarUrl?: Maybe<Scalars['String']['output']>;
+  class?: Maybe<Scalars['String']['output']>;
+  itemLevel?: Maybe<Scalars['Float']['output']>;
+  mythicPlusScore?: Maybe<Scalars['Float']['output']>;
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+};
+
 export type BestRank = {
   __typename?: 'BestRank';
   ilvl?: Maybe<Scalars['Int']['output']>;
@@ -32,6 +43,7 @@ export type Character = {
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
+  potentialAlts: Array<AltCharacter>;
   race?: Maybe<Scalars['String']['output']>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];

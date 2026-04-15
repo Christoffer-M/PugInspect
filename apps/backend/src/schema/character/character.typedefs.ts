@@ -56,6 +56,19 @@ export const characterTypedefs = gql`
     avatarUrl: String
     raiderIo: RaiderIo
     warcraftLogs(role: RoleType, metric: Metric, byBracket: Boolean): Logs
+    potentialAlts: [AltCharacter!]!
+  }
+
+  type AltCharacter {
+    name: String!
+    realm: String!
+    region: String!
+    class: String
+    avatarUrl: String
+    itemLevel: Float
+    mythicPlusScore: Float
+    mythicPlusColor: String
+    raidProgression: [RaidProgressionDetail!]
   }
 
   type Guild {

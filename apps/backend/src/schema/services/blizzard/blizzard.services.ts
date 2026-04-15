@@ -6,10 +6,9 @@ import { getCachedBlizzardProfile, persistBlizzardProfile } from "../../../db/pe
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import { GraphQLError } from "graphql";
 import type { QueryCharacterArgs } from "@repo/graphql-types";
+import { VALID_REGIONS } from "../../utils/regions.js";
 
 const logger = createLogger({ service: "Blizzard" });
-
-const VALID_REGIONS = new Set(["eu", "us", "kr", "tw", "cn"]);
 
 export class BlizzardService {
   private static readonly tokens = new OAuthTokenManager(async (region) => {
@@ -36,10 +35,15 @@ export class BlizzardService {
     return res.json() as Promise<{ access_token: string; expires_in: number }>;
   });
 
+  /** Exposed so sibling services (e.g. AchievementsService) can reuse the same token manager. */
+  static async getToken(region: string): Promise<string> {
+    return this.tokens.getToken(region);
+  }
+
   static async getCharacterProfile(
     args: QueryCharacterArgs,
     bypassCache = false
-  ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number }> {
+  ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }> {
     const { name, realm, region } = args;
     const normalizedRealm = normalizeRealm(realm);
 
@@ -52,7 +56,7 @@ export class BlizzardService {
       const cached = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name });
       if (cached) {
         logger.info("Blizzard character profile cache hit", { name, realm: normalizedRealm, region });
-        return cached;
+        return cached; // already includes characterId
       }
     }
 
@@ -91,11 +95,17 @@ export class BlizzardService {
 
       logger.info("Blizzard character profile fetched", { name, realm: normalizedRealm, region });
 
-      persistBlizzardProfile({ region, realm: normalizedRealm, name }, data, fetchedAt, avatarUrl).catch((err: unknown) => {
+      const characterId = await persistBlizzardProfile(
+        { region, realm: normalizedRealm, name },
+        data,
+        fetchedAt,
+        avatarUrl
+      ).catch((err: unknown) => {
         logger.warn("Failed to persist Blizzard profile to DB cache", { name, realm: normalizedRealm, region, error: String(err) });
+        return null;
       });
 
-      return { data, avatarUrl, fetchedAt };
+      return { data, avatarUrl, fetchedAt, characterId };
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
 

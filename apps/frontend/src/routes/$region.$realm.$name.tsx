@@ -128,8 +128,6 @@ function CharacterPage() {
           <Stack gap="lg" w="100%" align="center">
             <CharacterHeader
               name={name}
-              region={region}
-              server={realm}
               characterInfo={characterInfo}
               raiderIo={raiderIoData}
               isLoadingInfo={isFetchingInfo}

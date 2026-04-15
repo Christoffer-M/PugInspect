@@ -43,13 +43,27 @@ export function parseRaiderIoUrl(
   };
 }
 
-/**
- * Custom hook to debounce a value.
- *
- * @param value The input value to debounce.
- * @param delay The debounce delay in ms.
- * @returns The debounced value.
- */
+export const CLASS_COLORS: Record<string, string> = {
+  "death knight": "#C41E3A",
+  "demon hunter": "#A330C9",
+  druid: "#FF7C0A",
+  evoker: "#33937F",
+  hunter: "#AAD372",
+  mage: "#3FC7EB",
+  monk: "#00FF98",
+  paladin: "#F48CBA",
+  priest: "#FFFFFF",
+  rogue: "#FFF468",
+  shaman: "#0070DD",
+  warlock: "#8788EE",
+  warrior: "#C69B3A",
+};
+
+export function getClassColor(className?: string | null): string {
+  if (!className) return "#8a96aa";
+  return CLASS_COLORS[className.toLowerCase()] ?? "#8a96aa";
+}
+
 export function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
