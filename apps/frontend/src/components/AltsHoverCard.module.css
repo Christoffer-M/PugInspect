@@ -1,3 +1,7 @@
+.badge {
+  cursor: default;
+}
+
 .dropdown {
   max-height: 300px;
   overflow-y: auto;

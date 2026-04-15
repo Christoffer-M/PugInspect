@@ -6,10 +6,9 @@ import { getCachedBlizzardProfile, persistBlizzardProfile } from "../../../db/pe
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import { GraphQLError } from "graphql";
 import type { QueryCharacterArgs } from "@repo/graphql-types";
+import { VALID_REGIONS } from "../../utils/regions.js";
 
 const logger = createLogger({ service: "Blizzard" });
-
-const VALID_REGIONS = new Set(["eu", "us", "kr", "tw", "cn"]);
 
 export class BlizzardService {
   private static readonly tokens = new OAuthTokenManager(async (region) => {

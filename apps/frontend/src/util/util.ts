@@ -43,13 +43,6 @@ export function parseRaiderIoUrl(
   };
 }
 
-/**
- * Custom hook to debounce a value.
- *
- * @param value The input value to debounce.
- * @param delay The debounce delay in ms.
- * @returns The debounced value.
- */
 export const CLASS_COLORS: Record<string, string> = {
   "death knight": "#C41E3A",
   "demon hunter": "#A330C9",

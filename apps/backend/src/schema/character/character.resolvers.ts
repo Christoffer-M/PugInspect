@@ -15,9 +15,7 @@ import {
 } from "../services/raiderIo/raiderio.services.js";
 import { AchievementsService } from "../services/blizzard/achievements.service.js";
 import { getLinkedCharacters } from "../../db/persistence.js";
-
-
-const VALID_REGIONS = new Set(["eu", "us", "kr", "tw", "cn"]);
+import { VALID_REGIONS } from "../utils/regions.js";
 
 /**
  * Return type for the Query.character resolver.

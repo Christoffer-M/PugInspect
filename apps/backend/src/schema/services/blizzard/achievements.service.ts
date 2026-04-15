@@ -1,12 +1,6 @@
 import { createLogger } from "../../utils/logger.js";
-
-/**
- * Blizzard achievement IDs used for alt detection.
- * Characters that completed the same achievement at the identical millisecond
- * timestamp share a Battle.net account.
- */
-const ALT_DETECTION_ACHIEVEMENT_IDS: number[] = [2142];
 import { normalizeRealm } from "../../utils/helpers.js";
+import { VALID_REGIONS } from "../../utils/regions.js";
 import { BlizzardService } from "./blizzard.services.js";
 import type { BlizzardAchievementsResponse } from "./model/CharacterProfile.js";
 import {
@@ -19,7 +13,12 @@ import {
 
 const logger = createLogger({ service: "AchievementsService" });
 
-const VALID_REGIONS = new Set(["eu", "us", "kr", "tw", "cn"]);
+/**
+ * Blizzard achievement IDs used for alt detection.
+ * Characters that completed the same achievement at the identical millisecond
+ * timestamp share a Battle.net account.
+ */
+const ALT_DETECTION_ACHIEVEMENT_IDS: number[] = [2142];
 
 export class AchievementsService {
   /**

@@ -32,8 +32,6 @@ const createSeasonScoreMap = (seasonData: Maybe<SeasonScores> | undefined) => {
 
 export const CharacterHeader: React.FC<{
   name: string;
-  region: string;
-  server: string;
   characterInfo: Character | undefined | null;
   raiderIo: RaiderIo | undefined | null;
   isLoadingInfo: boolean;

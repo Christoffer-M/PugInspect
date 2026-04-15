@@ -17,6 +17,12 @@ type RaidInfo = {
  */
 export const DEFAULT_RAID = "tier-mn-1";
 
+export const RAID_DIFFICULTY_COLORS = {
+  normal: "#22c55e",
+  heroic: "#3b82f6",
+  mythic: "#f4a50e",
+} as const;
+
 export const RAIDS: Record<string, RaidInfo> = {
   "tier-mn-1": {
     zoneId: 46,

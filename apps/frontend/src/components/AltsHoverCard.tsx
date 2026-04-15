@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import classes from "./AltsHoverCard.module.css";
 import { upperCaseFirstLetter } from "../util/util";
-import { DEFAULT_RAID } from "../data/raidZones";
+import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../data/raidZones";
 import { AltCharacter, RoleType } from "../graphql/graphql";
 
 const sortAlts = (alts: AltCharacter[]): AltCharacter[] =>
@@ -37,6 +37,24 @@ const sortAlts = (alts: AltCharacter[]): AltCharacter[] =>
     return bNormal - aNormal;
   });
 
+const RaidProgression: React.FC<{ alt: AltCharacter }> = ({ alt }) => {
+  const prog = alt.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
+  if (!prog) return null;
+  return (
+    <Group gap={6}>
+      <Text size="xs" style={{ color: RAID_DIFFICULTY_COLORS.normal }}>
+        {prog.normal_bosses_killed}/{prog.total_bosses}N
+      </Text>
+      <Text size="xs" style={{ color: RAID_DIFFICULTY_COLORS.heroic }}>
+        {prog.heroic_bosses_killed}/{prog.total_bosses}H
+      </Text>
+      <Text size="xs" style={{ color: RAID_DIFFICULTY_COLORS.mythic }}>
+        {prog.mythic_bosses_killed}/{prog.total_bosses}M
+      </Text>
+    </Group>
+  );
+};
+
 export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
   const navigate = useNavigate();
   const sorted = sortAlts(alts);
@@ -46,7 +64,7 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
   return (
     <HoverCard width={280} shadow="md" withArrow openDelay={150} closeDelay={100}>
       <HoverCard.Target>
-        <Badge mt={4} variant="outline" color="accent" size="sm" style={{ cursor: "default" }}>
+        <Badge mt={4} variant="outline" color="accent" size="sm" className={classes.badge}>
           {sorted.length} known alt{sorted.length !== 1 ? "s" : ""}
         </Badge>
       </HoverCard.Target>
@@ -97,23 +115,7 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
                         {Math.round(alt.mythicPlusScore)} M+
                       </Text>
                     )}
-                    {(() => {
-                      const prog = alt.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
-                      if (!prog) return null;
-                      return (
-                        <Group gap={6}>
-                          <Text size="xs" style={{ color: "#22c55e" }}>
-                            {prog.normal_bosses_killed}/{prog.total_bosses}N
-                          </Text>
-                          <Text size="xs" style={{ color: "#3b82f6" }}>
-                            {prog.heroic_bosses_killed}/{prog.total_bosses}H
-                          </Text>
-                          <Text size="xs" style={{ color: "#f4a50e" }}>
-                            {prog.mythic_bosses_killed}/{prog.total_bosses}M
-                          </Text>
-                        </Group>
-                      );
-                    })()}
+                    <RaidProgression alt={alt} />
                   </Stack>
                 </Group>
               </UnstyledButton>

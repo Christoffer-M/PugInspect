@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./index.js";
 import {
   characters,
@@ -429,9 +429,8 @@ export async function findCharactersByAchievementTimestamps(
       .from(characterAchievements)
       .where(
         and(
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           or(...conditions)!,
-          sql`${characterAchievements.characterId} != ${excludeCharacterId}::uuid`
+          ne(characterAchievements.characterId, excludeCharacterId)
         )
       );
 
@@ -502,6 +501,7 @@ export async function getLinkedCharacters(
         rioRawData: characterRioSnapshots.rawData,
       })
       .from(characters)
+      // RIO snapshot may be stale — intentional. Alt card data is best-effort display.
       .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
       .where(inArray(characters.id, linkedIds));
 
