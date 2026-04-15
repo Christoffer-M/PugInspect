@@ -10,6 +10,7 @@ import {
   Divider,
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
+import classes from "./AltsHoverCard.module.css";
 import { upperCaseFirstLetter } from "../util/util";
 import { DEFAULT_RAID } from "../data/raidZones";
 import { AltCharacter, RoleType } from "../graphql/graphql";
@@ -43,7 +44,7 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
   if (sorted.length === 0) return null;
 
   return (
-    <HoverCard width={220} shadow="md" withArrow openDelay={150} closeDelay={100}>
+    <HoverCard width={280} shadow="md" withArrow openDelay={150} closeDelay={100}>
       <HoverCard.Target>
         <Badge mt={4} variant="outline" color="accent" size="sm" style={{ cursor: "default" }}>
           {sorted.length} known alt{sorted.length !== 1 ? "s" : ""}
@@ -68,42 +69,40 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
                     search: { roleType: RoleType.Any },
                   })
                 }
+                className={classes.altRow}
                 style={{ display: "block" }}
-                styles={{
-                  root: {
-                    "&:hover": { background: "rgba(255,255,255,0.05)" },
-                  },
-                }}
               >
-                <Group gap="xs" wrap="nowrap">
-                  <Image
-                    src={alt.avatarUrl ?? undefined}
-                    alt={alt.name}
-                    w={32}
-                    h={32}
-                    radius="xl"
-                    style={{ flexShrink: 0 }}
-                    fallbackSrc="https://placehold.co/32x32?text=?"
-                  />
-                  <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                    <Text size="sm" fw={600} truncate>
-                      {upperCaseFirstLetter(alt.name)}
-                    </Text>
-                    <Group gap={8}>
+                <Group justify="space-between" wrap="nowrap" gap="xs">
+                  <Group gap="xs" wrap="nowrap">
+                    <Image
+                      src={alt.avatarUrl ?? undefined}
+                      alt={alt.name}
+                      w={32}
+                      h={32}
+                      radius="xl"
+                      style={{ flexShrink: 0 }}
+                      fallbackSrc="https://placehold.co/32x32?text=?"
+                    />
+                    <Stack gap={0}>
+                      <Text size="sm" fw={600}>
+                        {upperCaseFirstLetter(alt.name)}
+                      </Text>
                       <Text size="xs" c="dimmed">
                         {alt.itemLevel != null ? `${Math.round(alt.itemLevel)} ilvl` : "–"}
                       </Text>
-                      {alt.mythicPlusScore != null && alt.mythicPlusScore > 0 && (
-                        <Text size="xs" style={{ color: alt.mythicPlusColor ?? undefined }}>
-                          {Math.round(alt.mythicPlusScore)} M+
-                        </Text>
-                      )}
-                    </Group>
+                    </Stack>
+                  </Group>
+                  <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+                    {alt.mythicPlusScore != null && alt.mythicPlusScore > 0 && (
+                      <Text size="xs" style={{ color: alt.mythicPlusColor ?? undefined }}>
+                        {Math.round(alt.mythicPlusScore)} M+
+                      </Text>
+                    )}
                     {(() => {
                       const prog = alt.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
                       if (!prog) return null;
                       return (
-                        <Group gap={6} mt={2}>
+                        <Group gap={6}>
                           <Text size="xs" style={{ color: "#22c55e" }}>
                             {prog.normal_bosses_killed}/{prog.total_bosses}N
                           </Text>
