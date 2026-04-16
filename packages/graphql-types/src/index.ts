@@ -19,8 +19,10 @@ export type AltCharacter = {
   avatarUrl?: Maybe<Scalars['String']['output']>;
   class?: Maybe<Scalars['String']['output']>;
   itemLevel?: Maybe<Scalars['Float']['output']>;
+  mythicPlusColor?: Maybe<Scalars['String']['output']>;
   mythicPlusScore?: Maybe<Scalars['Float']['output']>;
   name: Scalars['String']['output'];
+  raidProgression?: Maybe<Array<RaidProgressionDetail>>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
 };

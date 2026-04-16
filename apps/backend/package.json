@@ -16,7 +16,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node dist/db/migrate.js",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "backfill:alt-links": "pnpm run build && node dist/scripts/backfill-alt-links.js"
   },
   "keywords": [],
   "author": "",
