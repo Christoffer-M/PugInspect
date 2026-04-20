@@ -102,6 +102,8 @@ export const characterWclSnapshots = pgTable(
     metric: varchar("metric", { length: 5 }).default("").notNull(),
     role: varchar("role", { length: 10 }).default("").notNull(),
     byBracket: boolean("by_bracket").default(false).notNull(),
+    // 0 = "not specified"
+    partition: integer("partition").default(0).notNull(),
     // Zone-level aggregates extracted for quick GraphQL resolution
     bestPerformanceAvg: real("best_performance_avg"),
     medianPerformanceAvg: real("median_performance_avg"),
@@ -117,7 +119,8 @@ export const characterWclSnapshots = pgTable(
       t.difficulty,
       t.metric,
       t.role,
-      t.byBracket
+      t.byBracket,
+      t.partition
     ),
     index("wcl_snapshots_character_expires_idx").on(t.characterId, t.expiresAt),
     index("wcl_snapshots_character_fetched_idx").on(t.characterId, t.fetchedAt),

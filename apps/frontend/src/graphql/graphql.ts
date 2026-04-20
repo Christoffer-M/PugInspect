@@ -127,6 +127,7 @@ export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
+  zonePartitions: Array<ZonePartition>;
 };
 
 
@@ -136,6 +137,7 @@ export type QueryCharacterArgs = {
   difficulty?: InputMaybe<Difficulty>;
   metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];
+  partition?: InputMaybe<Scalars['Int']['input']>;
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
   role?: InputMaybe<RoleType>;
@@ -146,6 +148,11 @@ export type QueryCharacterArgs = {
 export type QueryCharacterSuggestionsArgs = {
   region: Scalars['String']['input'];
   searchString: Scalars['String']['input'];
+};
+
+
+export type QueryZonePartitionsArgs = {
+  zoneId: Scalars['Int']['input'];
 };
 
 export type RaidProgressionDetail = {
@@ -207,6 +214,14 @@ export type Segment = {
   score: Scalars['Float']['output'];
 };
 
+export type ZonePartition = {
+  __typename?: 'ZonePartition';
+  compactName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  isDefault: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+};
+
 export type CharacterInfoQueryVariables = Exact<{
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
@@ -226,6 +241,7 @@ export type CharacterLogsQueryVariables = Exact<{
   difficulty?: InputMaybe<Difficulty>;
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   zoneId?: InputMaybe<Scalars['Int']['input']>;
+  partition?: InputMaybe<Scalars['Int']['input']>;
   bypassCache?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
@@ -249,6 +265,13 @@ export type CharacterSearchQueryVariables = Exact<{
 
 
 export type CharacterSearchQuery = { __typename?: 'Query', characterSuggestions: Array<{ __typename?: 'SearchResult', name: string, realm: string, region: string }> };
+
+export type ZonePartitionsQueryVariables = Exact<{
+  zoneId: Scalars['Int']['input'];
+}>;
+
+
+export type ZonePartitionsQuery = { __typename?: 'Query', zonePartitions: Array<{ __typename?: 'ZonePartition', id: number, name: string, compactName: string, isDefault: boolean }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -316,7 +339,7 @@ export const CharacterInfoDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<CharacterInfoQuery, CharacterInfoQueryVariables>;
 export const CharacterLogsDocument = new TypedDocumentString(`
-    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty, $byBracket: Boolean, $zoneId: Int, $bypassCache: Boolean) {
+    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty, $byBracket: Boolean, $zoneId: Int, $partition: Int, $bypassCache: Boolean) {
   character(
     name: $name
     realm: $realm
@@ -326,6 +349,7 @@ export const CharacterLogsDocument = new TypedDocumentString(`
     difficulty: $difficulty
     byBracket: $byBracket
     zoneId: $zoneId
+    partition: $partition
     bypassCache: $bypassCache
   ) {
     warcraftLogs {
@@ -457,3 +481,13 @@ export const CharacterSearchDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<CharacterSearchQuery, CharacterSearchQueryVariables>;
+export const ZonePartitionsDocument = new TypedDocumentString(`
+    query ZonePartitions($zoneId: Int!) {
+  zonePartitions(zoneId: $zoneId) {
+    id
+    name
+    compactName
+    isDefault
+  }
+}
+    `) as unknown as TypedDocumentString<ZonePartitionsQuery, ZonePartitionsQueryVariables>;

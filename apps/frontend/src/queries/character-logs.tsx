@@ -22,6 +22,7 @@ const query = graphql(`
     $difficulty: Difficulty
     $byBracket: Boolean
     $zoneId: Int
+    $partition: Int
     $bypassCache: Boolean
   ) {
     character(
@@ -33,6 +34,7 @@ const query = graphql(`
       difficulty: $difficulty
       byBracket: $byBracket
       zoneId: $zoneId
+      partition: $partition
       bypassCache: $bypassCache
     ) {
       warcraftLogs {

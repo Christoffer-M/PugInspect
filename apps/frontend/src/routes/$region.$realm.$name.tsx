@@ -1,10 +1,4 @@
-import {
-  Container,
-  Stack,
-  Group,
-  Title,
-  Grid,
-} from "@mantine/core";
+import { Container, Stack, Group, Title, Grid } from "@mantine/core";
 import {
   createFileRoute,
   useNavigate,
@@ -35,6 +29,7 @@ export type CharacterQueryParams = {
   difficulty?: Difficulty;
   bracket?: boolean;
   raid?: string;
+  partition?: number;
 };
 
 export const Route = createFileRoute("/$region/$realm/$name")({
@@ -45,6 +40,8 @@ export const Route = createFileRoute("/$region/$realm/$name")({
     difficulty: search.difficulty as Difficulty | undefined,
     bracket: search.bracket === true || false,
     raid: search.raid as string | undefined,
+    partition:
+      typeof search.partition === "number" ? search.partition : undefined,
   }),
 });
 
@@ -61,6 +58,7 @@ function CharacterPage() {
     difficulty: searchDifficulty,
     bracket: searchBracket,
     raid: searchRaid,
+    partition: searchPartition,
   } = useSearch({ from: Route.id });
 
   const navigate = useNavigate({ from: Route.id });
@@ -73,16 +71,15 @@ function CharacterPage() {
   } = useCharacterInfoQuery({ name, realm, region });
 
   // RaiderIO — M+ runs, raid progression, season scores, cached 15 min
-  const {
-    data: raiderIoData,
-    isFetching: isFetchingRaiderIo,
-  } = useCharacterRaiderIoQuery({ name, realm, region });
+  const { data: raiderIoData, isFetching: isFetchingRaiderIo } =
+    useCharacterRaiderIoQuery({ name, realm, region });
+
+  const zoneId = searchRaid
+    ? getZoneIdForRaid(searchRaid)
+    : RAIDS[DEFAULT_RAID]?.zoneId;
 
   // WarcraftLogs — raid log performance, cached 15 min
-  const {
-    data: logsData,
-    isFetching: isFetchingLogs,
-  } = useCharacterLogs({
+  const { data: logsData, isFetching: isFetchingLogs } = useCharacterLogs({
     name,
     realm,
     region,
@@ -90,17 +87,29 @@ function CharacterPage() {
     metric: searchMetric,
     difficulty: searchDifficulty,
     byBracket: searchBracket,
-    zoneId: searchRaid ? getZoneIdForRaid(searchRaid) : RAIDS[DEFAULT_RAID]?.zoneId,
+    zoneId,
+    partition: searchPartition,
   });
 
   const { add: addToHistory } = useSearchHistory();
   useEffect(() => {
     if (!characterInfo) return;
-    addToHistory({ name, realm, region, class: characterInfo.class ?? undefined });
+    addToHistory({
+      name,
+      realm,
+      region,
+      class: characterInfo.class ?? undefined,
+    });
   }, [characterInfo?.class, name, realm, region]);
 
   const handleRaidChange = (raid: string | null) => {
-    navigate({ search: (prev) => ({ ...prev, raid: raid ?? undefined }) });
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        raid: raid ?? undefined,
+        partition: undefined,
+      }),
+    });
   };
 
   return (
@@ -144,6 +153,7 @@ function CharacterPage() {
               logs={logsData}
               isFetching={isFetchingLogs}
               class={characterInfo?.class}
+              zoneId={zoneId}
             />
             <Grid w="100%">
               <Grid.Col span={{ sm: 12, md: 6 }}>

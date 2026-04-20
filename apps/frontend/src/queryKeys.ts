@@ -39,6 +39,7 @@ export const queryKeys = {
       args.difficulty,
       args.byBracket,
       args.zoneId,
+      args.partition,
     ];
   },
 };

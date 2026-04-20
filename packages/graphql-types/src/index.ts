@@ -123,6 +123,7 @@ export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
+  zonePartitions: Array<ZonePartition>;
 };
 
 
@@ -132,6 +133,7 @@ export type QueryCharacterArgs = {
   difficulty?: InputMaybe<Difficulty>;
   metric?: InputMaybe<Metric>;
   name: Scalars['String']['input'];
+  partition?: InputMaybe<Scalars['Int']['input']>;
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
   role?: InputMaybe<RoleType>;
@@ -142,6 +144,11 @@ export type QueryCharacterArgs = {
 export type QueryCharacterSuggestionsArgs = {
   region: Scalars['String']['input'];
   searchString: Scalars['String']['input'];
+};
+
+
+export type QueryZonePartitionsArgs = {
+  zoneId: Scalars['Int']['input'];
 };
 
 export type RaidProgressionDetail = {
@@ -200,4 +207,12 @@ export type Segment = {
   __typename?: 'Segment';
   color: Scalars['String']['output'];
   score: Scalars['Float']['output'];
+};
+
+export type ZonePartition = {
+  __typename?: 'ZonePartition';
+  compactName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  isDefault: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
 };

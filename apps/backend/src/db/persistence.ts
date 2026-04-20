@@ -36,6 +36,8 @@ export type WclQueryKey = {
   /** Role ("Any"/"DPS"/"Healer"/"Tank"); use "" for unspecified. */
   role: string;
   byBracket: boolean;
+  /** WarcraftLogs partition ID; use 0 to represent "not specified". */
+  partition: number;
 };
 
 type DB = ReturnType<typeof getDb>;
@@ -171,6 +173,7 @@ export async function getCachedWclProfile(
           eq(characterWclSnapshots.metric, query.metric),
           eq(characterWclSnapshots.role, query.role),
           eq(characterWclSnapshots.byBracket, query.byBracket),
+          eq(characterWclSnapshots.partition, query.partition),
           gt(characterWclSnapshots.expiresAt, new Date())
         )
       )
@@ -211,6 +214,7 @@ export async function persistWclProfile(
         metric: query.metric,
         role: query.role,
         byBracket: query.byBracket,
+        partition: query.partition,
         bestPerformanceAvg: zoneRankings?.bestPerformanceAverage ?? null,
         medianPerformanceAvg: zoneRankings?.medianPerformanceAverage ?? null,
         fetchedAt: fetchedAtDate,
@@ -225,6 +229,7 @@ export async function persistWclProfile(
           characterWclSnapshots.metric,
           characterWclSnapshots.role,
           characterWclSnapshots.byBracket,
+          characterWclSnapshots.partition,
         ],
         set: {
           bestPerformanceAvg: zoneRankings?.bestPerformanceAverage ?? null,

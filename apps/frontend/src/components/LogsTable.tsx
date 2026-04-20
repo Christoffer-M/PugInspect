@@ -25,6 +25,7 @@ import {
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../routes/$region.$realm.$name";
 import { CharacterLogsWarcraftLogs } from "../queries/character-logs";
+import { useZonePartitions } from "../queries/zone-partitions";
 
 const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
 
@@ -32,21 +33,26 @@ type LogsTableProps = {
   logs?: CharacterLogsWarcraftLogs | null;
   class?: Maybe<string> | undefined;
   isFetching: boolean;
+  zoneId?: number;
 };
 
 export const LogsTable: React.FC<LogsTableProps> = ({
   logs,
   isFetching,
   class: className,
+  zoneId,
 }) => {
   const {
     roleType: searchRoleType,
     metric: searchMetric,
     difficulty: searchDifficulty,
     bracket: searchBracket,
+    partition: searchPartition,
   } = useSearch({
     from: "/$region/$realm/$name",
   });
+
+  const { data: partitions } = useZonePartitions(zoneId);
 
   const metric = logs?.metric;
   const rankings = logs?.raidRankings || [];
@@ -140,7 +146,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
         difficulty:
           partial.difficulty ?? prev.difficulty ?? difficulty ?? undefined,
         bracket: partial.bracket ?? prev.bracket ?? false,
-        raid: partial.raid ?? prev.raid ?? undefined, // Don't reset raid on other search changes
+        raid: partial.raid ?? prev.raid ?? undefined,
+        partition: partial.partition ?? prev.partition ?? undefined,
       }),
     });
   };
@@ -221,6 +228,27 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               />
             </Stack>
           </Grid.Col>
+          {partitions && partitions.length > 1 && (
+            <Grid.Col span={{ base: 12, sm: "content" }}>
+              <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
+                <Text m="0" fw={500} w={"fit-content"}>
+                  Partition
+                </Text>
+                <SegmentedControl
+                  w={"100%"}
+                  data={partitions.map((p) => ({
+                    label: p.compactName,
+                    value: String(p.id),
+                  }))}
+                  value={String(searchPartition ?? partitions.find((p) => p.isDefault)?.id ?? partitions[0]?.id)}
+                  onChange={(value) => {
+                    if (value == null) return;
+                    setSearch({ partition: Number(value) });
+                  }}
+                />
+              </Stack>
+            </Grid.Col>
+          )}
         </Grid>
 
         <Center>

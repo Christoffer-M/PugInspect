@@ -2484,7 +2484,15 @@ export type CharacterProfileQueryVariables = Exact<{
   role?: InputMaybe<RoleType>;
   metric?: InputMaybe<CharacterPageRankingMetricType>;
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
+  partition?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
 export type CharacterProfileQuery = { __typename?: 'Query', characterData?: { __typename?: 'CharacterData', character?: { __typename?: 'Character', zoneRankings?: any | null, name: string, hidden: boolean } | null } | null, rateLimitData?: { __typename?: 'RateLimitData', limitPerHour: number, pointsSpentThisHour: number, pointsResetIn: number } | null };
+
+export type ZonePartitionsQueryVariables = Exact<{
+  zoneID: Scalars['Int']['input'];
+}>;
+
+
+export type ZonePartitionsQuery = { __typename?: 'Query', worldData?: { __typename?: 'WorldData', zone?: { __typename?: 'Zone', partitions?: Array<{ __typename?: 'Partition', id: number, name: string, compactName: string, default: boolean } | null> | null } | null } | null };

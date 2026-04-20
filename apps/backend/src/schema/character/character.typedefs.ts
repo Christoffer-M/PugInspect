@@ -11,12 +11,21 @@ export const characterTypedefs = gql`
       difficulty: Difficulty
       byBracket: Boolean
       zoneId: Int
+      partition: Int
       bypassCache: Boolean
     ): Character
     characterSuggestions(
       region: String!
       searchString: String!
     ): [SearchResult!]!
+    zonePartitions(zoneId: Int!): [ZonePartition!]!
+  }
+
+  type ZonePartition {
+    id: Int!
+    name: String!
+    compactName: String!
+    isDefault: Boolean!
   }
 
   type SearchResult {

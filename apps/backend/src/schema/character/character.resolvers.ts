@@ -3,6 +3,7 @@ import {
   Character,
   QueryCharacterArgs,
   QueryCharacterSuggestionsArgs,
+  QueryZonePartitionsArgs,
 } from "@repo/graphql-types";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
@@ -15,6 +16,7 @@ import {
 } from "../services/raiderIo/raiderio.services.js";
 import { AchievementsService } from "../services/blizzard/achievements.service.js";
 import { getLinkedCharacters } from "../../db/persistence.js";
+import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import { VALID_REGIONS } from "../utils/regions.js";
 
 /**
@@ -78,6 +80,14 @@ export default {
             : null,
       };
     },
+    zonePartitions: async (
+      _: unknown,
+      args: QueryZonePartitionsArgs
+    ) => {
+      const partitions = await WarcraftLogsService.getZonePartitions(args.zoneId);
+      return partitions;
+    },
+
     characterSuggestions: async (
       _: unknown,
       args: QueryCharacterSuggestionsArgs,

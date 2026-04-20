@@ -11,6 +11,7 @@ export const CHARACTER_PROFILE: DocumentNode = gql`
     $role: RoleType
     $metric: CharacterPageRankingMetricType
     $byBracket: Boolean
+    $partition: Int
   ) {
     characterData {
       character(name: $name, serverSlug: $server, serverRegion: $region) {
@@ -20,7 +21,7 @@ export const CHARACTER_PROFILE: DocumentNode = gql`
           role: $role
           metric: $metric
           byBracket: $byBracket
-          partition: 1
+          partition: $partition
         )
         name
         hidden
