@@ -20,6 +20,7 @@ export const CHARACTER_PROFILE: DocumentNode = gql`
           role: $role
           metric: $metric
           byBracket: $byBracket
+          partition: 1
         )
         name
         hidden
