@@ -28,6 +28,7 @@ import { CharacterLogsWarcraftLogs } from "../queries/character-logs";
 import { useZonePartitions } from "../queries/zone-partitions";
 
 const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
+const PARTITION_STORAGE_KEY = "pugInspect:partition";
 
 type LogsTableProps = {
   logs?: CharacterLogsWarcraftLogs | null;
@@ -53,6 +54,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   });
 
   const { data: partitions } = useZonePartitions(zoneId);
+
 
   const metric = logs?.metric;
   const rankings = logs?.raidRankings || [];
@@ -138,6 +140,8 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   );
 
   const setSearch = (partial: Partial<CharacterQueryParams>) => {
+    if (partial.partition != null)
+      localStorage.setItem(PARTITION_STORAGE_KEY, String(partial.partition));
     navigate({
       to: ".",
       search: (prev) => ({
@@ -156,17 +160,30 @@ export const LogsTable: React.FC<LogsTableProps> = ({
     <Stack w={"100%"} gap={0}>
       <Group justify="space-between" align="center" mb={0} wrap="wrap">
         <Title order={3}>Raid logs</Title>
-        <Switch
-          size="sm"
-          onLabel="ON"
-          offLabel="OFF"
-          label={"By Ilvl"}
-          labelPosition="left"
-          checked={searchBracket}
-          onChange={(event) => {
-            return setSearch({ bracket: event.currentTarget.checked });
-          }}
-        />
+        <Group gap="md">
+          {partitions && partitions.length > 1 && (
+            <SegmentedControl
+              size="xs"
+              data={partitions.map((p) => ({ label: p.compactName, value: String(p.id) }))}
+              value={String(searchPartition ?? partitions.find((p) => p.isDefault)?.id ?? partitions[0]?.id)}
+              onChange={(value) => {
+                if (value == null) return;
+                setSearch({ partition: Number(value) });
+              }}
+            />
+          )}
+          <Switch
+            size="sm"
+            onLabel="ON"
+            offLabel="OFF"
+            label={"By Ilvl"}
+            labelPosition="left"
+            checked={searchBracket}
+            onChange={(event) => {
+              return setSearch({ bracket: event.currentTarget.checked });
+            }}
+          />
+        </Group>
       </Group>
 
       <Paper withBorder w="100%">
@@ -228,27 +245,6 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               />
             </Stack>
           </Grid.Col>
-          {partitions && partitions.length > 1 && (
-            <Grid.Col span={{ base: 12, sm: "content" }}>
-              <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
-                <Text m="0" fw={500} w={"fit-content"}>
-                  Partition
-                </Text>
-                <SegmentedControl
-                  w={"100%"}
-                  data={partitions.map((p) => ({
-                    label: p.compactName,
-                    value: String(p.id),
-                  }))}
-                  value={String(searchPartition ?? partitions.find((p) => p.isDefault)?.id ?? partitions[0]?.id)}
-                  onChange={(value) => {
-                    if (value == null) return;
-                    setSearch({ partition: Number(value) });
-                  }}
-                />
-              </Stack>
-            </Grid.Col>
-          )}
         </Grid>
 
         <Center>

@@ -41,7 +41,9 @@ export const Route = createFileRoute("/$region/$realm/$name")({
     bracket: search.bracket === true || false,
     raid: search.raid as string | undefined,
     partition:
-      typeof search.partition === "number" ? search.partition : undefined,
+      search.partition != null
+        ? Number(search.partition)
+        : Number(localStorage.getItem("pugInspect:partition")) || undefined,
   }),
 });
 
