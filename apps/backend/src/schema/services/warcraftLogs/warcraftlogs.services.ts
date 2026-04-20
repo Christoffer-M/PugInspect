@@ -8,51 +8,45 @@ import {
   CharacterProfileQueryVariables,
   ZonePartitionsQuery,
   ZonePartitionsQueryVariables,
-  InputMaybe,
 } from "./generated/index.js";
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { ZONE_PARTITIONS } from "./queries/zone.js";
 import { GraphQLError } from "graphql";
-import {
-  Difficulty,
-  QueryCharacterArgs,
-} from "@repo/graphql-types";
+import { QueryCharacterArgs } from "@repo/graphql-types";
+import { mapDifficulty, buildProfileParams } from "./warcraftlogs.helpers.js";
+import { WclGraphQLClient } from "./wclGraphQLClient.js";
 
 export type ZonePartitionInfo = { id: number; name: string; compactName: string; isDefault: boolean };
 
 const logger = createLogger({ service: "WarcraftLogs" });
+
 export class WarcraftLogsService {
   private static readonly tokens = new OAuthTokenManager(async () => {
     logger.info("Fetching new WarcraftLogs OAuth token");
-
     const body = new URLSearchParams({
       grant_type: "client_credentials",
       client_id: config.warcraftLogsClientId,
       client_secret: config.warcraftLogsClientSecret,
     });
-
     const res = await fetch("https://www.warcraftlogs.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     });
-
     if (!res.ok) {
       logger.error("WarcraftLogs token request failed", { status: res.status, statusText: res.statusText });
       throw new Error(`Failed to fetch token: ${res.status} ${res.statusText}`);
     }
-
     logger.info("WarcraftLogs OAuth token acquired");
     return res.json() as Promise<{ access_token: string; expires_in: number }>;
   });
+
+  private static readonly client = new WclGraphQLClient(WarcraftLogsService.tokens);
 
   private static profileFetchInFlight = new Map<
     string,
     Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>
   >();
-
-  // Circuit breaker: timestamp (ms) until which WCL calls are suppressed after a 429.
-  private static wclCircuitOpenUntil: number | null = null;
 
   private static partitionCache = new Map<number, { partitions: ZonePartitionInfo[]; cachedAt: number }>();
   private static readonly PARTITION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -63,38 +57,34 @@ export class WarcraftLogsService {
       return cached.partitions;
     }
 
-    const token = await this.tokens.getToken();
-    const body = JSON.stringify({
-      query: ZONE_PARTITIONS.loc?.source.body,
-      variables: { zoneID: zoneId } satisfies ZonePartitionsQueryVariables,
-    });
-
-    const res = await fetch("https://www.warcraftlogs.com/api/v2/client", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body,
-    });
-
-    if (!res.ok) {
-      logger.warn("Failed to fetch zone partitions", { zoneId, status: res.status });
+    if (this.client.isCircuitOpen()) {
+      logger.warn("WCL_CIRCUIT_OPEN: skipping partition fetch", { zoneId, retryAfterMs: this.client.circuitRetryAfterMs() });
       return [];
     }
 
-    const response = await res.json() as { data: ZonePartitionsQuery };
-    const raw = response.data?.worldData?.zone?.partitions;
+    try {
+      const { data } = await this.client.query<ZonePartitionsQuery>(
+        ZONE_PARTITIONS.loc?.source.body ?? "",
+        { zoneID: zoneId } satisfies ZonePartitionsQueryVariables
+      );
 
-    if (!raw?.length) {
-      logger.warn("No partitions found for zone", { zoneId });
+      const raw = data?.worldData?.zone?.partitions;
+      if (!raw?.length) {
+        logger.warn("No partitions found for zone", { zoneId });
+        return [];
+      }
+
+      const partitions: ZonePartitionInfo[] = raw
+        .filter((p): p is NonNullable<typeof p> => p != null)
+        .map((p) => ({ id: p.id, name: p.name, compactName: p.compactName, isDefault: p.default }));
+
+      logger.info("Fetched zone partitions", { zoneId, count: partitions.length });
+      this.partitionCache.set(zoneId, { partitions, cachedAt: Date.now() });
+      return partitions;
+    } catch (error) {
+      logger.warn("Failed to fetch zone partitions", { zoneId, error: String(error) });
       return [];
     }
-
-    const partitions: ZonePartitionInfo[] = raw
-      .filter((p): p is NonNullable<typeof p> => p != null)
-      .map((p) => ({ id: p.id, name: p.name, compactName: p.compactName, isDefault: p.default }));
-
-    logger.info("Fetched zone partitions", { zoneId, count: partitions.length });
-    this.partitionCache.set(zoneId, { partitions, cachedAt: Date.now() });
-    return partitions;
   }
 
   private static async getZoneDefaultPartition(zoneId: number): Promise<number | undefined> {
@@ -103,42 +93,21 @@ export class WarcraftLogsService {
     return def?.id;
   }
 
-  private static mapDifficulty(
-    difficulty?: InputMaybe<Difficulty>
-  ): number | undefined {
-    switch (difficulty) {
-      case "LFR":
-        return 1;
-      case "Normal":
-        return 3;
-      case "Heroic":
-        return 4;
-      case "Mythic":
-        return 5;
-      default:
-        return undefined;
-    }
-  }
-
   static async getCharacterProfile(
     args: QueryCharacterArgs,
     bypassCache = false
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
-    const { name, realm, region, role, metric, difficulty, byBracket, zoneId, partition: argPartition } = args;
-
+    const { name, realm, region, zoneId, partition: argPartition } = args;
     const normalizedRealm = normalizeRealm(realm);
-
     const partition = argPartition ?? (zoneId != null ? await this.getZoneDefaultPartition(zoneId) : undefined);
-    const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${difficulty ?? ""}:${role ?? ""}:${metric ?? ""}:${byBracket ?? ""}:${partition ?? ""}`.toLowerCase();
+    const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${args.difficulty ?? ""}:${args.role ?? ""}:${args.metric ?? ""}:${args.byBracket ?? ""}:${partition ?? ""}`.toLowerCase();
 
-    // Singleflight: deduplicate concurrent in-flight requests for the same key
     if (!bypassCache) {
       const inFlight = this.profileFetchInFlight.get(cacheKey);
       if (inFlight) {
         logger.info("WarcraftLogs profile fetch already in flight, awaiting", { name, realm, region });
         return inFlight;
       }
-
       const promise = this.acquireCharacterProfile(cacheKey, args, normalizedRealm, false, partition).finally(() => {
         this.profileFetchInFlight.delete(cacheKey);
       });
@@ -149,6 +118,74 @@ export class WarcraftLogsService {
     return this.acquireCharacterProfile(cacheKey, args, normalizedRealm, bypassCache, partition);
   }
 
+  private static async checkCacheOrNull(
+    args: QueryCharacterArgs,
+    normalizedRealm: string,
+    partition: number | undefined
+  ) {
+    return getCachedWclProfile(
+      { region: args.region, realm: normalizedRealm, name: args.name },
+      buildProfileParams(args, partition)
+    );
+  }
+
+  private static async executeWclRequest(
+    args: QueryCharacterArgs,
+    normalizedRealm: string,
+    partition: number | undefined
+  ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
+    const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
+
+    logger.info("WarcraftLogs character profile request", { name, realm: normalizedRealm, region, zoneId, partition });
+
+    const start = Date.now();
+    const { data, headers } = await this.client.query<CharacterProfileQuery>(
+      CHARACTER_PROFILE.loc?.source.body ?? "",
+      {
+        name,
+        server: normalizedRealm,
+        region,
+        zoneID: zoneId ?? undefined,
+        difficulty: mapDifficulty(difficulty),
+        role,
+        metric,
+        byBracket,
+        partition,
+      } satisfies CharacterProfileQueryVariables
+    );
+
+    const durationMs = Date.now() - start;
+    const rateLimitHeaderInfo = {
+      rateLimitRemaining: headers.get("x-ratelimit-remaining"),
+      rateLimitLimit: headers.get("x-ratelimit-limit"),
+    };
+
+    if (!data?.characterData?.character) {
+      logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: data?.rateLimitData, rateLimitHeaderInfo });
+      return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
+    }
+
+    logger.info("WarcraftLogs character profile fetched", { name, realm: normalizedRealm, region, durationMs, rateLimit: data?.rateLimitData, rateLimitHeaderInfo });
+    return { data: data.characterData, fetchedAt: Math.floor(Date.now() / 1000) };
+  }
+
+  private static persistAsync(
+    args: QueryCharacterArgs,
+    normalizedRealm: string,
+    partition: number | undefined,
+    characterData: NonNullable<CharacterProfileQuery["characterData"]>,
+    fetchedAt: number
+  ): void {
+    persistWclProfile(
+      { region: args.region, realm: normalizedRealm, name: args.name },
+      buildProfileParams(args, partition),
+      characterData,
+      fetchedAt
+    ).catch((err: unknown) => {
+      logger.warn("Failed to persist WCL profile to DB cache", { name: args.name, realm: normalizedRealm, region: args.region, error: String(err) });
+    });
+  }
+
   private static async acquireCharacterProfile(
     cacheKey: string,
     args: QueryCharacterArgs,
@@ -156,138 +193,40 @@ export class WarcraftLogsService {
     bypassCache = false,
     partition: number | undefined = undefined
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
-    const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
-
     if (!bypassCache) {
-      const cached = await getCachedWclProfile(
-        { region, realm: normalizedRealm, name },
-        {
-          zoneId: zoneId ?? 0,
-          difficulty: difficulty ?? "",
-          metric: metric ?? "",
-          role: role ?? "",
-          byBracket: byBracket ?? false,
-          partition: partition ?? 0,
-        }
-      );
+      const cached = await this.checkCacheOrNull(args, normalizedRealm, partition);
       if (cached) {
-        logger.info("WarcraftLogs character profile cache hit", { name, realm: normalizedRealm, region });
+        logger.info("WarcraftLogs character profile cache hit", { name: args.name, realm: normalizedRealm, region: args.region });
         return cached;
       }
     }
 
-    // Circuit breaker
-    const circuitNow = Date.now();
-    if (this.wclCircuitOpenUntil !== null && circuitNow < this.wclCircuitOpenUntil) {
-      const retryAfterMs = this.wclCircuitOpenUntil - circuitNow;
+    if (this.client.isCircuitOpen()) {
+      const retryAfterMs = this.client.circuitRetryAfterMs();
       logger.warn("WCL_CIRCUIT_OPEN", { cacheKey, retryAfterMs });
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
       });
     }
 
-    const token = await this.tokens.getToken();
-
-    logger.info("WarcraftLogs character profile request", { name, realm: normalizedRealm, region, zoneId, partition });
-
-    const body = JSON.stringify({
-      query: CHARACTER_PROFILE.loc?.source.body,
-      variables: {
-        name,
-        server: normalizedRealm,
-        region,
-        zoneID: zoneId ?? undefined,
-        difficulty: this.mapDifficulty(difficulty),
-        role,
-        metric,
-        byBracket,
-        partition,
-      } satisfies CharacterProfileQueryVariables,
-    });
-
-    const wclCallStart = Date.now();
-
     try {
-      const wclRes = await fetch("https://www.warcraftlogs.com/api/v2/client", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body,
-      });
-
-      if (wclRes.status === 429) {
-        const durationMs = Date.now() - wclCallStart;
-        const waitMs = 2 * 60 * 1000;
-        this.wclCircuitOpenUntil = Date.now() + waitMs;
-        logger.warn("WCL_CIRCUIT_OPENED", {
-          cacheKey,
-          durationMs,
-          waitMs,
-          openUntil: new Date(this.wclCircuitOpenUntil).toISOString(),
-        });
-        throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
-          extensions: { code: "RATE_LIMITED", retryAfterMs: waitMs },
-        });
+      const result = await this.executeWclRequest(args, normalizedRealm, partition);
+      if (result.data) {
+        this.persistAsync(args, normalizedRealm, partition, result.data, result.fetchedAt);
       }
-
-      if (!wclRes.ok) {
-        throw new Error(`WCL request failed: ${wclRes.status} ${wclRes.statusText}`);
-      }
-
-      const response = await wclRes.json() as { data: CharacterProfileQuery };
-      const durationMs = Date.now() - wclCallStart;
-      const rateLimitInfo = response.data?.rateLimitData;
-
-      const rateLimitHeaderInfo = {
-        rateLimitRemaining: wclRes.headers.get("x-ratelimit-remaining"),
-        rateLimitLimit: wclRes.headers.get("x-ratelimit-limit")
-      };
-
-      if (!response.data?.characterData?.character) {
-        logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo, rateLimitHeaderInfo });
-        return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
-      }
-
-      logger.info("WarcraftLogs character profile fetched", {
-        name, realm: normalizedRealm, region, durationMs, rateLimit: rateLimitInfo, rateLimitHeaderInfo
-      });
-      const characterData = response.data.characterData;
-      const fetchedAt = Math.floor(Date.now() / 1000);
-
-      persistWclProfile(
-        { region, realm: normalizedRealm, name },
-        {
-          zoneId: zoneId ?? 0,
-          difficulty: difficulty ?? "",
-          metric: metric ?? "",
-          role: role ?? "",
-          byBracket: byBracket ?? false,
-          partition: partition ?? 0,
-        },
-        characterData,
-        fetchedAt
-      ).catch((err: unknown) => {
-        logger.warn("Failed to persist WCL profile to DB cache", { name, realm: normalizedRealm, region, error: String(err) });
-      });
-
-      return { data: characterData, fetchedAt };
+      return result;
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
 
       logger.error("WarcraftLogs character profile fetch failed", {
-        name,
+        name: args.name,
         realm: normalizedRealm,
-        region,
+        region: args.region,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw new GraphQLError(
-        "Failed to fetch character profile from Warcraft Logs",
-        {
-          extensions: { code: "NOT_FOUND" },
-        }
-      );
+      throw new GraphQLError("Failed to fetch character profile from Warcraft Logs", {
+        extensions: { code: "NOT_FOUND" },
+      });
     }
   }
 }
