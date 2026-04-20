@@ -139,25 +139,24 @@ export class WarcraftLogsService {
         return inFlight;
       }
 
-      const promise = this.acquireCharacterProfile(cacheKey, args, normalizedRealm).finally(() => {
+      const promise = this.acquireCharacterProfile(cacheKey, args, normalizedRealm, false, partition).finally(() => {
         this.profileFetchInFlight.delete(cacheKey);
       });
       this.profileFetchInFlight.set(cacheKey, promise);
       return promise;
     }
 
-    return this.acquireCharacterProfile(cacheKey, args, normalizedRealm, bypassCache);
+    return this.acquireCharacterProfile(cacheKey, args, normalizedRealm, bypassCache, partition);
   }
 
   private static async acquireCharacterProfile(
     cacheKey: string,
     args: QueryCharacterArgs,
     normalizedRealm: string,
-    bypassCache = false
+    bypassCache = false,
+    partition: number | undefined = undefined
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
-    const { name, region, role, metric, difficulty, byBracket, zoneId, partition: argPartition } = args;
-
-    const partition = argPartition ?? (zoneId != null ? await this.getZoneDefaultPartition(zoneId) : undefined);
+    const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
 
     if (!bypassCache) {
       const cached = await getCachedWclProfile(

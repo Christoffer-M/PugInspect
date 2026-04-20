@@ -23,6 +23,7 @@ const characterKey =
 export const queryKeys = {
   character: characterKey("character"),
   characterRaiderIo: characterKey("characterRaiderIo"),
+  zonePartitions: (zoneId: number) => ["zonePartitions", zoneId],
   characterLogs: (args: CharacterLogsQueryVariables) => {
     const {
       name: normName,

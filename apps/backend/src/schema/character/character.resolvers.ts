@@ -84,8 +84,11 @@ export default {
       _: unknown,
       args: QueryZonePartitionsArgs
     ) => {
-      const partitions = await WarcraftLogsService.getZonePartitions(args.zoneId);
-      return partitions;
+      try {
+        return await WarcraftLogsService.getZonePartitions(args.zoneId);
+      } catch {
+        return [];
+      }
     },
 
     characterSuggestions: async (

@@ -17,6 +17,7 @@ import { RaidProgression } from "../components/RaidProgression";
 import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
 import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
 import { getZoneIdForRaid, DEFAULT_RAID, RAIDS } from "../data/raidZones";
+import { PARTITION_STORAGE_KEY } from "../constants/storageKeys";
 import { useSearchHistory } from "../hooks/useSearchHistory";
 import { ExternalLinkIcon } from "../components/ExternalLinkIcon";
 import { normalizeRealm } from "../util/util";
@@ -43,7 +44,8 @@ export const Route = createFileRoute("/$region/$realm/$name")({
     partition:
       search.partition != null
         ? Number(search.partition)
-        : Number(localStorage.getItem("pugInspect:partition")) || undefined,
+        // WCL partition IDs are always > 0, so 0/"" correctly falls through to undefined
+        : Number(localStorage.getItem(PARTITION_STORAGE_KEY)) || undefined,
   }),
 });
 

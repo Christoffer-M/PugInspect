@@ -26,9 +26,9 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../routes/$region.$realm.$name";
 import { CharacterLogsWarcraftLogs } from "../queries/character-logs";
 import { useZonePartitions } from "../queries/zone-partitions";
+import { PARTITION_STORAGE_KEY } from "../constants/storageKeys";
 
 const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
-const PARTITION_STORAGE_KEY = "pugInspect:partition";
 
 type LogsTableProps = {
   logs?: CharacterLogsWarcraftLogs | null;

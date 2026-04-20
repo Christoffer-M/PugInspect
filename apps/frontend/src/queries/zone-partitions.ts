@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { execute } from "../api/graphqlClient";
 import { graphql } from "../graphql";
 import { ZonePartitionsQuery, ZonePartitionsQueryVariables } from "../graphql/graphql";
+import { queryKeys } from "../queryKeys";
 
 const query = graphql(`
   query ZonePartitions($zoneId: Int!) {
@@ -18,7 +19,7 @@ export type ZonePartition = ZonePartitionsQuery["zonePartitions"][number];
 
 export const useZonePartitions = (zoneId: number | undefined) =>
   useQuery({
-    queryKey: ["zonePartitions", zoneId],
+    queryKey: queryKeys.zonePartitions(zoneId!),
     enabled: zoneId != null,
     staleTime: 24 * 60 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
