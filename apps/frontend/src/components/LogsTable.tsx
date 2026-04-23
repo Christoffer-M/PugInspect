@@ -26,7 +26,6 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../routes/$region.$realm.$name";
 import { CharacterLogsWarcraftLogs } from "../queries/character-logs";
 import { useZonePartitions } from "../queries/zone-partitions";
-import { PARTITION_STORAGE_KEY } from "../constants/storageKeys";
 
 const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
 
@@ -54,7 +53,6 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   });
 
   const { data: partitions } = useZonePartitions(zoneId);
-
 
   const metric = logs?.metric;
   const rankings = logs?.raidRankings || [];
@@ -140,8 +138,11 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   );
 
   const setSearch = (partial: Partial<CharacterQueryParams>) => {
-    if (partial.partition != null)
-      localStorage.setItem(PARTITION_STORAGE_KEY, String(partial.partition));
+    const hasPartitionUpdate = Object.prototype.hasOwnProperty.call(
+      partial,
+      "partition",
+    );
+
     navigate({
       to: ".",
       search: (prev) => ({
@@ -151,7 +152,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           partial.difficulty ?? prev.difficulty ?? difficulty ?? undefined,
         bracket: partial.bracket ?? prev.bracket ?? false,
         raid: partial.raid ?? prev.raid ?? undefined,
-        partition: partial.partition ?? prev.partition ?? undefined,
+        partition: hasPartitionUpdate
+          ? partial.partition
+          : (prev.partition ?? undefined),
       }),
     });
   };
@@ -164,11 +167,25 @@ export const LogsTable: React.FC<LogsTableProps> = ({
           {partitions && partitions.length > 1 && (
             <SegmentedControl
               size="xs"
-              data={partitions.map((p) => ({ label: p.compactName, value: String(p.id) }))}
-              value={String(searchPartition ?? partitions.find((p) => p.isDefault)?.id ?? partitions[0]?.id)}
+              data={[
+                { label: "All", value: "all" },
+                ...partitions.map((p) => ({
+                  label: p.compactName,
+                  value: String(p.id),
+                })),
+              ]}
+              value={
+                searchPartition === "all"
+                  ? "all"
+                  : String(
+                      searchPartition ?? "all",
+                    )
+              }
               onChange={(value) => {
                 if (value == null) return;
-                setSearch({ partition: Number(value) });
+                setSearch({
+                  partition: value === "all" ? "all" : Number(value),
+                });
               }}
             />
           )}

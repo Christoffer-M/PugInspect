@@ -13,11 +13,11 @@ import { useCharacterInfoQuery } from "../queries/character-info";
 import { useCharacterRaiderIoQuery } from "../queries/character-raiderio";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterLogs } from "../queries/character-logs";
+import { useZonePartitions } from "../queries/zone-partitions";
 import { RaidProgression } from "../components/RaidProgression";
 import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
 import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
 import { getZoneIdForRaid, DEFAULT_RAID, RAIDS } from "../data/raidZones";
-import { PARTITION_STORAGE_KEY } from "../constants/storageKeys";
 import { useSearchHistory } from "../hooks/useSearchHistory";
 import { ExternalLinkIcon } from "../components/ExternalLinkIcon";
 import { normalizeRealm } from "../util/util";
@@ -30,23 +30,31 @@ export type CharacterQueryParams = {
   difficulty?: Difficulty;
   bracket?: boolean;
   raid?: string;
-  partition?: number;
+  partition?: number | "all";
 };
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
-  validateSearch: (search: Record<string, unknown>): CharacterQueryParams => ({
-    roleType: (search.roleType as RoleType) || RoleType.Any,
-    metric: search.metric as Metric | undefined,
-    difficulty: search.difficulty as Difficulty | undefined,
-    bracket: search.bracket === true || false,
-    raid: search.raid as string | undefined,
-    partition:
-      search.partition != null
-        ? Number(search.partition)
-        // WCL partition IDs are always > 0, so 0/"" correctly falls through to undefined
-        : Number(localStorage.getItem(PARTITION_STORAGE_KEY)) || undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): CharacterQueryParams => {
+    const parsePartition = (value: unknown): CharacterQueryParams["partition"] => {
+      if (value === "all") return "all";
+      if (value == null) return undefined;
+
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+    };
+
+    return {
+      roleType: (search.roleType as RoleType) || RoleType.Any,
+      metric: search.metric as Metric | undefined,
+      difficulty: search.difficulty as Difficulty | undefined,
+      bracket: search.bracket === true || false,
+      raid: search.raid as string | undefined,
+      partition: search.partition !== undefined
+        ? parsePartition(search.partition) ?? "all"
+        : "all",
+    };
+  },
 });
 
 function CharacterPage() {
@@ -81,6 +89,13 @@ function CharacterPage() {
   const zoneId = searchRaid
     ? getZoneIdForRaid(searchRaid)
     : RAIDS[DEFAULT_RAID]?.zoneId;
+  const { data: partitions } = useZonePartitions(zoneId);
+  const effectivePartition =
+    partitions?.length === 1
+      ? undefined
+      : searchPartition === "all"
+        ? undefined
+        : searchPartition;
 
   // WarcraftLogs — raid log performance, cached 15 min
   const { data: logsData, isFetching: isFetchingLogs } = useCharacterLogs({
@@ -92,7 +107,7 @@ function CharacterPage() {
     difficulty: searchDifficulty,
     byBracket: searchBracket,
     zoneId,
-    partition: searchPartition,
+    partition: effectivePartition,
   });
 
   const { add: addToHistory } = useSearchHistory();

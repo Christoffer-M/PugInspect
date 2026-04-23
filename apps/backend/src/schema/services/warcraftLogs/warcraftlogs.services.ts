@@ -87,19 +87,13 @@ export class WarcraftLogsService {
     }
   }
 
-  private static async getZoneDefaultPartition(zoneId: number): Promise<number | undefined> {
-    const partitions = await this.getZonePartitions(zoneId);
-    const def = partitions.find((p) => p.isDefault) ?? partitions[0];
-    return def?.id;
-  }
-
   static async getCharacterProfile(
     args: QueryCharacterArgs,
     bypassCache = false
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, realm, region, zoneId, partition: argPartition } = args;
     const normalizedRealm = normalizeRealm(realm);
-    const partition = argPartition ?? (zoneId != null ? await this.getZoneDefaultPartition(zoneId) : undefined);
+    const partition = argPartition ?? undefined;
     const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${args.difficulty ?? ""}:${args.role ?? ""}:${args.metric ?? ""}:${args.byBracket ?? ""}:${partition ?? ""}`.toLowerCase();
 
     if (!bypassCache) {
