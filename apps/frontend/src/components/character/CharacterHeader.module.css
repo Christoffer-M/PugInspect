@@ -1,0 +1,94 @@
+.card {
+  position: relative;
+  overflow: hidden;
+}
+
+.accentBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0.85;
+}
+
+.profile {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 22px;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  .profile {
+    grid-template-columns: auto 1fr;
+  }
+
+  .statstrip {
+    grid-column: 1 / -1;
+    padding-top: 8px;
+    border-top: 1px solid rgba(61, 79, 110, 0.28);
+    margin-top: 4px;
+  }
+}
+
+.avatarRing {
+  border-radius: 50%;
+  border: 2px solid var(--avatar-ring-color, rgba(61, 79, 110, 0.8));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--avatar-ring-color, rgba(61, 79, 110, 0.5)) 14%, transparent);
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.characterName {
+  color: var(--class-color, var(--mantine-color-text)) !important;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+
+.statstrip {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 20px;
+  border-left: 1px solid rgba(61, 79, 110, 0.28);
+  min-width: 92px;
+}
+
+.stat:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.statLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dark-3);
+  white-space: nowrap;
+}
+
+.statVal {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.statValSmall {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mantine-color-dark-2);
+}
+
+.statSub {
+  font-size: 11px;
+  color: var(--mantine-color-dark-3);
+}

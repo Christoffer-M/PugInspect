@@ -1,6 +1,7 @@
 import { AppShell, Typography } from "@mantine/core";
 import Header from "./Header";
 import Footer from "./Footer";
+import classes from "./Page.module.css";
 import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { parseRaiderIoUrl } from "../../util/util";
@@ -77,14 +78,17 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, []);
 
   return (
-    <AppShell header={{ height: 60 }}>
-      <Typography>
-        <Header />
-        <AppShell.Main pb={"lg"}>
-          {children}
-          <Footer />
-        </AppShell.Main>
-      </Typography>
-    </AppShell>
+    <>
+      <div className={classes.appBg} />
+      <AppShell header={{ height: 60 }} className={classes.shell}>
+        <Typography>
+          <Header />
+          <AppShell.Main pb={"lg"}>
+            {children}
+            <Footer />
+          </AppShell.Main>
+        </Typography>
+      </AppShell>
+    </>
   );
 };

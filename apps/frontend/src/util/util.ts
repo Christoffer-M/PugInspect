@@ -43,6 +43,17 @@ export function parseRaiderIoUrl(
   };
 }
 
+export function getParseColor(percent: number | null | undefined): string {
+  if (percent == null) return "#5e6a82";
+  if (percent < 25) return "#7a8290";
+  if (percent < 50) return "#4ade80";
+  if (percent < 75) return "#4d93ff";
+  if (percent < 95) return "#b072f0";
+  if (percent < 99) return "#ff8a3d";
+  if (percent < 100) return "#ff6fae";
+  return "#ffd34d";
+}
+
 export const CLASS_COLORS: Record<string, string> = {
   "death knight": "#C41E3A",
   "demon hunter": "#A330C9",

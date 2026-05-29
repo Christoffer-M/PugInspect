@@ -1,0 +1,28 @@
+.perf {
+  border-top: 1px solid rgba(61, 79, 110, 0.28);
+  border-bottom: 1px solid rgba(61, 79, 110, 0.28);
+  width: 100%;
+  align-items: stretch;
+}
+
+.cell + .cell {
+  border-left: 1px solid rgba(61, 79, 110, 0.28);
+}
+
+.cell {
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.cellLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mantine-color-dark-2);
+}
+
+.cellVal {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}

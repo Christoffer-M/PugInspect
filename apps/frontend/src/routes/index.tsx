@@ -1,41 +1,66 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Center, Flex, Title, Container, Text } from "@mantine/core";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Box, Group, Stack, Text, Title, UnstyledButton } from "@mantine/core";
+import { IconSearch } from "@tabler/icons-react";
 import CharacterSearchInput from "../components/search/CharacterSearchInput";
 import { Page } from "../components/layout/Page";
 import { useEffect } from "react";
+import { useSearchHistory } from "../hooks/useSearchHistory";
+import { getClassColor } from "../util/util";
+import classes from "./index.module.css";
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const { history } = useSearchHistory();
+  const recentChars = history.slice(0, 3).map((e) => ({
+    label: `${e.name.charAt(0).toUpperCase() + e.name.slice(1)}-${e.realm.charAt(0).toUpperCase() + e.realm.slice(1)}`,
+    region: e.region,
+    realm: e.realm,
+    name: e.name,
+    color: getClassColor(e.class),
+  }));
+
   useEffect(() => {
     document.title = "PugInspect - WoW Character Inspector";
   }, []);
 
   return (
     <Page>
-      <Container>
-        <Center h={"80vh"}>
-          <Flex direction="column" align="center" ta={'center'}>
-            <Flex direction="column" align="center">
-              <Title order={1} >Welcome to PugInspect!</Title>
-              <Title order={4} mt="sm">
-                Quickly view WoW character stats, RIO scores, and raid logs
-              </Title>
-            </Flex>
-            <Flex direction="column" align="center" mt="xl" w="100%" maw={450}>
-              <CharacterSearchInput />
+      <Box className={classes.landing}>
+        <Stack className={classes.inner} align="center" gap="md">
+          <Box className={classes.glyph}>
+            <IconSearch size={30} stroke={1.8} />
+          </Box>
 
-              <Text
-                mt="md"
-                c="dimmed"
+          <Title order={1} m={0}>
+            Welcome to PugInspect
+          </Title>
 
-                style={{ maxWidth: "100%" }}
-              >
-                Start by typing in a character name above to search for a
-                character. You can also paste a Raider.IO character profile URL.
-              </Text>
-            </Flex>
-          </Flex>
-        </Center>
-      </Container>
+          <Text className={classes.tag} m={0}>
+            Quickly view WoW character stats, RIO scores, and raid logs
+          </Text>
+
+          <CharacterSearchInput />
+
+          <Text className={classes.hint} m={0}>
+            Start by typing a character name above, or paste a Raider.IO profile URL.
+          </Text>
+
+          {recentChars.length > 0 && (
+            <Group className={classes.chips} justify="center" wrap="wrap">
+              {recentChars.map((char) => (
+                <UnstyledButton
+                  key={char.label}
+                  className={classes.chip}
+                  onClick={() => navigate({ to: `/${char.region}/${char.realm}/${char.name}` })}
+                >
+                  <Box component="span" className={classes.chipDot} style={{ background: char.color }} />
+                  {char.label}
+                </UnstyledButton>
+              ))}
+            </Group>
+          )}
+        </Stack>
+      </Box>
     </Page>
   );
 };

@@ -1,34 +1,37 @@
-import {
-  Paper,
-  Group,
-  Skeleton,
-  Stack,
-  Title,
-  Image,
-  Text,
-} from "@mantine/core";
-import { upperCaseFirstLetter } from "../../util/util";
-import { RioScore } from "./RioScore";
+import { Paper, Skeleton, Stack, Text, Image, Box, Group } from "@mantine/core";
+import { upperCaseFirstLetter, getClassColor, getParseColor } from "../../util/util";
 import { AltsHoverCard } from "./AltsHoverCard";
-import { Character, Maybe, RaiderIo, SeasonScores } from "../../graphql/graphql";
+import { Character, RaiderIo } from "../../graphql/graphql";
+import classes from "./CharacterHeader.module.css";
 
-const createSeasonScoreMap = (seasonData: Maybe<SeasonScores> | undefined) => {
-  if (!seasonData) return [];
+function getTopRioScore(raiderIo: RaiderIo | null | undefined): { score: number; role: string; color: string } | null {
+  const season = raiderIo?.currentSeason;
+  if (!season) return null;
 
-  return [
-    {
-      role: "Tank",
-      score: seasonData.tank?.score,
-      color: seasonData.tank?.color,
-    },
-    {
-      role: "Healer",
-      score: seasonData.healer?.score,
-      color: seasonData.healer?.color,
-    },
-    { role: "DPS", score: seasonData.dps?.score, color: seasonData.dps?.color },
-  ].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-};
+  const all = season.all;
+  if (all?.score != null && all.score >= 100) {
+    return { score: all.score, role: "All", color: all.color ?? getParseColor(all.score / 40) };
+  }
+
+  const roles = [
+    { role: "DPS", data: season.dps },
+    { role: "Healer", data: season.healer },
+    { role: "Tank", data: season.tank },
+  ]
+    .filter((r) => r.data?.score != null && r.data.score >= 100)
+    .sort((a, b) => (b.data?.score ?? 0) - (a.data?.score ?? 0));
+
+  const best = roles[0];
+  if (!best?.data?.score) return null;
+  return { score: best.data.score, role: best.role, color: best.data.color ?? "#ff8a3d" };
+}
+
+function getTopKeyLevel(raiderIo: RaiderIo | null | undefined): number | null {
+  const runs = raiderIo?.bestMythicPlusRuns;
+  if (!runs?.length) return null;
+  const max = Math.max(...runs.map((r) => r.key_level ?? 0));
+  return max > 0 ? max : null;
+}
 
 export const CharacterHeader: React.FC<{
   name: string;
@@ -37,146 +40,126 @@ export const CharacterHeader: React.FC<{
   isLoadingInfo: boolean;
   isLoadingRaiderIo: boolean;
   isError: boolean;
-}> = ({
-  name,
-  characterInfo,
-  raiderIo,
-  isLoadingInfo,
-  isLoadingRaiderIo,
-  isError,
-}) => {
-  const previousSeasonScores = createSeasonScoreMap(raiderIo?.previousSeason);
-  const currentSeasonScores = createSeasonScoreMap(raiderIo?.currentSeason);
-
-  const hasValidCurrentSeasonScore = currentSeasonScores.some(
-    (s) => s.score !== undefined && s.score >= 100,
-  );
-  const hasValidPreviousSeasonScore = previousSeasonScores.some(
-    (s) => s.score !== undefined && s.score >= 100,
-  );
+}> = ({ name, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError }) => {
+  const classColor = getClassColor(characterInfo?.class);
+  const rioScore = getTopRioScore(raiderIo);
+  const topKey = getTopKeyLevel(raiderIo);
 
   return (
-    <Paper shadow="xs" radius="xs" p="md" withBorder w="100%">
-      <Group justify="space-between" align="flex-start" wrap="wrap">
-        {/* ── Identity (Blizzard) ── */}
-        <Group h="100%" align="flex-start" style={{ flex: 1, minWidth: 200 }}>
-          {isLoadingInfo || isError ? (
-            <>
-              <Skeleton h={85} w={85} radius={100} m={0} animate={!isError} />
-              <Stack gap="xs">
-                <Skeleton height={20} width={200} animate={!isError} />
-                <Skeleton height={16} width={160} animate={!isError} />
-                <Skeleton height={16} width={160} animate={!isError} />
-              </Stack>
-            </>
-          ) : (
-            characterInfo && (
-              <Group>
-                <Image
-                  src={characterInfo.avatarUrl}
-                  alt={name}
-                  h={100}
-                  w={100}
-                  fit="contain"
-                  radius={100}
-                  m={0}
-                  fallbackSrc="https://placehold.co/100x100?text=No+Image"
-                />
-                <Stack
-                  gap={0}
-                  justify="flex-start"
-                  h="100%"
-                  flex={1}
-                  align="flex-start"
-                >
-                  <Group gap="xs" justify="flex-start" align="center">
-                    <Title order={3} m={0}>
-                      {upperCaseFirstLetter(characterInfo.name || name)}
-                    </Title>
-                  </Group>
-                  {characterInfo.guild && (
-                    <Text size="sm" m={0}>
-                      {`<${characterInfo.guild.name}>`}
-                    </Text>
-                  )}
-                  <Text size="sm" m={0}>
-                    ({characterInfo.region.toUpperCase()}) {characterInfo.realm}
-                  </Text>
-                  <Text size="sm" m={0}>
-                    {characterInfo.race} {characterInfo.activeSpec}{" "}
-                    {characterInfo.class}
-                  </Text>
-                  <Text size="sm" m={0}>
-                    <b>Item Level:</b>{" "}
-                    {characterInfo.equippedItemLevel != null
-                      ? characterInfo.equippedItemLevel.toFixed(0)
-                      : "-"}
-                  </Text>
-                  {characterInfo.potentialAlts.length > 0 && (
-                    <AltsHoverCard alts={characterInfo.potentialAlts} />
-                  )}
-                </Stack>
-              </Group>
-            )
-          )}
+    <Paper
+      shadow="xs"
+      radius="md"
+      p="lg"
+      withBorder
+      w="100%"
+      className={classes.card}
+      style={
+        {
+          "--class-color": classColor,
+          "--avatar-ring-color": classColor,
+        } as React.CSSProperties
+      }
+    >
+      <Box
+        className={classes.accentBar}
+        style={{
+          background: `linear-gradient(90deg, transparent, ${classColor}, transparent)`,
+        }}
+      />
+
+      <Box className={classes.profile}>
+        {/* Avatar */}
+        {isLoadingInfo || isError ? (
+          <Skeleton h={92} w={92} radius="xl" animate={!isError} />
+        ) : characterInfo ? (
+          <Box className={classes.avatarRing}>
+            <Image
+              src={characterInfo.avatarUrl}
+              alt={name}
+              h={88}
+              w={88}
+              fit="cover"
+              radius={100}
+              fallbackSrc="https://placehold.co/88x88?text=?"
+            />
+          </Box>
+        ) : null}
+
+        {/* Identity */}
+        {isLoadingInfo || isError ? (
+          <Stack gap="xs">
+            <Skeleton h={22} w={180} animate={!isError} />
+            <Skeleton h={15} w={140} animate={!isError} />
+            <Skeleton h={15} w={160} animate={!isError} />
+            <Skeleton h={15} w={130} animate={!isError} />
+          </Stack>
+        ) : (
+          characterInfo && (
+            <Stack gap={1}>
+              <Text className={classes.characterName} fw={700} m={0}>
+                {upperCaseFirstLetter(characterInfo.name || name)}
+              </Text>
+              {characterInfo.guild && (
+                <Text size="sm" c="dimmed" m={0}>
+                  &lt;{characterInfo.guild.name}&gt;
+                </Text>
+              )}
+              <Text size="sm" c="dimmed" m={0}>
+                ({characterInfo.region.toUpperCase()}) {characterInfo.realm}
+              </Text>
+              <Text size="sm" c="dimmed" m={0}>
+                {characterInfo.race} {characterInfo.activeSpec} {characterInfo.class}
+              </Text>
+              <Text size="sm" m={0}>
+                <Text span fw={600} size="sm">Item Level:</Text>{" "}
+                {characterInfo.equippedItemLevel != null
+                  ? characterInfo.equippedItemLevel.toFixed(0)
+                  : "–"}
+              </Text>
+              {characterInfo.potentialAlts.length > 0 && (
+                <Group mt={4}>
+                  <AltsHoverCard alts={characterInfo.potentialAlts} />
+                </Group>
+              )}
+            </Stack>
+          )
+        )}
+
+        {/* Stat Strip */}
+        <Group className={classes.statstrip} gap={0} align="stretch">
+          <Stack className={classes.stat} gap={3}>
+            <Text className={classes.statLabel} m={0}>RIO Score</Text>
+            {isLoadingRaiderIo ? (
+              <Skeleton h={28} w={70} mt={2} />
+            ) : (
+              <Text
+                className={classes.statVal}
+                m={0}
+                style={{ color: rioScore?.color ?? "var(--mantine-color-dimmed)" }}
+              >
+                {rioScore ? Math.round(rioScore.score).toLocaleString() : "—"}
+              </Text>
+            )}
+            <Text className={classes.statSub} m={0}>
+              {rioScore ? `${rioScore.role} · current` : "current season"}
+            </Text>
+          </Stack>
+
+          <Stack className={classes.stat} gap={3}>
+            <Text className={classes.statLabel} m={0}>Top Key</Text>
+            {isLoadingRaiderIo ? (
+              <Skeleton h={28} w={50} mt={2} />
+            ) : (
+              <Text className={classes.statVal} m={0} style={{ color: "var(--mantine-color-text)" }}>
+                {topKey != null ? (
+                  <><Text component="span" className={classes.statValSmall}>+</Text>{topKey}</>
+                ) : "—"}
+              </Text>
+            )}
+            <Text className={classes.statSub} m={0}>timed</Text>
+          </Stack>
         </Group>
-
-        {/* ── Raider.IO Scores ── */}
-        <Stack gap={8} align="flex-start">
-          <Text size="md" m={0} fw={700}>
-            Raider.IO Score
-          </Text>
-          <Group align="flex-start" gap={50}>
-            <Stack gap={2}>
-              <Text size="xs" m={0} fw={700}>
-                Current Season
-              </Text>
-              <Skeleton visible={isLoadingRaiderIo} animate>
-                {!isLoadingRaiderIo && !hasValidCurrentSeasonScore && (
-                  <Text size="xs" m={0} c="dimmed">
-                    No valid scores
-                  </Text>
-                )}
-                {currentSeasonScores.map((score, i) =>
-                  score.score !== undefined && score.score < 100 ? null : (
-                    <RioScore
-                      key={i}
-                      label={`(${score.role})`}
-                      value={score.score}
-                      color={score.color}
-                      isLoading={isLoadingRaiderIo}
-                    />
-                  ),
-                )}
-              </Skeleton>
-            </Stack>
-
-            <Stack gap={2}>
-              <Text size="xs" m={0} fw={700}>
-                Previous Season
-              </Text>
-              <Skeleton visible={isLoadingRaiderIo} animate>
-                {!isLoadingRaiderIo && !hasValidPreviousSeasonScore && (
-                  <Text size="xs" m={0} c="dimmed">
-                    No valid scores
-                  </Text>
-                )}
-                {previousSeasonScores.map((score, i) =>
-                  score.score !== undefined && score.score < 100 ? null : (
-                    <RioScore
-                      key={i}
-                      label={`(${score.role})`}
-                      value={score.score}
-                      color={score.color}
-                      isLoading={isLoadingRaiderIo}
-                    />
-                  ),
-                )}
-              </Skeleton>
-            </Stack>
-          </Group>
-        </Stack>
-      </Group>
+      </Box>
     </Paper>
   );
 };

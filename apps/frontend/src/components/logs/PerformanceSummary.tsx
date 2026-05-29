@@ -1,6 +1,6 @@
-import { Paper, Group, Stack, Text, Title, Skeleton } from "@mantine/core";
-import { useMantineTheme } from "@mantine/core";
-import { GetWarcraftLogRankingColors } from "../../util/util";
+import { Group, Skeleton, Stack, Text } from "@mantine/core";
+import { getParseColor } from "../../util/util";
+import classes from "./PerformanceSummary.module.css";
 
 type PerformanceSummaryProps = {
   metricLabel: string;
@@ -10,42 +10,28 @@ type PerformanceSummaryProps = {
 };
 
 export function PerformanceSummary({ metricLabel, best, median, isFetching }: PerformanceSummaryProps) {
-  const theme = useMantineTheme();
-
   return (
-    <Paper flex={1} radius={0}>
-      <Group p="xs" w="100%" align="center" justify="space-around">
-        <Stack gap={0} align="center">
-          <Text m="0" fw={500} w="fit-content">Best {metricLabel} average</Text>
-          {isFetching ? (
-            <Skeleton height={25} miw={10} />
-          ) : (
-            <Title
-              order={2}
-              m={0}
-              c={best ? GetWarcraftLogRankingColors(best, theme) : undefined}
-              fw={700}
-            >
-              {best || "-"}
-            </Title>
-          )}
-        </Stack>
-        <Stack gap={0} align="center">
-          <Text m="0" fw={500} w="fit-content">Median {metricLabel} average</Text>
-          {isFetching ? (
-            <Skeleton height={25} miw={10} />
-          ) : (
-            <Title
-              order={2}
-              m={0}
-              c={median ? GetWarcraftLogRankingColors(median, theme) : undefined}
-              fw={700}
-            >
-              {median || "-"}
-            </Title>
-          )}
-        </Stack>
-      </Group>
-    </Paper>
+    <Group className={classes.perf} grow>
+      <Stack className={classes.cell} align="center" gap={2}>
+        <Text className={classes.cellLabel} m={0}>Best {metricLabel} average</Text>
+        {isFetching ? (
+          <Skeleton h={28} w={60} mt={2} />
+        ) : (
+          <Text className={classes.cellVal} m={0} style={{ color: best != null ? getParseColor(best) : "var(--mantine-color-dark-2)" }}>
+            {best != null ? best.toFixed(2) : "—"}
+          </Text>
+        )}
+      </Stack>
+      <Stack className={classes.cell} align="center" gap={2}>
+        <Text className={classes.cellLabel} m={0}>Median {metricLabel} average</Text>
+        {isFetching ? (
+          <Skeleton h={28} w={60} mt={2} />
+        ) : (
+          <Text className={classes.cellVal} m={0} style={{ color: median != null ? getParseColor(median) : "var(--mantine-color-dark-2)" }}>
+            {median != null ? median.toFixed(2) : "—"}
+          </Text>
+        )}
+      </Stack>
+    </Group>
   );
 }
