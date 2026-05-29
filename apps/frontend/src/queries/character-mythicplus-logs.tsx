@@ -3,24 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import { execute } from "../api/graphqlClient";
 import { graphql } from "../graphql";
 import {
-  CharacterLogsQuery,
-  CharacterLogsQueryVariables,
+  CharacterMythicPlusLogsQuery,
+  CharacterMythicPlusLogsQueryVariables,
 } from "../graphql/graphql";
 import { queryKeys } from "../queryKeys";
 
-export type CharacterLogsWarcraftLogs = NonNullable<
-  CharacterLogsQuery["character"]
->["warcraftLogs"];
+export type CharacterMythicPlusLogs = NonNullable<
+  CharacterMythicPlusLogsQuery["character"]
+>["mythicPlusLogs"];
 
 const query = graphql(`
-  query CharacterLogs(
+  query CharacterMythicPlusLogs(
     $name: String!
     $realm: String!
     $region: String!
-    $role: RoleType
     $metric: Metric
-    $difficulty: Difficulty
-    $byBracket: Boolean
     $zoneId: Int
     $partition: Int
     $bypassCache: Boolean
@@ -29,57 +26,58 @@ const query = graphql(`
       name: $name
       realm: $realm
       region: $region
-      role: $role
       metric: $metric
-      difficulty: $difficulty
-      byBracket: $byBracket
       zoneId: $zoneId
       partition: $partition
       bypassCache: $bypassCache
     ) {
-      warcraftLogs {
+      mythicPlusLogs {
         bestPerformanceAverage
         medianPerformanceAverage
         metric
-        difficulty
 
-        raidRankings {
+        dungeonRankings {
           spec
-          encounter {
+          dungeon {
             id
             name
           }
           rankPercent
           medianPercent
-          bestAmount
-          totalKills
-          bestRank {
-            ilvl
-          }
+          bestScore
+          throughputPercent
+          medianThroughputPercent
+          bestThroughput
+          bestLevel
+          lowParses
+          totalRuns
         }
       }
     }
   }
 `);
 
-export const useCharacterLogs = ({
+export const useCharacterMythicPlusLogs = ({
   bypassCacheRef,
+  enabled = true,
   ...args
-}: Omit<CharacterLogsQueryVariables, "bypassCache"> & {
+}: Omit<CharacterMythicPlusLogsQueryVariables, "bypassCache" | "role"> & {
   bypassCacheRef?: RefObject<boolean>;
+  enabled?: boolean;
 }) =>
   useQuery({
-    queryKey: queryKeys.characterLogs(args),
+    queryKey: queryKeys.characterMythicPlusLogs(args),
+    enabled,
     retry: false,
     placeholderData: (prev) => prev,
-    queryFn: async (): Promise<CharacterLogsWarcraftLogs> => {
+    queryFn: async (): Promise<CharacterMythicPlusLogs> => {
       const response = await execute<
-        CharacterLogsQuery,
-        CharacterLogsQueryVariables
+        CharacterMythicPlusLogsQuery,
+        CharacterMythicPlusLogsQueryVariables
       >(query, { ...args, bypassCache: bypassCacheRef?.current ?? false });
 
-      return response.character?.warcraftLogs;
+      return response.character?.mythicPlusLogs;
     },
-    gcTime: 1000 * 60 * 5, // 5 minutes
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5,
   });

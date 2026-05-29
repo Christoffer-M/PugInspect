@@ -2,8 +2,8 @@ import { ActionIcon, AppShell, Box, Container, Flex, Group, Text } from "@mantin
 import { IconBrandGithub, IconHistory } from "@tabler/icons-react";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { SearchHistoryDrawer } from "./SearchHistoryDrawer/SearchHistoryDrawer";
-import CharacterSearchInput from "./CharacterSearchInput";
+import { SearchHistoryDrawer } from "../search/SearchHistoryDrawer/SearchHistoryDrawer";
+import CharacterSearchInput from "../search/CharacterSearchInput";
 
 const logoTextStyle: React.CSSProperties = {
   fontFamily: "Space Grotesk, system-ui, sans-serif",

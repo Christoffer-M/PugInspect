@@ -2903,6 +2903,25 @@ type ReportComponentMutation {
     contents: String!
     key: String!
   ): Boolean
+
+  """
+  Create or update a report component. If a key is provided and a matching component owned by the current user exists, all fields are updated. If the key is not provided, or if it is provided but no matching component exists, a new component is created. If the provided key belongs to another user, an error is returned. Returns the KEY of the component.
+  """
+  upsert(
+    """The script contents of the component, in JavaScript."""
+    contents: String!
+
+    """
+    The key of an existing component to update. If omitted, a new component is created with an auto-generated key.
+    """
+    key: String
+
+    """A human-readable name for the component."""
+    name: String!
+
+    """Whether the component is protected from deletion."""
+    protected: Boolean!
+  ): String!
 }
 
 """

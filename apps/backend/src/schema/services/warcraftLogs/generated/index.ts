@@ -1866,6 +1866,8 @@ export type ReportComponentMutation = {
   setDeletionProtected?: Maybe<Scalars['Boolean']['output']>;
   /** Update the script contents of a report component, replacing the old contents. True is returned on success, errors are thrown on failure. */
   updateContents?: Maybe<Scalars['Boolean']['output']>;
+  /** Create or update a report component. If a key is provided and a matching component owned by the current user exists, all fields are updated. If the key is not provided, or if it is provided but no matching component exists, a new component is created. If the provided key belongs to another user, an error is returned. Returns the KEY of the component. */
+  upsert: Scalars['String']['output'];
 };
 
 
@@ -1889,6 +1891,14 @@ export type ReportComponentMutationSetDeletionProtectedArgs = {
 export type ReportComponentMutationUpdateContentsArgs = {
   contents: Scalars['String']['input'];
   key: Scalars['String']['input'];
+};
+
+
+export type ReportComponentMutationUpsertArgs = {
+  contents: Scalars['String']['input'];
+  key?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  protected: Scalars['Boolean']['input'];
 };
 
 /** Filter input events of a report component to a range of time within a report. */

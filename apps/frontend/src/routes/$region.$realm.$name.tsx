@@ -1,4 +1,4 @@
-import { Container, Stack, Group, Title, Grid } from "@mantine/core";
+import { Container, Stack, Group, Title, Grid, SegmentedControl } from "@mantine/core";
 import {
   createFileRoute,
   useNavigate,
@@ -6,23 +6,30 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { CharacterHeader } from "../components/CharacterHeader";
-import { LogsTable } from "../components/LogsTable";
-import { Page } from "../components/Page";
+import { CharacterHeader } from "../components/character/CharacterHeader";
+import { RaidLogsTable } from "../components/logs/RaidLogsTable";
+import { MythicPlusLogsTable } from "../components/logs/MythicPlusLogsTable";
+import { Page } from "../components/layout/Page";
 import { useCharacterInfoQuery } from "../queries/character-info";
 import { useCharacterRaiderIoQuery } from "../queries/character-raiderio";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
-import { useCharacterLogs } from "../queries/character-logs";
+import { useCharacterRaidLogs } from "../queries/character-raid-logs";
+import { useCharacterMythicPlusLogs } from "../queries/character-mythicplus-logs";
 import { useZonePartitions } from "../queries/zone-partitions";
-import { RaidProgression } from "../components/RaidProgression";
-import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
-import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
+import { RaidProgression } from "../components/logs/RaidProgression";
+import { BestMythicPlusRunsTable } from "../components/mythic-plus/BestMythicPlusRunsTable";
+import { RecentMythicPlusRunsTable } from "../components/mythic-plus/RecentMythicPlusRunsTable";
 import { getZoneIdForRaid, DEFAULT_RAID, RAIDS } from "../data/raidZones";
+import { DEFAULT_MYTHIC_PLUS_SEASON, getMythicPlusZoneId, MYTHIC_PLUS_SEASONS } from "../data/mythicPlusSeasons";
 import { useSearchHistory } from "../hooks/useSearchHistory";
-import { ExternalLinkIcon } from "../components/ExternalLinkIcon";
+import { ExternalLinkIcon } from "../components/ui/ExternalLinkIcon";
 import { normalizeRealm } from "../util/util";
 import RaiderIoIcon from "../assets/raiderio-icon.svg";
 import WarcraftLogsIcon from "../assets/warcraftlogs-icon.png";
+
+export type LogsView = "raid" | "mythicplus";
+
+const MP_METRICS = new Set<Metric>([Metric.PointsAndDamage, Metric.PointsAndHealing]);
 
 export type CharacterQueryParams = {
   roleType: RoleType;
@@ -31,6 +38,8 @@ export type CharacterQueryParams = {
   bracket?: boolean;
   raid?: string;
   partition?: number | "all";
+  logsView?: LogsView;
+  mpSeason?: string;
 };
 
 export const Route = createFileRoute("/$region/$realm/$name")({
@@ -53,6 +62,10 @@ export const Route = createFileRoute("/$region/$realm/$name")({
       partition: search.partition !== undefined
         ? parsePartition(search.partition) ?? "all"
         : "all",
+      logsView: (search.logsView === "mythicplus" ? "mythicplus"
+        : search.logsView === "raid" ? "raid"
+        : (localStorage.getItem("logsView") as LogsView | null) ?? "raid") as LogsView,
+      mpSeason: (search.mpSeason as string | undefined) ?? DEFAULT_MYTHIC_PLUS_SEASON,
     };
   },
 });
@@ -71,9 +84,13 @@ function CharacterPage() {
     bracket: searchBracket,
     raid: searchRaid,
     partition: searchPartition,
+    logsView: searchLogsView,
+    mpSeason: searchMpSeason,
   } = useSearch({ from: Route.id });
 
   const navigate = useNavigate({ from: Route.id });
+
+  const isMythicPlusView = searchLogsView === "mythicplus";
 
   // Blizzard — character identity, cached 24 h
   const {
@@ -86,19 +103,19 @@ function CharacterPage() {
   const { data: raiderIoData, isFetching: isFetchingRaiderIo } =
     useCharacterRaiderIoQuery({ name, realm, region });
 
-  const zoneId = searchRaid
+  // Raid logs setup
+  const raidZoneId = searchRaid
     ? getZoneIdForRaid(searchRaid)
     : RAIDS[DEFAULT_RAID]?.zoneId;
-  const { data: partitions } = useZonePartitions(zoneId);
-  const effectivePartition =
-    partitions?.length === 1
+  const { data: raidPartitions } = useZonePartitions(raidZoneId);
+  const effectiveRaidPartition =
+    raidPartitions?.length === 1
       ? undefined
       : searchPartition === "all"
         ? undefined
         : searchPartition;
 
-  // WarcraftLogs — raid log performance, cached 15 min
-  const { data: logsData, isFetching: isFetchingLogs } = useCharacterLogs({
+  const { data: raidLogsData, isFetching: isFetchingRaidLogs } = useCharacterRaidLogs({
     name,
     realm,
     region,
@@ -106,8 +123,34 @@ function CharacterPage() {
     metric: searchMetric,
     difficulty: searchDifficulty,
     byBracket: searchBracket,
-    zoneId,
-    partition: effectivePartition,
+    zoneId: raidZoneId,
+    partition: effectiveRaidPartition,
+    enabled: !isMythicPlusView,
+  });
+
+  // Mythic+ logs setup
+  const mpSeasonSlug = searchMpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON;
+  const mpZoneId = getMythicPlusZoneId(mpSeasonSlug) ?? MYTHIC_PLUS_SEASONS[DEFAULT_MYTHIC_PLUS_SEASON]!.zoneId;
+  const { data: mpPartitions } = useZonePartitions(mpZoneId);
+  const effectiveMpPartition =
+    mpPartitions?.length === 1
+      ? undefined
+      : searchPartition === "all"
+        ? undefined
+        : searchPartition;
+
+  const effectiveMpMetric = MP_METRICS.has(searchMetric as Metric)
+    ? (searchMetric as Metric)
+    : Metric.PointsAndDamage;
+
+  const { data: mpLogsData, isFetching: isFetchingMpLogs } = useCharacterMythicPlusLogs({
+    name,
+    realm,
+    region,
+    metric: effectiveMpMetric,
+    zoneId: mpZoneId,
+    partition: effectiveMpPartition,
+    enabled: isMythicPlusView,
   });
 
   const { add: addToHistory } = useSearchHistory();
@@ -162,18 +205,51 @@ function CharacterPage() {
               isLoadingRaiderIo={isFetchingRaiderIo}
               isError={isError}
             />
-            <RaidProgression
-              raidData={raiderIoData?.raidProgression ?? []}
-              isLoading={isFetchingRaiderIo}
-              selectedRaid={searchRaid ?? DEFAULT_RAID ?? null}
-              onRaidChange={handleRaidChange}
-            />
-            <LogsTable
-              logs={logsData}
-              isFetching={isFetchingLogs}
-              class={characterInfo?.class}
-              zoneId={zoneId}
-            />
+            <Stack w="100%" gap="xs">
+              <SegmentedControl
+                data={[
+                  { label: "Raid", value: "raid" },
+                  { label: "Mythic+", value: "mythicplus" },
+                ]}
+                value={searchLogsView ?? "raid"}
+                onChange={(value) => {
+                  const view = value as LogsView;
+                  localStorage.setItem("logsView", view);
+                  navigate({
+                    search: (prev) => ({
+                      ...prev,
+                      logsView: view,
+                      metric: undefined,
+                      partition: undefined,
+                      ...(view === "mythicplus" && { difficulty: undefined, bracket: undefined }),
+                    }),
+                  });
+                }}
+              />
+              {!isMythicPlusView && (
+                <RaidProgression
+                  raidData={raiderIoData?.raidProgression ?? []}
+                  isLoading={isFetchingRaiderIo}
+                  selectedRaid={searchRaid ?? DEFAULT_RAID ?? null}
+                  onRaidChange={handleRaidChange}
+                />
+              )}
+              {isMythicPlusView ? (
+                <MythicPlusLogsTable
+                  logs={mpLogsData}
+                  isFetching={isFetchingMpLogs}
+                  class={characterInfo?.class}
+                  zoneId={mpZoneId}
+                />
+              ) : (
+                <RaidLogsTable
+                  logs={raidLogsData}
+                  isFetching={isFetchingRaidLogs}
+                  class={characterInfo?.class}
+                  zoneId={raidZoneId}
+                />
+              )}
+            </Stack>
             <Grid w="100%">
               <Grid.Col span={{ sm: 12, md: 6 }}>
                 <BestMythicPlusRunsTable

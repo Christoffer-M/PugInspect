@@ -1,4 +1,13 @@
-import { Difficulty, InputMaybe } from "@repo/graphql-types";
+import { Difficulty, InputMaybe, Metric } from "@repo/graphql-types";
+
+const VALID_METRICS = new Set<Metric>(["dps", "hps", "points_and_damage", "points_and_healing"]);
+
+/** Returns the metric only if it is a currently valid Metric enum value, otherwise null. */
+export function sanitizeMetric(value: unknown): Metric | null {
+  return typeof value === "string" && VALID_METRICS.has(value as Metric)
+    ? (value as Metric)
+    : null;
+}
 
 /** Canonical WoW realm slug: lowercase, apostrophes removed, spaces → dashes. Dashes are preserved. */
 export function normalizeRealm(realm: string): string {
@@ -30,6 +39,16 @@ export const mapDifficultyIdToName = (
       return null;
   }
 };
+
+export function mapEncounter(
+  encounter: { id?: number; name?: string } | undefined
+): { id: number; name: string } | null {
+  return encounter &&
+    typeof encounter.id === "number" &&
+    typeof encounter.name === "string"
+    ? { id: encounter.id, name: encounter.name }
+    : null;
+}
 
 export function toFixedNumber(
   value: number | undefined,

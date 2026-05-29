@@ -11,9 +11,9 @@ import {
 } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
-import { getClassColor } from "../../util/util";
-import { HistoryEntry, useSearchHistory } from "../../hooks/useSearchHistory";
-import { RoleType } from "../../graphql/graphql";
+import { getClassColor } from "../../../util/util";
+import { HistoryEntry, useSearchHistory } from "../../../hooks/useSearchHistory";
+import { RoleType } from "../../../graphql/graphql";
 import classes from "./SearchHistoryDrawer.module.css";
 
 function formatRelativeTime(timestamp: number): string {

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Container, List, Stack, Text, Title } from "@mantine/core";
-import { Page } from "../components/Page";
+import { Page } from "../components/layout/Page";
 import { useEffect } from "react";
 
 const PrivacyPolicy: React.FC = () => {

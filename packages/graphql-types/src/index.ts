@@ -44,17 +44,24 @@ export type Character = {
   gender?: Maybe<Scalars['String']['output']>;
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;
+  mythicPlusLogs?: Maybe<MythicPlusLogs>;
   name: Scalars['String']['output'];
   potentialAlts: Array<AltCharacter>;
   race?: Maybe<Scalars['String']['output']>;
+  raidLogs?: Maybe<RaidLogs>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
-  warcraftLogs?: Maybe<Logs>;
 };
 
 
-export type CharacterWarcraftLogsArgs = {
+export type CharacterMythicPlusLogsArgs = {
+  metric?: InputMaybe<Metric>;
+  role?: InputMaybe<RoleType>;
+};
+
+
+export type CharacterRaidLogsArgs = {
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
@@ -78,23 +85,39 @@ export type Guild = {
   realm: Scalars['String']['output'];
 };
 
-export type Logs = {
-  __typename?: 'Logs';
-  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
-  difficulty?: Maybe<Difficulty>;
-  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
-  metric?: Maybe<Metric>;
-  raidRankings?: Maybe<Array<RaidRanking>>;
-};
-
 export type Metric =
   | 'dps'
-  | 'hps';
+  | 'hps'
+  | 'points_and_damage'
+  | 'points_and_healing';
 
 export type MythicPlusClass = {
   __typename?: 'MythicPlusClass';
   name: Scalars['String']['output'];
   slug: Scalars['String']['output'];
+};
+
+export type MythicPlusLogs = ZoneLogs & {
+  __typename?: 'MythicPlusLogs';
+  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  dungeonRankings?: Maybe<Array<MythicPlusRanking>>;
+  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  metric?: Maybe<Metric>;
+};
+
+export type MythicPlusRanking = {
+  __typename?: 'MythicPlusRanking';
+  bestLevel?: Maybe<Scalars['Int']['output']>;
+  bestScore?: Maybe<Scalars['Float']['output']>;
+  bestThroughput?: Maybe<Scalars['Float']['output']>;
+  dungeon?: Maybe<Encounter>;
+  lowParses?: Maybe<Scalars['Boolean']['output']>;
+  medianPercent?: Maybe<Scalars['Float']['output']>;
+  medianThroughputPercent?: Maybe<Scalars['Float']['output']>;
+  rankPercent?: Maybe<Scalars['Float']['output']>;
+  spec?: Maybe<Scalars['String']['output']>;
+  throughputPercent?: Maybe<Scalars['Float']['output']>;
+  totalRuns?: Maybe<Scalars['Int']['output']>;
 };
 
 export type MythicPlusRun = {
@@ -149,6 +172,15 @@ export type QueryCharacterSuggestionsArgs = {
 
 export type QueryZonePartitionsArgs = {
   zoneId: Scalars['Int']['input'];
+};
+
+export type RaidLogs = ZoneLogs & {
+  __typename?: 'RaidLogs';
+  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  difficulty?: Maybe<Difficulty>;
+  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  metric?: Maybe<Metric>;
+  raidRankings?: Maybe<Array<RaidRanking>>;
 };
 
 export type RaidProgressionDetail = {
@@ -207,6 +239,12 @@ export type Segment = {
   __typename?: 'Segment';
   color: Scalars['String']['output'];
   score: Scalars['Float']['output'];
+};
+
+export type ZoneLogs = {
+  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  metric?: Maybe<Metric>;
 };
 
 export type ZonePartition = {
