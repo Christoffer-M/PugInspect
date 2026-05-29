@@ -46,4 +46,11 @@ export type ZoneRanking = {
       ilvl?: number;
     };
   }[];
+  throughputRankings?: Record<string, {
+    best_per_second_amount?: number;
+    best_level?: number;
+    best_historical_percentile?: number;
+    median_historical_percentile?: number;
+    best_historical_low_parses?: boolean;
+  }>;
 };

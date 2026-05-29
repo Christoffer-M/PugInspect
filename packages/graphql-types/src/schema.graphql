@@ -29,13 +29,14 @@ type Character {
   gender: String
   guild: Guild
   level: Int
+  mythicPlusLogs(metric: Metric, role: RoleType): MythicPlusLogs
   name: String!
   potentialAlts: [AltCharacter!]!
   race: String
+  raidLogs(byBracket: Boolean, metric: Metric, role: RoleType): RaidLogs
   raiderIo: RaiderIo
   realm: String!
   region: String!
-  warcraftLogs(byBracket: Boolean, metric: Metric, role: RoleType): Logs
 }
 
 enum Difficulty {
@@ -55,22 +56,37 @@ type Guild {
   realm: String!
 }
 
-type Logs {
-  bestPerformanceAverage: Float
-  difficulty: Difficulty
-  medianPerformanceAverage: Float
-  metric: Metric
-  raidRankings: [RaidRanking!]
-}
-
 enum Metric {
   dps
   hps
+  points_and_damage
+  points_and_healing
 }
 
 type MythicPlusClass {
   name: String!
   slug: String!
+}
+
+type MythicPlusLogs implements ZoneLogs {
+  bestPerformanceAverage: Float
+  dungeonRankings: [MythicPlusRanking!]
+  medianPerformanceAverage: Float
+  metric: Metric
+}
+
+type MythicPlusRanking {
+  bestLevel: Int
+  bestScore: Float
+  bestThroughput: Float
+  dungeon: Encounter
+  lowParses: Boolean
+  medianPercent: Float
+  medianThroughputPercent: Float
+  rankPercent: Float
+  spec: String
+  throughputPercent: Float
+  totalRuns: Int
 }
 
 type MythicPlusRun {
@@ -97,6 +113,14 @@ type Query {
   character(byBracket: Boolean, bypassCache: Boolean, difficulty: Difficulty, metric: Metric, name: String!, partition: Int, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
   zonePartitions(zoneId: Int!): [ZonePartition!]!
+}
+
+type RaidLogs implements ZoneLogs {
+  bestPerformanceAverage: Float
+  difficulty: Difficulty
+  medianPerformanceAverage: Float
+  metric: Metric
+  raidRankings: [RaidRanking!]
 }
 
 type RaidProgressionDetail {
@@ -150,6 +174,12 @@ type SeasonScores {
 type Segment {
   color: String!
   score: Float!
+}
+
+interface ZoneLogs {
+  bestPerformanceAverage: Float
+  medianPerformanceAverage: Float
+  metric: Metric
 }
 
 type ZonePartition {

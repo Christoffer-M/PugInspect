@@ -1,11 +1,11 @@
-import { Logs } from "@repo/graphql-types";
+import { RaidLogs } from "@repo/graphql-types";
 import { CharacterProfileQuery } from "../services/warcraftLogs/generated/index.js";
 import { ZoneRanking } from "../services/warcraftLogs/model/ZoneRankings.js";
-import { mapDifficultyIdToName, toFixedNumber } from "../utils/helpers.js";
+import { mapDifficultyIdToName, sanitizeMetric, toFixedNumber } from "../utils/helpers.js";
 
-export function mapWarcraftLogs(
+export function mapRaidLogs(
   characterData: CharacterProfileQuery["characterData"]
-): Logs | null {
+): RaidLogs | null {
   const zoneRankings = characterData?.character?.zoneRankings as
     | ZoneRanking
     | undefined;
@@ -17,7 +17,7 @@ export function mapWarcraftLogs(
     medianPerformanceAverage: toFixedNumber(
       zoneRankings.medianPerformanceAverage
     ),
-    metric: zoneRankings.metric,
+    metric: sanitizeMetric(zoneRankings.metric),
     difficulty: mapDifficultyIdToName(zoneRankings.difficulty),
     raidRankings: zoneRankings.rankings?.map((ranking) => ({
       encounter:

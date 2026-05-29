@@ -64,7 +64,8 @@ export const characterTypedefs = gql`
     guild: Guild
     avatarUrl: String
     raiderIo: RaiderIo
-    warcraftLogs(role: RoleType, metric: Metric, byBracket: Boolean): Logs
+    raidLogs(role: RoleType, metric: Metric, byBracket: Boolean): RaidLogs
+    mythicPlusLogs(role: RoleType, metric: Metric): MythicPlusLogs
     potentialAlts: [AltCharacter!]!
   }
 
@@ -138,7 +139,13 @@ export const characterTypedefs = gql`
     color: String!
   }
 
-  type Logs {
+  interface ZoneLogs {
+    bestPerformanceAverage: Float
+    medianPerformanceAverage: Float
+    metric: Metric
+  }
+
+  type RaidLogs implements ZoneLogs {
     bestPerformanceAverage: Float
     medianPerformanceAverage: Float
     metric: Metric
@@ -146,9 +153,32 @@ export const characterTypedefs = gql`
     raidRankings: [RaidRanking!]
   }
 
+  type MythicPlusLogs implements ZoneLogs {
+    bestPerformanceAverage: Float
+    medianPerformanceAverage: Float
+    metric: Metric
+    dungeonRankings: [MythicPlusRanking!]
+  }
+
+  type MythicPlusRanking {
+    dungeon: Encounter
+    rankPercent: Float
+    medianPercent: Float
+    bestScore: Float
+    throughputPercent: Float
+    medianThroughputPercent: Float
+    bestThroughput: Float
+    bestLevel: Int
+    lowParses: Boolean
+    totalRuns: Int
+    spec: String
+  }
+
   enum Metric {
     dps
     hps
+    points_and_damage
+    points_and_healing
   }
 
   type BestRank {

@@ -9,14 +9,15 @@ const logger = createLogger({ service: "CharacterProfile" });
 export async function getCharacterProfiles(
   args: QueryCharacterArgs,
   {
-    logsRequested,
+    raidLogsRequested,
+    mythicPlusLogsRequested,
     raiderIoRequested,
     blizzardRequested,
     bypassCache,
-  }: { logsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; bypassCache: boolean }
+  }: { raidLogsRequested: boolean; mythicPlusLogsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; bypassCache: boolean }
 ) {
   const { name, realm, region } = args;
-  logger.info("Character profile request", { name, realm, region, blizzardRequested, logsRequested, raiderIoRequested, bypassCache });
+  logger.info("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, bypassCache });
 
   const [blizzardResult, rioResult, logsResult] = await Promise.allSettled([
     blizzardRequested
@@ -25,7 +26,7 @@ export async function getCharacterProfiles(
     raiderIoRequested
       ? RaiderIOService.getCharacterProfile(args, bypassCache)
       : Promise.resolve(null),
-    logsRequested
+    raidLogsRequested || mythicPlusLogsRequested
       ? WarcraftLogsService.getCharacterProfile(args, bypassCache)
       : Promise.resolve(null),
   ]);

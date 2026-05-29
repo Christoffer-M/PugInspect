@@ -1,4 +1,4 @@
-import { CharacterLogsQueryVariables } from "./graphql/graphql";
+import { CharacterRaidLogsQueryVariables, CharacterMythicPlusLogsQueryVariables } from "./graphql/graphql";
 
 // Helper for normalizing character params
 export function normalizeCharacterParams(
@@ -24,14 +24,14 @@ export const queryKeys = {
   character: characterKey("character"),
   characterRaiderIo: characterKey("characterRaiderIo"),
   zonePartitions: (zoneId: number) => ["zonePartitions", zoneId],
-  characterLogs: (args: CharacterLogsQueryVariables) => {
+  characterRaidLogs: (args: CharacterRaidLogsQueryVariables) => {
     const {
       name: normName,
       realm: normRealm,
       region: normRegion,
     } = normalizeCharacterParams(args.name, args.realm, args.region);
     return [
-      "characterLogs",
+      "characterRaidLogs",
       normName,
       normRealm,
       normRegion,
@@ -39,6 +39,22 @@ export const queryKeys = {
       args.metric,
       args.difficulty,
       args.byBracket,
+      args.zoneId,
+      args.partition,
+    ];
+  },
+  characterMythicPlusLogs: (args: CharacterMythicPlusLogsQueryVariables) => {
+    const {
+      name: normName,
+      realm: normRealm,
+      region: normRegion,
+    } = normalizeCharacterParams(args.name, args.realm, args.region);
+    return [
+      "characterMythicPlusLogs",
+      normName,
+      normRealm,
+      normRegion,
+      args.metric,
       args.zoneId,
       args.partition,
     ];

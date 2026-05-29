@@ -46,17 +46,24 @@ export type Character = {
   gender?: Maybe<Scalars['String']['output']>;
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;
+  mythicPlusLogs?: Maybe<MythicPlusLogs>;
   name: Scalars['String']['output'];
   potentialAlts: Array<AltCharacter>;
   race?: Maybe<Scalars['String']['output']>;
+  raidLogs?: Maybe<RaidLogs>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
-  warcraftLogs?: Maybe<Logs>;
 };
 
 
-export type CharacterWarcraftLogsArgs = {
+export type CharacterMythicPlusLogsArgs = {
+  metric?: InputMaybe<Metric>;
+  role?: InputMaybe<RoleType>;
+};
+
+
+export type CharacterRaidLogsArgs = {
   byBracket?: InputMaybe<Scalars['Boolean']['input']>;
   metric?: InputMaybe<Metric>;
   role?: InputMaybe<RoleType>;
@@ -81,24 +88,40 @@ export type Guild = {
   realm: Scalars['String']['output'];
 };
 
-export type Logs = {
-  __typename?: 'Logs';
-  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
-  difficulty?: Maybe<Difficulty>;
-  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
-  metric?: Maybe<Metric>;
-  raidRankings?: Maybe<Array<RaidRanking>>;
-};
-
 export enum Metric {
   Dps = 'dps',
-  Hps = 'hps'
+  Hps = 'hps',
+  PointsAndDamage = 'points_and_damage',
+  PointsAndHealing = 'points_and_healing'
 }
 
 export type MythicPlusClass = {
   __typename?: 'MythicPlusClass';
   name: Scalars['String']['output'];
   slug: Scalars['String']['output'];
+};
+
+export type MythicPlusLogs = ZoneLogs & {
+  __typename?: 'MythicPlusLogs';
+  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  dungeonRankings?: Maybe<Array<MythicPlusRanking>>;
+  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  metric?: Maybe<Metric>;
+};
+
+export type MythicPlusRanking = {
+  __typename?: 'MythicPlusRanking';
+  bestLevel?: Maybe<Scalars['Int']['output']>;
+  bestScore?: Maybe<Scalars['Float']['output']>;
+  bestThroughput?: Maybe<Scalars['Float']['output']>;
+  dungeon?: Maybe<Encounter>;
+  lowParses?: Maybe<Scalars['Boolean']['output']>;
+  medianPercent?: Maybe<Scalars['Float']['output']>;
+  medianThroughputPercent?: Maybe<Scalars['Float']['output']>;
+  rankPercent?: Maybe<Scalars['Float']['output']>;
+  spec?: Maybe<Scalars['String']['output']>;
+  throughputPercent?: Maybe<Scalars['Float']['output']>;
+  totalRuns?: Maybe<Scalars['Int']['output']>;
 };
 
 export type MythicPlusRun = {
@@ -153,6 +176,15 @@ export type QueryCharacterSuggestionsArgs = {
 
 export type QueryZonePartitionsArgs = {
   zoneId: Scalars['Int']['input'];
+};
+
+export type RaidLogs = ZoneLogs & {
+  __typename?: 'RaidLogs';
+  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  difficulty?: Maybe<Difficulty>;
+  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  metric?: Maybe<Metric>;
+  raidRankings?: Maybe<Array<RaidRanking>>;
 };
 
 export type RaidProgressionDetail = {
@@ -214,6 +246,12 @@ export type Segment = {
   score: Scalars['Float']['output'];
 };
 
+export type ZoneLogs = {
+  bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  medianPerformanceAverage?: Maybe<Scalars['Float']['output']>;
+  metric?: Maybe<Metric>;
+};
+
 export type ZonePartition = {
   __typename?: 'ZonePartition';
   compactName: Scalars['String']['output'];
@@ -232,7 +270,20 @@ export type CharacterInfoQueryVariables = Exact<{
 
 export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null, potentialAlts: Array<{ __typename?: 'AltCharacter', name: string, realm: string, region: string, class?: string | null, avatarUrl?: string | null, itemLevel?: number | null, mythicPlusScore?: number | null, mythicPlusColor?: string | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, summary?: string | null, total_bosses?: number | null, normal_bosses_killed?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null }> | null }> } | null };
 
-export type CharacterLogsQueryVariables = Exact<{
+export type CharacterMythicPlusLogsQueryVariables = Exact<{
+  name: Scalars['String']['input'];
+  realm: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+  metric?: InputMaybe<Metric>;
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
+  partition?: InputMaybe<Scalars['Int']['input']>;
+  bypassCache?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type CharacterMythicPlusLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', mythicPlusLogs?: { __typename?: 'MythicPlusLogs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, dungeonRankings?: Array<{ __typename?: 'MythicPlusRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestScore?: number | null, throughputPercent?: number | null, medianThroughputPercent?: number | null, bestThroughput?: number | null, bestLevel?: number | null, lowParses?: boolean | null, totalRuns?: number | null, dungeon?: { __typename?: 'Encounter', id: number, name: string } | null }> | null } | null } | null };
+
+export type CharacterRaidLogsQueryVariables = Exact<{
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
   region: Scalars['String']['input'];
@@ -246,7 +297,7 @@ export type CharacterLogsQueryVariables = Exact<{
 }>;
 
 
-export type CharacterLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', warcraftLogs?: { __typename?: 'Logs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null, bestRank?: { __typename?: 'BestRank', ilvl?: number | null } | null }> | null } | null } | null };
+export type CharacterRaidLogsQuery = { __typename?: 'Query', character?: { __typename?: 'Character', raidLogs?: { __typename?: 'RaidLogs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null, metric?: Metric | null, difficulty?: Difficulty | null, raidRankings?: Array<{ __typename?: 'RaidRanking', spec?: string | null, rankPercent?: number | null, medianPercent?: number | null, bestAmount?: number | null, totalKills?: number | null, encounter?: { __typename?: 'Encounter', id: number, name: string } | null, bestRank?: { __typename?: 'BestRank', ilvl?: number | null } | null }> | null } | null } | null };
 
 export type CharacterRaiderIoQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -338,8 +389,43 @@ export const CharacterInfoDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<CharacterInfoQuery, CharacterInfoQueryVariables>;
-export const CharacterLogsDocument = new TypedDocumentString(`
-    query CharacterLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty, $byBracket: Boolean, $zoneId: Int, $partition: Int, $bypassCache: Boolean) {
+export const CharacterMythicPlusLogsDocument = new TypedDocumentString(`
+    query CharacterMythicPlusLogs($name: String!, $realm: String!, $region: String!, $metric: Metric, $zoneId: Int, $partition: Int, $bypassCache: Boolean) {
+  character(
+    name: $name
+    realm: $realm
+    region: $region
+    metric: $metric
+    zoneId: $zoneId
+    partition: $partition
+    bypassCache: $bypassCache
+  ) {
+    mythicPlusLogs {
+      bestPerformanceAverage
+      medianPerformanceAverage
+      metric
+      dungeonRankings {
+        spec
+        dungeon {
+          id
+          name
+        }
+        rankPercent
+        medianPercent
+        bestScore
+        throughputPercent
+        medianThroughputPercent
+        bestThroughput
+        bestLevel
+        lowParses
+        totalRuns
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<CharacterMythicPlusLogsQuery, CharacterMythicPlusLogsQueryVariables>;
+export const CharacterRaidLogsDocument = new TypedDocumentString(`
+    query CharacterRaidLogs($name: String!, $realm: String!, $region: String!, $role: RoleType, $metric: Metric, $difficulty: Difficulty, $byBracket: Boolean, $zoneId: Int, $partition: Int, $bypassCache: Boolean) {
   character(
     name: $name
     realm: $realm
@@ -352,7 +438,7 @@ export const CharacterLogsDocument = new TypedDocumentString(`
     partition: $partition
     bypassCache: $bypassCache
   ) {
-    warcraftLogs {
+    raidLogs {
       bestPerformanceAverage
       medianPerformanceAverage
       metric
@@ -374,7 +460,7 @@ export const CharacterLogsDocument = new TypedDocumentString(`
     }
   }
 }
-    `) as unknown as TypedDocumentString<CharacterLogsQuery, CharacterLogsQueryVariables>;
+    `) as unknown as TypedDocumentString<CharacterRaidLogsQuery, CharacterRaidLogsQueryVariables>;
 export const CharacterRaiderIoDocument = new TypedDocumentString(`
     query CharacterRaiderIo($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
   character(

@@ -24,19 +24,21 @@ import {
 } from "../graphql/graphql";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../routes/$region.$realm.$name";
-import { CharacterLogsWarcraftLogs } from "../queries/character-logs";
+import { CharacterRaidLogs } from "../queries/character-raid-logs";
 import { useZonePartitions } from "../queries/zone-partitions";
 
 const difficultyOrder = ["LFR", "Normal", "Heroic", "Mythic"];
+const RAID_METRICS = [Metric.Dps, Metric.Hps];
+const DEFAULT_RAID_METRIC = Metric.Dps;
 
-type LogsTableProps = {
-  logs?: CharacterLogsWarcraftLogs | null;
+type RaidLogsTableProps = {
+  logs?: CharacterRaidLogs | null;
   class?: Maybe<string> | undefined;
   isFetching: boolean;
   zoneId?: number;
 };
 
-export const LogsTable: React.FC<LogsTableProps> = ({
+export const RaidLogsTable: React.FC<RaidLogsTableProps> = ({
   logs,
   isFetching,
   class: className,
@@ -57,6 +59,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
   const metric = logs?.metric;
   const rankings = logs?.raidRankings || [];
   const difficulty = logs?.difficulty;
+  const activeMetricLabel = (
+    RAID_METRICS.includes(searchMetric as Metric) ? searchMetric : metric
+  )?.toUpperCase() ?? "";
 
   const getClassImageSrc = (spec: string | undefined | null) => {
     if (!className || !spec) return null;
@@ -146,8 +151,9 @@ export const LogsTable: React.FC<LogsTableProps> = ({
     navigate({
       to: ".",
       search: (prev) => ({
+        ...prev,
         roleType: partial.roleType ?? prev.roleType ?? RoleType.Any,
-        metric: partial.metric ?? prev.metric ?? metric ?? undefined,
+        metric: partial.metric ?? (RAID_METRICS.includes(prev.metric as Metric) ? prev.metric : undefined) ?? metric ?? undefined,
         difficulty:
           partial.difficulty ?? prev.difficulty ?? difficulty ?? undefined,
         bracket: partial.bracket ?? prev.bracket ?? false,
@@ -250,11 +256,15 @@ export const LogsTable: React.FC<LogsTableProps> = ({
               </Text>
               <SegmentedControl
                 w={"100%"}
-                data={Object.values(Metric).map((metric) => ({
-                  label: metric.toUpperCase(),
-                  value: metric,
+                data={RAID_METRICS.map((m) => ({
+                  label: m.toUpperCase(),
+                  value: m,
                 }))}
-                value={searchMetric ?? metric ?? Metric.Dps}
+                value={
+                  RAID_METRICS.includes(searchMetric as Metric)
+                    ? searchMetric!
+                    : (metric ?? DEFAULT_RAID_METRIC)
+                }
                 onChange={(value) => {
                   if (value == null) return;
                   setSearch({ metric: value as Metric });
@@ -269,7 +279,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
             <Group p={"xs"} w={"100%"} align={"center"} justify="space-around">
               <Stack gap={0} align="center">
                 <Text m="0" fw={500} w={"fit-content"}>
-                  Best average
+                  Best {activeMetricLabel} average
                 </Text>
                 {isFetching ? (
                   <Skeleton height={25} miw={10} />
@@ -294,7 +304,7 @@ export const LogsTable: React.FC<LogsTableProps> = ({
 
               <Stack gap={0} align="center">
                 <Text m="0" fw={500} w={"fit-content"}>
-                  Median average
+                  Median {activeMetricLabel} average
                 </Text>
                 {isFetching ? (
                   <Skeleton height={25} miw={10} />

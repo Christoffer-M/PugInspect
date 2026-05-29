@@ -8,7 +8,8 @@ import {
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
 import { mapRaiderIo } from "../mappers/raiderIo.mapper.js";
-import { mapWarcraftLogs } from "../mappers/warcraftLogs.mapper.js";
+import { mapRaidLogs } from "../mappers/raidLogs.mapper.js";
+import { mapMythicPlusLogs } from "../mappers/mythicPlusLogs.mapper.js";
 import { isAnyFieldRequestedBesides, isFieldRequested } from "../utils/fetcher.js";
 import {
   CharacterSearchResponse,
@@ -40,16 +41,18 @@ export default {
         });
       }
 
-      const logsRequested = isFieldRequested(info, "warcraftLogs");
+      const raidLogsRequested = isFieldRequested(info, "raidLogs");
+      const mythicPlusLogsRequested = isFieldRequested(info, "mythicPlusLogs");
       const raiderIoRequested = isFieldRequested(info, "raiderIo");
       const blizzardRequested = isAnyFieldRequestedBesides(
         info,
-        new Set(["raiderIo", "warcraftLogs"])
+        new Set(["raiderIo", "raidLogs", "mythicPlusLogs"])
       );
 
       const { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId } =
         await getCharacterProfiles(args, {
-          logsRequested,
+          raidLogsRequested,
+          mythicPlusLogsRequested,
           raiderIoRequested,
           blizzardRequested,
           bypassCache: args.bypassCache ?? false,
@@ -74,9 +77,13 @@ export default {
         _characterId: characterId ?? null,
         ...(blizzardProfile ? mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl ?? null) : {}),
         raiderIo: raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
-        warcraftLogs:
-          logsRequested && warcraftLogsProfile
-            ? mapWarcraftLogs(warcraftLogsProfile)
+        raidLogs:
+          raidLogsRequested && warcraftLogsProfile
+            ? mapRaidLogs(warcraftLogsProfile)
+            : null,
+        mythicPlusLogs:
+          mythicPlusLogsRequested && warcraftLogsProfile
+            ? mapMythicPlusLogs(warcraftLogsProfile)
             : null,
       };
     },
