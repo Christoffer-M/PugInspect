@@ -3,9 +3,9 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { parseRaiderIoUrl } from "../util/util";
+import { parseRaiderIoUrl } from "../../util/util";
 import { notifications } from "@mantine/notifications";
-import { annoyedMessages } from "../data/annoyedMessagegs";
+import { annoyedMessages } from "../../data/annoyedMessagegs";
 
 export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();

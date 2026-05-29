@@ -8,8 +8,8 @@ import {
   Stack,
   Title,
 } from "@mantine/core";
-import { RaidProgressionDetail } from "../graphql/graphql";
-import { getRaidDisplayName, getRaidExpansion } from "../data/raidZones";
+import { RaidProgressionDetail } from "../../graphql/graphql";
+import { getRaidDisplayName, getRaidExpansion } from "../../data/raidZones";
 import { useMemo } from "react";
 
 type RaidProgressionProps = {

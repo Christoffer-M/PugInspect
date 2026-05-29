@@ -6,28 +6,30 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { CharacterHeader } from "../components/CharacterHeader";
-import { RaidLogsTable } from "../components/RaidLogsTable";
-import { MythicPlusLogsTable } from "../components/MythicPlusLogsTable";
-import { Page } from "../components/Page";
+import { CharacterHeader } from "../components/character/CharacterHeader";
+import { RaidLogsTable } from "../components/logs/RaidLogsTable";
+import { MythicPlusLogsTable } from "../components/logs/MythicPlusLogsTable";
+import { Page } from "../components/layout/Page";
 import { useCharacterInfoQuery } from "../queries/character-info";
 import { useCharacterRaiderIoQuery } from "../queries/character-raiderio";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterRaidLogs } from "../queries/character-raid-logs";
 import { useCharacterMythicPlusLogs } from "../queries/character-mythicplus-logs";
 import { useZonePartitions } from "../queries/zone-partitions";
-import { RaidProgression } from "../components/RaidProgression";
-import { BestMythicPlusRunsTable } from "../components/MythicPlusTables/BestMythicPlusRunsTable";
-import { RecentMythicPlusRunsTable } from "../components/MythicPlusTables/RecentMythicPlusRunsTable";
+import { RaidProgression } from "../components/logs/RaidProgression";
+import { BestMythicPlusRunsTable } from "../components/mythic-plus/BestMythicPlusRunsTable";
+import { RecentMythicPlusRunsTable } from "../components/mythic-plus/RecentMythicPlusRunsTable";
 import { getZoneIdForRaid, DEFAULT_RAID, RAIDS } from "../data/raidZones";
 import { DEFAULT_MYTHIC_PLUS_SEASON, getMythicPlusZoneId, MYTHIC_PLUS_SEASONS } from "../data/mythicPlusSeasons";
 import { useSearchHistory } from "../hooks/useSearchHistory";
-import { ExternalLinkIcon } from "../components/ExternalLinkIcon";
+import { ExternalLinkIcon } from "../components/ui/ExternalLinkIcon";
 import { normalizeRealm } from "../util/util";
 import RaiderIoIcon from "../assets/raiderio-icon.svg";
 import WarcraftLogsIcon from "../assets/warcraftlogs-icon.png";
 
 export type LogsView = "raid" | "mythicplus";
+
+const MP_METRICS = new Set<Metric>([Metric.PointsAndDamage, Metric.PointsAndHealing]);
 
 export type CharacterQueryParams = {
   roleType: RoleType;
@@ -137,7 +139,6 @@ function CharacterPage() {
         ? undefined
         : searchPartition;
 
-  const MP_METRICS = new Set<Metric>([Metric.PointsAndDamage, Metric.PointsAndHealing]);
   const effectiveMpMetric = MP_METRICS.has(searchMetric as Metric)
     ? (searchMetric as Metric)
     : Metric.PointsAndDamage;

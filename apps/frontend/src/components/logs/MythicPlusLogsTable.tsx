@@ -1,26 +1,25 @@
-import React from "react";
 import {
   Table,
-  Skeleton,
   Paper,
-  useMantineTheme,
   Title,
   SegmentedControl,
   Select,
   Stack,
-  Text,
   Group,
-  Image,
   Center,
 } from "@mantine/core";
-import { GetWarcraftLogRankingColors } from "../util/util";
-import { getClassIconSrc } from "../assets/classIcons";
-import { Maybe, Metric } from "../graphql/graphql";
+import { useMantineTheme } from "@mantine/core";
+import { GetWarcraftLogRankingColors, formatPercent } from "../../util/util";
+import { Maybe, Metric } from "../../graphql/graphql";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { CharacterQueryParams } from "../routes/$region.$realm.$name";
-import { CharacterMythicPlusLogs } from "../queries/character-mythicplus-logs";
-import { useZonePartitions } from "../queries/zone-partitions";
-import { DEFAULT_MYTHIC_PLUS_SEASON, MYTHIC_PLUS_SEASONS } from "../data/mythicPlusSeasons";
+import { CharacterQueryParams } from "../../routes/$region.$realm.$name";
+import { CharacterMythicPlusLogs } from "../../queries/character-mythicplus-logs";
+import { useZonePartitions } from "../../queries/zone-partitions";
+import { DEFAULT_MYTHIC_PLUS_SEASON, MYTHIC_PLUS_SEASONS } from "../../data/mythicPlusSeasons";
+import { SpecImage } from "../ui/SpecImage";
+import { SkeletonTableRows } from "../ui/SkeletonTableRows";
+import { PartitionSelector } from "./PartitionSelector";
+import { PerformanceSummary } from "./PerformanceSummary";
 
 const MP_METRICS = [
   { label: "DPS", value: Metric.PointsAndDamage },
@@ -41,12 +40,12 @@ type MythicPlusLogsTableProps = {
   zoneId?: number;
 };
 
-export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
+export function MythicPlusLogsTable({
   logs,
   isFetching,
   class: className,
   zoneId,
-}) => {
+}: MythicPlusLogsTableProps) {
   const seasonOptions = Object.entries(MYTHIC_PLUS_SEASONS).map(([slug, season]) => ({
     value: slug,
     label: season.displayName,
@@ -56,14 +55,12 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
     metric: searchMetric,
     partition: searchPartition,
     mpSeason: searchMpSeason,
-  } = useSearch({
-    from: "/$region/$realm/$name",
-  });
+  } = useSearch({ from: "/$region/$realm/$name" });
 
   const { data: partitions } = useZonePartitions(zoneId);
 
   const metric = logs?.metric;
-  const rankings = logs?.dungeonRankings || [];
+  const rankings = logs?.dungeonRankings ?? [];
 
   const activeMetric = MP_METRICS.some((m) => m.value === searchMetric)
     ? (searchMetric as Metric)
@@ -71,16 +68,11 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
 
   const throughputLabel = activeMetric === Metric.PointsAndHealing ? "HPS" : "DPS";
 
-  const getClassImageSrc = (spec: string | undefined | null) => {
-    if (!className || !spec) return null;
-    return getClassIconSrc(className, spec);
-  };
-
   const navigate = useNavigate();
   const theme = useMantineTheme();
 
-  const rows = rankings?.map((ranking) => (
-    <Table.Tr key={ranking.dungeon?.id ?? Math.random()}>
+  const rows = rankings.map((ranking, i) => (
+    <Table.Tr key={ranking.dungeon?.id ?? i}>
       <Table.Td c={ranking.throughputPercent != null ? undefined : "dimmed"}>
         {ranking.dungeon?.name}
       </Table.Td>
@@ -88,17 +80,13 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
         c={ranking.throughputPercent != null ? GetWarcraftLogRankingColors(ranking.throughputPercent, theme) : "dimmed"}
         fw={ranking.throughputPercent != null ? 700 : undefined}
       >
-        {ranking.throughputPercent != null
-          ? Math.floor(ranking.throughputPercent).toLocaleString(undefined, { maximumFractionDigits: 0 })
-          : "-"}
+        {formatPercent(ranking.throughputPercent)}
       </Table.Td>
       <Table.Td
         c={ranking.medianThroughputPercent != null ? GetWarcraftLogRankingColors(ranking.medianThroughputPercent, theme) : "dimmed"}
         fw={ranking.medianThroughputPercent != null ? 700 : undefined}
       >
-        {ranking.medianThroughputPercent != null
-          ? Math.floor(ranking.medianThroughputPercent).toLocaleString(undefined, { maximumFractionDigits: 0 })
-          : "-"}
+        {formatPercent(ranking.medianThroughputPercent)}
       </Table.Td>
       <Table.Td c={ranking.bestThroughput ? undefined : "dimmed"} fw={ranking.bestThroughput ? 700 : undefined}>
         {formatThroughput(ranking.bestThroughput)}
@@ -111,27 +99,9 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
       </Table.Td>
       <Table.Td>
         {ranking.spec && className && (
-          <Image
-            h={22}
-            w={22}
-            fit="contain"
-            radius={"xs"}
-            alt={`${className} ${ranking.spec}`}
-            src={getClassImageSrc(ranking.spec)}
-          />
+          <SpecImage className={className} spec={ranking.spec} />
         )}
       </Table.Td>
-    </Table.Tr>
-  ));
-
-  const numberOfSkeletons = rows.length > 0 ? rows.length : 8;
-  const skeletonRows = Array.from({ length: numberOfSkeletons }).map((_, idx) => (
-    <Table.Tr key={idx}>
-      {Array.from({ length: 7 }).map((_, i) => (
-        <Table.Td key={i}>
-          <Skeleton height={25} miw={10} />
-        </Table.Td>
-      ))}
     </Table.Tr>
   ));
 
@@ -148,8 +118,10 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
     });
   };
 
+  const partitionValue = searchPartition === "all" ? "all" : String(searchPartition ?? "all");
+
   return (
-    <Stack w={"100%"} gap={0}>
+    <Stack w="100%" gap={0}>
       <Group justify="space-between" align="center" mb={0} wrap="wrap">
         <Title order={3}>Mythic+ logs</Title>
         <Group gap="xs">
@@ -173,21 +145,13 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
               setSearch({ metric: value as Metric });
             }}
           />
-          {partitions && partitions.length > 1 && (
-            <SegmentedControl
-              size="xs"
-              data={[
-                { label: "All", value: "all" },
-                ...partitions.map((p) => ({
-                  label: p.compactName,
-                  value: String(p.id),
-                })),
-              ]}
-              value={searchPartition === "all" ? "all" : String(searchPartition ?? "all")}
-              onChange={(value) => {
-                if (value == null) return;
-                setSearch({ partition: value === "all" ? "all" : Number(value) });
-              }}
+          {partitions && (
+            <PartitionSelector
+              partitions={partitions}
+              value={partitionValue}
+              onChange={(value) =>
+                setSearch({ partition: value === "all" ? "all" : Number(value) })
+              }
             />
           )}
         </Group>
@@ -195,48 +159,16 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
 
       <Paper withBorder w="100%">
         <Center>
-          <Paper flex={1} radius={0}>
-            <Group p={"xs"} w={"100%"} align={"center"} justify="space-around">
-              <Stack gap={0} align="center">
-                <Text m="0" fw={500} w={"fit-content"}>Best {throughputLabel} average</Text>
-                {isFetching ? (
-                  <Skeleton height={25} miw={10} />
-                ) : (
-                  <Title
-                    order={2}
-                    m={0}
-                    c={logs?.bestPerformanceAverage
-                      ? GetWarcraftLogRankingColors(logs.bestPerformanceAverage, theme)
-                      : undefined}
-                    fw={700}
-                  >
-                    {logs?.bestPerformanceAverage || "-"}
-                  </Title>
-                )}
-              </Stack>
-              <Stack gap={0} align="center">
-                <Text m="0" fw={500} w={"fit-content"}>Median {throughputLabel} average</Text>
-                {isFetching ? (
-                  <Skeleton height={25} miw={10} />
-                ) : (
-                  <Title
-                    order={2}
-                    m={0}
-                    c={logs?.medianPerformanceAverage
-                      ? GetWarcraftLogRankingColors(logs.medianPerformanceAverage, theme)
-                      : undefined}
-                    fw={700}
-                  >
-                    {logs?.medianPerformanceAverage || "-"}
-                  </Title>
-                )}
-              </Stack>
-            </Group>
-          </Paper>
+          <PerformanceSummary
+            metricLabel={throughputLabel}
+            best={logs?.bestPerformanceAverage}
+            median={logs?.medianPerformanceAverage}
+            isFetching={isFetching}
+          />
         </Center>
 
         <Table.ScrollContainer minWidth={600}>
-          <Table verticalSpacing={0} horizontalSpacing={"md"}>
+          <Table verticalSpacing={0} horizontalSpacing="md">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Dungeon</Table.Th>
@@ -250,7 +182,7 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
             </Table.Thead>
             <Table.Tbody>
               {isFetching ? (
-                skeletonRows
+                <SkeletonTableRows rows={rows.length || 8} columns={7} />
               ) : rows.length > 0 ? (
                 rows
               ) : (
@@ -266,4 +198,4 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
       </Paper>
     </Stack>
   );
-};
+}

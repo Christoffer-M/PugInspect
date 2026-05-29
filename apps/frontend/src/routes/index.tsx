@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Center, Flex, Title, Container, Text } from "@mantine/core";
-import CharacterSearchInput from "../components/CharacterSearchInput";
-import { Page } from "../components/Page";
+import CharacterSearchInput from "../components/search/CharacterSearchInput";
+import { Page } from "../components/layout/Page";
 import { useEffect } from "react";
 
 const Home: React.FC = () => {

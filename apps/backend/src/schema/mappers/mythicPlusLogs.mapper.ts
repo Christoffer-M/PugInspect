@@ -1,7 +1,7 @@
 import { MythicPlusLogs } from "@repo/graphql-types";
 import { CharacterProfileQuery } from "../services/warcraftLogs/generated/index.js";
 import { ZoneRanking } from "../services/warcraftLogs/model/ZoneRankings.js";
-import { sanitizeMetric, toFixedNumber } from "../utils/helpers.js";
+import { mapEncounter, sanitizeMetric, toFixedNumber } from "../utils/helpers.js";
 
 export function mapMythicPlusLogs(
   characterData: CharacterProfileQuery["characterData"]
@@ -25,12 +25,7 @@ export function mapMythicPlusLogs(
         : undefined;
 
       return {
-        dungeon:
-          ranking.encounter &&
-          typeof ranking.encounter.id === "number" &&
-          typeof ranking.encounter.name === "string"
-            ? { id: ranking.encounter.id, name: ranking.encounter.name }
-            : null,
+        dungeon: mapEncounter(ranking.encounter),
         rankPercent: toFixedNumber(ranking.rankPercent),
         medianPercent: toFixedNumber(ranking.medianPercent),
         bestScore: toFixedNumber(ranking.bestAmount),

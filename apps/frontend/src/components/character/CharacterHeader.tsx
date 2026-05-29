@@ -7,10 +7,10 @@ import {
   Image,
   Text,
 } from "@mantine/core";
-import { upperCaseFirstLetter } from "../util/util";
+import { upperCaseFirstLetter } from "../../util/util";
 import { RioScore } from "./RioScore";
 import { AltsHoverCard } from "./AltsHoverCard";
-import { Character, Maybe, RaiderIo, SeasonScores } from "../graphql/graphql";
+import { Character, Maybe, RaiderIo, SeasonScores } from "../../graphql/graphql";
 
 const createSeasonScoreMap = (seasonData: Maybe<SeasonScores> | undefined) => {
   if (!seasonData) return [];

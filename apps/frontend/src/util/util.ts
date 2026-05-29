@@ -64,6 +64,11 @@ export function getClassColor(className?: string | null): string {
   return CLASS_COLORS[className.toLowerCase()] ?? "#8a96aa";
 }
 
+export function formatPercent(value: number | null | undefined): string {
+  if (value == null) return "-";
+  return Math.floor(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
 export function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 

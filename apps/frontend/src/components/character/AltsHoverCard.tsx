@@ -11,9 +11,9 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import classes from "./AltsHoverCard.module.css";
-import { upperCaseFirstLetter } from "../util/util";
-import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../data/raidZones";
-import { AltCharacter, RoleType } from "../graphql/graphql";
+import { upperCaseFirstLetter } from "../../util/util";
+import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
+import { AltCharacter, RoleType } from "../../graphql/graphql";
 
 const sortAlts = (alts: AltCharacter[]): AltCharacter[] =>
   [...alts].sort((a, b) => {

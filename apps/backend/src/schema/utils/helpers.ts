@@ -40,6 +40,16 @@ export const mapDifficultyIdToName = (
   }
 };
 
+export function mapEncounter(
+  encounter: { id?: number; name?: string } | undefined
+): { id: number; name: string } | null {
+  return encounter &&
+    typeof encounter.id === "number" &&
+    typeof encounter.name === "string"
+    ? { id: encounter.id, name: encounter.name }
+    : null;
+}
+
 export function toFixedNumber(
   value: number | undefined,
   digits = 2
