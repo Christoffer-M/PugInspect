@@ -6,6 +6,7 @@ import {
   useMantineTheme,
   Title,
   SegmentedControl,
+  Select,
   Stack,
   Text,
   Group,
@@ -19,10 +20,11 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../routes/$region.$realm.$name";
 import { CharacterMythicPlusLogs } from "../queries/character-mythicplus-logs";
 import { useZonePartitions } from "../queries/zone-partitions";
+import { DEFAULT_MYTHIC_PLUS_SEASON, MYTHIC_PLUS_SEASONS } from "../data/mythicPlusSeasons";
 
 const MP_METRICS = [
-  { label: "Score + DPS", value: Metric.PointsAndDamage },
-  { label: "Score + HPS", value: Metric.PointsAndHealing },
+  { label: "DPS", value: Metric.PointsAndDamage },
+  { label: "HPS", value: Metric.PointsAndHealing },
 ];
 
 const DEFAULT_MP_METRIC = Metric.PointsAndDamage;
@@ -45,9 +47,15 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
   class: className,
   zoneId,
 }) => {
+  const seasonOptions = Object.entries(MYTHIC_PLUS_SEASONS).map(([slug, season]) => ({
+    value: slug,
+    label: season.displayName,
+  }));
+
   const {
     metric: searchMetric,
     partition: searchPartition,
+    mpSeason: searchMpSeason,
   } = useSearch({
     from: "/$region/$realm/$name",
   });
@@ -135,6 +143,7 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
         ...prev,
         metric: partial.metric ?? prev.metric ?? metric ?? DEFAULT_MP_METRIC,
         partition: hasPartitionUpdate ? partial.partition : (prev.partition ?? undefined),
+        mpSeason: partial.mpSeason ?? prev.mpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON,
       }),
     });
   };
@@ -144,6 +153,17 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
       <Group justify="space-between" align="center" mb={0} wrap="wrap">
         <Title order={3}>Mythic+ logs</Title>
         <Group gap="xs">
+          <Select
+            size="xs"
+            w={180}
+            allowDeselect={false}
+            data={seasonOptions}
+            value={searchMpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON}
+            onChange={(value) => {
+              if (!value) return;
+              setSearch({ mpSeason: value, partition: undefined });
+            }}
+          />
           <SegmentedControl
             size="xs"
             data={MP_METRICS}
