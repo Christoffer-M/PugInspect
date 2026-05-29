@@ -1,4 +1,4 @@
-import { Container, Stack, Group, Title, Grid, SegmentedControl } from "@mantine/core";
+import { Container, Stack, Group, Grid, SegmentedControl } from "@mantine/core";
 import {
   createFileRoute,
   useNavigate,
@@ -177,9 +177,8 @@ function CharacterPage() {
   return (
     <Page>
       <Container>
-        <Stack mt="md" align="center" justify="center" gap={0}>
-          <Group justify="space-between" w="100%" align="flex-start">
-            <Title order={2}>Profile</Title>
+        <Stack mt="md" gap="lg">
+          <Group justify="flex-end" w="100%">
             <Group gap="xs">
               <ExternalLinkIcon
                 href={`https://raider.io/characters/${region}/${normalizeRealm(realm)}/${name}`}
@@ -196,7 +195,7 @@ function CharacterPage() {
             </Group>
           </Group>
 
-          <Stack gap="lg" w="100%" align="center">
+          <Stack gap="lg" w="100%">
             <CharacterHeader
               name={name}
               characterInfo={characterInfo}
@@ -250,20 +249,22 @@ function CharacterPage() {
                 />
               )}
             </Stack>
-            <Grid w="100%">
-              <Grid.Col span={{ sm: 12, md: 6 }}>
-                <BestMythicPlusRunsTable
-                  isFetching={isFetchingRaiderIo}
-                  characterRuns={raiderIoData?.bestMythicPlusRuns ?? []}
-                />
-              </Grid.Col>
-              <Grid.Col span={{ sm: 12, md: 6 }}>
-                <RecentMythicPlusRunsTable
-                  isFetching={isFetchingRaiderIo}
-                  characterRuns={raiderIoData?.recentMythicPlusRuns ?? []}
-                />
-              </Grid.Col>
-            </Grid>
+            {isMythicPlusView && (
+              <Grid w="100%">
+                <Grid.Col span={{ sm: 12, md: 6 }}>
+                  <BestMythicPlusRunsTable
+                    isFetching={isFetchingRaiderIo}
+                    characterRuns={raiderIoData?.bestMythicPlusRuns ?? []}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ sm: 12, md: 6 }}>
+                  <RecentMythicPlusRunsTable
+                    isFetching={isFetchingRaiderIo}
+                    characterRuns={raiderIoData?.recentMythicPlusRuns ?? []}
+                  />
+                </Grid.Col>
+              </Grid>
+            )}
           </Stack>
         </Stack>
       </Container>

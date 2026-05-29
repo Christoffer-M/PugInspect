@@ -1,5 +1,6 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+import "./globals.css";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
@@ -95,12 +96,19 @@ const theme = createTheme({
       styles: {
         root: {
           borderColor: "rgba(61, 79, 110, 0.5)",
+          background: "linear-gradient(180deg, rgba(18,30,54,0.55) 0%, rgba(10,18,34,0.75) 100%)",
         },
       },
     },
     ActionIcon: {
       defaultProps: {
         color: "accent",
+      },
+    },
+    AppShell: {
+      styles: {
+        root: { background: "transparent" },
+        main: { background: "transparent" },
       },
     },
   },

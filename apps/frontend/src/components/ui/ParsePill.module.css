@@ -1,0 +1,31 @@
+.cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.num {
+  font-weight: 700;
+  min-width: 22px;
+}
+
+.bar {
+  position: relative;
+  width: 54px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+}
+
+.dash {
+  color: var(--mantine-color-dark-3);
+}

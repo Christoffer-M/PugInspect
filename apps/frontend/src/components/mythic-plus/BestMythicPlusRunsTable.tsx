@@ -1,4 +1,4 @@
-import { Stack, Table, Title } from "@mantine/core";
+import { Paper, Stack, Table, Title } from "@mantine/core";
 import { MythicPlusRun } from "../../graphql/graphql";
 import RunTableRow from "./components/RunTableRow/RunTableRow";
 import RunTableHeader from "./components/RunTableHeader";
@@ -41,13 +41,15 @@ export const BestMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
 
   return (
     <Stack flex={1} gap={0}>
-      <Title order={3}>Top M+ Runs</Title>
-      <Table.ScrollContainer minWidth={350}>
-        <Table withTableBorder>
-          <RunTableHeader />
-          <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
-      </Table.ScrollContainer>
+      <Title order={3} m={0} mb={4}>Top M+ Runs</Title>
+      <Paper withBorder>
+        <Table.ScrollContainer minWidth={350}>
+          <Table verticalSpacing="xs" horizontalSpacing="md">
+            <RunTableHeader />
+            <Table.Tbody>{rows}</Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
+      </Paper>
     </Stack>
   );
 };

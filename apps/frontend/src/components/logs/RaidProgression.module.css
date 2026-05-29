@@ -1,0 +1,23 @@
+.ringCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.ringMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.diffLabel {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pctLabel {
+  font-size: 12px;
+  color: var(--mantine-color-dark-2);
+}
