@@ -74,19 +74,8 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
 
   const rows = rankings?.map((ranking) => (
     <Table.Tr key={ranking.dungeon?.id ?? Math.random()}>
-      <Table.Td c={ranking.rankPercent ? undefined : "dimmed"}>
+      <Table.Td c={ranking.throughputPercent != null ? undefined : "dimmed"}>
         {ranking.dungeon?.name}
-      </Table.Td>
-      <Table.Td
-        c={ranking.rankPercent ? GetWarcraftLogRankingColors(ranking.rankPercent, theme) : "dimmed"}
-        fw={ranking.rankPercent ? 700 : undefined}
-      >
-        {ranking.rankPercent != null
-          ? Math.floor(ranking.rankPercent).toLocaleString(undefined, { maximumFractionDigits: 0 })
-          : "-"}
-      </Table.Td>
-      <Table.Td c={ranking.bestScore ? undefined : "dimmed"} fw={ranking.bestScore ? 700 : undefined}>
-        {ranking.bestScore?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ?? "-"}
       </Table.Td>
       <Table.Td
         c={ranking.throughputPercent != null ? GetWarcraftLogRankingColors(ranking.throughputPercent, theme) : "dimmed"}
@@ -94,6 +83,14 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
       >
         {ranking.throughputPercent != null
           ? Math.floor(ranking.throughputPercent).toLocaleString(undefined, { maximumFractionDigits: 0 })
+          : "-"}
+      </Table.Td>
+      <Table.Td
+        c={ranking.medianThroughputPercent != null ? GetWarcraftLogRankingColors(ranking.medianThroughputPercent, theme) : "dimmed"}
+        fw={ranking.medianThroughputPercent != null ? 700 : undefined}
+      >
+        {ranking.medianThroughputPercent != null
+          ? Math.floor(ranking.medianThroughputPercent).toLocaleString(undefined, { maximumFractionDigits: 0 })
           : "-"}
       </Table.Td>
       <Table.Td c={ranking.bestThroughput ? undefined : "dimmed"} fw={ranking.bestThroughput ? 700 : undefined}>
@@ -123,7 +120,7 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
   const numberOfSkeletons = rows.length > 0 ? rows.length : 8;
   const skeletonRows = Array.from({ length: numberOfSkeletons }).map((_, idx) => (
     <Table.Tr key={idx}>
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 7 }).map((_, i) => (
         <Table.Td key={i}>
           <Skeleton height={25} miw={10} />
         </Table.Td>
@@ -230,9 +227,8 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Dungeon</Table.Th>
-                <Table.Th>Score %</Table.Th>
-                <Table.Th>Score</Table.Th>
-                <Table.Th>{throughputLabel} %</Table.Th>
+                <Table.Th>Best {throughputLabel} %</Table.Th>
+                <Table.Th>Median {throughputLabel} %</Table.Th>
                 <Table.Th>Best {throughputLabel}</Table.Th>
                 <Table.Th>Key</Table.Th>
                 <Table.Th>Runs</Table.Th>
@@ -246,7 +242,7 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
                 rows
               ) : (
                 <Table.Tr>
-                  <Table.Td colSpan={8} style={{ textAlign: "center" }}>
+                  <Table.Td colSpan={7} style={{ textAlign: "center" }}>
                     No logs available.
                   </Table.Td>
                 </Table.Tr>
