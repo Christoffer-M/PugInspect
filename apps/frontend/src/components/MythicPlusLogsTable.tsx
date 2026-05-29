@@ -8,7 +8,6 @@ import {
   SegmentedControl,
   Stack,
   Text,
-  Grid,
   Group,
   Image,
   Center,
@@ -144,43 +143,37 @@ export const MythicPlusLogsTable: React.FC<MythicPlusLogsTableProps> = ({
     <Stack w={"100%"} gap={0}>
       <Group justify="space-between" align="center" mb={0} wrap="wrap">
         <Title order={3}>Mythic+ logs</Title>
-        {partitions && partitions.length > 1 && (
+        <Group gap="xs">
           <SegmentedControl
             size="xs"
-            data={[
-              { label: "All", value: "all" },
-              ...partitions.map((p) => ({
-                label: p.compactName,
-                value: String(p.id),
-              })),
-            ]}
-            value={searchPartition === "all" ? "all" : String(searchPartition ?? "all")}
+            data={MP_METRICS}
+            value={activeMetric}
             onChange={(value) => {
               if (value == null) return;
-              setSearch({ partition: value === "all" ? "all" : Number(value) });
+              setSearch({ metric: value as Metric });
             }}
           />
-        )}
+          {partitions && partitions.length > 1 && (
+            <SegmentedControl
+              size="xs"
+              data={[
+                { label: "All", value: "all" },
+                ...partitions.map((p) => ({
+                  label: p.compactName,
+                  value: String(p.id),
+                })),
+              ]}
+              value={searchPartition === "all" ? "all" : String(searchPartition ?? "all")}
+              onChange={(value) => {
+                if (value == null) return;
+                setSearch({ partition: value === "all" ? "all" : Number(value) });
+              }}
+            />
+          )}
+        </Group>
       </Group>
 
       <Paper withBorder w="100%">
-        <Grid gutter={"md"} p={"xs"}>
-          <Grid.Col span={{ base: 12, sm: "content" }}>
-            <Stack align="center" w={"100%"} gap={"xs"} flex={1}>
-              <Text m="0" fw={500} w={"fit-content"}>Metric</Text>
-              <SegmentedControl
-                w={"100%"}
-                data={MP_METRICS}
-                value={activeMetric}
-                onChange={(value) => {
-                  if (value == null) return;
-                  setSearch({ metric: value as Metric });
-                }}
-              />
-            </Stack>
-          </Grid.Col>
-        </Grid>
-
         <Center>
           <Paper flex={1} radius={0}>
             <Group p={"xs"} w={"100%"} align={"center"} justify="space-around">
