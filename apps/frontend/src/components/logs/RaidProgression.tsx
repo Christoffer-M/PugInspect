@@ -1,4 +1,4 @@
-import { Grid, Paper, RingProgress, Select, Stack } from "@mantine/core";
+import { Grid, Paper, RingProgress, Select, Stack, Text } from "@mantine/core";
 import { RaidProgressionDetail } from "../../graphql/graphql";
 import { getRaidDisplayName, getRaidExpansion } from "../../data/raidZones";
 import { useMemo } from "react";
@@ -81,27 +81,22 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
                   size={76}
                   thickness={6}
                   label={
-                    <span
-                      style={{
-                        fontFamily: "Space Grotesk, system-ui, sans-serif",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        display: "block",
-                        textAlign: "center",
-                        lineHeight: 1.2,
-                      }}
+                    <Text
+                      fw={700}
+                      fz={13}
+                      ta="center"
+                      lh={1.2}
+                      ff="Space Grotesk, system-ui, sans-serif"
                     >
                       {raidDataItem ? `${killed}/${raidDataItem.total_bosses}` : "0/0"}
-                    </span>
+                    </Text>
                   }
                   sections={[{ value: (killed / total) * 100, color }]}
                 />
-                <div className={classes.ringMeta}>
-                  <span className={classes.diffLabel} style={{ color }}>
-                    {label}
-                  </span>
-                  <span className={classes.pctLabel}>{pct}% cleared</span>
-                </div>
+                <Stack className={classes.ringMeta} gap={2}>
+                  <Text className={classes.diffLabel} m={0} style={{ color }}>{label}</Text>
+                  <Text className={classes.pctLabel} m={0}>{pct}% cleared</Text>
+                </Stack>
               </Paper>
             </Grid.Col>
           );

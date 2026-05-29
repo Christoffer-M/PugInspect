@@ -1,4 +1,4 @@
-import { Title } from "@mantine/core";
+import { Group, Title } from "@mantine/core";
 import classes from "./SectionTitle.module.css";
 
 interface SectionTitleProps {
@@ -9,10 +9,10 @@ interface SectionTitleProps {
 }
 
 export const SectionTitle: React.FC<SectionTitleProps> = ({ order = 2, children, right, noWrap }) => (
-  <div className={classes.head}>
+  <Group className={classes.head} justify="space-between" wrap="wrap">
     <Title order={order} style={noWrap ? { whiteSpace: "nowrap" } : undefined}>
       {children}
     </Title>
     {right}
-  </div>
+  </Group>
 );

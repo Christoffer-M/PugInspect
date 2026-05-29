@@ -1,21 +1,17 @@
 .perf {
-  display: flex;
+  border-top: 1px solid rgba(61, 79, 110, 0.28);
   border-bottom: 1px solid rgba(61, 79, 110, 0.28);
   width: 100%;
-}
-
-.cell {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 14px 12px;
-  text-align: center;
+  align-items: stretch;
 }
 
 .cell + .cell {
   border-left: 1px solid rgba(61, 79, 110, 0.28);
+}
+
+.cell {
+  padding: 14px 12px;
+  text-align: center;
 }
 
 .cellLabel {

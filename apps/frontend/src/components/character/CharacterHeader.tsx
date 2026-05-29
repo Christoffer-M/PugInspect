@@ -60,14 +60,14 @@ export const CharacterHeader: React.FC<{
         } as React.CSSProperties
       }
     >
-      <div
+      <Box
         className={classes.accentBar}
         style={{
           background: `linear-gradient(90deg, transparent, ${classColor}, transparent)`,
         }}
       />
 
-      <div className={classes.profile}>
+      <Box className={classes.profile}>
         {/* Avatar */}
         {isLoadingInfo || isError ? (
           <Skeleton h={92} w={92} radius="xl" animate={!isError} />
@@ -111,9 +111,7 @@ export const CharacterHeader: React.FC<{
                 {characterInfo.race} {characterInfo.activeSpec} {characterInfo.class}
               </Text>
               <Text size="sm" m={0}>
-                <Text span fw={600} size="sm">
-                  Item Level:
-                </Text>{" "}
+                <Text span fw={600} size="sm">Item Level:</Text>{" "}
                 {characterInfo.equippedItemLevel != null
                   ? characterInfo.equippedItemLevel.toFixed(0)
                   : "–"}
@@ -128,44 +126,40 @@ export const CharacterHeader: React.FC<{
         )}
 
         {/* Stat Strip */}
-        <div className={classes.statstrip}>
-          <div className={classes.stat}>
-            <span className={classes.statLabel}>RIO Score</span>
+        <Group className={classes.statstrip} gap={0} align="stretch">
+          <Stack className={classes.stat} gap={3}>
+            <Text className={classes.statLabel} m={0}>RIO Score</Text>
             {isLoadingRaiderIo ? (
               <Skeleton h={28} w={70} mt={2} />
             ) : (
-              <span
+              <Text
                 className={classes.statVal}
+                m={0}
                 style={{ color: rioScore?.color ?? "var(--mantine-color-dimmed)" }}
               >
                 {rioScore ? Math.round(rioScore.score).toLocaleString() : "—"}
-              </span>
+              </Text>
             )}
-            <span className={classes.statSub}>
+            <Text className={classes.statSub} m={0}>
               {rioScore ? `${rioScore.role} · current` : "current season"}
-            </span>
-          </div>
+            </Text>
+          </Stack>
 
-          <div className={classes.stat}>
-            <span className={classes.statLabel}>Top Key</span>
+          <Stack className={classes.stat} gap={3}>
+            <Text className={classes.statLabel} m={0}>Top Key</Text>
             {isLoadingRaiderIo ? (
               <Skeleton h={28} w={50} mt={2} />
             ) : (
-              <span className={classes.statVal} style={{ color: "var(--mantine-color-text)" }}>
+              <Text className={classes.statVal} m={0} style={{ color: "var(--mantine-color-text)" }}>
                 {topKey != null ? (
-                  <>
-                    <span className={classes.statValSmall}>+</span>
-                    {topKey}
-                  </>
-                ) : (
-                  "—"
-                )}
-              </span>
+                  <><Text component="span" className={classes.statValSmall}>+</Text>{topKey}</>
+                ) : "—"}
+              </Text>
             )}
-            <span className={classes.statSub}>timed</span>
-          </div>
-        </div>
-      </div>
+            <Text className={classes.statSub} m={0}>timed</Text>
+          </Stack>
+        </Group>
+      </Box>
     </Paper>
   );
 };

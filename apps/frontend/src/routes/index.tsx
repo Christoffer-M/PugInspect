@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Title } from "@mantine/core";
+import { Box, Group, Stack, Text, Title, UnstyledButton } from "@mantine/core";
 import { IconSearch } from "@tabler/icons-react";
 import CharacterSearchInput from "../components/search/CharacterSearchInput";
 import { Page } from "../components/layout/Page";
@@ -21,42 +21,40 @@ const Home: React.FC = () => {
 
   return (
     <Page>
-      <div className={classes.landing}>
-        <div className={classes.inner}>
-          <div className={classes.glyph}>
+      <Box className={classes.landing}>
+        <Stack className={classes.inner} align="center">
+          <Box className={classes.glyph}>
             <IconSearch size={30} stroke={1.8} />
-          </div>
+          </Box>
 
           <Title order={1} mb="sm">
             Welcome to PugInspect
           </Title>
 
-          <p className={classes.tag}>
+          <Text className={classes.tag}>
             Quickly view WoW character stats, RIO scores, and raid logs
-          </p>
+          </Text>
 
           <CharacterSearchInput />
 
-          <p className={classes.hint}>
+          <Text className={classes.hint}>
             Start by typing a character name above, or paste a Raider.IO profile URL.
-          </p>
+          </Text>
 
-          <div className={classes.chips}>
+          <Group className={classes.chips} justify="center" wrap="wrap">
             {QUICK_CHARS.map((char) => (
-              <button
+              <UnstyledButton
                 key={char.label}
                 className={classes.chip}
-                onClick={() =>
-                  navigate({ to: `/${char.region}/${char.realm}/${char.name}` })
-                }
+                onClick={() => navigate({ to: `/${char.region}/${char.realm}/${char.name}` })}
               >
-                <span className={classes.chipDot} style={{ background: char.color }} />
+                <Box component="span" className={classes.chipDot} style={{ background: char.color }} />
                 {char.label}
-              </button>
+              </UnstyledButton>
             ))}
-          </div>
-        </div>
-      </div>
+          </Group>
+        </Stack>
+      </Box>
     </Page>
   );
 };
