@@ -249,22 +249,20 @@ function CharacterPage() {
                 />
               )}
             </Stack>
-            {isMythicPlusView && (
-              <Grid w="100%">
-                <Grid.Col span={{ sm: 12, md: 6 }}>
-                  <BestMythicPlusRunsTable
-                    isFetching={isFetchingRaiderIo}
-                    characterRuns={raiderIoData?.bestMythicPlusRuns ?? []}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ sm: 12, md: 6 }}>
-                  <RecentMythicPlusRunsTable
-                    isFetching={isFetchingRaiderIo}
-                    characterRuns={raiderIoData?.recentMythicPlusRuns ?? []}
-                  />
-                </Grid.Col>
-              </Grid>
-            )}
+            <Grid w="100%">
+              <Grid.Col span={{ sm: 12, md: 6 }}>
+                <BestMythicPlusRunsTable
+                  isFetching={isFetchingRaiderIo}
+                  characterRuns={raiderIoData?.bestMythicPlusRuns ?? []}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ sm: 12, md: 6 }}>
+                <RecentMythicPlusRunsTable
+                  isFetching={isFetchingRaiderIo}
+                  characterRuns={raiderIoData?.recentMythicPlusRuns ?? []}
+                />
+              </Grid.Col>
+            </Grid>
           </Stack>
         </Stack>
       </Container>
