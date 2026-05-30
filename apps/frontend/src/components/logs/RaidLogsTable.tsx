@@ -6,6 +6,8 @@ import {
   Text,
   Grid,
   Switch,
+  Group,
+  Box,
 } from "@mantine/core";
 import { Difficulty, Maybe, Metric, RoleType } from "../../graphql/graphql";
 import { useNavigate, useSearch } from "@tanstack/react-router";
@@ -48,7 +50,25 @@ export function RaidLogsTable({ logs, isFetching, class: className, zoneId }: Ra
 
   const rows = rankings.map((ranking, i) => (
     <Table.Tr key={ranking.encounter?.id ?? i}>
-      <Table.Td c={ranking.medianPercent ? undefined : "dimmed"}>{ranking.encounter?.name}</Table.Td>
+      <Table.Td c={ranking.medianPercent ? undefined : "dimmed"}>
+        <Group gap="xs" wrap="nowrap" align="center">
+          {ranking.encounter?.id && (
+            <Box style={{
+              width: 26, height: 26, flexShrink: 0,
+              borderRadius: "var(--mantine-radius-md)",
+              overflow: "hidden",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08)",
+            }}>
+              <img
+                src={`https://assets.rpglogs.com/img/warcraft/bosses/${ranking.encounter.id}-icon.jpg`}
+                alt={ranking.encounter.name ?? ""}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+            </Box>
+          )}
+          <Text size="sm" m={0}>{ranking.encounter?.name}</Text>
+        </Group>
+      </Table.Td>
       <Table.Td><ParsePill value={ranking.rankPercent} /></Table.Td>
       <Table.Td><ParsePill value={ranking.medianPercent} /></Table.Td>
       <Table.Td c={ranking.totalKills ? undefined : "dimmed"} fw={ranking.totalKills ? 600 : undefined}>

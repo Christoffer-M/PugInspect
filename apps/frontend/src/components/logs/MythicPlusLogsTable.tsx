@@ -1,10 +1,20 @@
-import { Table, Paper, SegmentedControl, Select, Stack, Group } from "@mantine/core";
+import {
+  Table,
+  Paper,
+  SegmentedControl,
+  Select,
+  Stack,
+  Group,
+} from "@mantine/core";
 import { Maybe, Metric } from "../../graphql/graphql";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../../routes/$region.$realm.$name";
 import { CharacterMythicPlusLogs } from "../../queries/character-mythicplus-logs";
 import { useZonePartitions } from "../../queries/zone-partitions";
-import { DEFAULT_MYTHIC_PLUS_SEASON, MYTHIC_PLUS_SEASONS } from "../../data/mythicPlusSeasons";
+import {
+  DEFAULT_MYTHIC_PLUS_SEASON,
+  MYTHIC_PLUS_SEASONS,
+} from "../../data/mythicPlusSeasons";
 import { SpecImage } from "../ui/SpecImage";
 import { SkeletonTableRows } from "../ui/SkeletonTableRows";
 import { PartitionSelector } from "./PartitionSelector";
@@ -31,14 +41,24 @@ type MythicPlusLogsTableProps = {
   zoneId?: number;
 };
 
-export function MythicPlusLogsTable({ logs, isFetching, class: className, zoneId }: MythicPlusLogsTableProps) {
-  const seasonOptions = Object.entries(MYTHIC_PLUS_SEASONS).map(([slug, season]) => ({
-    value: slug,
-    label: season.displayName,
-  }));
+export function MythicPlusLogsTable({
+  logs,
+  isFetching,
+  class: className,
+  zoneId,
+}: MythicPlusLogsTableProps) {
+  const seasonOptions = Object.entries(MYTHIC_PLUS_SEASONS).map(
+    ([slug, season]) => ({
+      value: slug,
+      label: season.displayName,
+    }),
+  );
 
-  const { metric: searchMetric, partition: searchPartition, mpSeason: searchMpSeason } =
-    useSearch({ from: "/$region/$realm/$name" });
+  const {
+    metric: searchMetric,
+    partition: searchPartition,
+    mpSeason: searchMpSeason,
+  } = useSearch({ from: "/$region/$realm/$name" });
 
   const { data: partitions } = useZonePartitions(zoneId);
 
@@ -49,7 +69,8 @@ export function MythicPlusLogsTable({ logs, isFetching, class: className, zoneId
     ? (searchMetric as Metric)
     : (metric ?? DEFAULT_MP_METRIC);
 
-  const throughputLabel = activeMetric === Metric.PointsAndHealing ? "HPS" : "DPS";
+  const throughputLabel =
+    activeMetric === Metric.PointsAndHealing ? "HPS" : "DPS";
 
   const navigate = useNavigate();
 
@@ -58,33 +79,53 @@ export function MythicPlusLogsTable({ logs, isFetching, class: className, zoneId
       <Table.Td c={ranking.throughputPercent != null ? undefined : "dimmed"}>
         {ranking.dungeon?.name}
       </Table.Td>
-      <Table.Td><ParsePill value={ranking.throughputPercent} /></Table.Td>
-      <Table.Td><ParsePill value={ranking.medianThroughputPercent} /></Table.Td>
-      <Table.Td c={ranking.bestThroughput ? undefined : "dimmed"} fw={ranking.bestThroughput ? 600 : undefined}>
+      <Table.Td>
+        <ParsePill value={ranking.throughputPercent} />
+      </Table.Td>
+      <Table.Td>
+        <ParsePill value={ranking.medianThroughputPercent} />
+      </Table.Td>
+      <Table.Td
+        c={ranking.bestThroughput ? undefined : "dimmed"}
+        fw={ranking.bestThroughput ? 600 : undefined}
+      >
         {formatThroughput(ranking.bestThroughput)}
       </Table.Td>
-      <Table.Td c={ranking.bestLevel ? undefined : "dimmed"}>{ranking.bestLevel ?? "–"}</Table.Td>
-      <Table.Td c={ranking.totalRuns ? undefined : "dimmed"}>{ranking.totalRuns ?? "–"}</Table.Td>
+      <Table.Td c={ranking.bestLevel ? undefined : "dimmed"}>
+        {ranking.bestLevel ?? "–"}
+      </Table.Td>
+      <Table.Td c={ranking.totalRuns ? undefined : "dimmed"}>
+        {ranking.totalRuns ?? "–"}
+      </Table.Td>
       <Table.Td>
-        {ranking.spec && className && <SpecImage className={className} spec={ranking.spec} />}
+        {ranking.spec && className && (
+          <SpecImage className={className} spec={ranking.spec} />
+        )}
       </Table.Td>
     </Table.Tr>
   ));
 
   const setSearch = (partial: Partial<CharacterQueryParams>) => {
-    const hasPartitionUpdate = Object.prototype.hasOwnProperty.call(partial, "partition");
+    const hasPartitionUpdate = Object.prototype.hasOwnProperty.call(
+      partial,
+      "partition",
+    );
     navigate({
       to: ".",
       search: (prev) => ({
         ...prev,
         metric: partial.metric ?? prev.metric ?? metric ?? DEFAULT_MP_METRIC,
-        partition: hasPartitionUpdate ? partial.partition : (prev.partition ?? undefined),
-        mpSeason: partial.mpSeason ?? prev.mpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON,
+        partition: hasPartitionUpdate
+          ? partial.partition
+          : (prev.partition ?? undefined),
+        mpSeason:
+          partial.mpSeason ?? prev.mpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON,
       }),
     });
   };
 
-  const partitionValue = searchPartition === "all" ? "all" : String(searchPartition ?? "all");
+  const partitionValue =
+    searchPartition === "all" ? "all" : String(searchPartition ?? "all");
 
   return (
     <Stack w="100%" gap={0}>
@@ -95,21 +136,34 @@ export function MythicPlusLogsTable({ logs, isFetching, class: className, zoneId
             <Select
               w={180}
               allowDeselect={false}
-              comboboxProps={{ transitionProps: { transition: "pop", duration: 200 }, width: "auto" }}
+              comboboxProps={{
+                transitionProps: { transition: "pop", duration: 200 },
+                width: "auto",
+              }}
               data={seasonOptions}
               value={searchMpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON}
-              onChange={(value) => { if (!value) return; setSearch({ mpSeason: value, partition: undefined }); }}
+              onChange={(value) => {
+                if (!value) return;
+                setSearch({ mpSeason: value, partition: undefined });
+              }}
             />
             <SegmentedControl
               data={MP_METRICS}
               value={activeMetric}
-              onChange={(value) => { if (value == null) return; setSearch({ metric: value as Metric }); }}
+              onChange={(value) => {
+                if (value == null) return;
+                setSearch({ metric: value as Metric });
+              }}
             />
             {partitions && (
               <PartitionSelector
                 partitions={partitions}
                 value={partitionValue}
-                onChange={(value) => setSearch({ partition: value === "all" ? "all" : Number(value) })}
+                onChange={(value) =>
+                  setSearch({
+                    partition: value === "all" ? "all" : Number(value),
+                  })
+                }
               />
             )}
           </Group>
@@ -147,7 +201,9 @@ export function MythicPlusLogsTable({ logs, isFetching, class: className, zoneId
                 rows
               ) : (
                 <Table.Tr>
-                  <Table.Td colSpan={7} style={{ textAlign: "center" }}>No logs available.</Table.Td>
+                  <Table.Td colSpan={7} style={{ textAlign: "center" }}>
+                    No logs available.
+                  </Table.Td>
                 </Table.Tr>
               )}
             </Table.Tbody>

@@ -1,10 +1,9 @@
 import React from "react";
 import {
   Group,
-  Image,
+  Box,
   Skeleton,
   Text,
-  AspectRatio,
   Table,
   Anchor,
   Tooltip,
@@ -60,9 +59,18 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
     <Table.Tr>
       <Table.Td w={DungeonNameMaxWidth} style={{ maxWidth: 150, overflow: 'hidden' }}>
         <Group gap={"xs"} wrap="nowrap">
-          <AspectRatio ratio={1} w={25} style={{ flexShrink: 0 }}>
-            <Image src={mythicPlusRun?.icon_url} alt={mythicPlusRun?.dungeon} />
-          </AspectRatio>
+          <Box style={{
+            width: 26, height: 26, flexShrink: 0,
+            borderRadius: "var(--mantine-radius-md)",
+            overflow: "hidden",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08)",
+          }}>
+            <img
+              src={mythicPlusRun?.icon_url}
+              alt={mythicPlusRun?.dungeon}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            />
+          </Box>
           <Tooltip label={mythicPlusRun?.dungeon ?? "Unknown Dungeon"} withArrow openDelay={50} style={{ minWidth: 0, flex: 1 }} >
             {url ? <Anchor size="sm" m={0} href={url} target="_blank" truncate='end' style={{ display: 'block' }} >
               {mythicPlusRun?.dungeon}
@@ -90,14 +98,18 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
         <Skeleton visible={isFetching} className={classes.skeleton}>
           {getClassImageSrc() && (
             <Tooltip label={specName} withArrow openDelay={50}>
-              <Image
-                h={22}
-                w={22}
-                fit="contain"
-                radius={"xs"}
-                alt={`${classNameSlug}-${specSlug}`}
-                src={getClassImageSrc()}
-              />
+              <Box style={{
+                width: 22, height: 22, flexShrink: 0,
+                borderRadius: "var(--mantine-radius-xs)",
+                overflow: "hidden",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08)",
+              }}>
+                <img
+                  src={getClassImageSrc()!}
+                  alt={`${classNameSlug}-${specSlug}`}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                />
+              </Box>
             </Tooltip>
           )}
         </Skeleton>
