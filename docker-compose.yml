@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: puginspect
       POSTGRES_USER: puginspect
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
-    ports:
-      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -16,13 +14,13 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - internal
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    ports:
-      - "127.0.0.1:4000:4000"
     env_file:
       - apps/backend/.env
     environment:
@@ -38,12 +36,14 @@ services:
           "CMD",
           "node",
           "-e",
-          "fetch('http://localhost:4000/graphql',{method:'POST',headers:{'Content-Type':'application/json'},body:'{\"query\":\"{__typename}\"}'}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          'fetch(''http://localhost:4000/graphql'',{method:''POST'',headers:{''Content-Type'':''application/json''},body:''{"query":"{__typename}"}''}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))',
         ]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 15s
+    networks:
+      - internal
 
   frontend:
     build:
@@ -51,12 +51,24 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_UMAMI_WEBSITE_ID: ${VITE_UMAMI_WEBSITE_ID}
-    ports:
-      - "127.0.0.1:8080:80"
+    environment:
+      VIRTUAL_HOST: puginspect.com,www.puginspect.com
+      VIRTUAL_PORT: 80
+      LETSENCRYPT_HOST: puginspect.com,www.puginspect.com
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - internal
+      - proxy
 
 volumes:
   postgres_data:
+
+networks:
+  internal:
+    internal: true
+  proxy:
+    name: proxy
+    external: true
