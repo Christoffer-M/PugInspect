@@ -68,7 +68,6 @@ volumes:
 
 networks:
   internal:
-    internal: true
   proxy:
     name: proxy
     external: true
