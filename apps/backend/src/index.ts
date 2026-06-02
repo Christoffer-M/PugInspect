@@ -157,8 +157,6 @@ app.get("/stats.js", analyticsRateLimiter, async (_, res) => {
   }
 });
 
-app.options("/api/send", cors<cors.CorsRequest>(corsOptions));
-
 // Analytics event proxy — forwards Umami events from the frontend to the stats server.
 // The Umami tracker infers its event endpoint from the script's src host, so it posts
 // to /api/send on this server rather than directly to stats.puginspect.com.
