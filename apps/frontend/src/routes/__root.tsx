@@ -11,6 +11,7 @@ const Analytics: React.FC = () => {
       script.src = config.apiUrl + "/stats.js";
       script.defer = true;
       script.dataset.websiteId = config.umamiWebsiteId;
+      script.dataset.hostUrl = config.apiUrl || window.location.origin;
       document.head.appendChild(script);
 
       return () => {
