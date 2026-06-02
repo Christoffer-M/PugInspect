@@ -136,12 +136,10 @@ app.use(
   expressMiddleware(server)
 );
 
-const analyticsRateLimiter = createRateLimiter(200, 60_000);
-
 // Analytics script proxy — cached for 1 hour to avoid depending on Umami on every request
 let statsJsCache: { body: string; expiresAt: number } | null = null;
 
-app.get("/stats.js", analyticsRateLimiter, async (_, res) => {
+app.get("/stats.js", async (_, res) => {
   res.setHeader("Content-Type", "application/javascript");
   try {
     if (statsJsCache && Date.now() < statsJsCache.expiresAt) {
@@ -156,33 +154,6 @@ app.get("/stats.js", analyticsRateLimiter, async (_, res) => {
     res.status(502).send("// analytics unavailable");
   }
 });
-
-// Analytics event proxy — forwards Umami events from the frontend to the stats server.
-// The Umami tracker infers its event endpoint from the script's src host, so it posts
-// to /api/send on this server rather than directly to stats.puginspect.com.
-app.post(
-  "/api/send",
-  analyticsRateLimiter,
-  cors<cors.CorsRequest>(corsOptions),
-  express.json(),
-  async (req, res) => {
-    try {
-      const upstream = await fetch("https://stats.puginspect.com/api/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(req.headers["user-agent"] && { "User-Agent": req.headers["user-agent"] as string }),
-          ...(req.ip && { "X-Forwarded-For": req.ip }),
-        },
-        body: JSON.stringify(req.body),
-      });
-      const text = await upstream.text();
-      res.status(upstream.status).send(text);
-    } catch {
-      res.status(502).send("analytics unavailable");
-    }
-  }
-);
 
 app.listen({ port: config.port });
 
