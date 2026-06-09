@@ -36,6 +36,13 @@
       "when": 1776703156365,
       "tag": "0004_wcl_partition",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781020577927,
+      "tag": "0005_rainy_giant_man",
+      "breakpoints": true
     }
   ]
 }

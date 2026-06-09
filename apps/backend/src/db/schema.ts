@@ -99,7 +99,7 @@ export const characterWclSnapshots = pgTable(
     zoneId: integer("zone_id").default(0).notNull(),
     // "" = "not specified"
     difficulty: varchar("difficulty", { length: 10 }).default("").notNull(),
-    metric: varchar("metric", { length: 5 }).default("").notNull(),
+    metric: varchar("metric", { length: 32 }).default("").notNull(),
     role: varchar("role", { length: 10 }).default("").notNull(),
     byBracket: boolean("by_bracket").default(false).notNull(),
     // 0 = "not specified"

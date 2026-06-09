@@ -1,0 +1,14 @@
+services:
+  frontend:
+    networks:
+      - internal
+    ports:
+      - "8080:80"
+
+  backend:
+    ports:
+      - "4000:4000"
+
+networks:
+  proxy:
+    external: false
