@@ -6,6 +6,7 @@ import { initDb } from "./db/index.js";
 import { runMigrations } from "./db/migrate.js";
 import express from "express";
 import cors from "cors";
+import { renderCharacterPageHtml } from "./seo/characterMeta.js";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import type { SelectionSetNode, ValidationRule } from "graphql";
@@ -153,6 +154,24 @@ app.get("/stats.js", async (_, res) => {
   } catch {
     res.status(502).send("// analytics unavailable");
   }
+});
+
+// Character page meta injection for crawlers/link unfurlers — nginx routes
+// bot requests for /{region}/{realm}/{name} here (rewritten to /meta/...).
+const metaRateLimiter = createRateLimiter(60, 60_000);
+
+app.get("/meta/:region/:realm/:name", metaRateLimiter, async (req, res) => {
+  const { region, realm, name } = req.params;
+  const html =
+    typeof region === "string" && typeof realm === "string" && typeof name === "string"
+      ? await renderCharacterPageHtml(region, realm, name)
+      : null;
+  if (!html) {
+    res.status(404).type("text/plain").send("Not found");
+    return;
+  }
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.type("html").send(html);
 });
 
 app.listen({ port: config.port });

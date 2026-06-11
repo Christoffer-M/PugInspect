@@ -44,6 +44,15 @@ export type CharacterQueryParams = {
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
+  head: ({ params }) => ({
+    meta: [{ title: `${params.name}-${params.realm} | PugInspect` }],
+    links: [
+      {
+        rel: "canonical",
+        href: `https://puginspect.com/${params.region.toLowerCase()}/${encodeURIComponent(normalizeRealm(params.realm))}/${encodeURIComponent(params.name.toLowerCase())}`,
+      },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>): CharacterQueryParams => {
     const parsePartition = (value: unknown): CharacterQueryParams["partition"] => {
       if (value === "all") return "all";
@@ -72,10 +81,6 @@ export const Route = createFileRoute("/$region/$realm/$name")({
 
 function CharacterPage() {
   const { region, name, realm } = useParams({ from: Route.id });
-
-  useEffect(() => {
-    document.title = `${name}-${realm} | PugInspect`;
-  }, [name, realm]);
 
   const {
     roleType: searchRoleType,

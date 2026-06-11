@@ -1,13 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Container, List, Stack, Text, Title } from "@mantine/core";
 import { Page } from "../components/layout/Page";
-import { useEffect } from "react";
 
 const PrivacyPolicy: React.FC = () => {
-  useEffect(() => {
-    document.title = "Privacy Policy | PugInspect";
-  }, []);
-
   return (
     <Page>
       <Container py="xl" maw={720}>
@@ -73,5 +68,9 @@ const PrivacyPolicy: React.FC = () => {
 };
 
 export const Route = createFileRoute("/privacy-policy")({
+  head: () => ({
+    meta: [{ title: "Privacy Policy | PugInspect" }],
+    links: [{ rel: "canonical", href: "https://puginspect.com/privacy-policy" }],
+  }),
   component: PrivacyPolicy,
 });

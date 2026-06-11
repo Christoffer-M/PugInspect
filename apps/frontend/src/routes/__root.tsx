@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -24,8 +24,12 @@ const Analytics: React.FC = () => {
 };
 
 export const Route = createRootRoute({
+  head: () => ({
+    meta: [{ title: "PugInspect" }],
+  }),
   component: () => (
     <>
+      <HeadContent />
       <Analytics />
       <Outlet />
       {import.meta.env.DEV && <TanStackRouterDevtools />}

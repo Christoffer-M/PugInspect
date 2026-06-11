@@ -3,7 +3,6 @@ import { Box, Group, Stack, Text, Title, UnstyledButton } from "@mantine/core";
 import { IconSearch } from "@tabler/icons-react";
 import CharacterSearchInput from "../components/search/CharacterSearchInput";
 import { Page } from "../components/layout/Page";
-import { useEffect } from "react";
 import { useSearchHistory } from "../hooks/useSearchHistory";
 import { getClassColor } from "../util/util";
 import classes from "./index.module.css";
@@ -18,10 +17,6 @@ const Home: React.FC = () => {
     name: e.name,
     color: getClassColor(e.class),
   }));
-
-  useEffect(() => {
-    document.title = "PugInspect - WoW Character Inspector";
-  }, []);
 
   return (
     <Page>
@@ -66,5 +61,9 @@ const Home: React.FC = () => {
 };
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [{ title: "PugInspect - WoW Character Inspector" }],
+    links: [{ rel: "canonical", href: "https://puginspect.com/" }],
+  }),
   component: Home,
 });

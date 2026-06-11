@@ -20,4 +20,9 @@ export const config = {
   port: Number.parseInt(process.env.PORT ?? "4000"),
   allowedOrigins: (process.env.ALLOWED_ORIGINS ?? "").split(",").filter(Boolean),
   databaseUrl: required("DATABASE_URL"),
+  // Origin the frontend container is reachable at from inside the Docker network —
+  // used to fetch the built index.html for bot meta injection.
+  frontendOrigin: process.env.FRONTEND_ORIGIN ?? "http://frontend",
+  // Public-facing origin used for canonical/og:url links in injected meta tags.
+  publicOrigin: process.env.PUBLIC_ORIGIN ?? "https://puginspect.com",
 };

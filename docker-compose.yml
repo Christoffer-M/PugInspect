@@ -26,6 +26,8 @@ services:
     environment:
       PORT: "4000"
       DATABASE_URL: "postgresql://puginspect:${POSTGRES_PASSWORD:-localdev}@postgres:5432/puginspect"
+      FRONTEND_ORIGIN: "http://frontend"
+      PUBLIC_ORIGIN: "https://puginspect.com"
     depends_on:
       postgres:
         condition: service_healthy

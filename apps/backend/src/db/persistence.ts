@@ -20,7 +20,7 @@ const CACHE_TTL_SECONDS = 900; // 15 minutes — RaiderIO and WarcraftLogs
 const BLIZZARD_CACHE_TTL_SECONDS = 86_400; // 24 hours — Blizzard data changes infrequently
 const ACHIEVEMENT_CACHE_TTL_SECONDS = 604_800; // 7 days — achievements don't un-complete
 
-type CharacterKey = {
+export type CharacterKey = {
   region: string;
   realm: string;
   name: string;
@@ -148,6 +148,53 @@ export async function persistRioProfile(
       });
   } catch (err) {
     logger.error("DB cache write failed (rio)", { key, error: String(err) });
+  }
+}
+
+export type CharacterMetaSnapshot = {
+  name: string;
+  realm: string;
+  class: string | null;
+  specialization: string | null;
+  race: string | null;
+  itemLevel: number | null;
+  mythicPlusScore: number | null;
+};
+
+/**
+ * Lightweight character lookup for SEO meta tags. Deliberately ignores
+ * expiresAt — stale data is fine for a meta description, and bot crawls
+ * must never trigger upstream API fetches.
+ */
+export async function getCharacterMetaSnapshot(
+  key: CharacterKey
+): Promise<CharacterMetaSnapshot | null> {
+  try {
+    const rows = await getDb()
+      .select({
+        name: characters.name,
+        realm: characters.realm,
+        class: characters.class,
+        specialization: characters.specialization,
+        race: characters.race,
+        itemLevel: characters.itemLevel,
+        mythicPlusScore: characterRioSnapshots.mythicPlusScore,
+      })
+      .from(characters)
+      .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
+      .where(
+        and(
+          eq(characters.region, key.region),
+          eq(characters.realm, key.realm),
+          eq(characters.name, key.name)
+        )
+      )
+      .limit(1);
+
+    return rows[0] ?? null;
+  } catch (err) {
+    logger.error("DB read failed (meta snapshot)", { key, error: String(err) });
+    return null;
   }
 }
 
