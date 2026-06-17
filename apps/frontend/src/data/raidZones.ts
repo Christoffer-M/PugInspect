@@ -24,6 +24,11 @@ export const RAID_DIFFICULTY_COLORS = {
 } as const;
 
 export const RAIDS: Record<string, RaidInfo> = {
+  sporefall: {
+    zoneId: 50,
+    displayName: "Sporefall",
+    expansion: 11,
+  },
   "tier-mn-1": {
     zoneId: 46,
     displayName: "The Voidspire, The Dreamrift, March on Quel'Danas",
