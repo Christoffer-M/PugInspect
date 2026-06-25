@@ -75,8 +75,12 @@ function buildDescription(
     : `${identity}. ${GENERIC_DESCRIPTION}`;
 }
 
-function buildMetaBlock(title: string, description: string, canonical: string): string {
-  const ogImage = `${config.publicOrigin}/og-image.png`;
+function buildMetaBlock(
+  title: string,
+  description: string,
+  canonical: string,
+  ogImage: string
+): string {
   return [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" />`,
@@ -138,8 +142,9 @@ export async function renderCharacterPageHtml(
   const title = `${displayName}-${displayRealm} | PugInspect`;
   const description = buildDescription(snapshot, displayName, displayRealm, regionLc);
   const canonical = `${config.publicOrigin}/${regionLc}/${encodeURIComponent(realmSlug)}/${encodeURIComponent(nameLc)}`;
+  const ogImage = `${config.publicOrigin}/card/${regionLc}/${encodeURIComponent(realmSlug)}/${encodeURIComponent(nameLc)}`;
 
-  const metaBlock = buildMetaBlock(title, description, canonical);
+  const metaBlock = buildMetaBlock(title, description, canonical, ogImage);
   const html = await getIndexHtml();
   if (!html) return fallbackShell(metaBlock);
 
