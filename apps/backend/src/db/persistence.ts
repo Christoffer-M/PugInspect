@@ -8,7 +8,7 @@ import {
   characterAchievements,
   characterLinks,
 } from "./schema.js";
-import type { RaiderIoCharacterApiResponse } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
+import type { RaiderIoCharacterApiResponse, RaidProgression } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
 import type { BlizzardCharacterProfile } from "../schema/services/blizzard/model/CharacterProfile.js";
 import type { ZoneRanking } from "../schema/services/warcraftLogs/model/ZoneRankings.js";
@@ -194,6 +194,69 @@ export async function getCharacterMetaSnapshot(
     return rows[0] ?? null;
   } catch (err) {
     logger.error("DB read failed (meta snapshot)", { key, error: String(err) });
+    return null;
+  }
+}
+
+export type CharacterCardSnapshot = {
+  name: string;
+  realm: string;
+  region: string;
+  class: string | null;
+  specialization: string | null;
+  race: string | null;
+  thumbnailUrl: string | null;
+  itemLevel: number | null;
+  mythicPlusScore: number | null;
+  mythicPlusColor: string | null;
+  topKeyLevel: number | null;
+  raidProgression: Record<string, RaidProgression> | null;
+};
+
+/**
+ * Everything needed to render the Discord og:image card. Like
+ * getCharacterMetaSnapshot, deliberately ignores expiresAt — stale data is
+ * fine for a card render, and card requests must never trigger upstream fetches.
+ */
+export async function getCharacterCardSnapshot(
+  key: CharacterKey
+): Promise<CharacterCardSnapshot | null> {
+  try {
+    const rows = await getDb()
+      .select({
+        name: characters.name,
+        realm: characters.realm,
+        region: characters.region,
+        class: characters.class,
+        specialization: characters.specialization,
+        race: characters.race,
+        thumbnailUrl: characters.thumbnailUrl,
+        itemLevel: characters.itemLevel,
+        mythicPlusScore: characterRioSnapshots.mythicPlusScore,
+        mythicPlusColor: sql<
+          string | null
+        >`${characterRioSnapshots.rawData}->'mythic_plus_scores_by_season'->0->'segments'->'all'->>'color'`,
+        topKeyLevel: sql<
+          number | null
+        >`(${characterRioSnapshots.rawData}->'mythic_plus_best_runs'->0->>'mythic_level')::int`,
+        raidProgression: sql<
+          Record<string, RaidProgression> | null
+        >`${characterRioSnapshots.rawData}->'raid_progression'`,
+      })
+      .from(characters)
+      .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
+      .where(
+        and(
+          eq(characters.region, key.region),
+          eq(characters.realm, key.realm),
+          eq(characters.name, key.name)
+        )
+      )
+      .limit(1);
+
+    return rows[0] ?? null;
+  } catch (err) {
+    logger.error("DB read failed (card snapshot)", { key, error: String(err) });
     return null;
   }
 }

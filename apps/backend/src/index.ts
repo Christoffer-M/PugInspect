@@ -7,6 +7,7 @@ import { runMigrations } from "./db/migrate.js";
 import express from "express";
 import cors from "cors";
 import { renderCharacterPageHtml } from "./seo/characterMeta.js";
+import { renderCharacterCard } from "./seo/characterCard.js";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import type { SelectionSetNode, ValidationRule } from "graphql";
@@ -172,6 +173,26 @@ app.get("/meta/:region/:realm/:name", metaRateLimiter, async (req, res) => {
   }
   res.setHeader("Cache-Control", "public, max-age=300");
   res.type("html").send(html);
+});
+
+// Per-character og:image card for Discord/Twitter/etc. Nginx proxies /card/
+// straight here; the meta endpoint above points og:image at this URL.
+const cardRateLimiter = createRateLimiter(120, 60_000);
+
+app.get("/card/:region/:realm/:name", cardRateLimiter, async (req, res) => {
+  const { region, realm, name } = req.params;
+  if (typeof region !== "string" || typeof realm !== "string" || typeof name !== "string") {
+    res.status(400).end();
+    return;
+  }
+  const png = await renderCharacterCard(region, realm, name);
+  if (!png) {
+    res.status(404).end();
+    return;
+  }
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=900");
+  res.end(png);
 });
 
 app.listen({ port: config.port });

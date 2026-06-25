@@ -2,7 +2,10 @@ import { Paper, Skeleton, Stack, Text, Image, Box, Group } from "@mantine/core";
 import { upperCaseFirstLetter, getClassColor, getParseColor } from "../../util/util";
 import { AltsHoverCard } from "./AltsHoverCard";
 import { Character, RaiderIo } from "../../graphql/graphql";
+import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import classes from "./CharacterHeader.module.css";
+
+const DIMMED = "var(--mantine-color-dimmed)";
 
 function getTopRioScore(raiderIo: RaiderIo | null | undefined): { score: number; role: string; color: string } | null {
   const season = raiderIo?.currentSeason;
@@ -33,6 +36,54 @@ function getTopKeyLevel(raiderIo: RaiderIo | null | undefined): number | null {
   return max > 0 ? max : null;
 }
 
+/** Days since the most recent logged M+ run, or null if none. */
+function getLastActiveDays(raiderIo: RaiderIo | null | undefined): number | null {
+  const runs = [
+    ...(raiderIo?.recentMythicPlusRuns ?? []),
+    ...(raiderIo?.bestMythicPlusRuns ?? []),
+  ];
+  if (!runs.length) return null;
+  const latest = Math.max(...runs.map((r) => new Date(r.completed_at).getTime()));
+  if (!isFinite(latest)) return null;
+  return Math.floor((Date.now() - latest) / (1000 * 60 * 60 * 24));
+}
+
+function formatLastActive(days: number): string {
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days <= 30) return `${days}d ago`;
+  if (days <= 89) return `${Math.floor(days / 7)}w ago`;
+  return "> 3mo";
+}
+
+function getLastActiveColor(days: number): string {
+  if (days <= 7) return RAID_DIFFICULTY_COLORS.normal;
+  if (days <= 30) return RAID_DIFFICULTY_COLORS.mythic;
+  return DIMMED;
+}
+
+/** Current-tier raid progression summary, e.g. "4/8 M".
+ * Kept in sync with raidProgressSummary in backend seo/characterCard.ts. */
+function getRaidProgressSummary(raiderIo: RaiderIo | null | undefined): string | null {
+  const current = raiderIo?.raidProgression?.find((p) => p.raid === DEFAULT_RAID);
+  if (!current) return null;
+  const total = current.total_bosses ?? 0;
+  const mythic = current.mythic_bosses_killed ?? 0;
+  const heroic = current.heroic_bosses_killed ?? 0;
+  const normal = current.normal_bosses_killed ?? 0;
+  if (mythic > 0) return `${mythic}/${total} M`;
+  if (heroic > 0) return `${heroic}/${total} H`;
+  if (normal > 0) return `${normal}/${total} N`;
+  return "—";
+}
+
+function getRaidProgressColor(summary: string | null): string {
+  if (summary?.endsWith("M")) return RAID_DIFFICULTY_COLORS.mythic;
+  if (summary?.endsWith("H")) return RAID_DIFFICULTY_COLORS.heroic;
+  if (summary?.endsWith("N")) return RAID_DIFFICULTY_COLORS.normal;
+  return DIMMED;
+}
+
 export const CharacterHeader: React.FC<{
   name: string;
   characterInfo: Character | undefined | null;
@@ -40,10 +91,15 @@ export const CharacterHeader: React.FC<{
   isLoadingInfo: boolean;
   isLoadingRaiderIo: boolean;
   isError: boolean;
-}> = ({ name, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError }) => {
+  bestParseAverage?: number | null;
+  bestParseSource?: string;
+  isLoadingBestParse?: boolean;
+}> = ({ name, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError, bestParseAverage, bestParseSource, isLoadingBestParse }) => {
   const classColor = getClassColor(characterInfo?.class);
   const rioScore = getTopRioScore(raiderIo);
   const topKey = getTopKeyLevel(raiderIo);
+  const raidProgress = getRaidProgressSummary(raiderIo);
+  const lastActiveDays = getLastActiveDays(raiderIo);
 
   return (
     <Paper
@@ -158,6 +214,61 @@ export const CharacterHeader: React.FC<{
             )}
             <Text className={classes.statSub} m={0}>timed</Text>
           </Stack>
+
+          <Stack className={classes.stat} gap={3}>
+            <Text className={classes.statLabel} m={0}>Raid Prog</Text>
+            {isLoadingRaiderIo ? (
+              <Skeleton h={28} w={64} mt={2} />
+            ) : (
+              <Text
+                className={classes.statVal}
+                m={0}
+                style={{ color: getRaidProgressColor(raidProgress) }}
+              >
+                {raidProgress ?? "—"}
+              </Text>
+            )}
+            <Text className={classes.statSub} m={0}>current tier</Text>
+          </Stack>
+
+          <Stack className={classes.stat} gap={3}>
+            <Text className={classes.statLabel} m={0}>Last Active</Text>
+            {isLoadingRaiderIo ? (
+              <Skeleton h={28} w={70} mt={2} />
+            ) : (
+              <Text
+                className={classes.statVal}
+                m={0}
+                style={{
+                  color: lastActiveDays != null ? getLastActiveColor(lastActiveDays) : DIMMED,
+                  fontSize: 20,
+                }}
+              >
+                {lastActiveDays != null ? formatLastActive(lastActiveDays) : "—"}
+              </Text>
+            )}
+            <Text className={classes.statSub} m={0}>last M+ run</Text>
+          </Stack>
+
+          {(isLoadingBestParse || bestParseAverage != null) && (
+            <Stack className={classes.stat} gap={3}>
+              <Text className={classes.statLabel} m={0}>Best Parse</Text>
+              {isLoadingBestParse ? (
+                <Skeleton h={28} w={56} mt={2} />
+              ) : (
+                <Text
+                  className={classes.statVal}
+                  m={0}
+                  style={{ color: getParseColor(bestParseAverage) }}
+                >
+                  {bestParseAverage != null ? `${Math.round(bestParseAverage)}%` : "—"}
+                </Text>
+              )}
+              <Text className={classes.statSub} m={0}>
+                best avg{bestParseSource ? ` · ${bestParseSource}` : ""}
+              </Text>
+            </Stack>
+          )}
         </Group>
       </Box>
     </Paper>

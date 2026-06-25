@@ -30,6 +30,30 @@
     border-top: 1px solid rgba(61, 79, 110, 0.28);
     margin-top: 4px;
   }
+
+  .stat {
+    min-width: 80px;
+    padding: 0 12px;
+  }
+}
+
+/* With 5 slots, wrap into two rows on narrow phones. */
+@media (max-width: 480px) {
+  .statstrip {
+    flex-wrap: wrap;
+    gap: 8px 0;
+  }
+
+  .stat {
+    flex: 0 0 33.333%;
+    border-left: none;
+    border-top: 1px solid rgba(61, 79, 110, 0.28);
+    padding: 8px 8px 0 8px;
+  }
+
+  .stat:nth-child(-n + 3) {
+    border-top: none;
+  }
 }
 
 .avatarRing {
