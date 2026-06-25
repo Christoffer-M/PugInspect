@@ -15,7 +15,7 @@
 .profile {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 22px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -66,7 +66,7 @@
 
 .characterName {
   color: var(--class-color, var(--mantine-color-text)) !important;
-  font-size: 26px;
+  font-size: 21px;
   letter-spacing: -0.01em;
 }
 
@@ -79,10 +79,10 @@
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 0 20px;
+  gap: 2px;
+  padding: 0 14px;
   border-left: 1px solid rgba(61, 79, 110, 0.28);
-  min-width: 92px;
+  min-width: 76px;
 }
 
 .stat:first-child {
@@ -101,13 +101,19 @@
 
 .statVal {
   font-family: "Space Grotesk", system-ui, sans-serif;
-  font-size: 26px;
+  font-size: 21px;
   font-weight: 700;
   line-height: 1;
+  /* Fixed-height, bottom-aligned box so every value shares a baseline (subtexts
+     stay aligned) and the row height matches the loading skeleton, avoiding a
+     jump when data loads. */
+  min-height: 24px;
+  display: flex;
+  align-items: flex-end;
 }
 
 .statValSmall {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--mantine-color-dark-2);
 }

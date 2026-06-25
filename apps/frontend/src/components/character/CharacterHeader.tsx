@@ -50,10 +50,9 @@ function getLastActiveDays(raiderIo: RaiderIo | null | undefined): number | null
 
 function formatLastActive(days: number): string {
   if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days <= 30) return `${days}d ago`;
-  if (days <= 89) return `${Math.floor(days / 7)}w ago`;
-  return "> 3mo";
+  if (days <= 30) return `${days}d`;
+  if (days <= 364) return `${Math.floor(days / 7)}w`;
+  return `${Math.floor(days / 365)}y`;
 }
 
 function getLastActiveColor(days: number): string {
@@ -105,7 +104,7 @@ export const CharacterHeader: React.FC<{
     <Paper
       shadow="xs"
       radius="md"
-      p="lg"
+      p="md"
       withBorder
       w="100%"
       className={classes.card}
@@ -126,17 +125,17 @@ export const CharacterHeader: React.FC<{
       <Box className={classes.profile}>
         {/* Avatar */}
         {isLoadingInfo || isError ? (
-          <Skeleton h={92} w={92} radius="xl" animate={!isError} />
+          <Skeleton h={72} w={72} radius="xl" animate={!isError} />
         ) : characterInfo ? (
           <Box className={classes.avatarRing}>
             <Image
               src={characterInfo.avatarUrl}
               alt={name}
-              h={88}
-              w={88}
+              h={68}
+              w={68}
               fit="cover"
               radius={100}
-              fallbackSrc="https://placehold.co/88x88?text=?"
+              fallbackSrc="https://placehold.co/68x68?text=?"
             />
           </Box>
         ) : null}
@@ -186,7 +185,7 @@ export const CharacterHeader: React.FC<{
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>RIO Score</Text>
             {isLoadingRaiderIo ? (
-              <Skeleton h={28} w={70} mt={2} />
+              <Skeleton h={24} w={70} mt={2} />
             ) : (
               <Text
                 className={classes.statVal}
@@ -204,7 +203,7 @@ export const CharacterHeader: React.FC<{
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Top Key</Text>
             {isLoadingRaiderIo ? (
-              <Skeleton h={28} w={50} mt={2} />
+              <Skeleton h={24} w={50} mt={2} />
             ) : (
               <Text className={classes.statVal} m={0} style={{ color: "var(--mantine-color-text)" }}>
                 {topKey != null ? (
@@ -218,7 +217,7 @@ export const CharacterHeader: React.FC<{
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Raid Prog</Text>
             {isLoadingRaiderIo ? (
-              <Skeleton h={28} w={64} mt={2} />
+              <Skeleton h={24} w={64} mt={2} />
             ) : (
               <Text
                 className={classes.statVal}
@@ -234,14 +233,13 @@ export const CharacterHeader: React.FC<{
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Last Active</Text>
             {isLoadingRaiderIo ? (
-              <Skeleton h={28} w={70} mt={2} />
+              <Skeleton h={24} w={70} mt={2} />
             ) : (
               <Text
                 className={classes.statVal}
                 m={0}
                 style={{
                   color: lastActiveDays != null ? getLastActiveColor(lastActiveDays) : DIMMED,
-                  fontSize: 20,
                 }}
               >
                 {lastActiveDays != null ? formatLastActive(lastActiveDays) : "—"}
@@ -254,7 +252,7 @@ export const CharacterHeader: React.FC<{
             <Stack className={classes.stat} gap={3}>
               <Text className={classes.statLabel} m={0}>Best Parse</Text>
               {isLoadingBestParse ? (
-                <Skeleton h={28} w={56} mt={2} />
+                <Skeleton h={24} w={56} mt={2} />
               ) : (
                 <Text
                   className={classes.statVal}
