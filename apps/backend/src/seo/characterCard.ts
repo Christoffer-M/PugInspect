@@ -58,6 +58,15 @@ async function getFont(): Promise<ArrayBuffer | null> {
 
 const cache = new Map<string, { png: Buffer; expiresAt: number }>();
 
+// Sweep expired PNGs periodically so distinct-character crawls don't grow the
+// cache unbounded (mirrors the rate limiter sweep in index.ts).
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of cache) {
+    if (now > entry.expiresAt) cache.delete(key);
+  }
+}, CARD_TTL_MS).unref();
+
 /** Satori takes a React-element-shaped object. This avoids a React dependency
  * and JSX config — we build the tree as plain objects. */
 type Element = { type: string; props: Record<string, unknown> };
@@ -69,17 +78,16 @@ function h(
   return { type, props: { ...props, children: children.length === 1 ? children[0] : children } };
 }
 
-/** "4/8 M · 8/8 H" style progression string for the current tier. */
+/** Current-tier raid progression summary, e.g. "4/8 M".
+ * Kept in sync with getRaidProgressSummary in frontend CharacterHeader.tsx. */
 function raidProgressSummary(snapshot: CharacterCardSnapshot): string {
   const current = snapshot.raidProgression?.[DEFAULT_RAID];
   if (!current) return "—";
-  const { total_bosses: total, mythic_bosses_killed: m, heroic_bosses_killed: heroic } = current;
+  const { total_bosses: total, mythic_bosses_killed: m, heroic_bosses_killed: heroic, normal_bosses_killed: n } = current;
   if (m > 0) return `${m}/${total} M`;
-  if (heroic === total) return `${heroic}/${total} H`;
   if (heroic > 0) return `${heroic}/${total} H`;
-  const n = current.normal_bosses_killed;
   if (n > 0) return `${n}/${total} N`;
-  return "N/A";
+  return "—";
 }
 
 function statBlock(label: string, value: string, valueColor: string): Element {

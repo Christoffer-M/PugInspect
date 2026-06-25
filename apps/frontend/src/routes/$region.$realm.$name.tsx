@@ -214,6 +214,7 @@ function CharacterPage() {
                   : raidLogsData?.bestPerformanceAverage) ?? null
               }
               bestParseSource={isMythicPlusView ? "M+" : "Raid"}
+              isLoadingBestParse={isMythicPlusView ? isFetchingMpLogs : isFetchingRaidLogs}
             />
             <Stack w="100%" gap="xs">
               <SegmentedControl

@@ -62,7 +62,8 @@ function getLastActiveColor(days: number): string {
   return DIMMED;
 }
 
-/** Current-tier raid progression summary, e.g. "4/8 M". */
+/** Current-tier raid progression summary, e.g. "4/8 M".
+ * Kept in sync with raidProgressSummary in backend seo/characterCard.ts. */
 function getRaidProgressSummary(raiderIo: RaiderIo | null | undefined): string | null {
   const current = raiderIo?.raidProgression?.find((p) => p.raid === DEFAULT_RAID);
   if (!current) return null;
@@ -92,7 +93,8 @@ export const CharacterHeader: React.FC<{
   isError: boolean;
   bestParseAverage?: number | null;
   bestParseSource?: string;
-}> = ({ name, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError, bestParseAverage, bestParseSource }) => {
+  isLoadingBestParse?: boolean;
+}> = ({ name, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError, bestParseAverage, bestParseSource, isLoadingBestParse }) => {
   const classColor = getClassColor(characterInfo?.class);
   const rioScore = getTopRioScore(raiderIo);
   const topKey = getTopKeyLevel(raiderIo);
@@ -248,16 +250,20 @@ export const CharacterHeader: React.FC<{
             <Text className={classes.statSub} m={0}>last M+ run</Text>
           </Stack>
 
-          {bestParseAverage != null && (
+          {(isLoadingBestParse || bestParseAverage != null) && (
             <Stack className={classes.stat} gap={3}>
               <Text className={classes.statLabel} m={0}>Best Parse</Text>
-              <Text
-                className={classes.statVal}
-                m={0}
-                style={{ color: getParseColor(bestParseAverage) }}
-              >
-                {Math.round(bestParseAverage)}%
-              </Text>
+              {isLoadingBestParse ? (
+                <Skeleton h={28} w={56} mt={2} />
+              ) : (
+                <Text
+                  className={classes.statVal}
+                  m={0}
+                  style={{ color: getParseColor(bestParseAverage) }}
+                >
+                  {bestParseAverage != null ? `${Math.round(bestParseAverage)}%` : "—"}
+                </Text>
+              )}
               <Text className={classes.statSub} m={0}>
                 best avg{bestParseSource ? ` · ${bestParseSource}` : ""}
               </Text>
