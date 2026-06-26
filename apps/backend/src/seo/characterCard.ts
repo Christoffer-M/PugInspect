@@ -75,7 +75,10 @@ function h(
   props: Record<string, unknown>,
   ...children: unknown[]
 ): Element {
-  return { type, props: { ...props, children: children.length === 1 ? children[0] : children } };
+  // satori treats an empty `children` array as ambiguous and throws the
+  // "more than one child" error, so emit undefined when there are no children.
+  const child = children.length === 0 ? undefined : children.length === 1 ? children[0] : children;
+  return { type, props: { ...props, children: child } };
 }
 
 /** Current-tier raid progression summary, e.g. "4/8 M".
