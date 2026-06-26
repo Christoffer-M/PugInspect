@@ -1,5 +1,5 @@
 import { ActionIcon, AppShell, Box, Container, Flex, Group, Text } from "@mantine/core";
-import { IconBrandDiscord, IconBrandGithub, IconHistory } from "@tabler/icons-react";
+import { IconHistory } from "@tabler/icons-react";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { SearchHistoryDrawer } from "../search/SearchHistoryDrawer/SearchHistoryDrawer";
@@ -63,28 +63,6 @@ const Header: React.FC = () => {
                 onClick={() => setHistoryOpen(true)}
               >
                 <IconHistory />
-              </ActionIcon>
-              <ActionIcon
-                variant="subtle"
-                component="a"
-                href="https://discord.gg/KkjDYSchvc"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Join our Discord server"
-                size="lg"
-              >
-                <IconBrandDiscord />
-              </ActionIcon>
-              <ActionIcon
-                variant="subtle"
-                component="a"
-                href="https://github.com/Christoffer-M/PugInspect"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Go to GitHub repository"
-                size="lg"
-              >
-                <IconBrandGithub />
               </ActionIcon>
             </Group>
           </Group>
