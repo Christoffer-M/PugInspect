@@ -68,6 +68,8 @@ async function getFonts(): Promise<{ barlow: ArrayBuffer | null; barlowCondensed
 
 const cache = new Map<string, { png: Buffer; expiresAt: number }>();
 
+// Sweep expired PNGs periodically so distinct-character crawls don't grow the
+// cache unbounded (mirrors the rate limiter sweep in index.ts).
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of cache) {
@@ -83,6 +85,8 @@ function h(
   props: Record<string, unknown>,
   ...children: unknown[]
 ): Element {
+  // satori treats an empty `children` array as ambiguous and throws the
+  // "more than one child" error, so emit undefined when there are no children.
   const child = children.length === 0 ? undefined : children.length === 1 ? children[0] : children;
   return { type, props: { ...props, children: child } };
 }
@@ -162,7 +166,7 @@ function buildCard(snapshot: CharacterCardSnapshot): Element {
         h(
           "div",
           { style: { display: "flex", flex: 1, borderRadius: "72px", overflow: "hidden" } },
-          h("img", { src: snapshot.thumbnailUrl, width: 146, height: 146 })
+          h("img", { src: snapshot.thumbnailUrl, width: 146, height: 146, style: { objectFit: "cover" } })
         )
       )
     : h("div", { style: { display: "flex", width: "152px", height: "152px", borderRadius: "76px", backgroundColor: "#1a2030" } });
@@ -179,6 +183,7 @@ function buildCard(snapshot: CharacterCardSnapshot): Element {
       // Left column
       h(
         "div",
+        // width: 64px page padding + 348px content column
         { style: { display: "flex", flexDirection: "column", width: "412px", paddingLeft: "64px", paddingTop: "60px" } },
         avatar,
         h("div", { style: { display: "flex", marginTop: "30px", fontFamily: "BarlowCondensed", fontSize: "86px", fontWeight: 800, color, lineHeight: "1", letterSpacing: "-1.5px" } }, snapshot.name),
@@ -228,7 +233,6 @@ export async function renderCharacterCard(
     getCharacterCardSnapshot({ region: regionLc, realm: realmSlug, name: nameLc }),
     getFonts(),
   ]);
-  logger.warn("Card render attempt", { region, realm, name, hasSnapshot: !!snapshot, hasBarlow: !!fonts.barlow, hasBarlowCondensed: !!fonts.barlowCondensed });
   if (!snapshot || !fonts.barlow || !fonts.barlowCondensed) {
     logger.warn("Card render skipped", { region, realm, name, hasSnapshot: !!snapshot, hasBarlow: !!fonts.barlow, hasBarlowCondensed: !!fonts.barlowCondensed });
     return null;
