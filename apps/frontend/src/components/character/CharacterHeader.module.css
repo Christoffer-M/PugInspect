@@ -19,43 +19,6 @@
   align-items: center;
 }
 
-@media (max-width: 700px) {
-  .profile {
-    grid-template-columns: auto 1fr;
-  }
-
-  .statstrip {
-    grid-column: 1 / -1;
-    padding-top: 8px;
-    border-top: 1px solid rgba(61, 79, 110, 0.28);
-    margin-top: 4px;
-  }
-
-  .stat {
-    min-width: 80px;
-    padding: 0 12px;
-  }
-}
-
-/* With 5 slots, wrap into two rows on narrow phones. */
-@media (max-width: 480px) {
-  .statstrip {
-    flex-wrap: wrap;
-    gap: 8px 0;
-  }
-
-  .stat {
-    flex: 0 0 33.333%;
-    border-left: none;
-    border-top: 1px solid rgba(61, 79, 110, 0.28);
-    padding: 8px 8px 0 8px;
-  }
-
-  .stat:nth-child(-n + 3) {
-    border-top: none;
-  }
-}
-
 .avatarRing {
   border-radius: 50%;
   border: 2px solid var(--avatar-ring-color, rgba(61, 79, 110, 0.8));
@@ -121,4 +84,39 @@
 .statSub {
   font-size: 11px;
   color: var(--mantine-color-dark-3);
+}
+
+/* Mobile overrides last so they win source-order over the base rules above. */
+@media (max-width: 700px) {
+  .profile {
+    grid-template-columns: auto 1fr;
+  }
+
+  .statstrip {
+    grid-column: 1 / -1;
+    padding-top: 8px;
+    border-top: 1px solid rgba(61, 79, 110, 0.28);
+    margin-top: 4px;
+  }
+
+  .stat {
+    min-width: 80px;
+    padding: 0 12px;
+  }
+}
+
+/* With 5 slots, lay out as a 3-column grid on narrow phones so columns stay
+   aligned across rows regardless of content width. */
+@media (max-width: 480px) {
+  .statstrip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 10px;
+  }
+
+  .stat {
+    min-width: 0;
+    padding: 0;
+    border-left: none;
+  }
 }

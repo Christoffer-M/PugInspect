@@ -181,7 +181,7 @@ export const CharacterHeader: React.FC<{
         )}
 
         {/* Stat Strip */}
-        <Group className={classes.statstrip} gap={0} align="stretch">
+        <Box className={classes.statstrip}>
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>RIO Score</Text>
             {isLoadingRaiderIo ? (
@@ -267,7 +267,7 @@ export const CharacterHeader: React.FC<{
               </Text>
             </Stack>
           )}
-        </Group>
+        </Box>
       </Box>
     </Paper>
   );
