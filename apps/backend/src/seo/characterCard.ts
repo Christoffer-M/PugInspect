@@ -8,10 +8,13 @@ import { createLogger } from "../schema/utils/logger.js";
 const logger = createLogger({ service: "CharacterCard" });
 
 const CARD_TTL_MS = 15 * 60_000; // 15 minutes, matching the RIO cache
-const FONT_URL =
-  "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.1/files/inter-latin-400-normal.woff";
 const FALLBACK_COLOR = "#7a8290";
 const DEFAULT_RAID = "tier-mn-1"; // keep in sync with frontend data/raidZones.ts
+
+const FONT_BARLOW_URL =
+  "https://cdn.jsdelivr.net/npm/@fontsource/barlow@5.1.1/files/barlow-latin-600-normal.woff";
+const FONT_BARLOW_CONDENSED_URL =
+  "https://cdn.jsdelivr.net/npm/@fontsource/barlow-condensed@5.1.1/files/barlow-condensed-latin-800-normal.woff";
 
 // Class colors mirror CLASS_COLORS in frontend/src/util/util.ts.
 // ponytail: duplicated rather than sharing a package — it's 12 lines that
@@ -37,29 +40,34 @@ function classColor(className: string | null): string {
   return CLASS_COLORS[className.toLowerCase()] ?? FALLBACK_COLOR;
 }
 
-// Lazy font singleton — fetched once on first render, then reused.
-let fontPromise: Promise<ArrayBuffer | null> | null = null;
+// Lazy font singletons — fetched once on first render, then reused.
+let barlowPromise: Promise<ArrayBuffer | null> | null = null;
+let barlowCondensedPromise: Promise<ArrayBuffer | null> | null = null;
 
-async function getFont(): Promise<ArrayBuffer | null> {
-  if (!fontPromise) {
-    fontPromise = fetch(FONT_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Font fetch responded ${res.status}`);
-        return res.arrayBuffer();
-      })
-      .catch((err) => {
-        logger.error("Font fetch failed", { error: String(err) });
-        fontPromise = null; // allow retry on next request
-        return null;
-      });
-  }
-  return fontPromise;
+async function fetchFont(url: string, label: string): Promise<ArrayBuffer | null> {
+  return fetch(url)
+    .then((res) => {
+      if (!res.ok) throw new Error(`Font fetch responded ${res.status}`);
+      return res.arrayBuffer();
+    })
+    .catch((err) => {
+      logger.error(`Font fetch failed: ${label}`, { error: String(err) });
+      return null;
+    });
+}
+
+async function getFonts(): Promise<{ barlow: ArrayBuffer | null; barlowCondensed: ArrayBuffer | null }> {
+  if (!barlowPromise) barlowPromise = fetchFont(FONT_BARLOW_URL, "Barlow-600");
+  if (!barlowCondensedPromise) barlowCondensedPromise = fetchFont(FONT_BARLOW_CONDENSED_URL, "BarlowCondensed-800");
+  const [barlow, barlowCondensed] = await Promise.all([barlowPromise, barlowCondensedPromise]);
+  // Reset on failure so the next request retries.
+  if (!barlow) barlowPromise = null;
+  if (!barlowCondensed) barlowCondensedPromise = null;
+  return { barlow, barlowCondensed };
 }
 
 const cache = new Map<string, { png: Buffer; expiresAt: number }>();
 
-// Sweep expired PNGs periodically so distinct-character crawls don't grow the
-// cache unbounded (mirrors the rate limiter sweep in index.ts).
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of cache) {
@@ -75,8 +83,6 @@ function h(
   props: Record<string, unknown>,
   ...children: unknown[]
 ): Element {
-  // satori treats an empty `children` array as ambiguous and throws the
-  // "more than one child" error, so emit undefined when there are no children.
   const child = children.length === 0 ? undefined : children.length === 1 ? children[0] : children;
   return { type, props: { ...props, children: child } };
 }
@@ -93,134 +99,116 @@ function raidProgressSummary(snapshot: CharacterCardSnapshot): string {
   return "—";
 }
 
-function statBlock(label: string, value: string, valueColor: string): Element {
-  return h(
-    "div",
-    { style: { display: "flex", flexDirection: "column", gap: "4px", width: "260px" } },
-    h(
-      "div",
-      { style: { fontSize: "15px", color: "#7a8290", textTransform: "uppercase", letterSpacing: "1px" } },
-      label
-    ),
-    h("div", { style: { fontSize: "30px", fontWeight: 400, color: valueColor } }, value)
-  );
-}
-
-function buildCard(snapshot: CharacterCardSnapshot): Element {
-  const color = classColor(snapshot.class);
-  const realmLine = `(${snapshot.region.toUpperCase()}) ${snapshot.realm}`;
-  const traits = [snapshot.race, snapshot.specialization, snapshot.class]
-    .filter(Boolean)
-    .join(" ");
-  const ilvl = snapshot.itemLevel != null ? String(Math.round(snapshot.itemLevel)) : "—";
-  const mScore =
-    snapshot.mythicPlusScore != null ? String(Math.round(snapshot.mythicPlusScore)) : "—";
-  const topKey = snapshot.topKeyLevel != null ? `+${snapshot.topKeyLevel}` : "—";
-
+function statCard(label: string, value: string, valueColor: string, accent = false): Element {
   return h(
     "div",
     {
       style: {
         display: "flex",
         flexDirection: "column",
-        width: "1200px",
-        height: "630px",
-        backgroundColor: "#16181d",
-        fontFamily: "Inter",
+        flex: "1",
+        background: accent ? "rgba(255,70,70,0.07)" : "rgba(255,255,255,0.03)",
+        border: `1px solid ${accent ? "rgba(255,90,90,0.2)" : "rgba(255,255,255,0.07)"}`,
+        borderRadius: "14px",
+        padding: "26px 30px",
       },
     },
-    h("div", { style: { height: "8px", backgroundColor: color } }),
     h(
       "div",
-      { style: { display: "flex", flex: "1", padding: "60px" } },
-      // Left identity column
-      h(
-        "div",
-        {
-          style: {
-            display: "flex",
-            flexDirection: "column",
-            width: "360px",
-            paddingRight: "40px",
-          },
+      {
+        style: {
+          display: "flex",
+          fontSize: "13px",
+          fontWeight: 600,
+          fontFamily: "Barlow",
+          letterSpacing: "2px",
+          color: "#7A90A8",
+          textTransform: "uppercase",
+          marginBottom: "12px",
         },
-        snapshot.thumbnailUrl
-          ? h("img", {
-              src: snapshot.thumbnailUrl,
-              width: 96,
-              height: 96,
-              style: { borderRadius: "48px", border: `4px solid ${color}` },
-            })
-          : h("div", {
-              style: {
-                width: "96px",
-                height: "96px",
-                borderRadius: "48px",
-                border: `4px solid ${color}`,
-                backgroundColor: "#0f1116",
-              },
-            }),
-        h(
-          "div",
-          {
-            style: {
-              display: "flex",
-              fontSize: "44px",
-              fontWeight: 400,
-              color,
-              marginTop: "24px",
-            },
-          },
-          snapshot.name
-        ),
-        h("div", { style: { display: "flex", fontSize: "22px", color: "#c7cdd9", marginTop: "8px" } }, realmLine),
-        h("div", { style: { display: "flex", fontSize: "18px", color: "#7a8290", marginTop: "6px" } }, traits)
-      ),
-      // Right stats grid (2 columns x rows)
-      h(
-        "div",
-        {
-          style: {
-            display: "flex",
-            flexDirection: "column",
-            flex: "1",
-            justifyContent: "center",
-            gap: "44px",
-          },
-        },
-        h(
-          "div",
-          { style: { display: "flex", gap: "40px" } },
-          statBlock("Item Level", ilvl, "#ffffff"),
-          statBlock("M+ Score", mScore, snapshot.mythicPlusColor ?? FALLBACK_COLOR)
-        ),
-        h(
-          "div",
-          { style: { display: "flex", gap: "40px" } },
-          statBlock("Top Key", topKey, "#ffffff"),
-          statBlock("Raid Prog", raidProgressSummary(snapshot), "#ffffff")
-        )
-      )
+      },
+      label
     ),
     h(
       "div",
       {
         style: {
           display: "flex",
-          justifyContent: "flex-end",
-          padding: "0 60px 32px",
-          fontSize: "20px",
-          color: "#5e6a82",
+          fontFamily: "BarlowCondensed",
+          fontSize: "90px",
+          fontWeight: 800,
+          color: valueColor,
+          lineHeight: "1",
         },
       },
-      "puginspect.com"
+      value
     )
+  );
+}
+
+function buildCard(snapshot: CharacterCardSnapshot): Element {
+  const color = classColor(snapshot.class);
+  const realmLine = `(${snapshot.region.toUpperCase()}) ${snapshot.realm}`;
+  const traits = [snapshot.race, snapshot.specialization, snapshot.class].filter(Boolean).join(" ");
+  const ilvl = snapshot.itemLevel != null ? String(Math.round(snapshot.itemLevel)) : "—";
+  const mScore = snapshot.mythicPlusScore != null ? String(Math.round(snapshot.mythicPlusScore)) : "—";
+  const topKey = snapshot.topKeyLevel != null ? `+${snapshot.topKeyLevel}` : "—";
+  const mColor = snapshot.mythicPlusColor ?? "#FF5252";
+
+  const avatar = snapshot.thumbnailUrl
+    ? h(
+        "div",
+        { style: { display: "flex", width: "152px", height: "152px", borderRadius: "76px", padding: "3px", backgroundColor: color } },
+        h(
+          "div",
+          { style: { display: "flex", flex: 1, borderRadius: "72px", overflow: "hidden" } },
+          h("img", { src: snapshot.thumbnailUrl, width: 146, height: 146 })
+        )
+      )
+    : h("div", { style: { display: "flex", width: "152px", height: "152px", borderRadius: "76px", backgroundColor: "#1a2030" } });
+
+  return h(
+    "div",
+    { style: { display: "flex", flexDirection: "column", width: "1200px", height: "630px", backgroundColor: "#0C1018", fontFamily: "Barlow" } },
+    // Accent bar (no children — no display:flex needed)
+    h("div", { style: { width: "780px", height: "4px", background: `linear-gradient(90deg, ${color} 0%, ${color}66 65%, transparent 100%)` } }),
+    // Main content row
+    h(
+      "div",
+      { style: { display: "flex", flex: 1 } },
+      // Left column
+      h(
+        "div",
+        { style: { display: "flex", flexDirection: "column", width: "412px", paddingLeft: "64px", paddingTop: "60px" } },
+        avatar,
+        h("div", { style: { display: "flex", marginTop: "30px", fontFamily: "BarlowCondensed", fontSize: "86px", fontWeight: 800, color, lineHeight: "1", letterSpacing: "-1.5px" } }, snapshot.name),
+        h("div", { style: { display: "flex", marginTop: "14px", fontSize: "24px", fontWeight: 600, color: "#8A9BB0" } }, realmLine),
+        h("div", { style: { display: "flex", marginTop: "6px", fontSize: "20px", color: "#55677A" } }, traits)
+      ),
+      // Divider (no children — no display:flex needed)
+      h("div", { style: { width: "1px", marginTop: "68px", marginBottom: "68px", background: `linear-gradient(180deg, transparent 0%, ${color}38 20%, ${color}38 80%, transparent 100%)` } }),
+      // Right column
+      h(
+        "div",
+        { style: { display: "flex", flex: 1, flexDirection: "column", justifyContent: "center", paddingLeft: "34px", paddingRight: "60px", gap: "18px" } },
+        h("div", { style: { display: "flex", gap: "18px" } },
+          statCard("Item Level", ilvl, "#E8EDF2"),
+          statCard("M+ Score", mScore, mColor, true)
+        ),
+        h("div", { style: { display: "flex", gap: "18px" } },
+          statCard("Top Key", topKey, "#E8EDF2"),
+          statCard("Raid Prog", raidProgressSummary(snapshot), "#E8EDF2")
+        )
+      )
+    ),
+    // Brand
+    h("div", { style: { display: "flex", justifyContent: "flex-end", paddingRight: "64px", paddingBottom: "26px", fontSize: "14px", fontWeight: 600, letterSpacing: "2px", color: "#2A3548" } }, "puginspect.com")
   );
 }
 
 /**
  * Renders the per-character og:image card as a PNG. Returns null when no
- * cached character snapshot exists or the font is unavailable (caller 404s).
+ * cached character snapshot exists or the fonts are unavailable (caller 404s).
  */
 export async function renderCharacterCard(
   region: string,
@@ -236,17 +224,24 @@ export async function renderCharacterCard(
   const cached = cache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) return cached.png;
 
-  const [snapshot, font] = await Promise.all([
+  const [snapshot, fonts] = await Promise.all([
     getCharacterCardSnapshot({ region: regionLc, realm: realmSlug, name: nameLc }),
-    getFont(),
+    getFonts(),
   ]);
-  if (!snapshot || !font) return null;
+  logger.warn("Card render attempt", { region, realm, name, hasSnapshot: !!snapshot, hasBarlow: !!fonts.barlow, hasBarlowCondensed: !!fonts.barlowCondensed });
+  if (!snapshot || !fonts.barlow || !fonts.barlowCondensed) {
+    logger.warn("Card render skipped", { region, realm, name, hasSnapshot: !!snapshot, hasBarlow: !!fonts.barlow, hasBarlowCondensed: !!fonts.barlowCondensed });
+    return null;
+  }
 
   try {
     const svg = await satori(buildCard(snapshot) as never, {
       width: 1200,
       height: 630,
-      fonts: [{ name: "Inter", data: font, weight: 400, style: "normal" }],
+      fonts: [
+        { name: "Barlow", data: fonts.barlow, weight: 600, style: "normal" },
+        { name: "BarlowCondensed", data: fonts.barlowCondensed, weight: 800, style: "normal" },
+      ],
     });
     const png = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } }).render().asPng();
     cache.set(cacheKey, { png, expiresAt: Date.now() + CARD_TTL_MS });
