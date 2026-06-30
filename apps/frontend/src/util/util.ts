@@ -26,11 +26,11 @@ export const upperCaseFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
-export function parseRaiderIoUrl(
+export function parseCharacterUrl(
   url: string,
 ): { region: string; realm: string; name: string } | null {
   const match = url.match(
-    /raider\.io\/characters\/([^/]+)\/([^/]+)\/([^/?#]+)/i,
+    /(?:raider\.io\/characters|puginspect\.com)\/([^/]+)\/([^/]+)\/([^/?#]+)/i,
   );
   if (!match) return null;
   const [, region, rawRealm, name] = match;

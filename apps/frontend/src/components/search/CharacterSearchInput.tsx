@@ -8,7 +8,7 @@ import {
 import { useParams, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  parseRaiderIoUrl,
+  parseCharacterUrl,
   upperCaseFirstLetter,
   useDebounce,
 } from "../../util/util";
@@ -45,15 +45,15 @@ const CharacterSearchInput: React.FC = () => {
       disabledRegions.includes(region),
   );
 
-  const handleRaiderIoUrl = (url: string) => {
-    const parsed = parseRaiderIoUrl(url);
+  const handleCharacterUrl = (url: string) => {
+    const parsed = parseCharacterUrl(url);
     if (parsed) {
       setRegion(parsed.region.toUpperCase());
       navigateToCharacter(
         `${upperCaseFirstLetter(parsed.name)}-${upperCaseFirstLetter(parsed.realm)}`,
       );
     } else {
-      setErrorText("Invalid Raider.IO URL");
+      setErrorText("Invalid character URL");
     }
   };
 
@@ -133,8 +133,12 @@ const CharacterSearchInput: React.FC = () => {
         }}
         onPaste={(e) => {
           const pastedText = e.clipboardData?.getData("text") || "";
-          if (pastedText.toLowerCase().startsWith("https://raider.io/")) {
-            handleRaiderIoUrl(pastedText);
+          const lower = pastedText.toLowerCase();
+          if (
+            lower.includes("raider.io/") ||
+            lower.includes("puginspect.com/")
+          ) {
+            handleCharacterUrl(pastedText);
             return;
           }
         }}

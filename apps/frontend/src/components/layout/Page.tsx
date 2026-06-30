@@ -4,7 +4,7 @@ import Footer from "./Footer";
 import classes from "./Page.module.css";
 import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { parseRaiderIoUrl } from "../../util/util";
+import { parseCharacterUrl } from "../../util/util";
 import { notifications } from "@mantine/notifications";
 import { annoyedMessages } from "../../data/annoyedMessagegs";
 
@@ -27,10 +27,10 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       const pastedText = event.clipboardData?.getData("text");
 
       if (pastedText) {
-        const raiderIoUrl = parseRaiderIoUrl(pastedText);
-        if (raiderIoUrl) {
+        const characterUrl = parseCharacterUrl(pastedText);
+        if (characterUrl) {
           event.preventDefault();
-          const { region, realm, name } = raiderIoUrl;
+          const { region, realm, name } = characterUrl;
 
           const normalizedRegion = region.toLowerCase();
           const normalizedRealm = realm.toLowerCase();
