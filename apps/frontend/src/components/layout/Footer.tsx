@@ -1,6 +1,6 @@
 import { ActionIcon, Anchor, Center, Group, Stack, Text } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { IconBrandDiscord, IconBrandGithub } from "@tabler/icons-react";
+import { IconBrandDiscord, IconBrandGithub, IconPuzzle } from "@tabler/icons-react";
 
 const Footer: React.FC = () => {
   return (
@@ -27,6 +27,19 @@ const Footer: React.FC = () => {
           <IconBrandGithub size={20} />
         </ActionIcon>
       </Group>
+      <Anchor
+        component="a"
+        href="https://www.curseforge.com/wow/addons/puginspect"
+        target="_blank"
+        rel="noopener noreferrer"
+        size="sm"
+        c="accent"
+      >
+        <Group gap={4} align="center">
+          <IconPuzzle size={16} />
+          Get the addon
+        </Group>
+      </Anchor>
       <Center>
         <Text size="xs" c="dimmed" ta="center">
           This website is a fan-made project and is not affiliated with or endorsed by Blizzard Entertainment, Warcraft Logs, or Raider.IO.<br />
