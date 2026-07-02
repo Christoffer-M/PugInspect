@@ -2,7 +2,7 @@ import { HeadContent, Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { config } from "../config ";
+import { config } from "../config";
 
 const Analytics: React.FC = () => {
   useEffect(() => {

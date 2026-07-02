@@ -1,7 +1,7 @@
 import { gql } from "graphql-tag";
 
 export const characterTypedefs = gql`
-  extend type Query {
+  type Query {
     character(
       name: String!
       realm: String!

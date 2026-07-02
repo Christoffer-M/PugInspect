@@ -1,27 +1,28 @@
 import { GraphQLError } from "graphql";
-import { CircuitBreaker } from "../../utils/circuitBreaker.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { createLogger } from "../../utils/logger.js";
 
 const WCL_API_URL = "https://www.warcraftlogs.com/api/v2/client";
+const RATE_LIMIT_BACKOFF_MS = 2 * 60 * 1000;
 const logger = createLogger({ service: "WarcraftLogs" });
 
 export class WclGraphQLClient {
-  private readonly circuit = new CircuitBreaker();
+  // Circuit breaker: after a 429, skip WCL calls until this timestamp
+  private circuitOpenUntil = 0;
 
   constructor(private readonly tokens: OAuthTokenManager) {}
 
   isCircuitOpen(): boolean {
-    return this.circuit.isOpen();
+    return Date.now() < this.circuitOpenUntil;
   }
 
   circuitRetryAfterMs(): number {
-    return this.circuit.retryAfterMs();
+    return Math.max(0, this.circuitOpenUntil - Date.now());
   }
 
   async query<T>(query: string, variables: object): Promise<{ data: T; headers: Headers }> {
-    if (this.circuit.isOpen()) {
-      const retryAfterMs = this.circuit.retryAfterMs();
+    if (this.isCircuitOpen()) {
+      const retryAfterMs = this.circuitRetryAfterMs();
       logger.warn("WCL_CIRCUIT_OPEN", { retryAfterMs });
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
@@ -40,8 +41,8 @@ export class WclGraphQLClient {
 
     if (res.status === 429) {
       const durationMs = Date.now() - start;
-      this.circuit.open();
-      const retryAfterMs = this.circuit.retryAfterMs();
+      this.circuitOpenUntil = Date.now() + RATE_LIMIT_BACKOFF_MS;
+      const retryAfterMs = this.circuitRetryAfterMs();
       logger.warn("WCL_CIRCUIT_OPENED", { durationMs, retryAfterMs });
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
