@@ -9,7 +9,6 @@ import { notifications, Notifications } from "@mantine/notifications";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen.ts";
 
-import reportWebVitals from "./reportWebVitals.ts";
 import { SearchHistoryProvider } from "./hooks/useSearchHistory";
 
 import { createTheme, MantineProvider } from "@mantine/core";
@@ -131,8 +130,3 @@ if (rootElement && !rootElement.innerHTML) {
     </StrictMode>,
   );
 }
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();

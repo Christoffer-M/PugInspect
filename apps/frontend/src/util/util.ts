@@ -1,18 +1,4 @@
-import { MantineTheme } from "@mantine/core";
 import { useEffect, useState } from "react";
-
-export const GetWarcraftLogRankingColors = (
-  percent: number,
-  theme: MantineTheme,
-) => {
-  if (percent < 25) return theme.colors.gray[7];
-  if (percent < 50) return theme.colors.green[5];
-  if (percent < 75) return theme.colors.blue[6];
-  if (percent < 95) return theme.colors.violet[5];
-  if (percent < 99) return theme.colors.orange[5];
-  if (percent < 100) return theme.colors.pink[4];
-  return theme.colors.yellow[2];
-};
 
 export const normalizeRealm = (realm: string) =>
   realm
@@ -73,11 +59,6 @@ export const CLASS_COLORS: Record<string, string> = {
 export function getClassColor(className?: string | null): string {
   if (!className) return "#8a96aa";
   return CLASS_COLORS[className.toLowerCase()] ?? "#8a96aa";
-}
-
-export function formatPercent(value: number | null | undefined): string {
-  if (value == null) return "-";
-  return Math.floor(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
 export function useDebounce<T>(value: T, delay: number = 500): T {

@@ -1,4 +1,4 @@
-import { config } from "../config ";
+import { config } from "../config";
 import { TypedDocumentString } from "../graphql/graphql";
 
 export async function execute<TResult, TVariables>(

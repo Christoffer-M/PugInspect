@@ -33,9 +33,10 @@ export async function runMigrations(databaseUrl: string): Promise<void> {
 // Only executes when this file is run directly (not imported as a module).
 // ---------------------------------------------------------------------------
 if (process.argv[1] === __filename) {
-  // Lazy-load dotenv so the module stays lightweight when imported elsewhere
-  const { default: dotenv } = await import("dotenv");
-  dotenv.config({ path: resolve(__dirname, "../../.env") });
+  // .env is optional — in Docker, env vars come from the environment itself
+  try {
+    process.loadEnvFile(resolve(__dirname, "../../.env"));
+  } catch {}
 
   const url = process.env.DATABASE_URL;
   if (!url) {

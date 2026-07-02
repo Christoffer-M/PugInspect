@@ -1,6 +1,6 @@
 import { ApolloServer, BaseContext } from "@apollo/server";
-import typeDefs from "./schema/typeDefs.js";
-import resolvers from "./schema/resolvers.js";
+import { characterTypedefs } from "./schema/character/character.typedefs.js";
+import characterResolvers from "./schema/character/character.resolvers.js";
 import { config } from "./config/index.js";
 import { initDb } from "./db/index.js";
 import { runMigrations } from "./db/migrate.js";
@@ -112,8 +112,8 @@ const app = express();
 app.set("trust proxy", 1);
 
 const server = new ApolloServer<BaseContext>({
-  typeDefs,
-  resolvers,
+  typeDefs: characterTypedefs,
+  resolvers: characterResolvers,
   validationRules: [maxQueryDepth(8), maxFieldCount(120)],
   introspection: process.env.NODE_ENV !== "production",
 });

@@ -1,9 +1,11 @@
-import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: resolve(__dirname, "../../.env") });
+// .env is optional — in Docker, env vars come from the environment itself
+try {
+  process.loadEnvFile(resolve(__dirname, "../../.env"));
+} catch {}
 
 function required(name: string): string {
   const val = process.env[name];
