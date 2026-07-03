@@ -8,11 +8,13 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "test:e2e": "playwright test -c e2e",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "codegen": "turbo run codegen"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "prettier": "^3.8.1",
     "turbo": "^2.8.20",
     "typescript": "5.9.2"
