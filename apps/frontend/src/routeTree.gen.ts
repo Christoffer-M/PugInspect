@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegionRealmNameRouteImport } from './routes/$region.$realm.$name'
 
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
@@ -32,35 +38,46 @@ const RegionRealmNameRoute = RegionRealmNameRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/stats': typeof StatsRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/stats': typeof StatsRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/stats': typeof StatsRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/privacy-policy' | '/$region/$realm/$name'
+  fullPaths: '/' | '/privacy-policy' | '/stats' | '/$region/$realm/$name'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/privacy-policy' | '/$region/$realm/$name'
-  id: '__root__' | '/' | '/privacy-policy' | '/$region/$realm/$name'
+  to: '/' | '/privacy-policy' | '/stats' | '/$region/$realm/$name'
+  id: '__root__' | '/' | '/privacy-policy' | '/stats' | '/$region/$realm/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  StatsRoute: typeof StatsRoute
   RegionRealmNameRoute: typeof RegionRealmNameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy-policy': {
       id: '/privacy-policy'
       path: '/privacy-policy'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
+  StatsRoute: StatsRoute,
   RegionRealmNameRoute: RegionRealmNameRoute,
 }
 export const routeTree = rootRouteImport

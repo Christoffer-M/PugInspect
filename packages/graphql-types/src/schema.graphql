@@ -39,6 +39,16 @@ type Character {
   region: String!
 }
 
+type ClassCount {
+  class: String!
+  count: Int!
+}
+
+type DailySearchCount {
+  count: Int!
+  date: String!
+}
+
 enum Difficulty {
   Heroic
   LFR
@@ -112,6 +122,7 @@ type MythicPlusSpec {
 type Query {
   character(byBracket: Boolean, bypassCache: Boolean, difficulty: Difficulty, metric: Metric, name: String!, partition: Int, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
+  siteStats: SiteStats!
   zonePartitions(zoneId: Int!): [ZonePartition!]!
 }
 
@@ -151,6 +162,20 @@ type RaiderIo {
   recentMythicPlusRuns: [MythicPlusRun!]
 }
 
+type RecentSearch {
+  class: String
+  name: String!
+  realm: String!
+  region: String!
+  searchedAt: String!
+  specialization: String
+}
+
+type RegionCount {
+  count: Int!
+  region: String!
+}
+
 enum RoleType {
   Any
   DPS
@@ -174,6 +199,27 @@ type SeasonScores {
 type Segment {
   color: String!
   score: Float!
+}
+
+type SiteStats {
+  classDistribution: [ClassCount!]!
+  newCharactersThisWeek: Int!
+  realmsTracked: Int!
+  recentSearches: [RecentSearch!]!
+  regionBreakdown: [RegionCount!]!
+  searchesPerDay: [DailySearchCount!]!
+  searchesToday: Int!
+  searchesYesterday: Int!
+  totalCharacters: Int!
+  trendingCharacters: [TrendingCharacter!]!
+}
+
+type TrendingCharacter {
+  class: String
+  name: String!
+  realm: String!
+  region: String!
+  searches: Int!
 }
 
 interface ZoneLogs {

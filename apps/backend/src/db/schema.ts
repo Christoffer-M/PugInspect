@@ -218,6 +218,32 @@ export type CharacterLink = typeof characterLinks.$inferSelect;
 export type NewCharacterLink = typeof characterLinks.$inferInsert;
 
 // ---------------------------------------------------------------------------
+// search_events
+// Append-only log of character lookups. One row per character-info resolution
+// (the identity query a page view issues once). Powers the /stats dashboard:
+// searches per day, trending characters, recent searches.
+// ponytail: no dedup/rollup — raw rows with a date index are fine until volume
+// says otherwise; add a daily aggregate table if this ever gets slow.
+// ---------------------------------------------------------------------------
+export const searchEvents = pgTable(
+  "search_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    searchedAt: timestamp("searched_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("search_events_searched_at_idx").on(t.searchedAt),
+    index("search_events_character_searched_idx").on(t.characterId, t.searchedAt),
+  ]
+);
+
+export type SearchEvent = typeof searchEvents.$inferSelect;
+export type NewSearchEvent = typeof searchEvents.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // Relations (used by Drizzle's relational query API)
 // ---------------------------------------------------------------------------
 export const charactersRelations = relations(characters, ({ many }) => ({

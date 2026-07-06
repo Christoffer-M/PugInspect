@@ -23,8 +23,8 @@ type ArchonViewModels {
   cmsNavigation(currentSlug: String): JSON
   contactPage: JSON
   downloadPage: JSON
-  fightPage(categorySlug: String!, cutoffSlug: Int, deathSlug: Int = null, fightSlug: String!, gameSlug: String!, phaseSlug: String, playerSlug: String, pullSlug: String, reportSlug: String!, throughputSlug: String, userId: Int): JSON
-  fightPageContent(categorySlug: String!, cutoffSlug: Int, deathSlug: Int = null, fightSlug: String!, gameSlug: String!, phaseSlug: String, playerSlug: String, pullSlug: String, reportSlug: String!, sectionComponentNames: [String!]!, throughputSlug: String, userId: Int): JSON
+  fightPage(categorySlug: String!, cutoffSlug: Int, damageFilterSlug: String, deathSlug: Int = null, fightSlug: String!, gameSlug: String!, phaseSlug: String, playerSlug: String, pullSlug: String, reportSlug: String!, throughputSlug: String, userId: Int): JSON
+  fightPageContent(categorySlug: String!, cutoffSlug: Int, damageFilterSlug: String, deathSlug: Int = null, fightSlug: String!, gameSlug: String!, phaseSlug: String, playerSlug: String, pullSlug: String, reportSlug: String!, sectionComponentNames: [String!]!, throughputSlug: String, userId: Int): JSON
   footer: JSON
   game(buildsZoneTypeSlug: String = null): JSON
   gamePage: JSON
@@ -1947,7 +1947,7 @@ type PhaseTransition {
   """
   The report-relative timestamp of the transition into the phase. The phase ends at the beginning of the next phase, or at the end of the fight.
   """
-  startTime: Int!
+  startTime: Float!
 }
 
 """Attendance for a specific player on a specific raid night."""

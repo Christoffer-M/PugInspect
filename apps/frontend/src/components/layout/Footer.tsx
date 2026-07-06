@@ -48,6 +48,10 @@ const Footer: React.FC = () => {
           <Anchor component={Link} to="/privacy-policy" size="xs" c="dimmed">
             Privacy Policy
           </Anchor>
+          {" · "}
+          <Anchor component={Link} to="/stats" size="xs" c="dimmed">
+            Stats
+          </Anchor>
         </Text>
       </Center>
     </Stack>

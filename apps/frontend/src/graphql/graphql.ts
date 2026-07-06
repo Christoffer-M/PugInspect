@@ -69,6 +69,18 @@ export type CharacterRaidLogsArgs = {
   role?: InputMaybe<RoleType>;
 };
 
+export type ClassCount = {
+  __typename?: 'ClassCount';
+  class: Scalars['String']['output'];
+  count: Scalars['Int']['output'];
+};
+
+export type DailySearchCount = {
+  __typename?: 'DailySearchCount';
+  count: Scalars['Int']['output'];
+  date: Scalars['String']['output'];
+};
+
 export enum Difficulty {
   Heroic = 'Heroic',
   Lfr = 'LFR',
@@ -150,6 +162,7 @@ export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
+  siteStats: SiteStats;
   zonePartitions: Array<ZonePartition>;
 };
 
@@ -218,6 +231,22 @@ export type RaiderIo = {
   recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
 };
 
+export type RecentSearch = {
+  __typename?: 'RecentSearch';
+  class?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  searchedAt: Scalars['String']['output'];
+  specialization?: Maybe<Scalars['String']['output']>;
+};
+
+export type RegionCount = {
+  __typename?: 'RegionCount';
+  count: Scalars['Int']['output'];
+  region: Scalars['String']['output'];
+};
+
 export enum RoleType {
   Any = 'Any',
   Dps = 'DPS',
@@ -244,6 +273,29 @@ export type Segment = {
   __typename?: 'Segment';
   color: Scalars['String']['output'];
   score: Scalars['Float']['output'];
+};
+
+export type SiteStats = {
+  __typename?: 'SiteStats';
+  classDistribution: Array<ClassCount>;
+  newCharactersThisWeek: Scalars['Int']['output'];
+  realmsTracked: Scalars['Int']['output'];
+  recentSearches: Array<RecentSearch>;
+  regionBreakdown: Array<RegionCount>;
+  searchesPerDay: Array<DailySearchCount>;
+  searchesToday: Scalars['Int']['output'];
+  searchesYesterday: Scalars['Int']['output'];
+  totalCharacters: Scalars['Int']['output'];
+  trendingCharacters: Array<TrendingCharacter>;
+};
+
+export type TrendingCharacter = {
+  __typename?: 'TrendingCharacter';
+  class?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  searches: Scalars['Int']['output'];
 };
 
 export type ZoneLogs = {
@@ -316,6 +368,11 @@ export type CharacterSearchQueryVariables = Exact<{
 
 
 export type CharacterSearchQuery = { __typename?: 'Query', characterSuggestions: Array<{ __typename?: 'SearchResult', name: string, realm: string, region: string }> };
+
+export type SiteStatsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SiteStatsQuery = { __typename?: 'Query', siteStats: { __typename?: 'SiteStats', totalCharacters: number, newCharactersThisWeek: number, realmsTracked: number, searchesToday: number, searchesYesterday: number, searchesPerDay: Array<{ __typename?: 'DailySearchCount', date: string, count: number }>, regionBreakdown: Array<{ __typename?: 'RegionCount', region: string, count: number }>, classDistribution: Array<{ __typename?: 'ClassCount', class: string, count: number }>, recentSearches: Array<{ __typename?: 'RecentSearch', name: string, realm: string, region: string, class?: string | null, specialization?: string | null, searchedAt: string }>, trendingCharacters: Array<{ __typename?: 'TrendingCharacter', name: string, realm: string, region: string, class?: string | null, searches: number }> } };
 
 export type ZonePartitionsQueryVariables = Exact<{
   zoneId: Scalars['Int']['input'];
@@ -567,6 +624,44 @@ export const CharacterSearchDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<CharacterSearchQuery, CharacterSearchQueryVariables>;
+export const SiteStatsDocument = new TypedDocumentString(`
+    query SiteStats {
+  siteStats {
+    totalCharacters
+    newCharactersThisWeek
+    realmsTracked
+    searchesToday
+    searchesYesterday
+    searchesPerDay {
+      date
+      count
+    }
+    regionBreakdown {
+      region
+      count
+    }
+    classDistribution {
+      class
+      count
+    }
+    recentSearches {
+      name
+      realm
+      region
+      class
+      specialization
+      searchedAt
+    }
+    trendingCharacters {
+      name
+      realm
+      region
+      class
+      searches
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<SiteStatsQuery, SiteStatsQueryVariables>;
 export const ZonePartitionsDocument = new TypedDocumentString(`
     query ZonePartitions($zoneId: Int!) {
   zonePartitions(zoneId: $zoneId) {
