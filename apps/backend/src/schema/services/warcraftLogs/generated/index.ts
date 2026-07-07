@@ -187,6 +187,7 @@ export type ArchonViewModelsCmsNavigationArgs = {
 export type ArchonViewModelsFightPageArgs = {
   categorySlug: Scalars['String']['input'];
   cutoffSlug?: InputMaybe<Scalars['Int']['input']>;
+  damageFilterSlug?: InputMaybe<Scalars['String']['input']>;
   deathSlug?: InputMaybe<Scalars['Int']['input']>;
   fightSlug: Scalars['String']['input'];
   gameSlug: Scalars['String']['input'];
@@ -202,6 +203,7 @@ export type ArchonViewModelsFightPageArgs = {
 export type ArchonViewModelsFightPageContentArgs = {
   categorySlug: Scalars['String']['input'];
   cutoffSlug?: InputMaybe<Scalars['Int']['input']>;
+  damageFilterSlug?: InputMaybe<Scalars['String']['input']>;
   deathSlug?: InputMaybe<Scalars['Int']['input']>;
   fightSlug: Scalars['String']['input'];
   gameSlug: Scalars['String']['input'];
@@ -1427,7 +1429,7 @@ export type PhaseTransition = {
   /** The 1-indexed id of the phase. Phase IDs are absolute within a fight: phases with the same ID correspond to the same semantic phase. */
   id: Scalars['Int']['output'];
   /** The report-relative timestamp of the transition into the phase. The phase ends at the beginning of the next phase, or at the end of the fight. */
-  startTime: Scalars['Int']['output'];
+  startTime: Scalars['Float']['output'];
 };
 
 /** Attendance for a specific player on a specific raid night. */

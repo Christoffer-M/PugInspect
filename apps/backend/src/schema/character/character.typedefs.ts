@@ -19,6 +19,52 @@ export const characterTypedefs = gql`
       searchString: String!
     ): [SearchResult!]!
     zonePartitions(zoneId: Int!): [ZonePartition!]!
+    siteStats: SiteStats!
+  }
+
+  type SiteStats {
+    totalCharacters: Int!
+    newCharactersThisWeek: Int!
+    realmsTracked: Int!
+    searchesToday: Int!
+    searchesYesterday: Int!
+    searchesPerDay: [DailySearchCount!]!
+    regionBreakdown: [RegionCount!]!
+    classDistribution: [ClassCount!]!
+    recentSearches: [RecentSearch!]!
+    trendingCharacters: [TrendingCharacter!]!
+  }
+
+  type DailySearchCount {
+    date: String!
+    count: Int!
+  }
+
+  type RegionCount {
+    region: String!
+    count: Int!
+  }
+
+  type ClassCount {
+    class: String!
+    count: Int!
+  }
+
+  type RecentSearch {
+    name: String!
+    realm: String!
+    region: String!
+    class: String
+    specialization: String
+    searchedAt: String!
+  }
+
+  type TrendingCharacter {
+    name: String!
+    realm: String!
+    region: String!
+    class: String
+    searches: Int!
   }
 
   type ZonePartition {

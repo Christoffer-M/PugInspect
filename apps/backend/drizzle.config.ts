@@ -1,7 +1,9 @@
 import { defineConfig } from "drizzle-kit";
-import dotenv from "dotenv";
 
-dotenv.config({ path: ".env" });
+// .env is optional — same native idiom as src/config/index.ts (no dotenv dependency)
+try {
+  process.loadEnvFile(".env");
+} catch {}
 
 export default defineConfig({
   dialect: "postgresql",

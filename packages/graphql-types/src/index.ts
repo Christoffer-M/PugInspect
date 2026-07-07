@@ -67,6 +67,18 @@ export type CharacterRaidLogsArgs = {
   role?: InputMaybe<RoleType>;
 };
 
+export type ClassCount = {
+  __typename?: 'ClassCount';
+  class: Scalars['String']['output'];
+  count: Scalars['Int']['output'];
+};
+
+export type DailySearchCount = {
+  __typename?: 'DailySearchCount';
+  count: Scalars['Int']['output'];
+  date: Scalars['String']['output'];
+};
+
 export type Difficulty =
   | 'Heroic'
   | 'LFR'
@@ -146,6 +158,7 @@ export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
+  siteStats: SiteStats;
   zonePartitions: Array<ZonePartition>;
 };
 
@@ -214,6 +227,22 @@ export type RaiderIo = {
   recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
 };
 
+export type RecentSearch = {
+  __typename?: 'RecentSearch';
+  class?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  searchedAt: Scalars['String']['output'];
+  specialization?: Maybe<Scalars['String']['output']>;
+};
+
+export type RegionCount = {
+  __typename?: 'RegionCount';
+  count: Scalars['Int']['output'];
+  region: Scalars['String']['output'];
+};
+
 export type RoleType =
   | 'Any'
   | 'DPS'
@@ -239,6 +268,29 @@ export type Segment = {
   __typename?: 'Segment';
   color: Scalars['String']['output'];
   score: Scalars['Float']['output'];
+};
+
+export type SiteStats = {
+  __typename?: 'SiteStats';
+  classDistribution: Array<ClassCount>;
+  newCharactersThisWeek: Scalars['Int']['output'];
+  realmsTracked: Scalars['Int']['output'];
+  recentSearches: Array<RecentSearch>;
+  regionBreakdown: Array<RegionCount>;
+  searchesPerDay: Array<DailySearchCount>;
+  searchesToday: Scalars['Int']['output'];
+  searchesYesterday: Scalars['Int']['output'];
+  totalCharacters: Scalars['Int']['output'];
+  trendingCharacters: Array<TrendingCharacter>;
+};
+
+export type TrendingCharacter = {
+  __typename?: 'TrendingCharacter';
+  class?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+  region: Scalars['String']['output'];
+  searches: Scalars['Int']['output'];
 };
 
 export type ZoneLogs = {

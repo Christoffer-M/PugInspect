@@ -43,6 +43,13 @@
       "when": 1781020577927,
       "tag": "0005_rainy_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783370132090,
+      "tag": "0006_dizzy_paladin",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ import {
 } from "../services/raiderIo/raiderio.services.js";
 import { AchievementsService } from "../services/blizzard/achievements.service.js";
 import { getLinkedCharacters } from "../../db/persistence.js";
+import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import { VALID_REGIONS } from "../utils/regions.js";
 
@@ -26,6 +27,10 @@ import { VALID_REGIONS } from "../utils/regions.js";
  * and adds the internal _characterId threaded to field resolvers.
  */
 type CharacterWithMeta = Omit<Character, "achievements" | "potentialAlts"> & { _characterId: string | null };
+
+// ponytail: module-level 60s cache — stats are count queries, no need to hit
+// the DB per request. Move to a shared cache layer if more queries need it.
+let statsCache: { data: SiteStats; expiresAt: number } | null = null;
 
 export default {
   Query: {
@@ -58,6 +63,14 @@ export default {
           bypassCache: args.bypassCache ?? false,
         });
 
+      // Search analytics — only the identity query (blizzard fields) counts as
+      // a "search", so the raiderIo/raidLogs/mythicPlusLogs follow-up queries a
+      // page view issues don't multi-count. Fire-and-forget.
+      if (characterId && blizzardRequested) {
+        // recordSearchEvent swallows its own errors — safe to not await
+        void recordSearchEvent(characterId);
+      }
+
       // Background alt detection — fire-and-forget, never blocks the response
       if (characterId) {
         AchievementsService.enrichAndLinkAlts(characterId, {
@@ -87,6 +100,13 @@ export default {
             : null,
       };
     },
+    siteStats: async (): Promise<SiteStats> => {
+      if (statsCache && Date.now() < statsCache.expiresAt) return statsCache.data;
+      const data = await getSiteStats();
+      statsCache = { data, expiresAt: Date.now() + 60_000 };
+      return data;
+    },
+
     zonePartitions: async (
       _: unknown,
       args: QueryZonePartitionsArgs

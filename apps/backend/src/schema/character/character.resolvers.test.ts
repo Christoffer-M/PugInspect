@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, assert } from "vitest";
+import { describe, it, expect, vi, assert, beforeEach } from "vitest";
 import { ApolloServer } from "@apollo/server";
 import { characterTypedefs } from "./character.typedefs.js";
 import characterResolvers from "./character.resolvers.js";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
 import { getLinkedCharacters } from "../../db/persistence.js";
+import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.js";
 import type { BlizzardCharacterProfile } from "../services/blizzard/model/CharacterProfile.js";
 import type { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
 
@@ -23,6 +24,15 @@ vi.mock("../services/warcraftLogs/warcraftlogs.services.js", () => ({
 vi.mock("../../db/persistence.js", () => ({
   getLinkedCharacters: vi.fn().mockResolvedValue([]),
 }));
+vi.mock("../../db/stats.js", () => ({
+  getSiteStats: vi.fn(),
+  recordSearchEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Clear call history between tests (implementations set above are kept)
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 // Runs real queries against the real schema + resolvers in-process;
 // only the service layer (external APIs, DB) is mocked.
@@ -122,6 +132,31 @@ describe("Query.character", () => {
       potentialAlts: [{ name: "pugalt", realm: "kazzak", region: "eu" }],
     });
     expect(getLinkedCharacters).toHaveBeenCalledWith("char-uuid-1");
+    // Identity lookup (blizzard fields requested) counts as one search
+    expect(recordSearchEvent).toHaveBeenCalledTimes(1);
+    expect(recordSearchEvent).toHaveBeenCalledWith("char-uuid-1");
+  });
+
+  it("does not record a search event for follow-up-only queries", async () => {
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile: undefined,
+      blizzardAvatarUrl: null,
+      rioProfile,
+      warcraftLogsProfile: undefined,
+      characterId: "char-uuid-1",
+    });
+
+    const result = await execute(
+      `query Character($name: String!, $realm: String!, $region: String!) {
+        character(name: $name, realm: $realm, region: $region) {
+          raiderIo { currentSeason { all { score } } }
+        }
+      }`,
+      { name: "Pugsley", realm: "Kazzak", region: "eu" }
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(recordSearchEvent).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid region with BAD_USER_INPUT", async () => {
@@ -171,5 +206,62 @@ describe("Query.characterSuggestions", () => {
 
     expect(result.errors?.[0]?.extensions?.code).toBe("BAD_USER_INPUT");
     expect(RaiderIOService.getCharacterSuggestions).not.toHaveBeenCalled();
+  });
+});
+
+describe("Query.siteStats", () => {
+  const SITE_STATS_QUERY = `
+    query SiteStats {
+      siteStats {
+        totalCharacters
+        newCharactersThisWeek
+        realmsTracked
+        searchesToday
+        searchesYesterday
+        searchesPerDay { date count }
+        regionBreakdown { region count }
+        classDistribution { class count }
+        recentSearches { name realm region class specialization searchedAt }
+        trendingCharacters { name realm region class searches }
+      }
+    }
+  `;
+
+  const statsFixture: SiteStats = {
+    totalCharacters: 184027,
+    newCharactersThisWeek: 6912,
+    realmsTracked: 541,
+    searchesToday: 12483,
+    searchesYesterday: 11534,
+    searchesPerDay: [{ date: "2026-07-06", count: 340 }],
+    regionBreakdown: [{ region: "eu", count: 78400 }],
+    classDistribution: [{ class: "Warrior", count: 20611 }],
+    recentSearches: [
+      {
+        name: "pugsley",
+        realm: "kazzak",
+        region: "eu",
+        class: "Shaman",
+        specialization: "Enhancement",
+        searchedAt: "2026-07-07T10:00:00.000Z",
+      },
+    ],
+    trendingCharacters: [
+      { name: "pugsley", realm: "kazzak", region: "eu", class: "Shaman", searches: 2841 },
+    ],
+  };
+
+  it("resolves every stats field through the schema and caches for 60s", async () => {
+    vi.mocked(getSiteStats).mockResolvedValue(statsFixture);
+
+    const first = await execute(SITE_STATS_QUERY, {});
+    expect(first.errors).toBeUndefined();
+    expect(first.data!.siteStats).toEqual(statsFixture);
+
+    // Second request within the 60s window is served from the resolver cache
+    const second = await execute(SITE_STATS_QUERY, {});
+    expect(second.errors).toBeUndefined();
+    expect(second.data!.siteStats).toEqual(statsFixture);
+    expect(getSiteStats).toHaveBeenCalledTimes(1);
   });
 });
