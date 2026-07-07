@@ -1,10 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
   normalizeRealm,
   upperCaseFirstLetter,
   parseCharacterUrl,
   getParseColor,
   getClassColor,
+  timeAgo,
+  fillDays,
 } from "./util";
 
 describe("normalizeRealm", () => {
@@ -76,5 +78,54 @@ describe("getClassColor", () => {
     expect(getClassColor("Bard")).toBe("#8a96aa");
     expect(getClassColor(null)).toBe("#8a96aa");
     expect(getClassColor(undefined)).toBe("#8a96aa");
+  });
+});
+
+describe("timeAgo", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("formats seconds, minutes, hours, and days", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-07T12:00:00.000Z"));
+    expect(timeAgo("2026-07-07T11:59:48.000Z")).toBe("12s ago");
+    expect(timeAgo("2026-07-07T11:57:00.000Z")).toBe("3m ago");
+    expect(timeAgo("2026-07-07T09:00:00.000Z")).toBe("3h ago");
+    expect(timeAgo("2026-07-05T12:00:00.000Z")).toBe("2d ago");
+  });
+
+  it("clamps future timestamps to 0s", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-07T12:00:00.000Z"));
+    expect(timeAgo("2026-07-07T12:05:00.000Z")).toBe("0s ago");
+  });
+});
+
+describe("fillDays", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("returns 14 consecutive UTC days ending today, zero-filling gaps", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-07T12:00:00.000Z"));
+    const days = fillDays([
+      { date: "2026-07-07", count: 42 },
+      { date: "2026-07-01", count: 7 },
+    ]);
+
+    expect(days).toHaveLength(14);
+    expect(days[0]).toEqual({ key: "2026-06-24", day: "24", count: 0 });
+    expect(days[7]).toEqual({ key: "2026-07-01", day: "1", count: 7 });
+    expect(days[13]).toEqual({ key: "2026-07-07", day: "7", count: 42 });
+    // every day not in the input is zero
+    expect(days.filter((d) => d.count === 0)).toHaveLength(12);
+  });
+
+  it("handles an empty input (fresh deploy with no events)", () => {
+    const days = fillDays([]);
+    expect(days).toHaveLength(14);
+    expect(days.every((d) => d.count === 0)).toBe(true);
   });
 });

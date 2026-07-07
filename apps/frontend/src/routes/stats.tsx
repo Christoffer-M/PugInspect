@@ -17,8 +17,8 @@ import {
   IconWorld,
 } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
-import { useSiteStats, type SiteStats } from "../queries/site-stats";
-import { getClassColor } from "../util/util";
+import { useSiteStats } from "../queries/site-stats";
+import { fillDays, getClassColor, timeAgo } from "../util/util";
 import classes from "./stats.module.css";
 
 const REGION_LABELS: Record<string, string> = {
@@ -39,24 +39,6 @@ const REGION_COLORS: Record<string, string> = {
 const REGION_FALLBACK_COLOR = "#8a96aa";
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-function timeAgo(iso: string): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
-}
-
-/** Last 14 UTC days, zero-filled from the sparse per-day counts. */
-function fillDays(perDay: SiteStats["searchesPerDay"]) {
-  const byDate = new Map(perDay.map((d) => [d.date, d.count]));
-  return Array.from({ length: 14 }, (_, i) => {
-    const date = new Date(Date.now() - (13 - i) * 86_400_000);
-    const key = date.toISOString().slice(0, 10);
-    return { key, day: String(date.getUTCDate()), count: byDate.get(key) ?? 0 };
-  });
-}
 
 const HeroCard: React.FC<{
   label: string;

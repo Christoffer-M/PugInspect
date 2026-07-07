@@ -76,3 +76,20 @@ export function useDebounce<T>(value: T, delay: number = 500): T {
 
   return debouncedValue;
 }
+export function timeAgo(iso: string): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+/** Last 14 UTC days, zero-filled from the sparse per-day counts. */
+export function fillDays(perDay: { date: string; count: number }[]) {
+  const byDate = new Map(perDay.map((d) => [d.date, d.count]));
+  return Array.from({ length: 14 }, (_, i) => {
+    const date = new Date(Date.now() - (13 - i) * 86_400_000);
+    const key = date.toISOString().slice(0, 10);
+    return { key, day: String(date.getUTCDate()), count: byDate.get(key) ?? 0 };
+  });
+}
