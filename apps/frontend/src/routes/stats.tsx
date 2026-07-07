@@ -29,7 +29,14 @@ const REGION_LABELS: Record<string, string> = {
   cn: "China (CN)",
 };
 
-const REGION_COLORS = ["#8b7cf6", "#22d3ee", "#4ade80", "#fb923c", "#f472b6"];
+const REGION_COLORS: Record<string, string> = {
+  eu: "#8b7cf6",
+  us: "#22d3ee",
+  kr: "#4ade80",
+  tw: "#fb923c",
+  cn: "#f472b6",
+};
+const REGION_FALLBACK_COLOR = "#8a96aa";
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -118,7 +125,7 @@ const Stats: React.FC = () => {
 
   const days = fillDays(data?.searchesPerDay ?? []);
   const maxDay = Math.max(1, ...days.map((d) => d.count));
-  const totalRegionCount = Math.max(1, ...[data?.regionBreakdown.reduce((s, r) => s + r.count, 0) ?? 0]);
+  const totalRegionCount = Math.max(1, data?.regionBreakdown.reduce((s, r) => s + r.count, 0) ?? 1);
   const totalClassCount = Math.max(1, data?.classDistribution.reduce((s, c) => s + c.count, 0) ?? 0);
   const searchDelta =
     data && data.searchesYesterday > 0
@@ -194,7 +201,7 @@ const Stats: React.FC = () => {
           />
         </SimpleGrid>
 
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt="md" style={{ gridTemplateColumns: undefined }}>
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt="md">
           <Paper p="lg" radius="md" className={classes.chartCard}>
             <CardTitle title="Searches over time" right="last 14 days" />
             <Text size="sm" c="dimmed" mb="lg">
@@ -223,9 +230,9 @@ const Stats: React.FC = () => {
               Share of tracked characters
             </Text>
             <Stack gap="md">
-              {data?.regionBreakdown.map((r, i) => {
+              {data?.regionBreakdown.map((r) => {
                 const pct = (r.count / totalRegionCount) * 100;
-                const color = REGION_COLORS[i % REGION_COLORS.length];
+                const color = REGION_COLORS[r.region] ?? REGION_FALLBACK_COLOR;
                 return (
                   <div key={r.region}>
                     <Group justify="space-between" mb={6}>

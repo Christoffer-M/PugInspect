@@ -67,7 +67,8 @@ export default {
       // a "search", so the raiderIo/raidLogs/mythicPlusLogs follow-up queries a
       // page view issues don't multi-count. Fire-and-forget.
       if (characterId && blizzardRequested) {
-        recordSearchEvent(characterId).catch(() => {});
+        // recordSearchEvent swallows its own errors — safe to not await
+        void recordSearchEvent(characterId);
       }
 
       // Background alt detection — fire-and-forget, never blocks the response
