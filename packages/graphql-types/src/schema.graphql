@@ -26,6 +26,7 @@ type Character {
   class: String
   equippedItemLevel: Float
   faction: String
+  gear: Gear
   gender: String
   guild: Guild
   level: Int
@@ -59,6 +60,40 @@ enum Difficulty {
 type Encounter {
   id: Int!
   name: String!
+}
+
+type Gear {
+  items: [GearItem!]!
+  tierSets: [TierSetSummary!]!
+}
+
+type GearItem {
+  """Permanent enchant display text, null if unenchanted"""
+  enchant: String
+  iconUrl: String
+  """Blizzard item id — e.g. for wowhead.com/item=<id> links"""
+  itemId: Int!
+  itemLevel: Int!
+  """
+  True when the slot is enchantable this season but has no permanent enchant
+  """
+  missingEnchant: Boolean!
+  name: String!
+  """POOR|COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|ARTIFACT|HEIRLOOM"""
+  quality: String!
+  """Canonical slot token, e.g. HEAD — stable key, defines display order"""
+  slot: String!
+  """Localized slot name, e.g. Head"""
+  slotName: String!
+  sockets: [GearSocket!]!
+  tierSetId: Int
+  tierSetName: String
+}
+
+type GearSocket {
+  """Gem display text (e.g. +176 Haste) or gem name; null when empty"""
+  display: String
+  filled: Boolean!
 }
 
 type Guild {
@@ -212,6 +247,12 @@ type SiteStats {
   searchesYesterday: Int!
   totalCharacters: Int!
   trendingCharacters: [TrendingCharacter!]!
+}
+
+type TierSetSummary {
+  equippedCount: Int!
+  id: Int!
+  name: String!
 }
 
 type TrendingCharacter {

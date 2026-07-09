@@ -7,6 +7,8 @@ type MythicPlusSeason = {
 export const DEFAULT_MYTHIC_PLUS_SEASON = "md-s1";
 
 /**
+ * SEASON-CONFIG: M+ seasons + DEFAULT_MYTHIC_PLUS_SEASON.
+ *
  * Maps M+ season slugs to WarcraftLogs zone metadata.
  *
  * When a new season launches:

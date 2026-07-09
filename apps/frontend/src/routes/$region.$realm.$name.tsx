@@ -12,6 +12,8 @@ import { MythicPlusLogsTable } from "../components/logs/MythicPlusLogsTable";
 import { Page } from "../components/layout/Page";
 import { useCharacterInfoQuery } from "../queries/character-info";
 import { useCharacterRaiderIoQuery } from "../queries/character-raiderio";
+import { useCharacterGearQuery } from "../queries/character-gear";
+import { GearSection } from "../components/gear/GearSection";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
 import { useCharacterRaidLogs } from "../queries/character-raid-logs";
 import { useCharacterMythicPlusLogs } from "../queries/character-mythicplus-logs";
@@ -107,6 +109,13 @@ function CharacterPage() {
   // RaiderIO — M+ runs, raid progression, season scores, cached 15 min
   const { data: raiderIoData, isFetching: isFetchingRaiderIo } =
     useCharacterRaiderIoQuery({ name, realm, region });
+
+  // Blizzard — equipped gear, cached 1 h
+  const {
+    data: gearData,
+    isFetching: isFetchingGear,
+    isError: isGearError,
+  } = useCharacterGearQuery({ name, realm, region });
 
   // Raid logs setup
   const raidZoneId = searchRaid
@@ -215,6 +224,14 @@ function CharacterPage() {
               }
               bestParseSource={isMythicPlusView ? "M+" : "Raid"}
               isLoadingBestParse={isMythicPlusView ? isFetchingMpLogs : isFetchingRaidLogs}
+            />
+            <GearSection
+              gear={gearData}
+              equippedItemLevel={characterInfo?.equippedItemLevel}
+              level={characterInfo?.level}
+              isLoading={isFetchingGear}
+              isLoadingInfo={isFetchingInfo}
+              isError={isGearError}
             />
             <Stack w="100%" gap="xs">
               <SegmentedControl

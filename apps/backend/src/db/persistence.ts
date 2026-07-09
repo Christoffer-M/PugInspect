@@ -5,12 +5,14 @@ import {
   characterRioSnapshots,
   characterWclSnapshots,
   characterBlizzardSnapshots,
+  characterEquipmentSnapshots,
   characterAchievements,
   characterLinks,
 } from "./schema.js";
 import type { RaiderIoCharacterApiResponse, RaidProgression } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
 import type { BlizzardCharacterProfile } from "../schema/services/blizzard/model/CharacterProfile.js";
+import type { BlizzardCharacterEquipment } from "../schema/services/blizzard/model/CharacterEquipment.js";
 import type { ZoneRanking } from "../schema/services/warcraftLogs/model/ZoneRankings.js";
 import { createLogger } from "../schema/utils/logger.js";
 
@@ -18,6 +20,7 @@ const logger = createLogger({ service: "DBPersistence" });
 
 const CACHE_TTL_SECONDS = 900; // 15 minutes — RaiderIO and WarcraftLogs
 const BLIZZARD_CACHE_TTL_SECONDS = 86_400; // 24 hours — Blizzard data changes infrequently
+const EQUIPMENT_CACHE_TTL_SECONDS = 3_600; // 1 hour — gear changes per loot drop; bypassCache covers "I just upgraded"
 const ACHIEVEMENT_CACHE_TTL_SECONDS = 604_800; // 7 days — achievements don't un-complete
 
 export type CharacterKey = {
@@ -433,6 +436,72 @@ export async function persistBlizzardProfile(
   } catch (err) {
     logger.error("DB cache write failed (blizzard)", { key, error: String(err) });
     return null;
+  }
+}
+
+export async function getCachedEquipment(
+  key: CharacterKey
+): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number } | null> {
+  try {
+    const rows = await getDb()
+      .select({
+        rawData: characterEquipmentSnapshots.rawData,
+        fetchedAt: characterEquipmentSnapshots.fetchedAt,
+      })
+      .from(characterEquipmentSnapshots)
+      .innerJoin(characters, eq(characterEquipmentSnapshots.characterId, characters.id))
+      .where(
+        and(
+          eq(characters.region, key.region),
+          eq(characters.realm, key.realm),
+          eq(characters.name, key.name),
+          gt(characterEquipmentSnapshots.expiresAt, new Date())
+        )
+      )
+      .limit(1);
+
+    if (!rows[0]) return null;
+
+    return {
+      data: rows[0].rawData,
+      fetchedAt: Math.floor(rows[0].fetchedAt.getTime() / 1000),
+    };
+  } catch (err) {
+    logger.error("DB cache read failed (equipment)", { key, error: String(err) });
+    return null;
+  }
+}
+
+export async function persistEquipment(
+  key: CharacterKey,
+  data: BlizzardCharacterEquipment,
+  fetchedAt: number
+): Promise<void> {
+  try {
+    const db = getDb();
+    const characterId = await upsertCharacter(db, key);
+
+    const fetchedAtDate = new Date(fetchedAt * 1000);
+    const expiresAtDate = new Date((fetchedAt + EQUIPMENT_CACHE_TTL_SECONDS) * 1000);
+
+    await db
+      .insert(characterEquipmentSnapshots)
+      .values({
+        characterId,
+        fetchedAt: fetchedAtDate,
+        expiresAt: expiresAtDate,
+        rawData: data,
+      })
+      .onConflictDoUpdate({
+        target: characterEquipmentSnapshots.characterId,
+        set: {
+          fetchedAt: fetchedAtDate,
+          expiresAt: expiresAtDate,
+          rawData: data,
+        },
+      });
+  } catch (err) {
+    logger.error("DB cache write failed (equipment)", { key, error: String(err) });
   }
 }
 

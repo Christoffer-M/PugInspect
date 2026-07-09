@@ -50,6 +50,13 @@
       "when": 1783370132090,
       "tag": "0006_dizzy_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783602113493,
+      "tag": "0007_last_mongoose",
+      "breakpoints": true
     }
   ]
 }

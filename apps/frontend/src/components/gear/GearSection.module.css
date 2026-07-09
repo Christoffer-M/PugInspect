@@ -1,0 +1,266 @@
+/* Summary strip — same visual language as CharacterHeader's stat strip.
+   Stretch so stat labels align at the top and dividers run full height;
+   the title and toggle re-center themselves. */
+.strip {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  /* Text renders a <p>; kill the global paragraph margin so it centers in the strip */
+  margin: 0;
+  align-self: center;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Fills the space below the label and centers its content, so the values of
+   every stat block sit on the same horizontal line regardless of height. */
+.statContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.statDivided {
+  padding-left: 20px;
+  border-left: 1px solid rgba(61, 79, 110, 0.28);
+}
+
+.statLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dark-3);
+  white-space: nowrap;
+}
+
+.statVal {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Tier set entry — colored "T35" + dimmed piece count, baseline-aligned. */
+.tierItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.tierText {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.tierCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a8b4c8;
+}
+
+.gearCheck {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.gearCheckIcon {
+  font-size: 13px;
+  line-height: 1;
+  margin-left: 6px;
+}
+
+.toggle {
+  margin-left: auto;
+  align-self: center;
+  background: rgba(61, 79, 110, 0.14);
+  border: 1px solid rgba(61, 79, 110, 0.5);
+  color: #a8b4c8;
+}
+
+.toggle:hover {
+  background: rgba(61, 79, 110, 0.28);
+  color: var(--mantine-color-text);
+}
+
+/* Wrapper carries the gap above the divider as padding — Mantine Collapse
+   force-zeroes its first child's top margin, so margin can't do it. */
+.gridWrap {
+  padding-top: 16px;
+}
+
+/* Expanded icon grid. Extra top padding because the tiles' corner markers
+   overflow 5px above the tile tops. */
+.grid {
+  padding-top: 24px;
+  border-top: 1px solid rgba(61, 79, 110, 0.28);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 13px;
+  align-items: flex-start;
+}
+
+.itemCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 46px;
+  /* The column is an <a> to Wowhead — suppress link styling on the badge text */
+  text-decoration: none;
+  color: inherit;
+}
+
+.tile {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  border: 2px solid;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: radial-gradient(circle at 32% 26%, #2b3a52, #0c1424);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.tileIcon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.tierMarker {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  color: #1a1305;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.indicators {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.enchantDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #4d93ff;
+  border: 1.5px solid #060b16;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.missingEnchantDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #1a1206;
+  border: 1.5px solid #f0983d;
+  box-shadow: 0 0 0 1.5px #060b16, 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.gemDiamond {
+  width: 10px;
+  height: 10px;
+  background: #46d160;
+  border: 1.5px solid #060b16;
+  transform: rotate(45deg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.emptySocketDiamond {
+  width: 10px;
+  height: 10px;
+  background: #1a0d0d;
+  border: 1.5px solid #f56b6b;
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 1.5px #060b16, 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.ilvlBadge {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 5px;
+  line-height: 1.5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Tooltip content */
+.tooltipLine {
+  font-size: 11px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.tooltipDiamond {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.tooltipSquare {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@media (max-width: 700px) {
+  .strip {
+    gap: 14px;
+  }
+
+  .statDivided {
+    padding-left: 14px;
+  }
+}

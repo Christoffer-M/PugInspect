@@ -43,6 +43,7 @@ export type Character = {
   class?: Maybe<Scalars['String']['output']>;
   equippedItemLevel?: Maybe<Scalars['Float']['output']>;
   faction?: Maybe<Scalars['String']['output']>;
+  gear?: Maybe<Gear>;
   gender?: Maybe<Scalars['String']['output']>;
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;
@@ -92,6 +93,41 @@ export type Encounter = {
   __typename?: 'Encounter';
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+};
+
+export type Gear = {
+  __typename?: 'Gear';
+  items: Array<GearItem>;
+  tierSets: Array<TierSetSummary>;
+};
+
+export type GearItem = {
+  __typename?: 'GearItem';
+  /** Permanent enchant display text, null if unenchanted */
+  enchant?: Maybe<Scalars['String']['output']>;
+  iconUrl?: Maybe<Scalars['String']['output']>;
+  /** Blizzard item id — e.g. for wowhead.com/item=<id> links */
+  itemId: Scalars['Int']['output'];
+  itemLevel: Scalars['Int']['output'];
+  /** True when the slot is enchantable this season but has no permanent enchant */
+  missingEnchant: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  /** POOR|COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|ARTIFACT|HEIRLOOM */
+  quality: Scalars['String']['output'];
+  /** Canonical slot token, e.g. HEAD — stable key, defines display order */
+  slot: Scalars['String']['output'];
+  /** Localized slot name, e.g. Head */
+  slotName: Scalars['String']['output'];
+  sockets: Array<GearSocket>;
+  tierSetId?: Maybe<Scalars['Int']['output']>;
+  tierSetName?: Maybe<Scalars['String']['output']>;
+};
+
+export type GearSocket = {
+  __typename?: 'GearSocket';
+  /** Gem display text (e.g. +176 Haste) or gem name; null when empty */
+  display?: Maybe<Scalars['String']['output']>;
+  filled: Scalars['Boolean']['output'];
 };
 
 export type Guild = {
@@ -289,6 +325,13 @@ export type SiteStats = {
   trendingCharacters: Array<TrendingCharacter>;
 };
 
+export type TierSetSummary = {
+  __typename?: 'TierSetSummary';
+  equippedCount: Scalars['Int']['output'];
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+};
+
 export type TrendingCharacter = {
   __typename?: 'TrendingCharacter';
   class?: Maybe<Scalars['String']['output']>;
@@ -311,6 +354,16 @@ export type ZonePartition = {
   isDefault: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
 };
+
+export type CharacterGearQueryVariables = Exact<{
+  name: Scalars['String']['input'];
+  realm: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+  bypassCache?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type CharacterGearQuery = { __typename?: 'Query', character?: { __typename?: 'Character', gear?: { __typename?: 'Gear', items: Array<{ __typename?: 'GearItem', slot: string, slotName: string, itemId: number, name: string, quality: string, itemLevel: number, iconUrl?: string | null, enchant?: string | null, missingEnchant: boolean, tierSetId?: number | null, tierSetName?: string | null, sockets: Array<{ __typename?: 'GearSocket', filled: boolean, display?: string | null }> }>, tierSets: Array<{ __typename?: 'TierSetSummary', id: number, name: string, equippedCount: number }> } | null } | null };
 
 export type CharacterInfoQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -400,6 +453,41 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const CharacterGearDocument = new TypedDocumentString(`
+    query CharacterGear($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
+  character(
+    name: $name
+    realm: $realm
+    region: $region
+    bypassCache: $bypassCache
+  ) {
+    gear {
+      items {
+        slot
+        slotName
+        itemId
+        name
+        quality
+        itemLevel
+        iconUrl
+        enchant
+        missingEnchant
+        sockets {
+          filled
+          display
+        }
+        tierSetId
+        tierSetName
+      }
+      tierSets {
+        id
+        name
+        equippedCount
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<CharacterGearQuery, CharacterGearQueryVariables>;
 export const CharacterInfoDocument = new TypedDocumentString(`
     query CharacterInfo($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
   character(

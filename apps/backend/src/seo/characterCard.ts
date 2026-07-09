@@ -9,7 +9,7 @@ const logger = createLogger({ service: "CharacterCard" });
 
 const CARD_TTL_MS = 15 * 60_000; // 15 minutes, matching the RIO cache
 const FALLBACK_COLOR = "#7a8290";
-const DEFAULT_RAID = "tier-mn-1"; // keep in sync with frontend data/raidZones.ts
+const DEFAULT_RAID = "tier-mn-1"; // SEASON-CONFIG: keep in sync with frontend data/raidZones.ts
 
 const FONT_BARLOW_URL =
   "https://cdn.jsdelivr.net/npm/@fontsource/barlow@5.1.1/files/barlow-latin-600-normal.woff";

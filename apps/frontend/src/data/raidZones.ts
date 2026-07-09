@@ -5,6 +5,9 @@ type RaidInfo = {
 };
 
 /**
+ * SEASON-CONFIG: raid tiers + DEFAULT_RAID (keep backend seo/characterCard.ts
+ * DEFAULT_RAID in sync).
+ *
  * Maps Raider.IO raid slugs to raid metadata.
  *
  * When a new raid tier launches:

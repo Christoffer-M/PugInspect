@@ -113,6 +113,45 @@ export const characterTypedefs = gql`
     raidLogs(role: RoleType, metric: Metric, byBracket: Boolean): RaidLogs
     mythicPlusLogs(role: RoleType, metric: Metric): MythicPlusLogs
     potentialAlts: [AltCharacter!]!
+    gear: Gear
+  }
+
+  type Gear {
+    items: [GearItem!]!
+    tierSets: [TierSetSummary!]!
+  }
+
+  type GearItem {
+    "Canonical slot token, e.g. HEAD — stable key, defines display order"
+    slot: String!
+    "Localized slot name, e.g. Head"
+    slotName: String!
+    "Blizzard item id — e.g. for wowhead.com/item=<id> links"
+    itemId: Int!
+    name: String!
+    "POOR|COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|ARTIFACT|HEIRLOOM"
+    quality: String!
+    itemLevel: Int!
+    iconUrl: String
+    "Permanent enchant display text, null if unenchanted"
+    enchant: String
+    "True when the slot is enchantable this season but has no permanent enchant"
+    missingEnchant: Boolean!
+    sockets: [GearSocket!]!
+    tierSetId: Int
+    tierSetName: String
+  }
+
+  type GearSocket {
+    filled: Boolean!
+    "Gem display text (e.g. +176 Haste) or gem name; null when empty"
+    display: String
+  }
+
+  type TierSetSummary {
+    id: Int!
+    name: String!
+    equippedCount: Int!
   }
 
   type AltCharacter {

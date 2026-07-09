@@ -16,6 +16,7 @@ import { relations } from "drizzle-orm";
 import type { RaiderIoCharacterApiResponse } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
 import type { BlizzardCharacterProfile } from "../schema/services/blizzard/model/CharacterProfile.js";
+import type { BlizzardCharacterEquipment } from "../schema/services/blizzard/model/CharacterEquipment.js";
 
 // ---------------------------------------------------------------------------
 // characters
@@ -159,6 +160,32 @@ export type CharacterBlizzardSnapshot = typeof characterBlizzardSnapshots.$infer
 export type NewCharacterBlizzardSnapshot = typeof characterBlizzardSnapshots.$inferInsert;
 
 // ---------------------------------------------------------------------------
+// character_equipment_snapshots
+// One row per character (upsert semantics, refreshed on cache expiry).
+// Stores the full Blizzard equipment response, enriched with per-item icon
+// URLs so cache hits need no item-media calls.
+// ---------------------------------------------------------------------------
+export const characterEquipmentSnapshots = pgTable(
+  "character_equipment_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    rawData: jsonb("raw_data").$type<BlizzardCharacterEquipment>().notNull(),
+  },
+  (t) => [
+    uniqueIndex("equipment_snapshots_character_unique").on(t.characterId),
+    index("equipment_snapshots_character_expires_idx").on(t.characterId, t.expiresAt),
+  ]
+);
+
+export type CharacterEquipmentSnapshot = typeof characterEquipmentSnapshots.$inferSelect;
+export type NewCharacterEquipmentSnapshot = typeof characterEquipmentSnapshots.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // character_achievements
 // One row per (character × achievementId). Stores filtered achievement
 // completion data — never the full raw dump. Used for alt detection by
@@ -250,6 +277,7 @@ export const charactersRelations = relations(characters, ({ many }) => ({
   rioSnapshots: many(characterRioSnapshots),
   wclSnapshots: many(characterWclSnapshots),
   blizzardSnapshots: many(characterBlizzardSnapshots),
+  equipmentSnapshots: many(characterEquipmentSnapshots),
   achievements: many(characterAchievements),
   linksAsA: many(characterLinks, { relationName: "characterA" }),
   linksAsB: many(characterLinks, { relationName: "characterB" }),
@@ -272,6 +300,13 @@ export const wclSnapshotsRelations = relations(characterWclSnapshots, ({ one }) 
 export const blizzardSnapshotsRelations = relations(characterBlizzardSnapshots, ({ one }) => ({
   character: one(characters, {
     fields: [characterBlizzardSnapshots.characterId],
+    references: [characters.id],
+  }),
+}));
+
+export const equipmentSnapshotsRelations = relations(characterEquipmentSnapshots, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterEquipmentSnapshots.characterId],
     references: [characters.id],
   }),
 }));
