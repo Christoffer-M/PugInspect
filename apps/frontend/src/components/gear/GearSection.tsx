@@ -147,17 +147,32 @@ export const GearSection: React.FC<GearSectionProps> = ({
 
         {isMaxLevel && (
           <div className={`${classes.stat} ${classes.statDivided}`}>
-            <div className={classes.statLabel}>Gear Check</div>
-            {issueParts.length > 0 ? (
-              <div className={classes.gearCheck} style={{ color: "#f0b878" }}>
-                <span style={{ color: "#f0983d", fontSize: 14, lineHeight: 1 }}>
+            <div className={classes.statLabel}>
+              Gear Check
+              {issueParts.length > 0 ? (
+                <span
+                  className={classes.gearCheckIcon}
+                  style={{ color: "#f0983d" }}
+                >
                   &#9888;
                 </span>
-                {issueParts.join("  ·  ")}
+              ) : (
+                <span
+                  className={classes.gearCheckIcon}
+                  style={{ color: "#5fce7f" }}
+                >
+                  &#10003;
+                </span>
+              )}
+            </div>
+            {issueParts.length > 0 ? (
+              <div className={classes.gearCheck} style={{ color: "#f0b878" }}>
+                {issueParts.map((part) => (
+                  <div key={part}>{part}</div>
+                ))}
               </div>
             ) : (
               <div className={classes.gearCheck} style={{ color: "#5fce7f" }}>
-                <span style={{ fontSize: 13, lineHeight: 1 }}>&#10003;</span>
                 Fully enchanted &amp; gemmed
               </div>
             )}
