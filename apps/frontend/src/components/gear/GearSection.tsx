@@ -104,22 +104,25 @@ export const GearSection: React.FC<GearSectionProps> = ({
 
         <div className={classes.stat}>
           <div className={classes.statLabel}>Item Level</div>
-          <div className={classes.statVal}>
-            {isLoadingInfo ? (
-              <Skeleton height={20} width={44} />
-            ) : equippedItemLevel != null ? (
-              equippedItemLevel.toFixed(0)
-            ) : (
-              "–"
-            )}
+          <div className={classes.statContent}>
+            <div>
+              <div className={classes.statVal}>
+                {isLoadingInfo ? (
+                  <Skeleton height={20} width={44} />
+                ) : equippedItemLevel != null ? (
+                  equippedItemLevel.toFixed(0)
+                ) : (
+                  "–"
+                )}
+              </div>
+            </div>
           </div>
-          <div className={classes.statSub}>equipped</div>
         </div>
 
         {tierSets.length > 0 && (
           <div className={`${classes.stat} ${classes.statDivided}`}>
             <div className={classes.statLabel}>Tier Set</div>
-            <Group gap={7} mt={2}>
+            <Group gap={7} className={classes.statContent}>
               {tierSets.map((ts) => {
                 const color = tierColorById.get(ts.id)!;
                 return (
@@ -165,17 +168,19 @@ export const GearSection: React.FC<GearSectionProps> = ({
                 </span>
               )}
             </div>
-            {issueParts.length > 0 ? (
-              <div className={classes.gearCheck} style={{ color: "#f0b878" }}>
-                {issueParts.map((part) => (
-                  <div key={part}>{part}</div>
-                ))}
-              </div>
-            ) : (
-              <div className={classes.gearCheck} style={{ color: "#5fce7f" }}>
-                Fully enchanted &amp; gemmed
-              </div>
-            )}
+            <div className={classes.statContent}>
+              {issueParts.length > 0 ? (
+                <div className={classes.gearCheck} style={{ color: "#f0b878" }}>
+                  {issueParts.map((part) => (
+                    <div key={part}>{part}</div>
+                  ))}
+                </div>
+              ) : (
+                <div className={classes.gearCheck} style={{ color: "#5fce7f" }}>
+                  Fully enchanted &amp; gemmed
+                </div>
+              )}
+            </div>
           </div>
         )}
 
