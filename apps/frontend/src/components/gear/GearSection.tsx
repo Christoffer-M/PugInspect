@@ -17,8 +17,11 @@ import classes from "./GearSection.module.css";
 // no enchant/gem warnings — incomplete gear is expected while leveling.
 const MAX_LEVEL = 90;
 
-// Distinct hue per equipped tier set so mixed loadouts read at a glance.
-const TIER_COLORS = ["#e6b450", "#5ac8e6", "#c98af0"];
+// Distinct hue per tier so mixed loadouts (e.g. 2pc T35 + 2pc T36) read at a
+// glance. Keyed by tier number, so a tier keeps its color on every character
+// (T34 → purple, T35 → gold, T36 → cyan, then the palette cycles).
+const TIER_COLORS = ["#5ac8e6", "#c98af0", "#e6b450"];
+const getTierColor = (tier: number) => TIER_COLORS[tier % TIER_COLORS.length]!;
 
 type GearSectionProps = {
   gear: Gear | null | undefined;
@@ -40,9 +43,13 @@ export const GearSection: React.FC<GearSectionProps> = ({
   const [opened, { toggle }] = useDisclosure(false);
 
   const items = gear?.items ?? [];
-  const tierSets = gear?.tierSets ?? [];
+  // Only real raid tier sets — ignore crafted/PvP/legacy item sets the API also
+  // reports. Newest tier first.
+  const tierSets = (gear?.tierSets ?? [])
+    .filter((ts) => getTierNumber(ts.id) != null)
+    .sort((a, b) => getTierNumber(b.id)! - getTierNumber(a.id)!);
   const tierColorById = new Map(
-    tierSets.map((ts, i) => [ts.id, TIER_COLORS[i % TIER_COLORS.length]!]),
+    tierSets.map((ts) => [ts.id, getTierColor(getTierNumber(ts.id)!)]),
   );
 
   const missingEnchants = items.filter((i) => i.missingEnchant).length;
@@ -109,14 +116,8 @@ export const GearSection: React.FC<GearSectionProps> = ({
             <Group gap={7} mt={2}>
               {tierSets.map((ts) => {
                 const color = tierColorById.get(ts.id)!;
-                const tierNumber = getTierNumber(ts.id);
                 return (
-                  <Tooltip
-                    key={ts.id}
-                    label={ts.name}
-                    withArrow
-                    disabled={tierNumber == null}
-                  >
+                  <Tooltip key={ts.id} label={ts.name} withArrow>
                     <span
                       className={classes.tierPill}
                       style={{
@@ -125,7 +126,7 @@ export const GearSection: React.FC<GearSectionProps> = ({
                       }}
                     >
                       <span className={classes.tierPillName} style={{ color }}>
-                        {tierNumber != null ? `T${tierNumber}` : ts.name}
+                        T{getTierNumber(ts.id)}
                       </span>
                       <span className={classes.tierPillCount}>
                         {ts.equippedCount} pc

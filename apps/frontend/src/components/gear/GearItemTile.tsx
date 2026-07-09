@@ -13,6 +13,8 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
 }) => {
   const qualityColor = getQualityColor(item.quality);
   const badgeTextColor = LIGHT_QUALITIES.has(item.quality) ? "#060b16" : "#ffffff";
+  // Only mark real raid tier pieces — crafted/PvP/legacy item sets don't count.
+  const tierNumber = item.tierSetId != null ? getTierNumber(item.tierSetId) : null;
 
   return (
     <HoverCard width={260} shadow="md" withArrow openDelay={150} closeDelay={100}>
@@ -22,7 +24,7 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
             {item.iconUrl && (
               <img src={item.iconUrl} alt={item.name} className={classes.tileIcon} loading="lazy" />
             )}
-            {item.tierSetId != null && (
+            {tierNumber != null && (
               <div className={classes.tierMarker} style={{ background: tierColor }}>
                 T
               </div>
@@ -49,12 +51,10 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
         <Text size="xs" c="dimmed" mt={2}>
           {item.slotName} · Item Level <b>{item.itemLevel}</b>
         </Text>
-        {item.tierSetName != null && (
+        {tierNumber != null && (
           <div className={classes.tooltipLine} style={{ color: tierColor }}>
             <span className={classes.tooltipSquare} style={{ background: tierColor }} />
-            {item.tierSetId != null && getTierNumber(item.tierSetId) != null
-              ? `Tier set piece · T${getTierNumber(item.tierSetId)} · ${item.tierSetName}`
-              : `Tier set piece · ${item.tierSetName}`}
+            Tier set piece · T{tierNumber} · {item.tierSetName}
           </div>
         )}
         {item.enchant != null && (
