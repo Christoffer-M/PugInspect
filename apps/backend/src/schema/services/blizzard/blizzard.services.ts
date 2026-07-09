@@ -167,9 +167,8 @@ export class BlizzardService {
 
       await this.resolveItemIcons(data, token);
 
-      await persistEquipment({ region, realm: normalizedRealm, name }, data, fetchedAt).catch((err: unknown) => {
-        logger.warn("Failed to persist equipment to DB cache", { name, realm: normalizedRealm, region, error: String(err) });
-      });
+      // persistEquipment catches and logs its own failures — cache writes are non-fatal
+      await persistEquipment({ region, realm: normalizedRealm, name }, data, fetchedAt);
 
       return { data, fetchedAt };
     } catch (error) {
@@ -193,8 +192,9 @@ export class BlizzardService {
 
     await Promise.allSettled(
       misses.map(async (it) => {
-        // media.key.href already carries the static namespace
-        const res = await fetch(`${it.media.key.href}&locale=en_US`, {
+        // media.key.href normally carries the static namespace as a query string
+        const href = it.media.key.href;
+        const res = await fetch(`${href}${href.includes("?") ? "&" : "?"}locale=en_US`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`Item media request failed: ${res.status}`);

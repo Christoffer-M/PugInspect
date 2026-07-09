@@ -46,10 +46,13 @@ export const GearSection: React.FC<GearSectionProps> = ({
   // Only real raid tier sets — ignore crafted/PvP/legacy item sets the API also
   // reports. Newest tier first.
   const tierSets = (gear?.tierSets ?? [])
-    .filter((ts) => getTierNumber(ts.id) != null)
-    .sort((a, b) => getTierNumber(b.id)! - getTierNumber(a.id)!);
+    .flatMap((ts) => {
+      const tier = getTierNumber(ts.id);
+      return tier != null ? [{ ...ts, tier }] : [];
+    })
+    .sort((a, b) => b.tier - a.tier);
   const tierColorById = new Map(
-    tierSets.map((ts) => [ts.id, getTierColor(getTierNumber(ts.id)!)]),
+    tierSets.map((ts) => [ts.id, getTierColor(ts.tier)]),
   );
 
   const missingEnchants = items.filter((i) => i.missingEnchant).length;
@@ -70,12 +73,15 @@ export const GearSection: React.FC<GearSectionProps> = ({
   const isMaxLevel = level != null && level >= MAX_LEVEL;
 
   if (isLoading) {
+    // Skeleton heights match the loaded strip (tallest stat block ≈ 56px) so
+    // the card doesn't jump when data lands.
     return (
       <Paper shadow="xs" radius="md" p="md" withBorder>
         <Group gap={20}>
-          <Skeleton height={38} width={70} animate={!isError} />
-          <Skeleton height={38} width={160} animate={!isError} />
-          <Skeleton height={38} width={140} animate={!isError} />
+          <Skeleton height={56} width={70} animate={!isError} />
+          <Skeleton height={56} width={160} animate={!isError} />
+          <Skeleton height={56} width={140} animate={!isError} />
+          <Skeleton height={30} width={110} ml="auto" animate={!isError} />
         </Group>
       </Paper>
     );
@@ -85,7 +91,7 @@ export const GearSection: React.FC<GearSectionProps> = ({
     return (
       <Paper shadow="xs" radius="md" p="md" withBorder>
         <Text size="sm" c="dimmed">
-          Gear unavailable
+          {isError ? "Couldn't load gear — try refreshing" : "Gear unavailable"}
         </Text>
       </Paper>
     );
@@ -126,7 +132,7 @@ export const GearSection: React.FC<GearSectionProps> = ({
                       }}
                     >
                       <span className={classes.tierPillName} style={{ color }}>
-                        T{getTierNumber(ts.id)}
+                        T{ts.tier}
                       </span>
                       <span className={classes.tierPillCount}>
                         {ts.equippedCount} pc
@@ -163,8 +169,9 @@ export const GearSection: React.FC<GearSectionProps> = ({
           size="compact-md"
           radius={7}
           className={classes.toggle}
+          aria-expanded={opened}
           rightSection={
-            <span style={{ fontSize: 11, opacity: 0.8 }}>
+            <span aria-hidden style={{ fontSize: 11, opacity: 0.8 }}>
               {opened ? "⌃" : "⌄"}
             </span>
           }

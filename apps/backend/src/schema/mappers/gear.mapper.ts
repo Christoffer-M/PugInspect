@@ -33,8 +33,8 @@ function stripUiTags(s: string): string {
 // Older payloads may omit enchantment_slot — treat those as permanent so we
 // don't warn on enchants we can't classify. Temporary enchants (oils, stones)
 // must not count.
-function hasPermanentEnchant(item: BlizzardEquippedItem): boolean {
-  return (item.enchantments ?? []).some(
+function findPermanentEnchant(item: BlizzardEquippedItem) {
+  return (item.enchantments ?? []).find(
     (e) => !e.enchantment_slot || e.enchantment_slot.type === "PERMANENT"
   );
 }
@@ -51,9 +51,7 @@ export function mapGear(equipment: BlizzardCharacterEquipment): Gear {
     .filter((it) => SLOT_ORDER.includes(it.slot.type))
     .sort((a, b) => SLOT_ORDER.indexOf(a.slot.type) - SLOT_ORDER.indexOf(b.slot.type))
     .map((it) => {
-      const enchantText = (it.enchantments ?? []).find(
-        (e) => !e.enchantment_slot || e.enchantment_slot.type === "PERMANENT"
-      )?.display_string;
+      const permanentEnchant = findPermanentEnchant(it);
 
       return {
         slot: it.slot.type,
@@ -63,8 +61,8 @@ export function mapGear(equipment: BlizzardCharacterEquipment): Gear {
         quality: it.quality.type,
         itemLevel: it.level.value,
         iconUrl: it.iconUrl ?? null,
-        enchant: enchantText ? stripUiTags(enchantText) : null,
-        missingEnchant: isEnchantable(it) && !hasPermanentEnchant(it),
+        enchant: permanentEnchant ? stripUiTags(permanentEnchant.display_string) : null,
+        missingEnchant: isEnchantable(it) && !permanentEnchant,
         sockets: (it.sockets ?? []).map((s) => {
           const display = s.display_string ?? s.item?.name ?? null;
           return { filled: !!s.item, display: display ? stripUiTags(display) : null };
