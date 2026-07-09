@@ -2,13 +2,21 @@ import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { normalizeRealm } from "../../utils/helpers.js";
-import { getCachedBlizzardProfile, persistBlizzardProfile } from "../../../db/persistence.js";
+import { getCachedBlizzardProfile, persistBlizzardProfile, getCachedEquipment, persistEquipment } from "../../../db/persistence.js";
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
+import type { BlizzardCharacterEquipment, BlizzardItemMedia } from "./model/CharacterEquipment.js";
 import { GraphQLError } from "graphql";
 import type { QueryCharacterArgs } from "@repo/graphql-types";
 import { VALID_REGIONS } from "../../utils/regions.js";
 
 const logger = createLogger({ service: "Blizzard" });
+
+// Item icons are immutable static data — cache per process. Bounded in practice
+// (a few thousand distinct item ids per season, ~100 bytes each). Only successes
+// are cached; failures stay null in that snapshot and self-heal on next refresh.
+// ponytail: in-memory cache re-warms after restart (≤16 parallel fetches per
+// character); move to a DB table if Blizzard rate limits ever complain.
+const itemIconCache = new Map<number, string>();
 
 export class BlizzardService {
   private static readonly tokens = new OAuthTokenManager(async (region) => {
@@ -118,6 +126,86 @@ export class BlizzardService {
       throw new GraphQLError("Failed to fetch character profile from Blizzard", {
         extensions: { code: "INTERNAL_SERVER_ERROR" },
       });
+    }
+  }
+
+  static async getCharacterEquipment(
+    args: QueryCharacterArgs,
+    bypassCache = false
+  ): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }> {
+    const { name, realm, region } = args;
+    const normalizedRealm = normalizeRealm(realm);
+
+    // Defense in depth — the resolver validates region, but guard here too since this is a public static method
+    if (!VALID_REGIONS.has(region.toLowerCase())) {
+      throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
+    }
+
+    if (!bypassCache) {
+      const cached = await getCachedEquipment({ region, realm: normalizedRealm, name });
+      if (cached) {
+        logger.info("Blizzard equipment cache hit", { name, realm: normalizedRealm, region });
+        return cached;
+      }
+    }
+
+    const token = await this.tokens.getToken(region);
+    const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}/equipment?namespace=profile-${region}&locale=en_US`;
+
+    logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });
+
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 404) {
+        logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region });
+        throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
+      }
+      if (!res.ok) throw new Error(`Blizzard equipment request failed: ${res.status} ${res.statusText}`);
+
+      const data = await res.json() as BlizzardCharacterEquipment;
+      const fetchedAt = Math.floor(Date.now() / 1000);
+
+      await this.resolveItemIcons(data, token);
+
+      await persistEquipment({ region, realm: normalizedRealm, name }, data, fetchedAt).catch((err: unknown) => {
+        logger.warn("Failed to persist equipment to DB cache", { name, realm: normalizedRealm, region, error: String(err) });
+      });
+
+      return { data, fetchedAt };
+    } catch (error) {
+      if (error instanceof GraphQLError) throw error;
+
+      logger.error("Blizzard equipment fetch failed", {
+        name,
+        realm: normalizedRealm,
+        region,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new GraphQLError("Failed to fetch character equipment from Blizzard", {
+        extensions: { code: "INTERNAL_SERVER_ERROR" },
+      });
+    }
+  }
+
+  /** Sets iconUrl on every equipped item, fetching item media only for cache misses. Per-item failures are non-fatal. */
+  private static async resolveItemIcons(data: BlizzardCharacterEquipment, token: string): Promise<void> {
+    const misses = data.equipped_items.filter((it) => !itemIconCache.has(it.item.id));
+
+    await Promise.allSettled(
+      misses.map(async (it) => {
+        // media.key.href already carries the static namespace
+        const res = await fetch(`${it.media.key.href}&locale=en_US`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`Item media request failed: ${res.status}`);
+        const media = await res.json() as BlizzardItemMedia;
+        const icon = media.assets.find((a) => a.key === "icon")?.value;
+        if (icon) itemIconCache.set(it.item.id, icon);
+      })
+    );
+
+    for (const it of data.equipped_items) {
+      it.iconUrl = itemIconCache.get(it.item.id) ?? null;
     }
   }
 }

@@ -26,13 +26,14 @@ export async function getCharacterProfiles(
     mythicPlusLogsRequested,
     raiderIoRequested,
     blizzardRequested,
+    gearRequested,
     bypassCache,
-  }: { raidLogsRequested: boolean; mythicPlusLogsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; bypassCache: boolean }
+  }: { raidLogsRequested: boolean; mythicPlusLogsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; gearRequested: boolean; bypassCache: boolean }
 ) {
   const { name, realm, region } = args;
-  logger.info("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, bypassCache });
+  logger.info("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, gearRequested, bypassCache });
 
-  const [blizzardResult, rioResult, logsResult] = await Promise.allSettled([
+  const [blizzardResult, rioResult, logsResult, equipmentResult] = await Promise.allSettled([
     blizzardRequested
       ? BlizzardService.getCharacterProfile(args, bypassCache)
       : Promise.resolve(null),
@@ -42,11 +43,15 @@ export async function getCharacterProfiles(
     raidLogsRequested || mythicPlusLogsRequested
       ? WarcraftLogsService.getCharacterProfile(args, bypassCache)
       : Promise.resolve(null),
+    gearRequested
+      ? BlizzardService.getCharacterEquipment(args, bypassCache)
+      : Promise.resolve(null),
   ]);
 
   if (blizzardResult.status === "rejected") logRejection("Blizzard", blizzardResult.reason, { name, realm, region });
   if (rioResult.status === "rejected") logRejection("RaiderIO", rioResult.reason, { name, realm, region });
   if (logsResult.status === "rejected") logRejection("WarcraftLogs", logsResult.reason, { name, realm, region });
+  if (equipmentResult.status === "rejected") logRejection("Blizzard equipment", equipmentResult.reason, { name, realm, region });
 
   return {
     blizzardProfile: blizzardResult.status === "fulfilled" ? blizzardResult.value?.data : undefined,
@@ -54,5 +59,6 @@ export async function getCharacterProfiles(
     characterId: blizzardResult.status === "fulfilled" ? (blizzardResult.value?.characterId ?? null) : null,
     rioProfile: rioResult.status === "fulfilled" ? rioResult.value?.data : undefined,
     warcraftLogsProfile: logsResult.status === "fulfilled" ? logsResult.value?.data : undefined,
+    equipment: equipmentResult.status === "fulfilled" ? equipmentResult.value?.data : undefined,
   };
 }

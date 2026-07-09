@@ -10,6 +10,7 @@ import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
 import { mapRaiderIo } from "../mappers/raiderIo.mapper.js";
 import { mapRaidLogs } from "../mappers/raidLogs.mapper.js";
 import { mapMythicPlusLogs } from "../mappers/mythicPlusLogs.mapper.js";
+import { mapGear } from "../mappers/gear.mapper.js";
 import { isAnyFieldRequestedBesides, isFieldRequested } from "../utils/fetcher.js";
 import {
   CharacterSearchResponse,
@@ -49,17 +50,19 @@ export default {
       const raidLogsRequested = isFieldRequested(info, "raidLogs");
       const mythicPlusLogsRequested = isFieldRequested(info, "mythicPlusLogs");
       const raiderIoRequested = isFieldRequested(info, "raiderIo");
+      const gearRequested = isFieldRequested(info, "gear");
       const blizzardRequested = isAnyFieldRequestedBesides(
         info,
-        new Set(["raiderIo", "raidLogs", "mythicPlusLogs"])
+        new Set(["raiderIo", "raidLogs", "mythicPlusLogs", "gear"])
       );
 
-      const { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId } =
+      const { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId, equipment } =
         await getCharacterProfiles(args, {
           raidLogsRequested,
           mythicPlusLogsRequested,
           raiderIoRequested,
           blizzardRequested,
+          gearRequested,
           bypassCache: args.bypassCache ?? false,
         });
 
@@ -98,6 +101,7 @@ export default {
           mythicPlusLogsRequested && warcraftLogsProfile
             ? mapMythicPlusLogs(warcraftLogsProfile)
             : null,
+        gear: gearRequested && equipment ? mapGear(equipment) : null,
       };
     },
     siteStats: async (): Promise<SiteStats> => {

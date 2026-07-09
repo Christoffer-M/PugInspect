@@ -61,6 +61,23 @@ export function getClassColor(className?: string | null): string {
   return CLASS_COLORS[className.toLowerCase()] ?? "#8a96aa";
 }
 
+/** Standard WoW item quality colors, keyed by the API's quality type token. */
+export const WOW_QUALITY_COLORS: Record<string, string> = {
+  POOR: "#9d9d9d",
+  COMMON: "#ffffff",
+  UNCOMMON: "#1eff00",
+  RARE: "#0070dd",
+  EPIC: "#a335ee",
+  LEGENDARY: "#ff8000",
+  ARTIFACT: "#e6cc80",
+  HEIRLOOM: "#00ccff",
+};
+
+export function getQualityColor(quality?: string | null): string {
+  if (!quality) return "#8a96aa";
+  return WOW_QUALITY_COLORS[quality.toUpperCase()] ?? "#8a96aa";
+}
+
 export function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 

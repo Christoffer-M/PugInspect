@@ -99,5 +99,6 @@ export const MID_S1_DUNGEONS: Dungeon[] = [
   },
 ];
 
-// Re-export as the current season's dungeon pool — update this when the season changes
+// SEASON-CONFIG: current season's dungeon pool — add a new dungeons_<season>.ts
+// and point this re-export at it when the season changes.
 export { MID_S1_DUNGEONS as CURRENT_DUNGEONS };
