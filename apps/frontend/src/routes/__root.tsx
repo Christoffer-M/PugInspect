@@ -1,7 +1,8 @@
 import { HeadContent, Outlet, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
+import { TanStackDevtools } from "@tanstack/react-devtools";
 import { config } from "../config";
 
 const Analytics: React.FC = () => {
@@ -32,8 +33,15 @@ export const Route = createRootRoute({
       <HeadContent />
       <Analytics />
       <Outlet />
-      {import.meta.env.DEV && <TanStackRouterDevtools />}
-      {import.meta.env.DEV && <ReactQueryDevtools />}
+      {import.meta.env.DEV && (
+        <TanStackDevtools
+          config={{ openHotkey: ["Control", "~"] }}
+          plugins={[
+            { name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
+            { name: "TanStack Router", render: <TanStackRouterDevtoolsPanel /> },
+          ]}
+        />
+      )}
     </>
   ),
 });
