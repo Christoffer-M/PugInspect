@@ -106,18 +106,11 @@ export const GearSection: React.FC<GearSectionProps> = ({
           <div className={classes.statLabel}>Item Level</div>
           <div className={classes.statContent}>
             {isLoadingInfo ? (
-              <Skeleton height={24} width={54} />
+              <Skeleton height={20} width={44} />
             ) : (
-              <span
-                className={classes.pill}
-                style={{ borderColor: "#8a96aa55", background: "#8a96aa1f" }}
-              >
-                <span className={classes.pillName} style={{ color: "#c9d1e0" }}>
-                  {equippedItemLevel != null
-                    ? equippedItemLevel.toFixed(0)
-                    : "–"}
-                </span>
-              </span>
+              <div className={classes.statVal}>
+                {equippedItemLevel != null ? equippedItemLevel.toFixed(0) : "–"}
+              </div>
             )}
           </div>
         </div>
@@ -130,17 +123,11 @@ export const GearSection: React.FC<GearSectionProps> = ({
                 const color = tierColorById.get(ts.id)!;
                 return (
                   <Tooltip key={ts.id} label={ts.name} withArrow>
-                    <span
-                      className={classes.pill}
-                      style={{
-                        borderColor: `${color}55`,
-                        background: `${color}1f`,
-                      }}
-                    >
-                      <span className={classes.pillName} style={{ color }}>
+                    <span className={classes.tierItem}>
+                      <span className={classes.tierText} style={{ color }}>
                         T{ts.tier}
                       </span>
-                      <span className={classes.pillSub}>
+                      <span className={classes.tierCount}>
                         {ts.equippedCount} pc
                       </span>
                     </span>
@@ -173,37 +160,15 @@ export const GearSection: React.FC<GearSectionProps> = ({
             </div>
             <div className={classes.statContent}>
               {issueParts.length > 0 ? (
-                <div className={classes.gearCheck}>
+                <div className={classes.gearCheck} style={{ color: "#f0b878" }}>
                   {issueParts.map((part) => (
-                    <span
-                      key={part}
-                      className={classes.pill}
-                      style={{
-                        borderColor: "#f0983d55",
-                        background: "#f0983d1f",
-                      }}
-                    >
-                      <span
-                        className={classes.pillText}
-                        style={{ color: "#f0b878" }}
-                      >
-                        {part}
-                      </span>
-                    </span>
+                    <div key={part}>{part}</div>
                   ))}
                 </div>
               ) : (
-                <span
-                  className={classes.pill}
-                  style={{ borderColor: "#5fce7f55", background: "#5fce7f1f" }}
-                >
-                  <span
-                    className={classes.pillText}
-                    style={{ color: "#5fce7f" }}
-                  >
-                    Fully enchanted &amp; gemmed
-                  </span>
-                </span>
+                <div className={classes.gearCheck} style={{ color: "#5fce7f" }}>
+                  Fully enchanted &amp; gemmed
+                </div>
               )}
             </div>
           </div>
