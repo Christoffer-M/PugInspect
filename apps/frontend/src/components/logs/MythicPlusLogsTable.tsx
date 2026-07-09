@@ -5,9 +5,10 @@ import {
   Select,
   Stack,
   Group,
+  Anchor,
 } from "@mantine/core";
 import { Maybe, Metric } from "../../graphql/graphql";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../../routes/$region.$realm.$name";
 import { CharacterMythicPlusLogs } from "../../queries/character-mythicplus-logs";
 import { useZonePartitions } from "../../queries/zone-partitions";
@@ -59,6 +60,10 @@ export function MythicPlusLogsTable({
     partition: searchPartition,
     mpSeason: searchMpSeason,
   } = useSearch({ from: "/$region/$realm/$name" });
+  const { region, realm, name } = useParams({ from: "/$region/$realm/$name" });
+
+  const wclDungeonUrl = (dungeonId: number) =>
+    `https://www.warcraftlogs.com/character/${region}/${realm}/${encodeURIComponent(name)}?boss=${dungeonId}${zoneId ? `&zone=${zoneId}` : ""}`;
 
   const { data: partitions } = useZonePartitions(zoneId);
 
@@ -77,7 +82,20 @@ export function MythicPlusLogsTable({
   const rows = rankings.map((ranking, i) => (
     <Table.Tr key={ranking.dungeon?.id ?? i}>
       <Table.Td c={ranking.throughputPercent != null ? undefined : "dimmed"}>
-        {ranking.dungeon?.name}
+        {ranking.dungeon?.id ? (
+          <Anchor
+            size="sm"
+            c="inherit"
+            underline="hover"
+            href={wclDungeonUrl(ranking.dungeon.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {ranking.dungeon.name}
+          </Anchor>
+        ) : (
+          ranking.dungeon?.name
+        )}
       </Table.Td>
       <Table.Td>
         <ParsePill value={ranking.throughputPercent} />

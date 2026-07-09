@@ -8,9 +8,10 @@ import {
   Switch,
   Group,
   Box,
+  Anchor,
 } from "@mantine/core";
 import { Difficulty, Maybe, Metric, RoleType } from "../../graphql/graphql";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { CharacterQueryParams } from "../../routes/$region.$realm.$name";
 import { CharacterRaidLogs } from "../../queries/character-raid-logs";
 import { useZonePartitions } from "../../queries/zone-partitions";
@@ -22,6 +23,8 @@ import { ParsePill } from "../ui/ParsePill";
 import { SectionTitle } from "../ui/SectionTitle";
 
 const DIFFICULTY_ORDER = ["LFR", "Normal", "Heroic", "Mythic"];
+// WCL character-page difficulty ids
+const WCL_DIFFICULTY_IDS: Record<string, number> = { LFR: 1, Normal: 3, Heroic: 4, Mythic: 5 };
 const RAID_METRICS = [Metric.Dps, Metric.Hps];
 const DEFAULT_RAID_METRIC = Metric.Dps;
 
@@ -35,6 +38,7 @@ type RaidLogsTableProps = {
 export function RaidLogsTable({ logs, isFetching, class: className, zoneId }: RaidLogsTableProps) {
   const { roleType: searchRoleType, metric: searchMetric, difficulty: searchDifficulty, bracket: searchBracket, partition: searchPartition } =
     useSearch({ from: "/$region/$realm/$name" });
+  const { region, realm, name } = useParams({ from: "/$region/$realm/$name" });
 
   const { data: partitions } = useZonePartitions(zoneId);
 
@@ -45,6 +49,15 @@ export function RaidLogsTable({ logs, isFetching, class: className, zoneId }: Ra
   const activeMetric = RAID_METRICS.includes(searchMetric as Metric)
     ? (searchMetric as Metric)
     : (metric ?? DEFAULT_RAID_METRIC);
+
+  const wclEncounterUrl = (encounterId: number) => {
+    const params = new URLSearchParams({ boss: String(encounterId), metric: activeMetric });
+    if (zoneId) params.set("zone", String(zoneId));
+    const difficultyId = WCL_DIFFICULTY_IDS[searchDifficulty ?? difficulty ?? "LFR"];
+    if (difficultyId) params.set("difficulty", String(difficultyId));
+    if (typeof searchPartition === "number") params.set("partition", String(searchPartition));
+    return `https://www.warcraftlogs.com/character/${region}/${realm}/${encodeURIComponent(name)}?${params}`;
+  };
 
   const navigate = useNavigate();
 
@@ -66,7 +79,20 @@ export function RaidLogsTable({ logs, isFetching, class: className, zoneId }: Ra
               />
             </Box>
           )}
-          <Text size="sm" m={0}>{ranking.encounter?.name}</Text>
+          {ranking.encounter?.id ? (
+            <Anchor
+              size="sm"
+              c="inherit"
+              underline="hover"
+              href={wclEncounterUrl(ranking.encounter.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ranking.encounter.name}
+            </Anchor>
+          ) : (
+            <Text size="sm" m={0}>{ranking.encounter?.name}</Text>
+          )}
         </Group>
       </Table.Td>
       <Table.Td><ParsePill value={ranking.rankPercent} /></Table.Td>
