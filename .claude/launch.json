@@ -6,6 +6,13 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "frontend", "dev"],
       "port": 3000
+    },
+    {
+      "name": "frontend-alt",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "frontend", "exec", "vite"],
+      "port": 3020,
+      "autoPort": true
     }
   ]
 }

@@ -11,6 +11,7 @@ export default defineConfig({
     viteReact(),
   ],
   server: {
+    port: Number(process.env.PORT) || 3000,
     watch: {
       usePolling: true,
     },

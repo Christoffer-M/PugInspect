@@ -92,6 +92,9 @@ const theme = createTheme({
   },
   components: {
     Paper: {
+      defaultProps: {
+        radius: "md",
+      },
       styles: {
         root: {
           borderColor: "rgba(61, 79, 110, 0.5)",

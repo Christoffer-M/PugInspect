@@ -49,7 +49,7 @@ function getLastActiveDays(raiderIo: RaiderIo | null | undefined): number | null
 }
 
 function formatLastActive(days: number): string {
-  if (days <= 0) return "today";
+  if (days <= 0) return "Today";
   if (days <= 30) return `${days}d`;
   if (days <= 364) return `${Math.floor(days / 7)}w`;
   return `${Math.floor(days / 365)}y`;
