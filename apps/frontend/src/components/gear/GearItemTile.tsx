@@ -19,7 +19,13 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
   return (
     <HoverCard width={260} shadow="md" withArrow openDelay={150} closeDelay={100}>
       <HoverCard.Target>
-        <div className={classes.itemCol}>
+        <a
+          className={classes.itemCol}
+          href={`https://www.wowhead.com/item=${item.itemId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${item.name} on Wowhead`}
+        >
           <div className={classes.tile} style={{ borderColor: qualityColor }}>
             {item.iconUrl && (
               <img src={item.iconUrl} alt={item.name} className={classes.tileIcon} loading="lazy" />
@@ -42,7 +48,7 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
           >
             {item.itemLevel}
           </div>
-        </div>
+        </a>
       </HoverCard.Target>
       <HoverCard.Dropdown p="sm">
         <Text size="sm" fw={700} ff="heading" style={{ color: qualityColor }}>

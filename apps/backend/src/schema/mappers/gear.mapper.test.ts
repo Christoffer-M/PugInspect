@@ -53,6 +53,7 @@ describe("mapGear", () => {
     expect(gear.items[0]).toMatchObject({
       slot: "WAIST",
       slotName: "Waist",
+      itemId: 1000,
       name: "Belt of Testing",
       quality: "RARE",
       itemLevel: 665,

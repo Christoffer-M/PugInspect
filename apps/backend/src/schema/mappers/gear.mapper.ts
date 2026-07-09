@@ -58,6 +58,7 @@ export function mapGear(equipment: BlizzardCharacterEquipment): Gear {
       return {
         slot: it.slot.type,
         slotName: it.slot.name,
+        itemId: it.item.id,
         name: it.name,
         quality: it.quality.type,
         itemLevel: it.level.value,

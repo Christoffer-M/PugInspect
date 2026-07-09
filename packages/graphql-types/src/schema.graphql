@@ -71,6 +71,8 @@ type GearItem {
   """Permanent enchant display text, null if unenchanted"""
   enchant: String
   iconUrl: String
+  """Blizzard item id — e.g. for wowhead.com/item=<id> links"""
+  itemId: Int!
   itemLevel: Int!
   """
   True when the slot is enchantable this season but has no permanent enchant

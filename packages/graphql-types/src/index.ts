@@ -103,6 +103,8 @@ export type GearItem = {
   /** Permanent enchant display text, null if unenchanted */
   enchant?: Maybe<Scalars['String']['output']>;
   iconUrl?: Maybe<Scalars['String']['output']>;
+  /** Blizzard item id — e.g. for wowhead.com/item=<id> links */
+  itemId: Scalars['Int']['output'];
   itemLevel: Scalars['Int']['output'];
   /** True when the slot is enchantable this season but has no permanent enchant */
   missingEnchant: Scalars['Boolean']['output'];

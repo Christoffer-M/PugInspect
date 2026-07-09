@@ -126,6 +126,8 @@ export const characterTypedefs = gql`
     slot: String!
     "Localized slot name, e.g. Head"
     slotName: String!
+    "Blizzard item id — e.g. for wowhead.com/item=<id> links"
+    itemId: Int!
     name: String!
     "POOR|COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|ARTIFACT|HEIRLOOM"
     quality: String!

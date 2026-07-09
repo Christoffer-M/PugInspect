@@ -116,6 +116,9 @@
   align-items: center;
   gap: 6px;
   width: 46px;
+  /* The column is an <a> to Wowhead — suppress link styling on the badge text */
+  text-decoration: none;
+  color: inherit;
 }
 
 .tile {

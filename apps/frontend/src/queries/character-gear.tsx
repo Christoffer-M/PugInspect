@@ -16,6 +16,7 @@ export const CharacterGearQueryDoc = graphql(`
         items {
           slot
           slotName
+          itemId
           name
           quality
           itemLevel
