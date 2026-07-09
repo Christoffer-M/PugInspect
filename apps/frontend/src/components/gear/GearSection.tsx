@@ -1,6 +1,15 @@
-import { Button, Collapse, Group, Paper, Skeleton, Text } from "@mantine/core";
+import {
+  Button,
+  Collapse,
+  Group,
+  Paper,
+  Skeleton,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Gear } from "../../graphql/graphql";
+import { getTierNumber } from "../../data/tierSets";
 import { GearItemTile } from "./GearItemTile";
 import classes from "./GearSection.module.css";
 
@@ -32,18 +41,24 @@ export const GearSection: React.FC<GearSectionProps> = ({
 
   const items = gear?.items ?? [];
   const tierSets = gear?.tierSets ?? [];
-  const tierColorById = new Map(tierSets.map((ts, i) => [ts.id, TIER_COLORS[i % TIER_COLORS.length]!]));
+  const tierColorById = new Map(
+    tierSets.map((ts, i) => [ts.id, TIER_COLORS[i % TIER_COLORS.length]!]),
+  );
 
   const missingEnchants = items.filter((i) => i.missingEnchant).length;
   const emptySockets = items.reduce(
     (sum, i) => sum + i.sockets.filter((s) => !s.filled).length,
-    0
+    0,
   );
   const issueParts = [
     ...(missingEnchants > 0
-      ? [`${missingEnchants} missing enchant${missingEnchants === 1 ? "" : "s"}`]
+      ? [
+          `${missingEnchants} missing enchant${missingEnchants === 1 ? "" : "s"}`,
+        ]
       : []),
-    ...(emptySockets > 0 ? [`${emptySockets} empty socket${emptySockets === 1 ? "" : "s"}`] : []),
+    ...(emptySockets > 0
+      ? [`${emptySockets} empty socket${emptySockets === 1 ? "" : "s"}`]
+      : []),
   ];
   const isMaxLevel = level != null && level >= MAX_LEVEL;
 
@@ -94,17 +109,29 @@ export const GearSection: React.FC<GearSectionProps> = ({
             <Group gap={7} mt={2}>
               {tierSets.map((ts) => {
                 const color = tierColorById.get(ts.id)!;
+                const tierNumber = getTierNumber(ts.id);
                 return (
-                  <span
+                  <Tooltip
                     key={ts.id}
-                    className={classes.tierPill}
-                    style={{ borderColor: `${color}55`, background: `${color}1f` }}
+                    label={ts.name}
+                    withArrow
+                    disabled={tierNumber == null}
                   >
-                    <span className={classes.tierPillName} style={{ color }}>
-                      {ts.name}
+                    <span
+                      className={classes.tierPill}
+                      style={{
+                        borderColor: `${color}55`,
+                        background: `${color}1f`,
+                      }}
+                    >
+                      <span className={classes.tierPillName} style={{ color }}>
+                        {tierNumber != null ? `T${tierNumber}` : ts.name}
+                      </span>
+                      <span className={classes.tierPillCount}>
+                        {ts.equippedCount} pc
+                      </span>
                     </span>
-                    <span className={classes.tierPillCount}>{ts.equippedCount} pc</span>
-                  </span>
+                  </Tooltip>
                 );
               })}
             </Group>
@@ -116,7 +143,9 @@ export const GearSection: React.FC<GearSectionProps> = ({
             <div className={classes.statLabel}>Gear Check</div>
             {issueParts.length > 0 ? (
               <div className={classes.gearCheck} style={{ color: "#f0b878" }}>
-                <span style={{ color: "#f0983d", fontSize: 14, lineHeight: 1 }}>&#9888;</span>
+                <span style={{ color: "#f0983d", fontSize: 14, lineHeight: 1 }}>
+                  &#9888;
+                </span>
                 {issueParts.join("  ·  ")}
               </div>
             ) : (
@@ -133,7 +162,11 @@ export const GearSection: React.FC<GearSectionProps> = ({
           size="compact-md"
           radius={7}
           className={classes.toggle}
-          rightSection={<span style={{ fontSize: 11, opacity: 0.8 }}>{opened ? "⌃" : "⌄"}</span>}
+          rightSection={
+            <span style={{ fontSize: 11, opacity: 0.8 }}>
+              {opened ? "⌃" : "⌄"}
+            </span>
+          }
         >
           {opened ? "Hide items" : "Show items"}
         </Button>
@@ -146,7 +179,11 @@ export const GearSection: React.FC<GearSectionProps> = ({
               <GearItemTile
                 key={item.slot}
                 item={item}
-                tierColor={item.tierSetId != null ? tierColorById.get(item.tierSetId) : undefined}
+                tierColor={
+                  item.tierSetId != null
+                    ? tierColorById.get(item.tierSetId)
+                    : undefined
+                }
               />
             ))}
           </div>

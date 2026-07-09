@@ -1,5 +1,6 @@
 import { HoverCard, Text } from "@mantine/core";
 import { GearItem } from "../../graphql/graphql";
+import { getTierNumber } from "../../data/tierSets";
 import { getQualityColor } from "../../util/util";
 import classes from "./GearSection.module.css";
 
@@ -51,7 +52,9 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
         {item.tierSetName != null && (
           <div className={classes.tooltipLine} style={{ color: tierColor }}>
             <span className={classes.tooltipSquare} style={{ background: tierColor }} />
-            Tier set piece · {item.tierSetName}
+            {item.tierSetId != null && getTierNumber(item.tierSetId) != null
+              ? `Tier set piece · T${getTierNumber(item.tierSetId)} · ${item.tierSetName}`
+              : `Tier set piece · ${item.tierSetName}`}
           </div>
         )}
         {item.enchant != null && (

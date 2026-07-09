@@ -25,6 +25,12 @@ If you add a new season-dependent constant anywhere, tag its comment with
   bump `DEFAULT_RAID`
 - `apps/backend/src/seo/characterCard.ts` — keep `DEFAULT_RAID` in sync (drives
   the Discord og:image card)
+- `apps/frontend/src/data/tierSets.ts` — add the new tier's item-set id range
+  (`TIER_SET_RANGES`). Each season's 13 class sets get a contiguous id block;
+  find it via
+  `GET https://eu.api.blizzard.com/data/wow/item-set/index?namespace=static-eu`
+  (client-credentials token) and look for the new block of 13 class-themed
+  names above the previous tier's range.
 
 ## New expansion (additionally)
 
