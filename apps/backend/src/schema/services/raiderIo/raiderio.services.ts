@@ -1,5 +1,5 @@
 import { config } from "../../../config/index.js";
-import { fetcher } from "../../utils/fetcher.js";
+import { fetcher, FetchError } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
 import { normalizeRealm, normalizeName } from "../../utils/helpers.js";
 import { getCachedRioProfile, persistRioProfile } from "../../../db/persistence.js";
@@ -98,7 +98,7 @@ export class RaiderIOService {
       throw new GraphQLError(
         "Failed to fetch character suggestions from RaiderIO",
         {
-          extensions: { code: "NOT_FOUND" },
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         }
       );
     }
@@ -153,12 +153,12 @@ export class RaiderIOService {
       // RaiderIO answers 400 for missing characters AND for malformed queries — the body
       // message ("Could not find requested character" / "Failed to find realm …") is the
       // only way to tell user input from our own bugs.
-      const { status, apiMessage } = error as { status?: number; apiMessage?: string };
-      const notFound =
-        status === 404 ||
-        (status === 400 && /could not find|failed to find/i.test(apiMessage ?? ""));
-      if (notFound) {
-        logger.warn("RaiderIO character not found", { name, realm, region, apiMessage });
+      if (
+        error instanceof FetchError &&
+        (error.status === 404 ||
+          (error.status === 400 && /could not find|failed to find/i.test(error.apiMessage)))
+      ) {
+        logger.warn("RaiderIO character not found", { name, realm, region, apiMessage: error.apiMessage });
         throw new GraphQLError("Character not found on RaiderIO", {
           extensions: { code: "NOT_FOUND" },
         });

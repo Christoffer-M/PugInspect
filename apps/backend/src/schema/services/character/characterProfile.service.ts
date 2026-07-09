@@ -7,10 +7,10 @@ import { createLogger } from "../../utils/logger.js";
 
 const logger = createLogger({ service: "CharacterProfile" });
 
-// A missing character is expected user input, not a failure — keep it out of error logs.
+// A missing character is expected user input, not a failure — and the service
+// already warn-logged it with more detail, so don't log it a second time here.
 function logRejection(source: string, reason: unknown, ctx: { name: string; realm: string; region: string }) {
   if (reason instanceof GraphQLError && reason.extensions.code === "NOT_FOUND") {
-    logger.info(`${source} character not found`, ctx);
     return;
   }
   logger.error(`${source} profile failed`, {

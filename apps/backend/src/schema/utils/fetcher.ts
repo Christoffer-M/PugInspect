@@ -2,6 +2,17 @@
 import { GraphQLResolveInfo } from "graphql";
 import { parseResolveInfo, ResolveTree } from "graphql-parse-resolve-info";
 
+export class FetchError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly apiMessage: string
+  ) {
+    super(message);
+    this.name = "FetchError";
+  }
+}
+
 export async function fetcher<T>(
   url: string,
   options?: RequestInit
@@ -15,9 +26,10 @@ export async function fetcher<T>(
     } catch {
       // non-JSON error body — status alone will have to do
     }
-    throw Object.assign(
-      new Error(`Fetch failed: ${res.status} ${res.statusText}${apiMessage ? ` — ${apiMessage}` : ""}`),
-      { status: res.status, apiMessage }
+    throw new FetchError(
+      `Fetch failed: ${res.status} ${res.statusText}${apiMessage ? ` — ${apiMessage}` : ""}`,
+      res.status,
+      apiMessage
     );
   }
 
