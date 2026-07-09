@@ -11,6 +11,8 @@
   font-weight: 700;
   font-size: 15px;
   letter-spacing: -0.01em;
+  /* Text renders a <p>; kill the global paragraph margin so it centers in the strip */
+  margin: 0;
 }
 
 .stat {
@@ -87,10 +89,16 @@
   color: var(--mantine-color-text);
 }
 
-/* Expanded icon grid */
+/* Wrapper carries the gap above the divider as padding — Mantine Collapse
+   force-zeroes its first child's top margin, so margin can't do it. */
+.gridWrap {
+  padding-top: 16px;
+}
+
+/* Expanded icon grid. Extra top padding because the tiles' corner markers
+   overflow 5px above the tile tops. */
 .grid {
-  margin-top: 14px;
-  padding-top: 15px;
+  padding-top: 24px;
   border-top: 1px solid rgba(61, 79, 110, 0.28);
   display: flex;
   flex-wrap: wrap;

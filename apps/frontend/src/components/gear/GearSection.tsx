@@ -51,7 +51,6 @@ export const GearSection: React.FC<GearSectionProps> = ({
     return (
       <Paper shadow="xs" radius="md" p="md" withBorder>
         <Group gap={20}>
-          <Skeleton height={18} width={40} animate={!isError} />
           <Skeleton height={38} width={70} animate={!isError} />
           <Skeleton height={38} width={160} animate={!isError} />
           <Skeleton height={38} width={140} animate={!isError} />
@@ -63,12 +62,9 @@ export const GearSection: React.FC<GearSectionProps> = ({
   if (!gear || items.length === 0) {
     return (
       <Paper shadow="xs" radius="md" p="md" withBorder>
-        <Group gap={20}>
-          <Text className={classes.title}>Gear</Text>
-          <Text size="sm" c="dimmed">
-            Gear unavailable
-          </Text>
-        </Group>
+        <Text size="sm" c="dimmed">
+          Gear unavailable
+        </Text>
       </Paper>
     );
   }
@@ -144,14 +140,16 @@ export const GearSection: React.FC<GearSectionProps> = ({
       </div>
 
       <Collapse in={opened}>
-        <div className={classes.grid}>
-          {items.map((item) => (
-            <GearItemTile
-              key={item.slot}
-              item={item}
-              tierColor={item.tierSetId != null ? tierColorById.get(item.tierSetId) : undefined}
-            />
-          ))}
+        <div className={classes.gridWrap}>
+          <div className={classes.grid}>
+            {items.map((item) => (
+              <GearItemTile
+                key={item.slot}
+                item={item}
+                tierColor={item.tierSetId != null ? tierColorById.get(item.tierSetId) : undefined}
+              />
+            ))}
+          </div>
         </div>
       </Collapse>
     </Paper>

@@ -165,12 +165,6 @@ export const CharacterHeader: React.FC<{
               <Text size="sm" c="dimmed" m={0}>
                 {characterInfo.race} {characterInfo.activeSpec} {characterInfo.class}
               </Text>
-              <Text size="sm" m={0}>
-                <Text span fw={600} size="sm">Item Level:</Text>{" "}
-                {characterInfo.equippedItemLevel != null
-                  ? characterInfo.equippedItemLevel.toFixed(0)
-                  : "–"}
-              </Text>
               {characterInfo.potentialAlts.length > 0 && (
                 <Group mt={4}>
                   <AltsHoverCard alts={characterInfo.potentialAlts} />
