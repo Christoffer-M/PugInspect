@@ -9,7 +9,16 @@ export async function fetcher<T>(
   const res = await fetch(url, options);
 
   if (!res.ok) {
-    throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
+    let apiMessage = "";
+    try {
+      apiMessage = ((await res.json()) as { message?: string }).message ?? "";
+    } catch {
+      // non-JSON error body — status alone will have to do
+    }
+    throw Object.assign(
+      new Error(`Fetch failed: ${res.status} ${res.statusText}${apiMessage ? ` — ${apiMessage}` : ""}`),
+      { status: res.status, apiMessage }
+    );
   }
 
   return res.json() as Promise<T>;

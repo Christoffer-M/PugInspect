@@ -1,10 +1,23 @@
 import { QueryCharacterArgs } from "@repo/graphql-types";
+import { GraphQLError } from "graphql";
 import { BlizzardService } from "../blizzard/blizzard.services.js";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
 import { createLogger } from "../../utils/logger.js";
 
 const logger = createLogger({ service: "CharacterProfile" });
+
+// A missing character is expected user input, not a failure — keep it out of error logs.
+function logRejection(source: string, reason: unknown, ctx: { name: string; realm: string; region: string }) {
+  if (reason instanceof GraphQLError && reason.extensions.code === "NOT_FOUND") {
+    logger.info(`${source} character not found`, ctx);
+    return;
+  }
+  logger.error(`${source} profile failed`, {
+    ...ctx,
+    error: reason instanceof Error ? reason.message : String(reason),
+  });
+}
 
 export async function getCharacterProfiles(
   args: QueryCharacterArgs,
@@ -31,27 +44,9 @@ export async function getCharacterProfiles(
       : Promise.resolve(null),
   ]);
 
-  // Blizzard failure is fatal when requested — character either doesn't exist or is unreachable.
-  if (blizzardResult.status === "rejected") {
-    logger.error("Blizzard profile failed", {
-      name, realm, region,
-      error: blizzardResult.reason instanceof Error ? blizzardResult.reason.message : String(blizzardResult.reason),
-    });
-  }
-
-  if (rioResult.status === "rejected") {
-    logger.error("RaiderIO profile failed in parallel fetch", {
-      name, realm, region,
-      error: rioResult.reason instanceof Error ? rioResult.reason.message : String(rioResult.reason),
-    });
-  }
-
-  if (logsResult.status === "rejected") {
-    logger.error("WarcraftLogs profile failed in parallel fetch", {
-      name, realm, region,
-      error: logsResult.reason instanceof Error ? logsResult.reason.message : String(logsResult.reason),
-    });
-  }
+  if (blizzardResult.status === "rejected") logRejection("Blizzard", blizzardResult.reason, { name, realm, region });
+  if (rioResult.status === "rejected") logRejection("RaiderIO", rioResult.reason, { name, realm, region });
+  if (logsResult.status === "rejected") logRejection("WarcraftLogs", logsResult.reason, { name, realm, region });
 
   return {
     blizzardProfile: blizzardResult.status === "fulfilled" ? blizzardResult.value?.data : undefined,
