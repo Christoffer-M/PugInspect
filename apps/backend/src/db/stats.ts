@@ -118,7 +118,7 @@ export async function getSiteStats(): Promise<SiteStats> {
       .where(gte(searchEvents.searchedAt, weekAgo))
       .groupBy(characters.id)
       .orderBy(desc(count()))
-      .limit(7),
+      .limit(10),
   ]);
 
   return {
