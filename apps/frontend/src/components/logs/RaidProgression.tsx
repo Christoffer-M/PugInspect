@@ -1,9 +1,21 @@
 import { Grid, Paper, RingProgress, Select, Stack, Text } from "@mantine/core";
 import { RaidProgressionDetail } from "../../graphql/graphql";
-import { getRaidDisplayName, getRaidExpansion, RAIDS } from "../../data/raidZones";
+import { getRaidExpansion, RAIDS } from "../../data/raidZones";
 import { useMemo } from "react";
 import { SectionTitle } from "../ui/SectionTitle";
 import classes from "./RaidProgression.module.css";
+
+// Options come straight from the generated RAIDS map (release order, newest
+// first) — independent of the character's raid_progression data, which is
+// only used for the selected raid's kill counts.
+const RAID_OPTIONS = (() => {
+  const groups: Record<string, { value: string; label: string }[]> = {};
+  for (const [slug, raid] of Object.entries(RAIDS)) {
+    const group = getRaidExpansion(raid.expansion) ?? "Other";
+    (groups[group] ??= []).push({ value: slug, label: raid.displayName });
+  }
+  return Object.entries(groups).map(([group, items]) => ({ group, items }));
+})();
 
 type RaidProgressionProps = {
   raidData: RaidProgressionDetail[];
@@ -24,28 +36,6 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
   selectedRaid,
   onRaidChange,
 }) => {
-  const raidOptions = useMemo(() => {
-    const groups: Record<string, { value: string; label: string }[]> = {};
-    // The API returns raids in arbitrary key order — sort by their position
-    // in the generated RAIDS map (release order, newest first).
-    const order = Object.keys(RAIDS);
-    const sorted = [...raidData].sort(
-      (a, b) => order.indexOf(a.raid) - order.indexOf(b.raid),
-    );
-    for (const raid of sorted) {
-      if (!(raid.raid in RAIDS)) continue;
-      const group =
-        raid.expansion_id != null
-          ? (getRaidExpansion(raid.expansion_id) ?? "Other")
-          : "Other";
-      (groups[group] ??= []).push({
-        value: raid.raid,
-        label: getRaidDisplayName(raid.raid),
-      });
-    }
-    return Object.entries(groups).map(([group, items]) => ({ group, items }));
-  }, [raidData]);
-
   const raidDataItem = useMemo(
     () => raidData.find((raid) => raid.raid === selectedRaid),
     [raidData, selectedRaid],
@@ -83,7 +73,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
             }}
             w="auto"
             value={selectedRaid}
-            data={raidOptions}
+            data={RAID_OPTIONS}
             onChange={onRaidChange}
           />
         }
