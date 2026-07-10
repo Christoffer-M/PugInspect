@@ -89,16 +89,16 @@ describe("timeAgo", () => {
   it("formats seconds, minutes, hours, and days", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-07T12:00:00.000Z"));
-    expect(timeAgo("2026-07-07T11:59:48.000Z")).toBe("12s ago");
+    expect(timeAgo("2026-07-07T11:59:48.000Z")).toBe("Just now");
     expect(timeAgo("2026-07-07T11:57:00.000Z")).toBe("3m ago");
     expect(timeAgo("2026-07-07T09:00:00.000Z")).toBe("3h ago");
     expect(timeAgo("2026-07-05T12:00:00.000Z")).toBe("2d ago");
   });
 
-  it("clamps future timestamps to 0s", () => {
+  it("clamps future timestamps to Just now", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-07T12:00:00.000Z"));
-    expect(timeAgo("2026-07-07T12:05:00.000Z")).toBe("0s ago");
+    expect(timeAgo("2026-07-07T12:05:00.000Z")).toBe("Just now");
   });
 });
 
