@@ -92,11 +92,20 @@ function matchWclZone(
   const candidates = zones.filter((z) => z.expansion.name === expansionName);
   const target = norm(rioName);
   // Exact, then containment either way (handles "MN Tier 1 (VS / DR / MQD)" ↔ "VS / DR / MQD").
-  const hit =
-    candidates.find((z) => norm(z.name) === target) ??
-    candidates.find((z) => target.includes(norm(z.name)) || norm(z.name).includes(target));
-  if (!hit) warnings.push(`No WCL zone matched "${rioName}" (${expansionName}) — zoneId omitted`);
-  return hit?.id;
+  const exact = candidates.find((z) => norm(z.name) === target);
+  if (exact) return exact.id;
+  const partial = candidates.filter(
+    (z) => target.includes(norm(z.name)) || norm(z.name).includes(target)
+  );
+  if (partial.length > 1)
+    warnings.push(
+      `Ambiguous WCL zone match for "${rioName}" (${expansionName}): ${partial
+        .map((z) => `${z.name} (${z.id})`)
+        .join(", ")} — picked the first`
+    );
+  if (partial.length === 0)
+    warnings.push(`No WCL zone matched "${rioName}" (${expansionName}) — zoneId omitted`);
+  return partial[0]?.id;
 }
 
 const now = Date.now();
@@ -178,6 +187,9 @@ async function main() {
   let run: number[] = [];
   const flushRun = () => {
     if (run.length === 13) {
+      console.log(
+        `Detected tier ${nextTier}: item-set ids ${run[0]}–${run[12]} — sanity-check the set names in the diff`
+      );
       tierRanges.push({ from: run[0]!, to: run[12]!, tier: nextTier++ });
     } else if (run.length > 4) {
       warnings.push(
