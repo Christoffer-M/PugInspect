@@ -10,12 +10,9 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { Gear } from "../../graphql/graphql";
 import { getTierNumber } from "../../data/tierSets";
+import { MAX_LEVEL } from "../../generated/seasonConfig";
 import { GearItemTile } from "./GearItemTile";
 import classes from "./GearSection.module.css";
-
-// SEASON-CONFIG: current max level (Midnight era). Leveling characters get
-// no enchant/gem warnings — incomplete gear is expected while leveling.
-const MAX_LEVEL = 90;
 
 // Distinct hue per tier so mixed loadouts (e.g. 2pc T35 + 2pc T36) read at a
 // glance. Keyed by tier number, so a tier keeps its color on every character

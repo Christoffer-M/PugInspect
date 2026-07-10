@@ -31,22 +31,21 @@ Notes:
 
 ## New expansion (additionally, hand-maintained)
 
-Find every hand-maintained spot with:
+All hand-maintained seasonal inputs live in one file:
+`scripts/season-config.mts` (the script logic itself stays in
+`scripts/update-season-config.mts`). At an expansion boundary update there,
+then re-run `pnpm season:update`:
 
-```sh
-grep -rn "SEASON-CONFIG" apps/ scripts/
-```
-
-- `scripts/update-season-config.mts` — `EXPANSIONS`: shift the current
-  expansion to "previous" and add the new one (Raider.IO expansion id + name).
-- `apps/backend/src/schema/mappers/gear.mapper.ts` — `ENCHANTABLE_SLOTS`:
-  which slots take a permanent enchant this era (Midnight removed cloak/bracer,
-  added helm/shoulder — this changes per expansion). Verify empirically: query
-  a well-geared character's gear via GraphQL and check which slots top players
-  enchant; the enchant display strings name the slot ("Enchant Helm - …").
-  Update the mapper tests alongside.
-- `apps/frontend/src/components/gear/GearSection.tsx` — `MAX_LEVEL` (gates
-  gear-check warnings for leveling characters)
+- `EXPANSIONS` — shift the current expansion to "previous" and add the new
+  one (Raider.IO expansion id + name).
+- `MAX_LEVEL` — the new level cap (gates gear-check warnings for leveling
+  characters).
+- `ENCHANTABLE_SLOTS` — which slots take a permanent enchant this era
+  (Midnight removed cloak/bracer, added helm/shoulder — this changes per
+  expansion). Verify empirically: query a well-geared character's gear via
+  GraphQL and check which slots top players enchant; the enchant display
+  strings name the slot ("Enchant Helm - …"). Update the gear.mapper tests
+  alongside.
 
 ## Verifying
 

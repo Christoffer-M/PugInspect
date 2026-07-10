@@ -8,3 +8,15 @@ export const DEFAULT_RAID = "tier-mn-1";
 // Raider.IO character-profile `raid_progression` field value: keyword scopes
 // for current/previous expansion plus explicit slugs for older raids.
 export const RAID_PROGRESSION_FIELD = "current-expansion:previous-expansion:awakened-amirdrassil-the-dreams-hope:awakened-aberrus-the-shadowed-crucible:awakened-vault-of-the-incarnates:amirdrassil-the-dreams-hope:aberrus-the-shadowed-crucible:vault-of-the-incarnates";
+
+// Slots expected to carry a permanent enchant this era.
+export const ENCHANTABLE_SLOTS = [
+  "HEAD",
+  "SHOULDER",
+  "CHEST",
+  "LEGS",
+  "FEET",
+  "FINGER_1",
+  "FINGER_2",
+  "MAIN_HAND"
+];

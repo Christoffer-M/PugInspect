@@ -6,41 +6,24 @@
  *   - Blizzard item-set index → new tier-set id blocks (contiguous runs of 13)
  *
  * Run with `pnpm season:update` (needs apps/backend/.env for WCL + Blizzard
- * credentials), then review the diff. See docs/SEASONAL_UPDATES.md.
+ * credentials), then review the diff. Hand-maintained inputs live in
+ * scripts/season-config.mts. See docs/SEASONAL_UPDATES.md.
  */
 import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  EXPANSIONS,
+  MAX_LEVEL,
+  ENCHANTABLE_SLOTS,
+  RAID_DISPLAY_OVERRIDES,
+  TIER_SEED,
+} from "./season-config.mts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 try {
   process.loadEnvFile(resolve(root, "apps/backend/.env"));
 } catch {}
-
-// ---------------------------------------------------------------------------
-// SEASON-CONFIG: the only hand-maintained inputs. Bump EXPANSIONS at an
-// expansion boundary (first entry = current, drives M+ seasons and defaults).
-// ---------------------------------------------------------------------------
-const EXPANSIONS = [
-  { rioId: 11, name: "Midnight" }, // current
-  { rioId: 10, name: "The War Within" }, // previous — raids still shown in profiles
-  { rioId: 9, name: "Dragonflight" }, // previous — raids still shown in profiles
-];
-
-// Prettier display names than Raider.IO's, for multi-raid tiers.
-const RAID_DISPLAY_OVERRIDES: Record<string, string> = {
-  "tier-mn-1": "The Voidspire, The Dreamrift, March on Quel'Danas",
-};
-
-// Known tier-set id blocks. New contiguous runs of exactly 13 item-set ids
-// above the newest block are detected automatically and numbered +1 each.
-const TIER_SEED = [
-  { from: 1978, to: 1990, tier: 35 }, // Midnight S1 — Voidspire / Dreamrift
-  { from: 1919, to: 1931, tier: 34 }, // TWW S3 — Manaforge Omega
-  { from: 1867, to: 1879, tier: 33 }, // TWW S2 — Liberation of Undermine
-];
-
-// ---------------------------------------------------------------------------
 
 const warnings: string[] = [];
 const norm = (s: string) =>
@@ -248,6 +231,8 @@ export const DEFAULT_RAID = ${stringify(defaultRaid)};
 export const TIER_SET_RANGES: { from: number; to: number; tier: number }[] = ${stringify(tierRanges)};
 
 export const CURRENT_DUNGEONS: Dungeon[] = ${stringify(dungeons)};
+
+export const MAX_LEVEL = ${MAX_LEVEL};
 `;
 
   const backend = `${header}
@@ -256,6 +241,9 @@ export const DEFAULT_RAID = ${stringify(defaultRaid)};
 // Raider.IO character-profile \`raid_progression\` field value: keyword scopes
 // for current/previous expansion plus explicit slugs for older raids.
 export const RAID_PROGRESSION_FIELD = ${stringify(raidProgressionField)};
+
+// Slots expected to carry a permanent enchant this era.
+export const ENCHANTABLE_SLOTS = ${stringify(ENCHANTABLE_SLOTS)};
 `;
 
   const frontendPath = resolve(root, "apps/frontend/src/generated/seasonConfig.ts");
@@ -270,7 +258,7 @@ export const RAID_PROGRESSION_FIELD = ${stringify(raidProgressionField)};
   );
   for (const w of warnings) console.warn(`WARNING: ${w}`);
   console.log(
-    "\nReview with `git diff`. At an expansion boundary also update EXPANSIONS in this script,\nENCHANTABLE_SLOTS (apps/backend/src/schema/mappers/gear.mapper.ts) and MAX_LEVEL\n(apps/frontend/src/components/gear/GearSection.tsx)."
+    "\nReview with `git diff`. At an expansion boundary also update EXPANSIONS,\nMAX_LEVEL and ENCHANTABLE_SLOTS in scripts/season-config.mts."
   );
 }
 

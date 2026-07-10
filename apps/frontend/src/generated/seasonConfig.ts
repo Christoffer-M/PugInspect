@@ -198,3 +198,5 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
     "background_image_url": "https://cdn.raiderio.net/images/dungeons/expansion11/base/windrunner-spire.jpg"
   }
 ];
+
+export const MAX_LEVEL = 90;
