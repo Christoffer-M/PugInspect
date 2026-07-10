@@ -37,7 +37,7 @@ const Home: React.FC = () => {
           <CharacterSearchInput />
 
           <Text className={classes.hint} m={0}>
-            Start by typing a character name above, or paste a Raider.IO profile URL.
+            Start by typing a character name above, or paste a Raider.IO or PugInspect link — anywhere on this page.
           </Text>
 
           {recentChars.length > 0 && (

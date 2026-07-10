@@ -106,7 +106,7 @@ const CharacterSearchInput: React.FC = () => {
       <Autocomplete
         error={errorText}
         limit={10}
-        placeholder="Ceases-Kazzak"
+        placeholder="Ceases-Kazzak or paste a link"
         data={searchResults?.map((r) => ({
           value: `${r.name}-${r.realm}`,
           label: `${r.name}-${r.realm}`,
