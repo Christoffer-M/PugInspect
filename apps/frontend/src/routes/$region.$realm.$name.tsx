@@ -191,6 +191,7 @@ function CharacterPage() {
         raid: raid ?? undefined,
         partition: undefined,
       }),
+      resetScroll: false,
     });
   };
 
@@ -257,6 +258,7 @@ function CharacterPage() {
                       partition: undefined,
                       ...(view === "mythicplus" && { difficulty: undefined, bracket: undefined }),
                     }),
+                    resetScroll: false,
                   });
                 }}
               />

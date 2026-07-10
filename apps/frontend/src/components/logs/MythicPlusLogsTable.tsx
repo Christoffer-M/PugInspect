@@ -144,6 +144,7 @@ export function MythicPlusLogsTable({
         mpSeason:
           partial.mpSeason ?? prev.mpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON,
       }),
+      resetScroll: false,
     });
   };
 

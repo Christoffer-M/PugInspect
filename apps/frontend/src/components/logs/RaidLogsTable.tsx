@@ -122,6 +122,7 @@ export function RaidLogsTable({ logs, isFetching, class: className, zoneId }: Ra
         raid: partial.raid ?? prev.raid ?? undefined,
         partition: hasPartitionUpdate ? partial.partition : (prev.partition ?? undefined),
       }),
+      resetScroll: false,
     });
   };
 
