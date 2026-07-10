@@ -194,7 +194,8 @@ const Stats: React.FC = () => {
                   <div
                     className={classes.chartBar}
                     style={{
-                      height: d.count > 0 ? `${28 + (d.count / maxDay) * 72}%` : "2px",
+                      // 130px max leaves headroom for the labels sharing the 180px column
+                      height: d.count > 0 ? `${Math.max(4, (d.count / maxDay) * 130)}px` : "2px",
                       opacity: 0.55 + (d.count / maxDay) * 0.45,
                     }}
                   />
