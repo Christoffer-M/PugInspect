@@ -1,0 +1,71 @@
+name: Season config update
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # daily; no-op unless API data changed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # No pnpm install — the script only uses node built-ins and fetch.
+      - name: Regenerate season config
+        id: gen
+        env:
+          WARCRAFTLOGS_CLIENT_ID: ${{ secrets.WARCRAFTLOGS_CLIENT_ID }}
+          WARCRAFTLOGS_CLIENT_SECRET: ${{ secrets.WARCRAFTLOGS_CLIENT_SECRET }}
+          BLIZZARD_CLIENT_ID: ${{ secrets.BLIZZARD_CLIENT_ID }}
+          BLIZZARD_CLIENT_SECRET: ${{ secrets.BLIZZARD_CLIENT_SECRET }}
+        run: |
+          set -o pipefail
+          node scripts/update-season-config.mts 2>&1 | tee "$RUNNER_TEMP/season-update.log"
+          {
+            echo 'log<<LOG_EOF'
+            cat "$RUNNER_TEMP/season-update.log"
+            echo 'LOG_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        id: pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/season-config-update
+          commit-message: "chore: regenerate season config from live APIs"
+          title: "chore: season config update"
+          delete-branch: true
+          body: |
+            Automated `pnpm season:update` run detected new API data.
+
+            Review the diff (zone matches, tier ranges, display names). At an
+            expansion boundary also update `scripts/season-config.mts` by hand
+            and re-run — see docs/SEASONAL_UPDATES.md.
+
+            <details><summary>Script output (includes warnings)</summary>
+
+            ```
+            ${{ steps.gen.outputs.log }}
+            ```
+
+            </details>
+
+      - name: Notify Discord
+        if: steps.pr.outputs.pull-request-operation == 'created'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -fsS -X POST -H 'Content-Type: application/json' \
+            -d '{"content": "🗓️ Season config changed — PR ready for review: ${{ steps.pr.outputs.pull-request-url }}"}' \
+            "$DISCORD_WEBHOOK_URL"
