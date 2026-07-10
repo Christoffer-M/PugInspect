@@ -123,7 +123,7 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
     "slug": "algethar-academy",
     "name": "Algeth'ar Academy",
     "short_name": "AA",
-    "keystone_timer_seconds": 1820,
+    "keystone_timer_seconds": 1860,
     "icon_url": "https://cdn.raiderio.net/images/wow/icons/large/achievement_dungeon_dragonacademy.jpg",
     "background_image_url": "https://cdn.raiderio.net/images/dungeons/expansion9/base/algethar-academy.jpg"
   },
@@ -133,7 +133,7 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
     "slug": "magisters-terrace",
     "name": "Magisters' Terrace",
     "short_name": "MT",
-    "keystone_timer_seconds": 2000,
+    "keystone_timer_seconds": 2040,
     "icon_url": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_magistersterrace.jpg",
     "background_image_url": "https://cdn.raiderio.net/images/dungeons/expansion11/base/magisters-terrace.jpg"
   },
@@ -143,7 +143,7 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
     "slug": "maisara-caverns",
     "name": "Maisara Caverns",
     "short_name": "MC",
-    "keystone_timer_seconds": 1680,
+    "keystone_timer_seconds": 1980,
     "icon_url": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_maisarahills.jpg",
     "background_image_url": "https://cdn.raiderio.net/images/dungeons/expansion11/base/maisara-caverns.jpg"
   },
@@ -153,7 +153,7 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
     "slug": "nexuspoint-xenas",
     "name": "Nexus-Point Xenas",
     "short_name": "NPX",
-    "keystone_timer_seconds": 1600,
+    "keystone_timer_seconds": 1800,
     "icon_url": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_voidscararena.jpg",
     "background_image_url": "https://cdn.raiderio.net/images/dungeons/expansion11/base/nexuspoint-xenas.jpg"
   },
