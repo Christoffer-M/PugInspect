@@ -26,7 +26,13 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
 }) => {
   const raidOptions = useMemo(() => {
     const groups: Record<string, { value: string; label: string }[]> = {};
-    for (const raid of raidData) {
+    // The API returns raids in arbitrary key order — sort by their position
+    // in the generated RAIDS map (release order, newest first).
+    const order = Object.keys(RAIDS);
+    const sorted = [...raidData].sort(
+      (a, b) => order.indexOf(a.raid) - order.indexOf(b.raid),
+    );
+    for (const raid of sorted) {
       if (!(raid.raid in RAIDS)) continue;
       const group =
         raid.expansion_id != null

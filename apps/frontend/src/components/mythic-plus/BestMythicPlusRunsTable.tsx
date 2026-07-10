@@ -2,7 +2,7 @@ import { Paper, Stack, Table, Title } from "@mantine/core";
 import { MythicPlusRun } from "../../graphql/graphql";
 import RunTableRow from "./components/RunTableRow/RunTableRow";
 import RunTableHeader from "./components/RunTableHeader";
-import { CURRENT_DUNGEONS } from "../../data/dungeons/dungeons_mid_s1";
+import { CURRENT_DUNGEONS } from "../../generated/seasonConfig";
 
 type MythicPlusRunsTableProps = {
   characterRuns: MythicPlusRun[];

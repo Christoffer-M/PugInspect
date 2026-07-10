@@ -1,4 +1,5 @@
 import { config } from "../../../config/index.js";
+import { RAID_PROGRESSION_FIELD } from "../../../generated/seasonConfig.js";
 import { fetcher, FetchError } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
 import { normalizeRealm, normalizeName } from "../../utils/helpers.js";
@@ -40,7 +41,7 @@ const fields: CharacterField[] = [
   { key: CharacterFieldKey.MythicPlusScoresBySeason, value: "current:previous" },
   { key: CharacterFieldKey.MythicPlusBestRuns },
   { key: CharacterFieldKey.Gear },
-  { key: CharacterFieldKey.RaidProgression, value: 'current-expansion:previous-expansion' },
+  { key: CharacterFieldKey.RaidProgression, value: RAID_PROGRESSION_FIELD },
   { key: CharacterFieldKey.MythicPlusRecentRuns },
 ];
 
