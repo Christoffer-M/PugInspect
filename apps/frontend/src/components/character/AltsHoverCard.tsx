@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import classes from "./AltsHoverCard.module.css";
-import { upperCaseFirstLetter } from "../../util/util";
+import { normalizeRealm, upperCaseFirstLetter } from "../../util/util";
 import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import { AltCharacter, RoleType } from "../../graphql/graphql";
 
@@ -81,7 +81,7 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
                     to: "/$region/$realm/$name",
                     params: {
                       region: alt.region.toLowerCase(),
-                      realm: alt.realm.toLowerCase(),
+                      realm: normalizeRealm(alt.realm),
                       name: alt.name.toLowerCase(),
                     },
                     search: { roleType: RoleType.Any },

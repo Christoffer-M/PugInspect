@@ -4,7 +4,7 @@ import { IconSearch } from "@tabler/icons-react";
 import CharacterSearchInput from "../components/search/CharacterSearchInput";
 import { Page } from "../components/layout/Page";
 import { useSearchHistory } from "../hooks/useSearchHistory";
-import { getClassColor, upperCaseFirstLetter } from "../util/util";
+import { getClassColor, normalizeRealm, upperCaseFirstLetter } from "../util/util";
 import classes from "./index.module.css";
 
 const Home: React.FC = () => {
@@ -46,7 +46,7 @@ const Home: React.FC = () => {
                 <UnstyledButton
                   key={char.label}
                   className={classes.chip}
-                  onClick={() => navigate({ to: `/${char.region}/${char.realm}/${char.name}` })}
+                  onClick={() => navigate({ to: `/${char.region}/${normalizeRealm(char.realm)}/${char.name}` })}
                 >
                   <Box component="span" className={classes.chipDot} style={{ background: char.color }} />
                   {char.label}

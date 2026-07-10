@@ -177,7 +177,8 @@ function CharacterPage() {
     if (!characterInfo) return;
     addToHistory({
       name,
-      realm,
+      // display name from the API ("Aggra (Português)"), not the URL slug — nav sites re-normalize
+      realm: characterInfo.realm || realm,
       region,
       class: characterInfo.class ?? undefined,
     });

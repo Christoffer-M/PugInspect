@@ -9,13 +9,16 @@ export function sanitizeMetric(value: unknown): Metric | null {
     : null;
 }
 
-/** Canonical WoW realm slug: lowercase, apostrophes removed, spaces → dashes. Dashes are preserved. */
+/** Canonical WoW realm slug: lowercase, apostrophes/parens removed, spaces → dashes, dashes collapsed.
+ * Diacritics are preserved — "Aggra (Português)" → "aggra-português", the slug form Blizzard,
+ * RaiderIO, and WarcraftLogs all accept (RaiderIO rejects the ASCII-folded "aggra-portugues"). */
 export function normalizeRealm(realm: string): string {
   return realm
     .trim()
     .toLowerCase()
-    .replace(/[''`]/g, "")
-    .replace(/\s+/g, "-");
+    .replace(/[''`()]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 }
 
 /** Canonical character name: lowercase, trimmed. */

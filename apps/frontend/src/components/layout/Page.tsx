@@ -5,7 +5,7 @@ import Footer from "./Footer";
 import classes from "./Page.module.css";
 import { useRef } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { parseCharacterUrl } from "../../util/util";
+import { normalizeRealm, parseCharacterUrl } from "../../util/util";
 import { notifications } from "@mantine/notifications";
 import { annoyedMessages } from "../../data/annoyedMessagegs";
 
@@ -28,7 +28,7 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         const { region, realm, name } = characterUrl;
 
         const normalizedRegion = region.toLowerCase();
-        const normalizedRealm = realm.toLowerCase();
+        const normalizedRealm = normalizeRealm(realm);
         const normalizedName = name.toLowerCase();
 
         if (

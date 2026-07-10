@@ -8,7 +8,11 @@ import {
 import { useDebouncedValue } from "@mantine/hooks";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { parseCharacterUrl, upperCaseFirstLetter } from "../../util/util";
+import {
+  normalizeRealm,
+  parseCharacterUrl,
+  upperCaseFirstLetter,
+} from "../../util/util";
 import { useCharacterSearchQuery } from "../../queries/character-search";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
@@ -76,7 +80,7 @@ const CharacterSearchInput: React.FC = () => {
     if (name && realm) {
       router
         .navigate({
-          to: `/${region.toLowerCase()}/${realm.toLowerCase()}/${name.toLowerCase()}`,
+          to: `/${region.toLowerCase()}/${normalizeRealm(realm)}/${name.toLowerCase()}`,
         })
         .then(() => setSearchTerm(""));
     } else {

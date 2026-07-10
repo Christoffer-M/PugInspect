@@ -19,6 +19,12 @@ describe("normalizeRealm", () => {
   it("collapses repeated dashes", () => {
     expect(normalizeRealm("Area 52 - PVP")).toBe("area-52-pvp");
   });
+
+  it("strips parentheses and keeps diacritics", () => {
+    expect(normalizeRealm("Aggra (Português)")).toBe("aggra-português");
+    expect(normalizeRealm("aggra-(português)")).toBe("aggra-português");
+    expect(normalizeRealm("Pozzo dell'Eternità")).toBe("pozzo-delleternità");
+  });
 });
 
 describe("upperCaseFirstLetter", () => {

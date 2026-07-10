@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
-import { getClassColor, timeAgo } from "../../../util/util";
+import { getClassColor, normalizeRealm, timeAgo } from "../../../util/util";
 import { HistoryEntry, useSearchHistory } from "../../../hooks/useSearchHistory";
 import { RoleType } from "../../../graphql/graphql";
 import classes from "./SearchHistoryDrawer.module.css";
@@ -86,7 +86,7 @@ export function SearchHistoryDrawer({ opened, onClose }: Props) {
       to: "/$region/$realm/$name",
       params: {
         region: entry.region.toLowerCase(),
-        realm: entry.realm.toLowerCase(),
+        realm: normalizeRealm(entry.realm),
         name: entry.name.toLowerCase(),
       },
       search: {

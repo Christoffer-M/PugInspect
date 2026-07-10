@@ -33,6 +33,12 @@ describe("normalizeRealm", () => {
   it("preserves existing dashes", () => {
     expect(normalizeRealm("tarren-mill")).toBe("tarren-mill");
   });
+
+  it("strips parentheses and keeps diacritics", () => {
+    expect(normalizeRealm("Aggra (Português)")).toBe("aggra-português");
+    expect(normalizeRealm("aggra-(português)")).toBe("aggra-português");
+    expect(normalizeRealm("Pozzo dell'Eternità")).toBe("pozzo-delleternità");
+  });
 });
 
 describe("normalizeName", () => {

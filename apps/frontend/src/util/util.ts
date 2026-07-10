@@ -1,9 +1,12 @@
+/** Canonical WoW realm slug: lowercase, apostrophes/parens removed, spaces → dashes.
+ * Diacritics are preserved — "Aggra (Português)" → "aggra-português", the slug form
+ * Blizzard, RaiderIO, and WarcraftLogs all accept. Mirrors backend normalizeRealm. */
 export const normalizeRealm = (realm: string) =>
   realm
     .trim()
     .toLowerCase()
+    .replace(/[''`()]/g, "")
     .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
     .replace(/-+/g, "-");
 
 export const upperCaseFirstLetter = (str: string) => {

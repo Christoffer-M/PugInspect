@@ -1,4 +1,5 @@
 import { useLocalStorage } from "@mantine/hooks";
+import { normalizeRealm } from "../util/util";
 
 const STORAGE_KEY = "searchHistory";
 const MAX_ENTRIES = 20;
@@ -17,7 +18,8 @@ function isSameCharacter(
 ) {
   return (
     a.name.toLowerCase() === b.name.toLowerCase() &&
-    a.realm.toLowerCase() === b.realm.toLowerCase() &&
+    // entries may hold display names ("Aggra (Português)") or URL slugs — compare canonically
+    normalizeRealm(a.realm) === normalizeRealm(b.realm) &&
     a.region.toLowerCase() === b.region.toLowerCase()
   );
 }

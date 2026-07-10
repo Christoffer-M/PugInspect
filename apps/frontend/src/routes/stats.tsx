@@ -18,7 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
 import { useSiteStats } from "../queries/site-stats";
-import { fillDays, getClassColor, timeAgo, upperCaseFirstLetter } from "../util/util";
+import { fillDays, getClassColor, normalizeRealm, timeAgo, upperCaseFirstLetter } from "../util/util";
 import classes from "./stats.module.css";
 
 const REGION_LABELS: Record<string, string> = {
@@ -83,7 +83,7 @@ const CardTitle: React.FC<{ title: string; right?: string }> = ({ title, right }
 const CharacterLink: React.FC<{ name: string; realm: string; region: string; class?: string | null }> = (c) => (
   <Text
     component={Link}
-    to={`/${c.region.toLowerCase()}/${c.realm.toLowerCase()}/${c.name.toLowerCase()}`}
+    to={`/${c.region.toLowerCase()}/${normalizeRealm(c.realm)}/${c.name.toLowerCase()}`}
     fw={600}
     fz={14.5}
     m={0}
