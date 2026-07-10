@@ -133,7 +133,7 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
     "slug": "magisters-terrace",
     "name": "Magisters' Terrace",
     "short_name": "MT",
-    "keystone_timer_seconds": 2040,
+    "keystone_timer_seconds": 2035,
     "icon_url": "https://cdn.raiderio.net/images/wow/icons/large/inv_achievement_dungeon_magistersterrace.jpg",
     "background_image_url": "https://cdn.raiderio.net/images/dungeons/expansion11/base/magisters-terrace.jpg"
   },
