@@ -76,7 +76,12 @@ export const Route = createFileRoute("/$region/$realm/$name")({
       logsView: (search.logsView === "mythicplus" ? "mythicplus"
         : search.logsView === "raid" ? "raid"
         : (localStorage.getItem("logsView") as LogsView | null) ?? "raid") as LogsView,
-      mpSeason: (search.mpSeason as string | undefined) ?? DEFAULT_MYTHIC_PLUS_SEASON,
+      // Unknown slugs (e.g. bookmarks from a past season) fall back to the
+      // default instead of rendering an empty season Select.
+      mpSeason:
+        typeof search.mpSeason === "string" && search.mpSeason in MYTHIC_PLUS_SEASONS
+          ? search.mpSeason
+          : DEFAULT_MYTHIC_PLUS_SEASON,
     };
   },
 });

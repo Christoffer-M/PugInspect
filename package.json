@@ -11,7 +11,8 @@
     "test:e2e": "playwright test -c e2e",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "codegen": "turbo run codegen"
+    "codegen": "turbo run codegen",
+    "season:update": "node scripts/update-season-config.mts"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -21,7 +22,7 @@
   },
   "packageManager": "pnpm@10.18.3",
   "engines": {
-    "node": ">=18"
+    "node": ">=23"
   },
   "pnpm": {
     "overrides": {

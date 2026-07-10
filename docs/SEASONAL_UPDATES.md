@@ -1,47 +1,51 @@
 # Seasonal / Expansion Update Checklist
 
-Game knowledge that no API exposes is hardcoded behind a greppable tag. To find
-**every** spot that may need updating when a new season, raid tier, or expansion
-launches:
+## New season or raid tier
 
 ```sh
-grep -rn "SEASON-CONFIG" apps/
+pnpm season:update
 ```
 
-That grep is the source of truth — this document just explains the workflow.
-If you add a new season-dependent constant anywhere, tag its comment with
-`SEASON-CONFIG:` so the grep keeps finding everything.
+That's it — the script (`scripts/update-season-config.mts`) regenerates
 
-## New M+ season
-
-- `apps/frontend/src/data/mythicPlusSeasons.ts` — add the season slug + WCL zone
-  ID, bump `DEFAULT_MYTHIC_PLUS_SEASON`
-- `apps/frontend/src/data/dungeons/` — add `dungeons_<season>.ts` with the new
-  dungeon pool and point the `CURRENT_DUNGEONS` re-export at it
-
-## New raid tier
-
-- `apps/frontend/src/data/raidZones.ts` — add the Raider.IO slug + WCL zone ID,
-  bump `DEFAULT_RAID`
-- `apps/backend/src/seo/characterCard.ts` — keep `DEFAULT_RAID` in sync (drives
+- `apps/frontend/src/generated/seasonConfig.ts` — M+ seasons + default,
+  dungeon pool, raids + `DEFAULT_RAID`, tier-set id ranges
+- `apps/backend/src/generated/seasonConfig.ts` — `DEFAULT_RAID` (drives
   the Discord og:image card)
-- `apps/frontend/src/data/tierSets.ts` — add the new tier's item-set id range
-  (`TIER_SET_RANGES`). Each season's 13 class sets get a contiguous id block;
-  find it via
-  `GET https://eu.api.blizzard.com/data/wow/item-set/index?namespace=static-eu`
-  (client-credentials token) and look for the new block of 13 class-themed
-  names above the previous tier's range.
 
-## New expansion (additionally)
+from Raider.IO static-data (seasons, dungeons, raids), WarcraftLogs zones
+(zone IDs, matched by name) and the Blizzard item-set index (new contiguous
+blocks of 13 class sets become the next tier number). It needs
+`apps/backend/.env` for the WCL and Blizzard credentials.
 
-- `apps/backend/src/schema/mappers/gear.mapper.ts` — `ENCHANTABLE_SLOTS`:
-  which slots take a permanent enchant this era (Midnight removed cloak/bracer,
-  added helm/shoulder — this changes per expansion). Verify empirically: query
-  a well-geared character's gear via GraphQL and check which slots top players
-  enchant; the enchant display strings name the slot ("Enchant Helm - …").
-  Update the mapper tests alongside.
-- `apps/frontend/src/components/gear/GearSection.tsx` — `MAX_LEVEL` (gates
-  gear-check warnings for leveling characters)
+Then **review the diff** — the script warns when it can't match a WCL zone or
+when an item-set block doesn't look like a tier — and run `pnpm test` in
+`apps/backend`.
+
+Notes:
+
+- `DEFAULT_RAID` = newest current-expansion raid with ≥3 encounters
+  (single-boss event raids like Sporefall don't count as a tier).
+- Multi-raid tiers get terse API names; add a pretty one to
+  `RAID_DISPLAY_OVERRIDES` in the script if needed.
+
+## New expansion (additionally, hand-maintained)
+
+All hand-maintained seasonal inputs live in one file:
+`scripts/season-config.mts` (the script logic itself stays in
+`scripts/update-season-config.mts`). At an expansion boundary update there,
+then re-run `pnpm season:update`:
+
+- `EXPANSIONS` — shift the current expansion to "previous" and add the new
+  one (Raider.IO expansion id + name).
+- `MAX_LEVEL` — the new level cap (gates gear-check warnings for leveling
+  characters).
+- `ENCHANTABLE_SLOTS` — which slots take a permanent enchant this era
+  (Midnight removed cloak/bracer, added helm/shoulder — this changes per
+  expansion). Verify empirically: query a well-geared character's gear via
+  GraphQL and check which slots top players enchant; the enchant display
+  strings name the slot ("Enchant Helm - …"). Update the gear.mapper tests
+  alongside.
 
 ## Verifying
 

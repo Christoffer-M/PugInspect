@@ -1,9 +1,6 @@
 import type { BlizzardCharacterEquipment, BlizzardEquippedItem } from "../services/blizzard/model/CharacterEquipment.js";
 import type { Gear, GearItem, TierSetSummary } from "@repo/graphql-types";
-
-// ---------------------------------------------------------------------------
-// Per-season config — update at season/expansion boundaries.
-// ---------------------------------------------------------------------------
+import { ENCHANTABLE_SLOTS } from "../../generated/seasonConfig.js";
 
 // Canonical display order; doubles as the allowlist — anything not listed
 // (SHIRT, TABARD, profession tool/accessory slots) is dropped.
@@ -13,16 +10,10 @@ const SLOT_ORDER = [
   "MAIN_HAND", "OFF_HAND",
 ];
 
-// SEASON-CONFIG: enchantable slots — verify against a well-geared character
-// each season (see docs/SEASONAL_UPDATES.md).
-// Slots expected to carry a PERMANENT enchant this season (Midnight era:
-// helm/shoulder enchants returned, cloak/bracer enchants removed; legs are
-// covered by profession armor kits which the API reports as enchantments).
+// Hand-maintained in scripts/season-config.mts.
 // OFF_HAND is special-cased below — only enchantable when the equipped item
 // is a weapon (no shield/held-in-off-hand enchants).
-const ENCHANTABLE_SLOTS = new Set([
-  "HEAD", "SHOULDER", "CHEST", "LEGS", "FEET", "FINGER_1", "FINGER_2", "MAIN_HAND",
-]);
+const enchantableSlots = new Set(ENCHANTABLE_SLOTS);
 
 // Blizzard embeds in-game UI atlas tags in display strings (e.g. the crafting
 // quality icon "|A:Professions-ChatIcon-Quality-12-Tier2:20:20|a") — strip for web.
@@ -41,7 +32,7 @@ function findPermanentEnchant(item: BlizzardEquippedItem) {
 
 function isEnchantable(item: BlizzardEquippedItem): boolean {
   return (
-    ENCHANTABLE_SLOTS.has(item.slot.type) ||
+    enchantableSlots.has(item.slot.type) ||
     (item.slot.type === "OFF_HAND" && item.item_class?.name === "Weapon")
   );
 }
