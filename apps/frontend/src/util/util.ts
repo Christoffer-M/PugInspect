@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 export const normalizeRealm = (realm: string) =>
   realm
     .trim()
@@ -78,23 +76,8 @@ export function getQualityColor(quality?: string | null): string {
   return WOW_QUALITY_COLORS[quality.toUpperCase()] ?? "#8a96aa";
 }
 
-export function useDebounce<T>(value: T, delay: number = 500): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-export function timeAgo(iso: string): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+export function timeAgo(time: string | number): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(time).getTime()) / 1000));
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;

@@ -4,14 +4,14 @@ import { IconSearch } from "@tabler/icons-react";
 import CharacterSearchInput from "../components/search/CharacterSearchInput";
 import { Page } from "../components/layout/Page";
 import { useSearchHistory } from "../hooks/useSearchHistory";
-import { getClassColor } from "../util/util";
+import { getClassColor, upperCaseFirstLetter } from "../util/util";
 import classes from "./index.module.css";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { history } = useSearchHistory();
   const recentChars = history.slice(0, 3).map((e) => ({
-    label: `${e.name.charAt(0).toUpperCase() + e.name.slice(1)}-${e.realm.charAt(0).toUpperCase() + e.realm.slice(1)}`,
+    label: `${upperCaseFirstLetter(e.name)}-${upperCaseFirstLetter(e.realm)}`,
     region: e.region,
     realm: e.realm,
     name: e.name,

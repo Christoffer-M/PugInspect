@@ -5,13 +5,10 @@ import {
   Select,
   useMantineTheme,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  parseCharacterUrl,
-  upperCaseFirstLetter,
-  useDebounce,
-} from "../../util/util";
+import { parseCharacterUrl, upperCaseFirstLetter } from "../../util/util";
 import { useCharacterSearchQuery } from "../../queries/character-search";
 
 export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
@@ -32,7 +29,7 @@ const CharacterSearchInput: React.FC = () => {
     initialRegion?.toUpperCase() || localStorage.getItem("region") || "EU",
   );
 
-  const debouncedSearch = useDebounce(searchTerm, 300);
+  const [debouncedSearch] = useDebouncedValue(searchTerm, 300);
 
   const [errorText, setErrorText] = useState("");
   const router = useRouter();

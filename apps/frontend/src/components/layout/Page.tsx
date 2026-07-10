@@ -1,8 +1,9 @@
 import { AppShell, Typography } from "@mantine/core";
+import { useWindowEvent } from "@mantine/hooks";
 import Header from "./Header";
 import Footer from "./Footer";
 import classes from "./Page.module.css";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { parseCharacterUrl } from "../../util/util";
 import { notifications } from "@mantine/notifications";
@@ -16,66 +17,57 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   });
 
   const pasteCounter = useRef(0);
-  const paramsRef = useRef(params);
 
-  useEffect(() => {
-    paramsRef.current = params;
-  }, [params]);
+  useWindowEvent("paste", (event: ClipboardEvent) => {
+    const pastedText = event.clipboardData?.getData("text");
 
-  useEffect(() => {
-    const handlePaste = (event: ClipboardEvent) => {
-      const pastedText = event.clipboardData?.getData("text");
+    if (pastedText) {
+      const characterUrl = parseCharacterUrl(pastedText);
+      if (characterUrl) {
+        event.preventDefault();
+        const { region, realm, name } = characterUrl;
 
-      if (pastedText) {
-        const characterUrl = parseCharacterUrl(pastedText);
-        if (characterUrl) {
-          event.preventDefault();
-          const { region, realm, name } = characterUrl;
+        const normalizedRegion = region.toLowerCase();
+        const normalizedRealm = realm.toLowerCase();
+        const normalizedName = name.toLowerCase();
 
-          const normalizedRegion = region.toLowerCase();
-          const normalizedRealm = realm.toLowerCase();
-          const normalizedName = name.toLowerCase();
-
-          if (
-            paramsRef.current?.region === normalizedRegion &&
-            paramsRef.current?.realm === normalizedRealm &&
-            paramsRef.current?.name === normalizedName
-          ) {
-            pasteCounter.current += 1;
-            const messageIndex = Math.min(
-              pasteCounter.current - 1,
-              annoyedMessages.length - 1,
-            );
-            if (pasteCounter.current > annoyedMessages.length) {
-              navigate({
-                href: "https://youtu.be/dQw4w9WgXcQ?si=ybyZ4Xqe06YwJuHG",
-              }).finally(() => {
-                pasteCounter.current = 0;
-              });
-
-              return;
-            }
-            notifications.show({
-              title: "Already on this character",
-              message: annoyedMessages[messageIndex],
-              color: "yellow",
-              autoClose: 2500,
+        if (
+          params?.region === normalizedRegion &&
+          params?.realm === normalizedRealm &&
+          params?.name === normalizedName
+        ) {
+          pasteCounter.current += 1;
+          const messageIndex = Math.min(
+            pasteCounter.current - 1,
+            annoyedMessages.length - 1,
+          );
+          if (pasteCounter.current > annoyedMessages.length) {
+            navigate({
+              href: "https://youtu.be/dQw4w9WgXcQ?si=ybyZ4Xqe06YwJuHG",
+            }).finally(() => {
+              pasteCounter.current = 0;
             });
 
             return;
           }
-
-          pasteCounter.current = 0;
-
-          navigate({
-            to: `/${normalizedRegion}/${normalizedRealm}/${normalizedName}`,
+          notifications.show({
+            title: "Already on this character",
+            message: annoyedMessages[messageIndex],
+            color: "yellow",
+            autoClose: 2500,
           });
+
+          return;
         }
+
+        pasteCounter.current = 0;
+
+        navigate({
+          to: `/${normalizedRegion}/${normalizedRealm}/${normalizedName}`,
+        });
       }
-    };
-    window.addEventListener("paste", handlePaste);
-    return () => window.removeEventListener("paste", handlePaste);
-  }, []);
+    }
+  });
 
   return (
     <>

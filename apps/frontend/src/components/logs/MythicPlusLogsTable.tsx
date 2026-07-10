@@ -30,9 +30,14 @@ const MP_METRICS = [
 
 const DEFAULT_MP_METRIC = Metric.PointsAndDamage;
 
+const compactNumber = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
 function formatThroughput(value: number | null | undefined): string {
-  if (value == null) return "–";
-  return `${(value / 1000).toFixed(1)}k`;
+  // lowercase to keep the existing "1.2k" style over Intl's "1.2K"
+  return value == null ? "–" : compactNumber.format(value).toLowerCase();
 }
 
 type MythicPlusLogsTableProps = {

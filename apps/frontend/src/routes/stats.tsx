@@ -18,7 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
 import { useSiteStats } from "../queries/site-stats";
-import { fillDays, getClassColor, timeAgo } from "../util/util";
+import { fillDays, getClassColor, timeAgo, upperCaseFirstLetter } from "../util/util";
 import classes from "./stats.module.css";
 
 const REGION_LABELS: Record<string, string> = {
@@ -37,8 +37,6 @@ const REGION_COLORS: Record<string, string> = {
   cn: "#f472b6",
 };
 const REGION_FALLBACK_COLOR = "#8a96aa";
-
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const HeroCard: React.FC<{
   label: string;
@@ -92,7 +90,7 @@ const CharacterLink: React.FC<{ name: string; realm: string; region: string; cla
     truncate
     style={{ color: getClassColor(c.class) }}
   >
-    {capitalize(c.name)}
+    {upperCaseFirstLetter(c.name)}
   </Text>
 );
 
@@ -249,7 +247,7 @@ const Stats: React.FC = () => {
                 <Box style={{ flex: 1, minWidth: 0 }}>
                   <CharacterLink {...c} />
                   <Text size="xs" m={0} c="dimmed">
-                    {capitalize(c.realm)}
+                    {upperCaseFirstLetter(c.realm)}
                     {c.specialization && c.class ? ` · ${c.specialization} ${c.class}` : ""}
                   </Text>
                 </Box>
@@ -272,7 +270,7 @@ const Stats: React.FC = () => {
                 <Box style={{ flex: 1, minWidth: 0 }}>
                   <CharacterLink {...t} />
                   <Text size="xs" m={0} c="dimmed">
-                    {capitalize(t.realm)} · {t.region.toUpperCase()}
+                    {upperCaseFirstLetter(t.realm)} · {t.region.toUpperCase()}
                   </Text>
                 </Box>
                 <Text size="sm" m={0} fw={600} style={{ flexShrink: 0 }}>

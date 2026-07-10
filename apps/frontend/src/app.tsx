@@ -9,7 +9,6 @@ import { notifications, Notifications } from "@mantine/notifications";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen.ts";
 
-import { SearchHistoryProvider } from "./hooks/useSearchHistory";
 
 import { createTheme, MantineProvider } from "@mantine/core";
 import {
@@ -125,9 +124,7 @@ if (rootElement && !rootElement.innerHTML) {
       <QueryClientProvider client={queryClient}>
         <MantineProvider defaultColorScheme="dark" theme={theme}>
           <Notifications />
-          <SearchHistoryProvider>
-            <RouterProvider router={router} />
-          </SearchHistoryProvider>
+          <RouterProvider router={router} />
         </MantineProvider>
       </QueryClientProvider>
     </StrictMode>,

@@ -11,23 +11,10 @@ import {
 } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
-import { getClassColor } from "../../../util/util";
+import { getClassColor, timeAgo } from "../../../util/util";
 import { HistoryEntry, useSearchHistory } from "../../../hooks/useSearchHistory";
 import { RoleType } from "../../../graphql/graphql";
 import classes from "./SearchHistoryDrawer.module.css";
-
-function formatRelativeTime(timestamp: number): string {
-  const diffMs = Date.now() - timestamp;
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHour < 24) return `${diffHour}h ago`;
-  return `${diffDay}d ago`;
-}
 
 type Props = {
   opened: boolean;
@@ -57,19 +44,19 @@ function HistoryItem({
           <Stack gap={0} className={classes.itemStack}>
             <Group gap="xs" wrap="nowrap">
 
-              <Text size="sm" fw={600} truncate>
-                {entry.name.charAt(0).toUpperCase() + entry.name.slice(1)}
+              <Text size="sm" fw={600} truncate tt="capitalize">
+                {entry.name}
               </Text>
               <Badge size="xs" variant="outline" color="accent" className={classes.itemBadge}>
                 {entry.region.toUpperCase()}
               </Badge>
             </Group>
             <Group gap="xs">
-              <Text size="xs" c="dimmed" truncate>
-                {entry.realm.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              <Text size="xs" c="dimmed" truncate tt="capitalize">
+                {entry.realm}
               </Text>
               <Text size="xs" c="dimmed" className={classes.itemTime}>
-                · {formatRelativeTime(entry.timestamp)}
+                · {timeAgo(entry.timestamp)}
               </Text>
             </Group>
           </Stack>
