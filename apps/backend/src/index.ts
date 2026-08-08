@@ -8,6 +8,7 @@ import express from "express";
 import cors from "cors";
 import { renderCharacterPageHtml } from "./seo/characterMeta.js";
 import { renderCharacterCard } from "./seo/characterCard.js";
+import { renderSitemapXml } from "./seo/sitemap.js";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import type { SelectionSetNode, ValidationRule } from "graphql";
@@ -155,6 +156,16 @@ app.get("/stats.js", async (_, res) => {
   } catch {
     res.status(502).send("// analytics unavailable");
   }
+});
+
+// Sitemap with character pages from the DB — nginx proxies /sitemap.xml here.
+// The renderer caches for an hour, so the rate limit only guards cache misses.
+const sitemapRateLimiter = createRateLimiter(30, 60_000);
+
+app.get("/sitemap.xml", sitemapRateLimiter, async (_, res) => {
+  const xml = await renderSitemapXml();
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.type("application/xml").send(xml);
 });
 
 // Character page meta injection for crawlers/link unfurlers — nginx routes
