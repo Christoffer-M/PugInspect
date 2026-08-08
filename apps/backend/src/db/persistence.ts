@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./index.js";
 import {
   characters,
@@ -703,6 +703,36 @@ export async function getLinkedCharacters(
     }));
   } catch (err) {
     logger.error("DB query failed (getLinkedCharacters)", { characterId, error: String(err) });
+    return [];
+  }
+}
+
+export type SitemapCharacter = {
+  region: string;
+  realm: string;
+  name: string;
+  updatedAt: Date;
+};
+
+/**
+ * All characters for the server-generated sitemap, newest-updated first.
+ * Values are already normalised to lowercase slugs at insert time, so they can
+ * be used directly as URL path segments.
+ */
+export async function getSitemapCharacters(limit: number): Promise<SitemapCharacter[]> {
+  try {
+    return await getDb()
+      .select({
+        region: characters.region,
+        realm: characters.realm,
+        name: characters.name,
+        updatedAt: characters.updatedAt,
+      })
+      .from(characters)
+      .orderBy(desc(characters.updatedAt))
+      .limit(limit);
+  } catch (err) {
+    logger.error("DB query failed (getSitemapCharacters)", { error: String(err) });
     return [];
   }
 }
