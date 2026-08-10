@@ -69,7 +69,11 @@ export const Route = createFileRoute("/$region/$realm/$name")({
       metric: search.metric as Metric | undefined,
       difficulty: search.difficulty as Difficulty | undefined,
       bracket: search.bracket === true || false,
-      raid: search.raid as string | undefined,
+      // Same localStorage fallback as logsView — remember the raid across
+      // character navigations; unknown slugs fall back to the default.
+      raid: [search.raid, localStorage.getItem("raid")].find(
+        (r): r is string => typeof r === "string" && r in RAIDS,
+      ),
       partition: search.partition !== undefined
         ? parsePartition(search.partition) ?? "all"
         : "all",
@@ -185,6 +189,8 @@ function CharacterPage() {
   }, [characterInfo?.class, name, realm, region]);
 
   const handleRaidChange = (raid: string | null) => {
+    if (raid) localStorage.setItem("raid", raid);
+    else localStorage.removeItem("raid");
     navigate({
       search: (prev) => ({
         ...prev,
