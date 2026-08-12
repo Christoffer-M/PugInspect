@@ -62,43 +62,17 @@ jobs:
             </details>
 
       # PineGrove agent API: POST $AI_AGENT_BASE_URL/agents/<slug>/chat with
-      # x-api-key auth and OpenAI-style {"messages": [...]}. Both agents run in
-      # ResponseMode=Json, so the response body is a single JSON object matching
-      # the agent's JsonResponseShape — {verdict, summary} for the review agent,
-      # {diagnosis} for the failure agent. Task instructions live in each
-      # agent's system prompt server-side; the workflow only sends context data.
-      - name: AI review triage
-        if: contains(fromJSON('["created", "updated"]'), steps.pr.outputs.pull-request-operation)
-        continue-on-error: true # PR already exists; triage is best-effort
-        env:
-          GH_TOKEN: ${{ github.token }}
-          AI_AGENT_BASE_URL: ${{ secrets.AI_AGENT_BASE_URL }}
-          AI_AGENT_API_KEY: ${{ secrets.AI_AGENT_API_KEY }}
-          AGENT_SLUG: season-pr-triage # must match the agent slug in PineGrove
-          PR: ${{ steps.pr.outputs.pull-request-number }}
-        run: |
-          set -o pipefail
-          gh pr diff "$PR" > "$RUNNER_TEMP/pr.diff"
-          jq -n --rawfile log "$RUNNER_TEMP/season-update.log" \
-                --rawfile cfg scripts/season-config.mts \
-                --rawfile diff "$RUNNER_TEMP/pr.diff" \
-            '{source: "GitHubActions", messages: [{role: "user", content: ("Triage this automated season-config PR.\n\n--- script output ---\n" + $log + "\n--- hand-maintained config (scripts/season-config.mts) ---\n" + $cfg + "\n--- diff ---\n" + $diff)}]}' \
-            > "$RUNNER_TEMP/req.json"
-          curl -fsS -X POST "$AI_AGENT_BASE_URL/agents/$AGENT_SLUG/chat" \
-            -H "x-api-key: $AI_AGENT_API_KEY" \
-            -H 'Content-Type: application/json' \
-            --data @"$RUNNER_TEMP/req.json" \
-            | jq -r '"VERDICT: " + .verdict + "\n\n" + .summary' > "$RUNNER_TEMP/triage.md"
-          { printf '🤖 **AI triage**\n\n'; cat "$RUNNER_TEMP/triage.md"; } > "$RUNNER_TEMP/comment.md"
-          gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
-
-      # The season-announcer agent owns all Discord notifications. Runs only
-      # when there is something to announce — a newly created PR or a failed
-      # run — so no-op cron runs (and already-open PRs) never ping the agent.
+      # x-api-key auth and OpenAI-style {"messages": [...]}. The season-announcer
+      # agent has GitHub and Discord access and does the rest itself: it fetches
+      # the PR diff and the run logs, posts the triage comment on the PR, and
+      # posts to Discord. We only send the facts of this run; its task
+      # instructions live in its system prompt server-side (source of truth:
+      # docs/agents/season-announcer-prompt.md). Runs only when there is
+      # something to act on — a created/updated PR or a failed run — so no-op
+      # cron days never ping the agent.
       - name: Notify season announcer
-        if: failure() || steps.pr.outputs.pull-request-operation == 'created'
+        if: failure() || contains(fromJSON('["created", "updated"]'), steps.pr.outputs.pull-request-operation)
         env:
-          GH_TOKEN: ${{ github.token }}
           AI_AGENT_BASE_URL: ${{ secrets.AI_AGENT_BASE_URL }}
           AI_AGENT_API_KEY: ${{ secrets.AI_AGENT_API_KEY }}
           AGENT_SLUG: season-announcer # must match the agent slug in PineGrove
@@ -107,19 +81,26 @@ jobs:
           PR: ${{ steps.pr.outputs.pull-request-number }}
           PR_URL: ${{ steps.pr.outputs.pull-request-url }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }} # fallback only, when the agent API is unreachable
         run: |
           set -o pipefail
-          touch "$RUNNER_TEMP/season-update.log" "$RUNNER_TEMP/announce.diff" # may not exist if an early step failed
-          [ -n "$PR" ] && gh pr diff "$PR" > "$RUNNER_TEMP/announce.diff" || true
-          jq -n --rawfile log "$RUNNER_TEMP/season-update.log" \
-                --rawfile diff "$RUNNER_TEMP/announce.diff" \
-                --arg status "$JOB_STATUS" \
+          jq -n --arg status "$JOB_STATUS" \
                 --arg op "${PR_OP:-none}" \
+                --arg pr "${PR:-none}" \
                 --arg pr_url "${PR_URL:-none}" \
                 --arg run_url "$RUN_URL" \
-            '{source: "GitHubActions", messages: [{role: "user", content: ("Automated season-config regeneration run finished.\n\nJob status: " + $status + "\nPR operation: " + $op + "\nPR: " + $pr_url + "\nRun: " + $run_url + "\n\n--- script output (empty means an early step failed) ---\n" + $log + "\n--- diff ---\n" + $diff)}]}' \
+                --arg repo "$REPO" \
+            '{source: "GitHubActions", messages: [{role: "user", content: ("Automated season-config regeneration run finished in " + $repo + ".\n\nJob status: " + $status + "\nPR operation: " + $op + "\nPR number: " + $pr + "\nPR URL: " + $pr_url + "\nRun URL: " + $run_url)}]}' \
             > "$RUNNER_TEMP/req.json"
           curl -fsS -X POST "$AI_AGENT_BASE_URL/agents/$AGENT_SLUG/chat" \
             -H "x-api-key: $AI_AGENT_API_KEY" \
             -H 'Content-Type: application/json' \
-            --data @"$RUNNER_TEMP/req.json"
+            --data @"$RUNNER_TEMP/req.json" \
+          || {
+            msg=$(printf '⚠️ Season config: agent API unreachable — no triage/announcement.\nJob status: %s | PR: %s\nRun: %s' \
+              "$JOB_STATUS" "${PR_URL:-none}" "$RUN_URL")
+            jq -n --arg c "$msg" '{content: $c}' \
+              | curl -fsS -X POST -H 'Content-Type: application/json' -d @- "$DISCORD_WEBHOOK_URL"
+            exit 1
+          }
