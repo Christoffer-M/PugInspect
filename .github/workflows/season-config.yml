@@ -92,12 +92,11 @@ jobs:
           { printf '🤖 **AI triage**\n\n'; cat "$RUNNER_TEMP/triage.md"; } > "$RUNNER_TEMP/comment.md"
           gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
 
-      # The season-announcer agent owns all Discord notifications. This step
-      # always runs and sends the run outcome plus whatever context exists
-      # (script output, PR URL, diff); the agent decides what, if anything,
-      # to post.
+      # The season-announcer agent owns all Discord notifications. Runs only
+      # when there is something to announce — a newly created PR or a failed
+      # run — so no-op cron runs (and already-open PRs) never ping the agent.
       - name: Notify season announcer
-        if: always()
+        if: failure() || steps.pr.outputs.pull-request-operation == 'created'
         env:
           GH_TOKEN: ${{ github.token }}
           AI_AGENT_BASE_URL: ${{ secrets.AI_AGENT_BASE_URL }}
