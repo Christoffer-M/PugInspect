@@ -100,6 +100,11 @@ export const DEFAULT_RAID = "tier-mn-1";
 
 export const TIER_SET_RANGES: { from: number; to: number; tier: number }[] = [
   {
+    "from": 2055,
+    "to": 2067,
+    "tier": 36
+  },
+  {
     "from": 1978,
     "to": 1990,
     "tier": 35
