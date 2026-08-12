@@ -61,9 +61,9 @@ jobs:
 
             </details>
 
-      # The announcement text comes from the season-announcer agent (JSON mode,
-      # {message}); if the agent is unreachable the ping falls back to a static
-      # line — the Discord notification itself must never be lost.
+      # The season-announcer agent posts the Discord announcement itself; we
+      # only send it the context (script output, diff) and the PR URL. If the
+      # call fails, the job fails and the failure-triage step pings Discord.
       - name: Notify Discord
         if: steps.pr.outputs.pull-request-operation == 'created'
         env:
@@ -73,23 +73,18 @@ jobs:
           AGENT_SLUG: season-announcer # must match the agent slug in PineGrove
           PR: ${{ steps.pr.outputs.pull-request-number }}
           PR_URL: ${{ steps.pr.outputs.pull-request-url }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           set -o pipefail
           gh pr diff "$PR" > "$RUNNER_TEMP/announce.diff" || true
           jq -n --rawfile log "$RUNNER_TEMP/season-update.log" \
                 --rawfile diff "$RUNNER_TEMP/announce.diff" \
-            '{source: "GitHubActions", messages: [{role: "user", content: ("Summarize this automated season-config change as a Discord announcement.\n\n--- script output ---\n" + $log + "\n--- diff ---\n" + $diff)}]}' \
+                --arg pr_url "$PR_URL" \
+            '{source: "GitHubActions", messages: [{role: "user", content: ("Announce this automated season-config change on Discord.\n\nPR ready for review: " + $pr_url + "\n\n--- script output ---\n" + $log + "\n--- diff ---\n" + $diff)}]}' \
             > "$RUNNER_TEMP/req.json"
-          summary=$(curl -fsS -X POST "$AI_AGENT_BASE_URL/agents/$AGENT_SLUG/chat" \
+          curl -fsS -X POST "$AI_AGENT_BASE_URL/agents/$AGENT_SLUG/chat" \
             -H "x-api-key: $AI_AGENT_API_KEY" \
             -H 'Content-Type: application/json' \
-            --data @"$RUNNER_TEMP/req.json" \
-            | jq -r '.message' | head -c 1500) \
-            || summary="Season config changed."
-          msg=$(printf '🗓️ %s\n\nPR ready for review: %s' "$summary" "$PR_URL")
-          jq -n --arg c "$msg" '{content: $c}' \
-            | curl -fsS -X POST -H 'Content-Type: application/json' -d @- "$DISCORD_WEBHOOK_URL"
+            --data @"$RUNNER_TEMP/req.json"
 
       # PineGrove agent API: POST $AI_AGENT_BASE_URL/agents/<slug>/chat with
       # x-api-key auth and OpenAI-style {"messages": [...]}. Both agents run in
