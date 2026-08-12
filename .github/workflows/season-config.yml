@@ -117,26 +117,23 @@ jobs:
           { printf '🤖 **AI triage**\n\n'; cat "$RUNNER_TEMP/triage.md"; } > "$RUNNER_TEMP/comment.md"
           gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
 
+      # The failure-triage agent posts the Discord notification itself; we only
+      # send it the run URL and script output.
       - name: AI failure triage to Discord
         if: failure()
         env:
           AI_AGENT_BASE_URL: ${{ secrets.AI_AGENT_BASE_URL }}
           AI_AGENT_API_KEY: ${{ secrets.AI_AGENT_API_KEY }}
           AGENT_SLUG: season-failure-triage # must match the agent slug in PineGrove
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -o pipefail
           touch "$RUNNER_TEMP/season-update.log" # may not exist if an early step failed
           jq -n --rawfile log "$RUNNER_TEMP/season-update.log" \
-            '{source: "GitHubActions", messages: [{role: "user", content: ("Diagnose this failed season-config regeneration run. The script output is below; empty means an earlier step failed.\n\n" + $log)}]}' \
+                --arg run_url "$RUN_URL" \
+            '{source: "GitHubActions", messages: [{role: "user", content: ("Diagnose this failed season-config regeneration run and announce the failure on Discord.\n\nRun: " + $run_url + "\n\nThe script output is below; empty means an earlier step failed.\n\n" + $log)}]}' \
             > "$RUNNER_TEMP/req.json"
-          diagnosis=$(curl -fsS -X POST "$AI_AGENT_BASE_URL/agents/$AGENT_SLUG/chat" \
+          curl -fsS -X POST "$AI_AGENT_BASE_URL/agents/$AGENT_SLUG/chat" \
             -H "x-api-key: $AI_AGENT_API_KEY" \
             -H 'Content-Type: application/json' \
-            --data @"$RUNNER_TEMP/req.json" \
-            | jq -r '.diagnosis' | head -c 1500) \
-            || diagnosis="(AI agent unreachable — check the run log)"
-          msg=$(printf '❌ Season config update failed: %s\n\n%s' "$RUN_URL" "$diagnosis")
-          jq -n --arg c "$msg" '{content: $c}' \
-            | curl -fsS -X POST -H 'Content-Type: application/json' -d @- "$DISCORD_WEBHOOK_URL"
+            --data @"$RUNNER_TEMP/req.json"
