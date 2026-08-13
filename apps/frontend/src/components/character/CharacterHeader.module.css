@@ -140,18 +140,7 @@
   }
 }
 
-/* Score cell: both of its rows put the season label beside the score, so it
-   needs more width than a plain stat. Declared after the media queries above
-   because those also target .stat — equal specificity, so source order wins. */
-.statScore {
-  min-width: 175px;
-}
-
 @media (max-width: 480px) {
-  .statScore {
-    min-width: 0;
-  }
-
   /* A third of a phone screen can't fit score and label side by side, and the
      label is nowrap — stack it under the score rather than let it overflow. */
   .scoreRow {
