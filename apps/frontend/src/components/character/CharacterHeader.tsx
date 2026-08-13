@@ -197,9 +197,13 @@ export const CharacterHeader: React.FC<{
                 >
                   {rioScore ? Math.round(rioScore.score).toLocaleString() : "—"}
                 </Text>
-                <Text className={classes.statSub} m={0}>
-                  current{seasonLabel ? ` (${seasonLabel})` : ""}
-                </Text>
+                {/* Only worth tagging the score as "current" when a previous
+                    season sits under it to contrast against. */}
+                {prevRioScore && (
+                  <Text className={classes.statSub} m={0}>
+                    current{seasonLabel ? ` (${seasonLabel})` : ""}
+                  </Text>
+                )}
               </Group>
             )}
             {!isLoadingRaiderIo && prevRioScore && (
