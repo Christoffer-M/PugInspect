@@ -1,6 +1,14 @@
+# json-file logs are unbounded by default; cap them so the VPS disk survives
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:17
+    logging: *logging
     environment:
       POSTGRES_DB: puginspect
       POSTGRES_USER: puginspect
@@ -21,6 +29,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    logging: *logging
     env_file:
       - apps/backend/.env
     environment:
@@ -53,6 +62,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_UMAMI_WEBSITE_ID: ${VITE_UMAMI_WEBSITE_ID}
+    logging: *logging
     environment:
       VIRTUAL_HOST: puginspect.com,www.puginspect.com
       VIRTUAL_PORT: 80

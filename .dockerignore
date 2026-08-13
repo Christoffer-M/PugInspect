@@ -6,3 +6,8 @@ node_modules
 **/.env*
 .git
 .gitignore
+.codegraph
+.claude
+e2e
+test-results
+playwright-report
