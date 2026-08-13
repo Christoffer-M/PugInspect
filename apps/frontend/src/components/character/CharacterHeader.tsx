@@ -189,7 +189,7 @@ export const CharacterHeader: React.FC<{
             {isLoadingRaiderIo ? (
               <Skeleton h={24} w={70} mt={2} />
             ) : (
-              <Group gap={6} align="baseline" wrap="nowrap">
+              <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
                 <Text
                   className={classes.statVal}
                   m={0}
@@ -203,7 +203,12 @@ export const CharacterHeader: React.FC<{
               </Group>
             )}
             {!isLoadingRaiderIo && prevRioScore && (
-              <Group className={classes.prevSeason} gap={6} align="baseline" wrap="nowrap">
+              <Group
+                className={`${classes.prevSeason} ${classes.scoreRow}`}
+                gap={6}
+                align="baseline"
+                wrap="nowrap"
+              >
                 <Text
                   className={classes.prevSeasonVal}
                   m={0}

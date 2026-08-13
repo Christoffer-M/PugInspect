@@ -75,12 +75,6 @@
   align-items: flex-end;
 }
 
-/* Wider than the other stats: both rows put their season label beside the
-   score rather than under it. */
-.statScore {
-  min-width: 175px;
-}
-
 .prevSeason {
   padding-top: 4px;
   border-top: 1px solid rgba(61, 79, 110, 0.22);
@@ -137,5 +131,26 @@
     min-width: 0;
     padding: 0;
     border-left: none;
+  }
+}
+
+/* Score cell: both of its rows put the season label beside the score, so it
+   needs more width than a plain stat. Declared after the media queries above
+   because those also target .stat — equal specificity, so source order wins. */
+.statScore {
+  min-width: 175px;
+}
+
+@media (max-width: 480px) {
+  .statScore {
+    min-width: 0;
+  }
+
+  /* A third of a phone screen can't fit score and label side by side, and the
+     label is nowrap — stack it under the score rather than let it overflow. */
+  .scoreRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
   }
 }
