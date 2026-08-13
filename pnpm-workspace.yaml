@@ -1,10 +1,6 @@
 packages:
   - apps/*
   - packages/*
-overrides:
-  # keep in sync with the graphql range in apps/*/package.json — pnpm compares
-  # the override (not the manifest) against the lockfile under --frozen-lockfile
-  graphql: ^16.14.2
 allowBuilds:
   esbuild: true
   '@apollo/protobufjs': false
