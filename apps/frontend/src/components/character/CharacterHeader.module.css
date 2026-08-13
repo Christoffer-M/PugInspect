@@ -25,6 +25,9 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--avatar-ring-color, rgba(61, 79, 110, 0.5)) 14%, transparent);
   flex-shrink: 0;
   display: inline-flex;
+  /* The image inside is max-width:100%, so this box's min-content width is 0 and
+     a cramped grid will squash the ring into an oval. Pin the floor. */
+  min-width: 72px;
 }
 
 .characterName {
@@ -99,8 +102,11 @@
   white-space: nowrap;
 }
 
-/* Mobile overrides last so they win source-order over the base rules above. */
-@media (max-width: 700px) {
+/* Mobile overrides last so they win source-order over the base rules above.
+   The strip is rigid (nowrap labels, five slots ≈ 570px wide), so side-by-side
+   needs ~945px before it starts starving the identity column of width. Below
+   that, drop the strip onto its own row rather than crushing the name block. */
+@media (max-width: 960px) {
   .profile {
     grid-template-columns: auto 1fr;
   }
