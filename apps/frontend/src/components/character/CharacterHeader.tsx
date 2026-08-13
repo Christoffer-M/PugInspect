@@ -184,7 +184,12 @@ export const CharacterHeader: React.FC<{
 
         {/* Stat Strip */}
         <Box className={classes.statstrip}>
-          <Stack className={`${classes.stat} ${classes.statScore}`} gap={3}>
+          {/* The wider cell is only needed to fit the inline season labels,
+              which only render alongside a previous-season score. */}
+          <Stack
+            className={prevRioScore ? `${classes.stat} ${classes.statScore}` : classes.stat}
+            gap={3}
+          >
             <Text className={classes.statLabel} m={0}>RIO Score</Text>
             {isLoadingRaiderIo ? (
               <Skeleton h={24} w={70} mt={2} />
