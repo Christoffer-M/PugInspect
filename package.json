@@ -15,9 +15,9 @@
     "season:update": "node scripts/update-season-config.mts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
-    "prettier": "^3.8.1",
-    "turbo": "^2.8.20",
+    "@playwright/test": "^1.62.1",
+    "prettier": "^3.9.6",
+    "turbo": "^2.10.9",
     "typescript": "5.9.2"
   },
   "packageManager": "pnpm@11.21.0",

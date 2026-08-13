@@ -1,8 +1,6 @@
 packages:
   - apps/*
   - packages/*
-overrides:
-  graphql: ^16.12.0
 allowBuilds:
   esbuild: true
   '@apollo/protobufjs': false
