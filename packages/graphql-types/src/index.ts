@@ -297,6 +297,7 @@ export type SeasonScores = {
   all?: Maybe<Segment>;
   dps?: Maybe<Segment>;
   healer?: Maybe<Segment>;
+  season?: Maybe<Scalars['String']['output']>;
   tank?: Maybe<Segment>;
 };
 

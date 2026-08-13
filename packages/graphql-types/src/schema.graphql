@@ -228,6 +228,7 @@ type SeasonScores {
   all: Segment
   dps: Segment
   healer: Segment
+  season: String
   tank: Segment
 }
 

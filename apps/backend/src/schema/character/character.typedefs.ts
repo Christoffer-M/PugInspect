@@ -180,6 +180,7 @@ export const characterTypedefs = gql`
   }
   
   type SeasonScores {
+    season: String
     all: Segment
     dps: Segment
     healer: Segment

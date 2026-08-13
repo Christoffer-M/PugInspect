@@ -75,6 +75,24 @@
   align-items: flex-end;
 }
 
+/* Wider than the other stats: both rows put their season label beside the
+   score rather than under it. */
+.statScore {
+  min-width: 175px;
+}
+
+.prevSeason {
+  padding-top: 4px;
+  border-top: 1px solid rgba(61, 79, 110, 0.22);
+}
+
+.prevSeasonVal {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .statValSmall {
   font-size: 12px;
   font-weight: 500;
@@ -84,6 +102,7 @@
 .statSub {
   font-size: 11px;
   color: var(--mantine-color-dark-3);
+  white-space: nowrap;
 }
 
 /* Mobile overrides last so they win source-order over the base rules above. */

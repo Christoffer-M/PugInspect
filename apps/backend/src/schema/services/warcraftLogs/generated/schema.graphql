@@ -43,6 +43,7 @@ type ArchonViewModels {
   translations(keys: [String]): JSON
   user: JSON
   userFromDesktopClientToken(desktopClientToken: String!): JSON
+  videoTermsOfServicePage: JSON
 }
 
 """

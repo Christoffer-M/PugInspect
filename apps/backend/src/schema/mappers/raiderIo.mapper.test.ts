@@ -153,11 +153,13 @@ describe("mapRaiderIo", () => {
     ]);
 
     expect(result!.currentSeason).toEqual({
+      season: "season-tww-2",
       all: { score: 2800, color: "#ff8000" },
       dps: { score: 2800, color: "#ff8000" },
       healer: { score: 0, color: "#ffffff" },
       tank: { score: 0, color: "#ffffff" },
     });
+    expect(result!.previousSeason.season).toBe("season-tww-1");
     expect(result!.previousSeason.all).toEqual({
       score: 2500,
       color: "#a335ee",
@@ -190,6 +192,7 @@ describe("mapRaiderIo", () => {
     expect(result!.bestMythicPlusRuns).toBeUndefined();
     expect(result!.recentMythicPlusRuns).toBeUndefined();
     expect(result!.currentSeason).toEqual({
+      season: null,
       all: null,
       dps: null,
       healer: null,
