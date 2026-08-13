@@ -62,12 +62,14 @@ export const CharacterRaiderIoQueryDoc = graphql(`
           expansion_id
         }
         currentSeason {
+          season
           all { score color }
           dps { score color }
           healer { score color }
           tank { score color }
         }
         previousSeason {
+          season
           all { score color }
           dps { score color }
           healer { score color }

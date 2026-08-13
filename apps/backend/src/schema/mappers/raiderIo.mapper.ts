@@ -59,8 +59,10 @@ export function mapRaiderIo(
 ): RaiderIo | null {
   if (!rioProfile) return null;
 
-  const segmentsCurrentSeason = rioProfile.mythic_plus_scores_by_season?.[0]?.segments;
-  const segmentsPreviousSeason = rioProfile.mythic_plus_scores_by_season?.[1]?.segments;
+  const currentSeason = rioProfile.mythic_plus_scores_by_season?.[0];
+  const previousSeason = rioProfile.mythic_plus_scores_by_season?.[1];
+  const segmentsCurrentSeason = currentSeason?.segments;
+  const segmentsPreviousSeason = previousSeason?.segments;
   const raidProgression = Object.entries(rioProfile.raid_progression || {}).map(
     ([raid, details]) => ({ raid, ...details })
   );
@@ -73,12 +75,14 @@ export function mapRaiderIo(
     bestMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_best_runs),
     recentMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_recent_runs),
     currentSeason: {
+      season: currentSeason?.season ?? null,
       all: getSegment(segmentsCurrentSeason?.all),
       dps: getSegment(segmentsCurrentSeason?.dps),
       healer: getSegment(segmentsCurrentSeason?.healer),
       tank: getSegment(segmentsCurrentSeason?.tank),
     },
     previousSeason: {
+      season: previousSeason?.season ?? null,
       all: getSegment(segmentsPreviousSeason?.all),
       dps: getSegment(segmentsPreviousSeason?.dps),
       healer: getSegment(segmentsPreviousSeason?.healer),

@@ -1,14 +1,13 @@
 import { Paper, Skeleton, Stack, Text, Image, Box, Group } from "@mantine/core";
 import { upperCaseFirstLetter, getClassColor, getParseColor } from "../../util/util";
 import { AltsHoverCard } from "./AltsHoverCard";
-import { Character, RaiderIo } from "../../graphql/graphql";
+import { Character, RaiderIo, SeasonScores } from "../../graphql/graphql";
 import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import classes from "./CharacterHeader.module.css";
 
 const DIMMED = "var(--mantine-color-dimmed)";
 
-function getTopRioScore(raiderIo: RaiderIo | null | undefined): { score: number; role: string; color: string } | null {
-  const season = raiderIo?.currentSeason;
+function getTopRioScore(season: SeasonScores | null | undefined): { score: number; role: string; color: string } | null {
   if (!season) return null;
 
   const all = season.all;
@@ -27,6 +26,12 @@ function getTopRioScore(raiderIo: RaiderIo | null | undefined): { score: number;
   const best = roles[0];
   if (!best?.data?.score) return null;
   return { score: best.data.score, role: best.role, color: best.data.color ?? "#ff8a3d" };
+}
+
+/** RaiderIO season slugs look like "season-tww-3"; the trailing number is the season. */
+function formatSeasonLabel(slug: string | null | undefined): string | null {
+  const n = slug?.match(/(\d+)$/)?.[1];
+  return n ? `S${n}` : null;
 }
 
 function getTopKeyLevel(raiderIo: RaiderIo | null | undefined): number | null {
@@ -95,7 +100,10 @@ export const CharacterHeader: React.FC<{
   isLoadingBestParse?: boolean;
 }> = ({ name, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError, bestParseAverage, bestParseSource, isLoadingBestParse }) => {
   const classColor = getClassColor(characterInfo?.class);
-  const rioScore = getTopRioScore(raiderIo);
+  const rioScore = getTopRioScore(raiderIo?.currentSeason);
+  const prevRioScore = getTopRioScore(raiderIo?.previousSeason);
+  const seasonLabel = formatSeasonLabel(raiderIo?.currentSeason?.season);
+  const prevSeasonLabel = formatSeasonLabel(raiderIo?.previousSeason?.season);
   const topKey = getTopKeyLevel(raiderIo);
   const raidProgress = getRaidProgressSummary(raiderIo);
   const lastActiveDays = getLastActiveDays(raiderIo);
@@ -181,17 +189,42 @@ export const CharacterHeader: React.FC<{
             {isLoadingRaiderIo ? (
               <Skeleton h={24} w={70} mt={2} />
             ) : (
-              <Text
-                className={classes.statVal}
-                m={0}
-                style={{ color: rioScore?.color ?? "var(--mantine-color-dimmed)" }}
-              >
-                {rioScore ? Math.round(rioScore.score).toLocaleString() : "—"}
-              </Text>
+              <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
+                <Text
+                  className={classes.statVal}
+                  m={0}
+                  style={{ color: rioScore?.color ?? DIMMED }}
+                >
+                  {rioScore ? Math.round(rioScore.score).toLocaleString() : "—"}
+                </Text>
+                {/* Only worth tagging the score as "current" when a previous
+                    season sits under it to contrast against. */}
+                {prevRioScore && (
+                  <Text className={classes.statSub} m={0}>
+                    current{seasonLabel ? ` (${seasonLabel})` : ""}
+                  </Text>
+                )}
+              </Group>
             )}
-            <Text className={classes.statSub} m={0}>
-              {rioScore ? `${rioScore.role} · current` : "current season"}
-            </Text>
+            {!isLoadingRaiderIo && prevRioScore && (
+              <Group
+                className={`${classes.prevSeason} ${classes.scoreRow}`}
+                gap={6}
+                align="baseline"
+                wrap="nowrap"
+              >
+                <Text
+                  className={classes.prevSeasonVal}
+                  m={0}
+                  style={{ color: prevRioScore.color }}
+                >
+                  {Math.round(prevRioScore.score).toLocaleString()}
+                </Text>
+                <Text className={classes.statSub} m={0}>
+                  previous{prevSeasonLabel ? ` (${prevSeasonLabel})` : ""}
+                </Text>
+              </Group>
+            )}
           </Stack>
 
           <Stack className={classes.stat} gap={3}>

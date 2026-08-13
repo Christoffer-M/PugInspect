@@ -61,6 +61,7 @@ export type ArchonViewModels = {
   translations?: Maybe<Scalars['JSON']['output']>;
   user?: Maybe<Scalars['JSON']['output']>;
   userFromDesktopClientToken?: Maybe<Scalars['JSON']['output']>;
+  videoTermsOfServicePage?: Maybe<Scalars['JSON']['output']>;
 };
 
 

@@ -25,6 +25,9 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--avatar-ring-color, rgba(61, 79, 110, 0.5)) 14%, transparent);
   flex-shrink: 0;
   display: inline-flex;
+  /* The image inside is max-width:100%, so this box's min-content width is 0 and
+     a cramped grid will squash the ring into an oval. Pin the floor. */
+  min-width: 72px;
 }
 
 .characterName {
@@ -75,6 +78,18 @@
   align-items: flex-end;
 }
 
+.prevSeason {
+  padding-top: 4px;
+  border-top: 1px solid rgba(61, 79, 110, 0.22);
+}
+
+.prevSeasonVal {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .statValSmall {
   font-size: 12px;
   font-weight: 500;
@@ -84,10 +99,14 @@
 .statSub {
   font-size: 11px;
   color: var(--mantine-color-dark-3);
+  white-space: nowrap;
 }
 
-/* Mobile overrides last so they win source-order over the base rules above. */
-@media (max-width: 700px) {
+/* Mobile overrides last so they win source-order over the base rules above.
+   The strip is rigid (nowrap labels, five slots ≈ 570px wide), so side-by-side
+   needs ~945px before it starts starving the identity column of width. Below
+   that, drop the strip onto its own row rather than crushing the name block. */
+@media (max-width: 960px) {
   .profile {
     grid-template-columns: auto 1fr;
   }
@@ -118,5 +137,15 @@
     min-width: 0;
     padding: 0;
     border-left: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* A third of a phone screen can't fit score and label side by side, and the
+     label is nowrap — stack it under the score rather than let it overflow. */
+  .scoreRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
   }
 }
