@@ -7,18 +7,24 @@ import { config } from "../config";
 
 const Analytics: React.FC = () => {
   useEffect(() => {
-    if (import.meta.env.PROD && config.umamiWebsiteId) {
-      const script = document.createElement("script");
-      script.src = config.apiUrl + "/stats.js";
-      script.defer = true;
-      script.dataset.websiteId = config.umamiWebsiteId;
-      script.dataset.hostUrl = "https://stats.puginspect.com";
-      document.head.appendChild(script);
-
-      return () => {
-        document.head.removeChild(script);
-      };
+    if (!import.meta.env.PROD) return;
+    if (!config.umamiWebsiteId) {
+      // VITE_UMAMI_WEBSITE_ID is baked in at build time; an empty value means
+      // the build arg was missing and no analytics will be sent at all.
+      console.warn("[analytics] VITE_UMAMI_WEBSITE_ID was empty at build time — tracking disabled");
+      return;
     }
+    const script = document.createElement("script");
+    script.src = config.apiUrl + "/stats.js";
+    script.defer = true;
+    script.dataset.websiteId = config.umamiWebsiteId;
+    // No data-host-url: events post to this origin's /api/send, which the
+    // backend forwards to Umami — first-party so ad blockers don't drop them.
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
   }, []);
 
   return null;

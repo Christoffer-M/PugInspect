@@ -93,6 +93,8 @@ VITE_GRAPHQL_URL=http://localhost:4000/graphql
 VITE_UMAMI_WEBSITE_ID=your_umami_website_id
 ```
 
+`VITE_UMAMI_WEBSITE_ID` is baked into the frontend bundle at build time. For production deploys it must be present in the `.env` file next to `docker-compose.yml` (or exported in the shell) — `deploy.sh` refuses to deploy without it, since an empty value silently disables analytics.
+
 When running through Docker Compose, `DATABASE_URL` is provided to the backend container automatically and points at the Compose Postgres service. The backend still reads API credentials from `apps/backend/.env`.
 
 ## Local Development
@@ -136,7 +138,7 @@ This starts:
 - `backend` on `127.0.0.1:4000`
 - `frontend` on `127.0.0.1:8080`
 
-The frontend container serves the built Vite app through Nginx and proxies `/graphql` and `/stats.js` to the backend container. The backend applies Drizzle migrations during startup.
+The frontend container serves the built Vite app through Nginx and proxies `/graphql`, `/stats.js`, and `/api/send` to the backend container. The latter two are first-party proxies for the Umami analytics script and its event endpoint, so ad blockers that block the `stats.*` subdomain don't drop visitor data. The backend applies Drizzle migrations during startup.
 
 To stop the stack:
 
