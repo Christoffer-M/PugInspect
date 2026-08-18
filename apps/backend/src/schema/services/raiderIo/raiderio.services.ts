@@ -71,7 +71,7 @@ export class RaiderIOService {
       region: args.region,
     };
 
-    logger.info("RaiderIO character suggestions request", { searchString: args.searchString, region: args.region });
+    logger.debug("RaiderIO character suggestions request", { searchString: args.searchString, region: args.region });
 
     const url = this.buildUrlWithQueries(`${baseApiUrl}/search`, query);
 
@@ -84,7 +84,7 @@ export class RaiderIOService {
         (m) => m.type === "character"
       );
 
-      logger.info("RaiderIO character suggestions fetched", { count: filteredMatches.length });
+      logger.info("RaiderIO character suggestions fetched", { searchString: args.searchString, region: args.region, count: filteredMatches.length });
       return filteredMatches.map((r) => ({
         name: r.name,
         realm: r.data.realm.name,
@@ -121,7 +121,7 @@ export class RaiderIOService {
     if (!bypassCache || cacheOnly) {
       const cached = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName }, cacheOnly);
       if (cached) {
-        logger.info("RaiderIO character profile cache hit", { name, realm, region });
+        logger.debug("RaiderIO character profile cache hit", { name, realm, region });
         return cached;
       }
     }

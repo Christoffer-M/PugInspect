@@ -64,7 +64,7 @@ export class BlizzardService {
     if (!bypassCache || cacheOnly) {
       const cached = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name }, cacheOnly);
       if (cached) {
-        logger.info("Blizzard character profile cache hit", { name, realm: normalizedRealm, region });
+        logger.debug("Blizzard character profile cache hit", { name, realm: normalizedRealm, region });
         return cached; // already includes characterId
       }
     }
@@ -152,7 +152,7 @@ export class BlizzardService {
     if (!bypassCache || cacheOnly) {
       const cached = await getCachedEquipment({ region, realm: normalizedRealm, name }, cacheOnly);
       if (cached) {
-        logger.info("Blizzard equipment cache hit", { name, realm: normalizedRealm, region });
+        logger.debug("Blizzard equipment cache hit", { name, realm: normalizedRealm, region });
         return cached;
       }
     }

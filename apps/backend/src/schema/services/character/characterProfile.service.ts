@@ -32,7 +32,7 @@ export async function getCharacterProfiles(
   }: { raidLogsRequested: boolean; mythicPlusLogsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; gearRequested: boolean; bypassCache: boolean; cacheOnly?: boolean }
 ) {
   const { name, realm, region } = args;
-  logger.info("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, gearRequested, bypassCache, cacheOnly });
+  logger.debug("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, gearRequested, bypassCache, cacheOnly });
 
   const [blizzardResult, rioResult, logsResult, equipmentResult] = await Promise.allSettled([
     blizzardRequested
