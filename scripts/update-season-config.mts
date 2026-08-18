@@ -156,8 +156,14 @@ async function main() {
     const expansionRaids = (raidData[i].raids as any[]).filter(started);
     expansionRaids.sort((a, b) => Date.parse(b.starts.us) - Date.parse(a.starts.us));
     for (const r of expansionRaids) {
+      const zoneId = matchWclZone(r.name, expansion.name, wclZones);
+      // No WCL zone → no logs to show; leave it out of the dropdown entirely.
+      if (!zoneId) {
+        warnings.push(`Skipping raid "${r.name}" (${r.slug}) — no WCL zone yet`);
+        continue;
+      }
       raids[r.slug] = {
-        zoneId: matchWclZone(r.name, expansion.name, wclZones),
+        zoneId,
         displayName: RAID_DISPLAY_OVERRIDES[r.slug] ?? r.name,
         expansion: expansion.rioId,
       };

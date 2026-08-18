@@ -39,10 +39,6 @@ export const MYTHIC_PLUS_SEASONS: Record<string, MythicPlusSeason> = {
 export const DEFAULT_MYTHIC_PLUS_SEASON = "season-mn-2";
 
 export const RAIDS: Record<string, RaidInfo> = {
-  "the-tidebound-grotto": {
-    "displayName": "The Tidebound Grotto",
-    "expansion": 11
-  },
   "the-venomous-abyss": {
     "zoneId": 53,
     "displayName": "The Venomous Abyss",
