@@ -41,7 +41,7 @@ export class AchievementsService {
     // Skip if all IDs are already cached and fresh
     const cached = await getCachedAchievements(characterId, ids);
     if (cached) {
-      logger.info("Achievement cache hit — skipping enrichment", { name: normalizedName, realm: normalizedRealm, region });
+      logger.debug("Achievement cache hit — skipping enrichment", { name: normalizedName, realm: normalizedRealm, region });
       await this.linkAlts(characterId, cached);
       return;
     }

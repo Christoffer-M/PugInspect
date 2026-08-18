@@ -121,7 +121,7 @@ export class RaiderIOService {
     if (!bypassCache || cacheOnly) {
       const cached = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName }, cacheOnly);
       if (cached) {
-        logger.info("RaiderIO character profile cache hit", { name, realm, region });
+        logger.debug("RaiderIO character profile cache hit", { name, realm, region });
         return cached;
       }
     }

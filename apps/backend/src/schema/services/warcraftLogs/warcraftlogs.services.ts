@@ -102,7 +102,7 @@ export class WarcraftLogsService {
     if (cacheOnly) {
       const cached = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
       if (cached) {
-        logger.info("WarcraftLogs character profile cache hit (crawler)", { name, realm: normalizedRealm, region });
+        logger.debug("WarcraftLogs character profile cache hit (crawler)", { name, realm: normalizedRealm, region });
         return cached;
       }
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
@@ -111,7 +111,7 @@ export class WarcraftLogsService {
     if (!bypassCache) {
       const inFlight = this.profileFetchInFlight.get(cacheKey);
       if (inFlight) {
-        logger.info("WarcraftLogs profile fetch already in flight, awaiting", { name, realm, region });
+        logger.debug("WarcraftLogs profile fetch already in flight, awaiting", { name, realm, region });
         return inFlight;
       }
       const promise = this.acquireCharacterProfile(cacheKey, args, normalizedRealm, false, partition).finally(() => {
@@ -204,7 +204,7 @@ export class WarcraftLogsService {
     if (!bypassCache) {
       const cached = await this.checkCacheOrNull(args, normalizedRealm, partition);
       if (cached) {
-        logger.info("WarcraftLogs character profile cache hit", { name: args.name, realm: normalizedRealm, region: args.region });
+        logger.debug("WarcraftLogs character profile cache hit", { name: args.name, realm: normalizedRealm, region: args.region });
         return cached;
       }
     }
