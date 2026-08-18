@@ -110,7 +110,11 @@ initDb(config.databaseUrl);
 console.log("[db] Database ready");
 
 const app = express();
-app.set("trust proxy", 1);
+// Production requests traverse two proxies (nginx-proxy → frontend nginx),
+// so trust two hops — otherwise req.ip is an internal container IP, which
+// breaks per-IP rate limiting and analytics geolocation. With fewer hops
+// (local compose, bare dev) express falls back to the nearest real address.
+app.set("trust proxy", 2);
 
 const server = new ApolloServer<BaseContext>({
   typeDefs: characterTypedefs,
@@ -166,22 +170,31 @@ const sendRateLimiter = createRateLimiter(120, 60_000);
 app.post(
   "/api/send",
   sendRateLimiter,
-  express.text({ type: "*/*", limit: "32kb" }),
+  express.json({ type: "*/*", limit: "32kb" }),
   async (req, res) => {
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       const userAgent = req.headers["user-agent"];
       if (userAgent) headers["User-Agent"] = userAgent;
-      if (req.ip) headers["X-Forwarded-For"] = req.ip;
       // Umami hands the client a cache token in the response body and expects
       // it back on subsequent events; pass it through both ways.
       const cache = req.headers["x-umami-cache"];
       if (typeof cache === "string") headers["X-Umami-Cache"] = cache;
 
+      // Umami geolocates from the connecting IP — this server's after
+      // proxying — but prefers payload.ip when present, so inject the real
+      // visitor IP there. Strip node's IPv4-mapped prefix, which Umami's
+      // payload validation rejects.
+      const body = req.body as { payload?: Record<string, unknown> } | undefined;
+      const visitorIp = req.ip?.replace(/^::ffff:/, "");
+      if (body?.payload && typeof body.payload === "object" && visitorIp) {
+        body.payload.ip = visitorIp;
+      }
+
       const upstream = await fetch("https://stats.puginspect.com/api/send", {
         method: "POST",
         headers,
-        body: typeof req.body === "string" ? req.body : "",
+        body: JSON.stringify(body ?? {}),
       });
       res.status(upstream.status).send(await upstream.text());
     } catch {
