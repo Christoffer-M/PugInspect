@@ -89,7 +89,7 @@ function createRateLimiter(maxRequests: number, windowMs: number) {
   }, windowMs).unref();
 
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const ip = req.ip ?? "unknown";
+    const ip = getClientIp(req) ?? "unknown";
     const now = Date.now();
     const entry = store.get(ip);
     if (!entry || now > entry.resetAt) {
@@ -110,11 +110,19 @@ initDb(config.databaseUrl);
 console.log("[db] Database ready");
 
 const app = express();
-// Production requests traverse two proxies (nginx-proxy → frontend nginx),
-// so trust two hops — otherwise req.ip is an internal container IP, which
-// breaks per-IP rate limiting and analytics geolocation. With fewer hops
-// (local compose, bare dev) express falls back to the nearest real address.
-app.set("trust proxy", 2);
+// Production requests arrive through Cloudflare plus two local proxies
+// (nginx-proxy → frontend nginx). Trusting every private-range hop makes
+// req.ip resolve to the nearest public address — the Cloudflare edge in
+// production — no matter how many local hops the deployment has.
+app.set("trust proxy", "loopback, linklocal, uniquelocal");
+
+// The real visitor address: Cloudflare stamps it on CF-Connecting-IP, which
+// passes through the local proxies untouched. req.ip (the Cloudflare edge in
+// production, the direct peer elsewhere) is only the fallback.
+function getClientIp(req: express.Request): string | undefined {
+  const cf = req.headers["cf-connecting-ip"];
+  return typeof cf === "string" && cf !== "" ? cf : req.ip;
+}
 
 const server = new ApolloServer<BaseContext>({
   typeDefs: characterTypedefs,
@@ -186,7 +194,7 @@ app.post(
       // visitor IP there. Strip node's IPv4-mapped prefix, which Umami's
       // payload validation rejects.
       const body = req.body as { payload?: Record<string, unknown> } | undefined;
-      const visitorIp = req.ip?.replace(/^::ffff:/, "");
+      const visitorIp = getClientIp(req)?.replace(/^::ffff:/, "");
       if (body?.payload && typeof body.payload === "object" && visitorIp) {
         body.payload.ip = visitorIp;
       }
