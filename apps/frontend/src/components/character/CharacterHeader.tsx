@@ -2,7 +2,7 @@ import { Paper, Skeleton, Stack, Text, Image, Box, Group } from "@mantine/core";
 import { upperCaseFirstLetter, getClassColor, getParseColor } from "../../util/util";
 import { AltsHoverCard } from "./AltsHoverCard";
 import { Character, RaiderIo, SeasonScores } from "../../graphql/graphql";
-import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
+import { DEFAULT_RAID, RAIDS, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import classes from "./CharacterHeader.module.css";
 
 const DIMMED = "var(--mantine-color-dimmed)";
@@ -72,10 +72,20 @@ function getLastActiveColor(days: number): string {
   return DIMMED;
 }
 
-/** Current-tier raid progression summary, e.g. "4/8 M".
+// RAIDS is newest-first. Previous tier = the nearest older raid with more than
+// one boss — single-boss mid-tier raids (Sporefall) aren't what people compare against.
+function getPreviousRaid(raiderIo: RaiderIo | null | undefined): string | undefined {
+  const slugs = Object.keys(RAIDS);
+  return slugs.slice(slugs.indexOf(DEFAULT_RAID) + 1).find((slug) => {
+    const bosses = raiderIo?.raidProgression?.find((p) => p.raid === slug)?.total_bosses;
+    return bosses != null && bosses > 1;
+  });
+}
+
+/** Raid progression summary for a tier, e.g. "4/8 M".
  * Kept in sync with raidProgressSummary in backend seo/characterCard.ts. */
-function getRaidProgressSummary(raiderIo: RaiderIo | null | undefined): string | null {
-  const current = raiderIo?.raidProgression?.find((p) => p.raid === DEFAULT_RAID);
+function getRaidProgressSummary(raiderIo: RaiderIo | null | undefined, raid: string | undefined): string | null {
+  const current = raiderIo?.raidProgression?.find((p) => p.raid === raid);
   if (!current) return null;
   const total = current.total_bosses ?? 0;
   const mythic = current.mythic_bosses_killed ?? 0;
@@ -112,7 +122,8 @@ export const CharacterHeader: React.FC<{
   const prevSeasonLabel = formatSeasonLabel(raiderIo?.previousSeason?.season);
   const topKey = getTopKeyLevel(raiderIo, raiderIo?.currentSeason?.season ?? null);
   const prevTopKey = getTopKeyLevel(raiderIo, raiderIo?.previousSeason?.season ?? null);
-  const raidProgress = getRaidProgressSummary(raiderIo);
+  const raidProgress = getRaidProgressSummary(raiderIo, DEFAULT_RAID);
+  const prevRaidProgress = getRaidProgressSummary(raiderIo, getPreviousRaid(raiderIo));
   const lastActiveDays = getLastActiveDays(raiderIo);
 
   return (
@@ -267,15 +278,29 @@ export const CharacterHeader: React.FC<{
             {isLoadingRaiderIo ? (
               <Skeleton h={24} w={64} mt={2} />
             ) : (
-              <Text
-                className={classes.statVal}
-                m={0}
-                style={{ color: getRaidProgressColor(raidProgress) }}
-              >
-                {raidProgress ?? "—"}
-              </Text>
+              <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
+                <Text
+                  className={classes.statVal}
+                  m={0}
+                  style={{ color: getRaidProgressColor(raidProgress) }}
+                >
+                  {raidProgress ?? "—"}
+                </Text>
+                <Text className={classes.statSub} m={0}>current tier</Text>
+              </Group>
             )}
-            <Text className={classes.statSub} m={0}>current tier</Text>
+            {!isLoadingRaiderIo && prevRaidProgress && prevRaidProgress !== "—" && (
+              <Group className={`${classes.prevSeason} ${classes.scoreRow}`} gap={6} align="baseline" wrap="nowrap">
+                <Text
+                  className={classes.prevSeasonVal}
+                  m={0}
+                  style={{ color: getRaidProgressColor(prevRaidProgress) }}
+                >
+                  {prevRaidProgress}
+                </Text>
+                <Text className={classes.statSub} m={0}>previous tier</Text>
+              </Group>
+            )}
           </Stack>
 
           <Stack className={classes.stat} gap={3}>
