@@ -24,14 +24,14 @@ export const EXPANSION_DISPLAY_NAMES: Record<number, string> = {
 };
 
 export const MYTHIC_PLUS_SEASONS: Record<string, MythicPlusSeason> = {
-  "season-mn-1": {
-    "zoneId": 47,
-    "displayName": "Season 1 - Midnight",
-    "expansion": 11
-  },
   "season-mn-2": {
     "zoneId": 55,
     "displayName": "Season 2 - Midnight",
+    "expansion": 11
+  },
+  "season-mn-1": {
+    "zoneId": 47,
+    "displayName": "Season 1 - Midnight",
     "expansion": 11
   }
 };

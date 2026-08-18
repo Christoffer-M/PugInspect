@@ -127,8 +127,9 @@ async function main() {
   if (seasons.length === 0) throw new Error("No started M+ seasons found");
   seasons.sort((a, b) => Date.parse(a.starts.us) - Date.parse(b.starts.us));
 
+  // Latest season first — the UI dropdown renders in insertion order
   const mythicPlusSeasons: Record<string, object> = {};
-  for (const s of seasons) {
+  for (const s of [...seasons].reverse()) {
     const num = Number(/(\d+)$/.exec(s.slug)?.[1]);
     if (!num) throw new Error(`Cannot parse season number from slug "${s.slug}"`);
     mythicPlusSeasons[s.slug] = {

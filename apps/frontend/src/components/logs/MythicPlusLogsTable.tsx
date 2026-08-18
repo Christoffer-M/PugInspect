@@ -54,10 +54,7 @@ export function MythicPlusLogsTable({
   zoneId,
 }: MythicPlusLogsTableProps) {
   const seasonOptions = Object.entries(MYTHIC_PLUS_SEASONS).map(
-    ([slug, season]) => ({
-      value: slug,
-      label: season.displayName,
-    }),
+    ([slug, season]) => ({ value: slug, label: season.displayName }),
   );
 
   const {
