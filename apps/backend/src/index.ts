@@ -89,7 +89,7 @@ function createRateLimiter(maxRequests: number, windowMs: number) {
   }, windowMs).unref();
 
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const ip = req.ip ?? "unknown";
+    const ip = getClientIp(req) ?? "unknown";
     const now = Date.now();
     const entry = store.get(ip);
     if (!entry || now > entry.resetAt) {
@@ -110,7 +110,19 @@ initDb(config.databaseUrl);
 console.log("[db] Database ready");
 
 const app = express();
-app.set("trust proxy", 1);
+// Production requests arrive through Cloudflare plus two local proxies
+// (nginx-proxy → frontend nginx). Trusting every private-range hop makes
+// req.ip resolve to the nearest public address — the Cloudflare edge in
+// production — no matter how many local hops the deployment has.
+app.set("trust proxy", "loopback, linklocal, uniquelocal");
+
+// The real visitor address: Cloudflare stamps it on CF-Connecting-IP, which
+// passes through the local proxies untouched. req.ip (the Cloudflare edge in
+// production, the direct peer elsewhere) is only the fallback.
+function getClientIp(req: express.Request): string | undefined {
+  const cf = req.headers["cf-connecting-ip"];
+  return typeof cf === "string" && cf !== "" ? cf : req.ip;
+}
 
 const server = new ApolloServer<BaseContext>({
   typeDefs: characterTypedefs,
@@ -166,22 +178,31 @@ const sendRateLimiter = createRateLimiter(120, 60_000);
 app.post(
   "/api/send",
   sendRateLimiter,
-  express.text({ type: "*/*", limit: "32kb" }),
+  express.json({ type: "*/*", limit: "32kb" }),
   async (req, res) => {
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       const userAgent = req.headers["user-agent"];
       if (userAgent) headers["User-Agent"] = userAgent;
-      if (req.ip) headers["X-Forwarded-For"] = req.ip;
       // Umami hands the client a cache token in the response body and expects
       // it back on subsequent events; pass it through both ways.
       const cache = req.headers["x-umami-cache"];
       if (typeof cache === "string") headers["X-Umami-Cache"] = cache;
 
+      // Umami geolocates from the connecting IP — this server's after
+      // proxying — but prefers payload.ip when present, so inject the real
+      // visitor IP there. Strip node's IPv4-mapped prefix, which Umami's
+      // payload validation rejects.
+      const body = req.body as { payload?: Record<string, unknown> } | undefined;
+      const visitorIp = getClientIp(req)?.replace(/^::ffff:/, "");
+      if (body?.payload && typeof body.payload === "object" && visitorIp) {
+        body.payload.ip = visitorIp;
+      }
+
       const upstream = await fetch("https://stats.puginspect.com/api/send", {
         method: "POST",
         headers,
-        body: typeof req.body === "string" ? req.body : "",
+        body: JSON.stringify(body ?? {}),
       });
       res.status(upstream.status).send(await upstream.text());
     } catch {
