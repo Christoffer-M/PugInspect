@@ -3,7 +3,7 @@
 // then review the diff. Sources: Raider.IO static-data, WarcraftLogs zones,
 // Blizzard item-set index.
 
-export const DEFAULT_RAID = "tier-mn-1";
+export const DEFAULT_RAID = "the-venomous-abyss";
 
 // Raider.IO character-profile `raid_progression` field value: keyword scopes
 // for current/previous expansion plus explicit slugs for older raids.
