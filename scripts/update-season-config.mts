@@ -134,7 +134,7 @@ async function main() {
     if (!num) throw new Error(`Cannot parse season number from slug "${s.slug}"`);
     mythicPlusSeasons[s.slug] = {
       zoneId: matchWclZone(`Mythic+ Season ${num}`, current.name, wclZones),
-      displayName: `Season ${num} - ${current.name}`,
+      displayName: `Season ${num}`,
       expansion: current.rioId,
     };
   }

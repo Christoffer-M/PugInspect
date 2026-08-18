@@ -16,6 +16,7 @@ import {
   DEFAULT_MYTHIC_PLUS_SEASON,
   MYTHIC_PLUS_SEASONS,
 } from "../../data/mythicPlusSeasons";
+import { getRaidExpansion } from "../../data/raidZones";
 import { SpecImage } from "../ui/SpecImage";
 import { SkeletonTableRows } from "../ui/SkeletonTableRows";
 import { PartitionSelector } from "./PartitionSelector";
@@ -29,6 +30,16 @@ const MP_METRICS = [
 ];
 
 const DEFAULT_MP_METRIC = Metric.PointsAndDamage;
+
+// Grouped by expansion, same shape as RAID_OPTIONS in RaidProgression
+const SEASON_OPTIONS = (() => {
+  const groups: Record<string, { value: string; label: string }[]> = {};
+  for (const [slug, season] of Object.entries(MYTHIC_PLUS_SEASONS)) {
+    const group = getRaidExpansion(season.expansion) ?? "Other";
+    (groups[group] ??= []).push({ value: slug, label: season.displayName });
+  }
+  return Object.entries(groups).map(([group, items]) => ({ group, items }));
+})();
 
 const compactNumber = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -53,10 +64,6 @@ export function MythicPlusLogsTable({
   class: className,
   zoneId,
 }: MythicPlusLogsTableProps) {
-  const seasonOptions = Object.entries(MYTHIC_PLUS_SEASONS).map(
-    ([slug, season]) => ({ value: slug, label: season.displayName }),
-  );
-
   const {
     metric: searchMetric,
     partition: searchPartition,
@@ -161,7 +168,7 @@ export function MythicPlusLogsTable({
                 transitionProps: { transition: "pop", duration: 200 },
                 width: "auto",
               }}
-              data={seasonOptions}
+              data={SEASON_OPTIONS}
               value={searchMpSeason ?? DEFAULT_MYTHIC_PLUS_SEASON}
               onChange={(value) => {
                 if (!value) return;
