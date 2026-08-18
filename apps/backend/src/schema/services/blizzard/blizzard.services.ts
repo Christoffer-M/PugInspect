@@ -50,7 +50,8 @@ export class BlizzardService {
 
   static async getCharacterProfile(
     args: QueryCharacterArgs,
-    bypassCache = false
+    bypassCache = false,
+    cacheOnly = false
   ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }> {
     const { name, realm, region } = args;
     const normalizedRealm = normalizeRealm(realm);
@@ -60,12 +61,18 @@ export class BlizzardService {
       throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
     }
 
-    if (!bypassCache) {
-      const cached = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name });
+    if (!bypassCache || cacheOnly) {
+      const cached = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name }, cacheOnly);
       if (cached) {
         logger.info("Blizzard character profile cache hit", { name, realm: normalizedRealm, region });
         return cached; // already includes characterId
       }
+    }
+
+    // Crawler traffic is served from cache only (stale allowed above) and must
+    // never spend upstream API quota.
+    if (cacheOnly) {
+      throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
     const token = await this.tokens.getToken(region);
@@ -131,7 +138,8 @@ export class BlizzardService {
 
   static async getCharacterEquipment(
     args: QueryCharacterArgs,
-    bypassCache = false
+    bypassCache = false,
+    cacheOnly = false
   ): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }> {
     const { name, realm, region } = args;
     const normalizedRealm = normalizeRealm(realm);
@@ -141,12 +149,18 @@ export class BlizzardService {
       throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
     }
 
-    if (!bypassCache) {
-      const cached = await getCachedEquipment({ region, realm: normalizedRealm, name });
+    if (!bypassCache || cacheOnly) {
+      const cached = await getCachedEquipment({ region, realm: normalizedRealm, name }, cacheOnly);
       if (cached) {
         logger.info("Blizzard equipment cache hit", { name, realm: normalizedRealm, region });
         return cached;
       }
+    }
+
+    // Crawler traffic is served from cache only (stale allowed above) and must
+    // never spend upstream API quota.
+    if (cacheOnly) {
+      throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
     const token = await this.tokens.getToken(region);

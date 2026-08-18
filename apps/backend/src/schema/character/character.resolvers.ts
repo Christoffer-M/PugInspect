@@ -29,6 +29,9 @@ import { VALID_REGIONS } from "../utils/regions.js";
  */
 type CharacterWithMeta = Omit<Character, "achievements" | "potentialAlts"> & { _characterId: string | null };
 
+/** Set per-request in the Apollo context (see index.ts). Optional so tests without a context still work. */
+type GraphQLContext = { isBot?: boolean };
+
 // ponytail: module-level 60s cache — stats are count queries, no need to hit
 // the DB per request. Move to a shared cache layer if more queries need it.
 let statsCache: { data: SiteStats; expiresAt: number } | null = null;
@@ -38,7 +41,7 @@ export default {
     character: async (
       _: unknown,
       args: QueryCharacterArgs,
-      _context: unknown,
+      context: GraphQLContext,
       info: GraphQLResolveInfo
     ): Promise<CharacterWithMeta> => {
       if (!VALID_REGIONS.has(args.region.toLowerCase())) {
@@ -46,6 +49,11 @@ export default {
           extensions: { code: "BAD_USER_INPUT" },
         });
       }
+
+      // Crawlers render the SPA and fire the same queries real users do; serve
+      // them from the DB cache only (stale allowed) so bot crawls never spend
+      // upstream API quota.
+      const cacheOnly = context?.isBot === true;
 
       const raidLogsRequested = isFieldRequested(info, "raidLogs");
       const mythicPlusLogsRequested = isFieldRequested(info, "mythicPlusLogs");
@@ -63,19 +71,22 @@ export default {
           raiderIoRequested,
           blizzardRequested,
           gearRequested,
-          bypassCache: args.bypassCache ?? false,
+          bypassCache: !cacheOnly && (args.bypassCache ?? false),
+          cacheOnly,
         });
 
       // Search analytics — only the identity query (blizzard fields) counts as
       // a "search", so the raiderIo/raidLogs/mythicPlusLogs follow-up queries a
-      // page view issues don't multi-count. Fire-and-forget.
-      if (characterId && blizzardRequested) {
+      // page view issues don't multi-count. Fire-and-forget. Crawler visits
+      // aren't searches.
+      if (characterId && blizzardRequested && !cacheOnly) {
         // recordSearchEvent swallows its own errors — safe to not await
         void recordSearchEvent(characterId);
       }
 
-      // Background alt detection — fire-and-forget, never blocks the response
-      if (characterId) {
+      // Background alt detection — fire-and-forget, never blocks the response.
+      // Skipped for crawlers: it fetches achievements from Blizzard upstream.
+      if (characterId && !cacheOnly) {
         AchievementsService.enrichAndLinkAlts(characterId, {
           name: args.name,
           realm: args.realm,

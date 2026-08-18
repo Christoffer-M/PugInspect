@@ -107,7 +107,8 @@ export class RaiderIOService {
 
   static async getCharacterProfile(
     args: QueryCharacterArgs,
-    bypassCache = false
+    bypassCache = false,
+    cacheOnly = false
   ): Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }> {
     const { name, realm, region } = args;
     const options: RequestInit = {
@@ -117,12 +118,18 @@ export class RaiderIOService {
     const normalizedRealm = normalizeRealm(realm);
     const normalizedName = normalizeName(name);
 
-    if (!bypassCache) {
-      const cached = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName });
+    if (!bypassCache || cacheOnly) {
+      const cached = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName }, cacheOnly);
       if (cached) {
         logger.info("RaiderIO character profile cache hit", { name, realm, region });
         return cached;
       }
+    }
+
+    // Crawler traffic is served from cache only (stale allowed above) and must
+    // never spend upstream API quota.
+    if (cacheOnly) {
+      throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
     logger.info("RaiderIO character profile request", { normalizedName, normalizedRealm, region });

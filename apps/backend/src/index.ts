@@ -6,6 +6,7 @@ import { initDb } from "./db/index.js";
 import { runMigrations } from "./db/migrate.js";
 import express from "express";
 import cors from "cors";
+import { isbot } from "isbot";
 import { renderCharacterPageHtml } from "./seo/characterMeta.js";
 import { renderCharacterCard } from "./seo/characterCard.js";
 import { renderSitemapXml } from "./seo/sitemap.js";
@@ -124,7 +125,11 @@ function getClientIp(req: express.Request): string | undefined {
   return typeof cf === "string" && cf !== "" ? cf : req.ip;
 }
 
-const server = new ApolloServer<BaseContext>({
+// Crawlers execute the SPA and fire real GraphQL queries; resolvers use this
+// flag to serve them from the DB cache without spending upstream API quota.
+type GraphQLContext = BaseContext & { isBot: boolean };
+
+const server = new ApolloServer<GraphQLContext>({
   typeDefs: characterTypedefs,
   resolvers: characterResolvers,
   validationRules: [maxQueryDepth(8), maxFieldCount(120)],
@@ -148,7 +153,13 @@ app.use(
   graphqlRateLimiter,
   cors<cors.CorsRequest>(corsOptions),
   express.json(),
-  expressMiddleware(server)
+  expressMiddleware(server, {
+    // A missing user-agent means a scripted client — treat it as a bot too.
+    context: async ({ req }) => {
+      const userAgent = req.headers["user-agent"];
+      return { isBot: !userAgent || isbot(userAgent) };
+    },
+  })
 );
 
 // Analytics script proxy — cached for 1 hour to avoid depending on Umami on every request
