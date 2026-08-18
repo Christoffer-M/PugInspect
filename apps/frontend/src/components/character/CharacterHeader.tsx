@@ -34,8 +34,14 @@ function formatSeasonLabel(slug: string | null | undefined): string | null {
   return n ? `S${n}` : null;
 }
 
-function getTopKeyLevel(raiderIo: RaiderIo | null | undefined): number | null {
-  const runs = raiderIo?.bestMythicPlusRuns;
+/** RaiderIO run URLs embed the season: ".../mythic-plus-runs/season-mn-1/<id>-...". */
+function runSeason(url: string | null | undefined): string | null {
+  return url?.match(/mythic-plus-runs\/([^/]+)\//)?.[1] ?? null;
+}
+
+/** Highest best-run key level for a season (any season when slug is null). */
+function getTopKeyLevel(raiderIo: RaiderIo | null | undefined, season: string | null): number | null {
+  const runs = raiderIo?.bestMythicPlusRuns?.filter((r) => !season || runSeason(r.url) === season);
   if (!runs?.length) return null;
   const max = Math.max(...runs.map((r) => r.key_level ?? 0));
   return max > 0 ? max : null;
@@ -104,7 +110,8 @@ export const CharacterHeader: React.FC<{
   const prevRioScore = getTopRioScore(raiderIo?.previousSeason);
   const seasonLabel = formatSeasonLabel(raiderIo?.currentSeason?.season);
   const prevSeasonLabel = formatSeasonLabel(raiderIo?.previousSeason?.season);
-  const topKey = getTopKeyLevel(raiderIo);
+  const topKey = getTopKeyLevel(raiderIo, raiderIo?.currentSeason?.season ?? null);
+  const prevTopKey = getTopKeyLevel(raiderIo, raiderIo?.previousSeason?.season ?? null);
   const raidProgress = getRaidProgressSummary(raiderIo);
   const lastActiveDays = getLastActiveDays(raiderIo);
 
@@ -232,13 +239,27 @@ export const CharacterHeader: React.FC<{
             {isLoadingRaiderIo ? (
               <Skeleton h={24} w={50} mt={2} />
             ) : (
-              <Text className={classes.statVal} m={0} style={{ color: "var(--mantine-color-text)" }}>
-                {topKey != null ? (
-                  <><Text component="span" className={classes.statValSmall}>+</Text>{topKey}</>
-                ) : "—"}
-              </Text>
+              <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
+                <Text className={classes.statVal} m={0} style={{ color: "var(--mantine-color-text)" }}>
+                  {topKey != null ? (
+                    <><Text component="span" className={classes.statValSmall}>+</Text>{topKey}</>
+                  ) : "—"}
+                </Text>
+                <Text className={classes.statSub} m={0}>
+                  {prevTopKey != null ? `current${seasonLabel ? ` (${seasonLabel})` : ""}` : "timed"}
+                </Text>
+              </Group>
             )}
-            <Text className={classes.statSub} m={0}>timed</Text>
+            {!isLoadingRaiderIo && prevTopKey != null && (
+              <Group className={`${classes.prevSeason} ${classes.scoreRow}`} gap={6} align="baseline" wrap="nowrap">
+                <Text className={classes.prevSeasonVal} m={0}>
+                  +{prevTopKey}
+                </Text>
+                <Text className={classes.statSub} m={0}>
+                  previous{prevSeasonLabel ? ` (${prevSeasonLabel})` : ""}
+                </Text>
+              </Group>
+            )}
           </Stack>
 
           <Stack className={classes.stat} gap={3}>
