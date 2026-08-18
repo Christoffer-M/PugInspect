@@ -85,8 +85,10 @@ async function upsertCharacter(
   return result[0]!.id;
 }
 
+/** allowStale serves expired snapshots too — for crawler traffic, which must never trigger upstream fetches. */
 export async function getCachedRioProfile(
-  key: CharacterKey
+  key: CharacterKey,
+  allowStale = false
 ): Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number } | null> {
   try {
     const rows = await getDb()
@@ -101,7 +103,7 @@ export async function getCachedRioProfile(
           eq(characters.region, key.region),
           eq(characters.realm, key.realm),
           eq(characters.name, key.name),
-          gt(characterRioSnapshots.expiresAt, new Date())
+          ...(allowStale ? [] : [gt(characterRioSnapshots.expiresAt, new Date())])
         )
       )
       .limit(1);
@@ -264,9 +266,11 @@ export async function getCharacterCardSnapshot(
   }
 }
 
+/** allowStale serves expired snapshots too — for crawler traffic, which must never trigger upstream fetches. */
 export async function getCachedWclProfile(
   key: CharacterKey,
-  query: WclQueryKey
+  query: WclQueryKey,
+  allowStale = false
 ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number } | null> {
   try {
     const rows = await getDb()
@@ -287,7 +291,7 @@ export async function getCachedWclProfile(
           eq(characterWclSnapshots.role, query.role),
           eq(characterWclSnapshots.byBracket, query.byBracket),
           eq(characterWclSnapshots.partition, query.partition),
-          gt(characterWclSnapshots.expiresAt, new Date())
+          ...(allowStale ? [] : [gt(characterWclSnapshots.expiresAt, new Date())])
         )
       )
       .limit(1);
@@ -357,8 +361,10 @@ export async function persistWclProfile(
   }
 }
 
+/** allowStale serves expired snapshots too — for crawler traffic, which must never trigger upstream fetches. */
 export async function getCachedBlizzardProfile(
-  key: CharacterKey
+  key: CharacterKey,
+  allowStale = false
 ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string } | null> {
   try {
     const rows = await getDb()
@@ -375,7 +381,7 @@ export async function getCachedBlizzardProfile(
           eq(characters.region, key.region),
           eq(characters.realm, key.realm),
           eq(characters.name, key.name),
-          gt(characterBlizzardSnapshots.expiresAt, new Date())
+          ...(allowStale ? [] : [gt(characterBlizzardSnapshots.expiresAt, new Date())])
         )
       )
       .limit(1);
@@ -439,8 +445,10 @@ export async function persistBlizzardProfile(
   }
 }
 
+/** allowStale serves expired snapshots too — for crawler traffic, which must never trigger upstream fetches. */
 export async function getCachedEquipment(
-  key: CharacterKey
+  key: CharacterKey,
+  allowStale = false
 ): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number } | null> {
   try {
     const rows = await getDb()
@@ -455,7 +463,7 @@ export async function getCachedEquipment(
           eq(characters.region, key.region),
           eq(characters.realm, key.realm),
           eq(characters.name, key.name),
-          gt(characterEquipmentSnapshots.expiresAt, new Date())
+          ...(allowStale ? [] : [gt(characterEquipmentSnapshots.expiresAt, new Date())])
         )
       )
       .limit(1);

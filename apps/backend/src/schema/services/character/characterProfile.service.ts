@@ -28,23 +28,24 @@ export async function getCharacterProfiles(
     blizzardRequested,
     gearRequested,
     bypassCache,
-  }: { raidLogsRequested: boolean; mythicPlusLogsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; gearRequested: boolean; bypassCache: boolean }
+    cacheOnly = false,
+  }: { raidLogsRequested: boolean; mythicPlusLogsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; gearRequested: boolean; bypassCache: boolean; cacheOnly?: boolean }
 ) {
   const { name, realm, region } = args;
-  logger.info("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, gearRequested, bypassCache });
+  logger.info("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, gearRequested, bypassCache, cacheOnly });
 
   const [blizzardResult, rioResult, logsResult, equipmentResult] = await Promise.allSettled([
     blizzardRequested
-      ? BlizzardService.getCharacterProfile(args, bypassCache)
+      ? BlizzardService.getCharacterProfile(args, bypassCache, cacheOnly)
       : Promise.resolve(null),
     raiderIoRequested
-      ? RaiderIOService.getCharacterProfile(args, bypassCache)
+      ? RaiderIOService.getCharacterProfile(args, bypassCache, cacheOnly)
       : Promise.resolve(null),
     raidLogsRequested || mythicPlusLogsRequested
-      ? WarcraftLogsService.getCharacterProfile(args, bypassCache)
+      ? WarcraftLogsService.getCharacterProfile(args, bypassCache, cacheOnly)
       : Promise.resolve(null),
     gearRequested
-      ? BlizzardService.getCharacterEquipment(args, bypassCache)
+      ? BlizzardService.getCharacterEquipment(args, bypassCache, cacheOnly)
       : Promise.resolve(null),
   ]);
 

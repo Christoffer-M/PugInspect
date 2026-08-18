@@ -1,5 +1,7 @@
 # https://www.robotstxt.org/robotstxt.html
+# Query-parameter variants (filter/tab state) are the same content as their
+# canonical parameterless URL — don't let crawlers multiply crawl volume on them.
 User-agent: *
-Disallow:
+Disallow: /*?
 
 Sitemap: https://puginspect.com/sitemap.xml

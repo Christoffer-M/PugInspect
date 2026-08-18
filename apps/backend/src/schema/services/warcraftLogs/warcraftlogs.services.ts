@@ -89,12 +89,24 @@ export class WarcraftLogsService {
 
   static async getCharacterProfile(
     args: QueryCharacterArgs,
-    bypassCache = false
+    bypassCache = false,
+    cacheOnly = false
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, realm, region, zoneId, partition: argPartition } = args;
     const normalizedRealm = normalizeRealm(realm);
     const partition = argPartition ?? undefined;
     const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${args.difficulty ?? ""}:${args.role ?? ""}:${args.metric ?? ""}:${args.byBracket ?? ""}:${partition ?? ""}`.toLowerCase();
+
+    // Crawler traffic is served from cache only (stale allowed) and must
+    // never spend upstream API quota.
+    if (cacheOnly) {
+      const cached = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
+      if (cached) {
+        logger.info("WarcraftLogs character profile cache hit (crawler)", { name, realm: normalizedRealm, region });
+        return cached;
+      }
+      throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
+    }
 
     if (!bypassCache) {
       const inFlight = this.profileFetchInFlight.get(cacheKey);
@@ -115,11 +127,13 @@ export class WarcraftLogsService {
   private static async checkCacheOrNull(
     args: QueryCharacterArgs,
     normalizedRealm: string,
-    partition: number | undefined
+    partition: number | undefined,
+    allowStale = false
   ) {
     return getCachedWclProfile(
       { region: args.region, realm: normalizedRealm, name: args.name },
-      buildProfileParams(args, partition)
+      buildProfileParams(args, partition),
+      allowStale
     );
   }
 
