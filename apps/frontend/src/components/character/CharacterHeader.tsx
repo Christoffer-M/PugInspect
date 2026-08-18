@@ -39,9 +39,13 @@ function runSeason(url: string | null | undefined): string | null {
   return url?.match(/mythic-plus-runs\/([^/]+)\//)?.[1] ?? null;
 }
 
-/** Highest best-run key level for a season (any season when slug is null). */
+/** Highest *timed* best-run key level for a season (any season when slug is null).
+ * Best runs are ranked by score, so a depleted key can sit in there — skip those
+ * to keep the "timed" label honest. */
 function getTopKeyLevel(raiderIo: RaiderIo | null | undefined, season: string | null): number | null {
-  const runs = raiderIo?.bestMythicPlusRuns?.filter((r) => !season || runSeason(r.url) === season);
+  const runs = raiderIo?.bestMythicPlusRuns?.filter(
+    (r) => r.keystone_upgrades > 0 && (!season || runSeason(r.url) === season),
+  );
   if (!runs?.length) return null;
   const max = Math.max(...runs.map((r) => r.key_level ?? 0));
   return max > 0 ? max : null;
