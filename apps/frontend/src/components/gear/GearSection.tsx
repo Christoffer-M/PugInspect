@@ -39,6 +39,10 @@ export const GearSection: React.FC<GearSectionProps> = ({
 }) => {
   const [opened, { toggle }] = useDisclosure(false);
 
+  // Prefer the value computed from the equipment snapshot — the profile's
+  // equippedItemLevel can lag gear changes by up to 24h of cache.
+  const displayItemLevel = gear?.equippedItemLevel ?? equippedItemLevel;
+
   const items = gear?.items ?? [];
   // Only real raid tier sets — ignore crafted/PvP/legacy item sets the API also
   // reports. Newest tier first.
@@ -106,7 +110,7 @@ export const GearSection: React.FC<GearSectionProps> = ({
               <Skeleton height={20} width={44} />
             ) : (
               <div className={classes.statVal}>
-                {equippedItemLevel != null ? equippedItemLevel.toFixed(0) : "–"}
+                {displayItemLevel != null ? displayItemLevel.toFixed(0) : "–"}
               </div>
             )}
           </div>

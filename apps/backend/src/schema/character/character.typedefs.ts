@@ -119,6 +119,8 @@ export const characterTypedefs = gql`
   type Gear {
     items: [GearItem!]!
     tierSets: [TierSetSummary!]!
+    "Equipped item level computed from the equipment snapshot — always consistent with items, unlike the profile's equipped_item_level which lags"
+    equippedItemLevel: Int!
   }
 
   type GearItem {

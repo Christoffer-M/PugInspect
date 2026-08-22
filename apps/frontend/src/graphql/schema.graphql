@@ -63,6 +63,10 @@ type Encounter {
 }
 
 type Gear {
+  """
+  Equipped item level computed from the equipment snapshot — always consistent with items, unlike the profile's equipped_item_level which lags
+  """
+  equippedItemLevel: Int!
   items: [GearItem!]!
   tierSets: [TierSetSummary!]!
 }
