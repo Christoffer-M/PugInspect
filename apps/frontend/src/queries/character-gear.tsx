@@ -13,6 +13,7 @@ export const CharacterGearQueryDoc = graphql(`
   query CharacterGear($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
     character(name: $name, realm: $realm, region: $region, bypassCache: $bypassCache) {
       gear {
+        equippedItemLevel
         items {
           slot
           slotName

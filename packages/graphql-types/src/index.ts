@@ -94,6 +94,8 @@ export type Encounter = {
 
 export type Gear = {
   __typename?: 'Gear';
+  /** Equipped item level computed from the equipment snapshot — always consistent with items, unlike the profile's equipped_item_level which lags */
+  equippedItemLevel: Scalars['Int']['output'];
   items: Array<GearItem>;
   tierSets: Array<TierSetSummary>;
 };

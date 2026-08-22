@@ -220,5 +220,59 @@ describe("mapGear", () => {
     const gear = mapGear(equipment([]));
     expect(gear.items).toEqual([]);
     expect(gear.tierSets).toEqual([]);
+    expect(gear.equippedItemLevel).toBe(0);
+  });
+
+  describe("equippedItemLevel", () => {
+    const filler = (slot: string, value: number) =>
+      item({ slot: { type: slot, name: slot }, level: { value } });
+
+    it("averages over all 16 slots, counting an empty off-hand as 0 for a 1H user", () => {
+      const gear = mapGear(
+        equipment([
+          filler("HEAD", 660),
+          item({
+            slot: { type: "MAIN_HAND", name: "Main Hand" },
+            level: { value: 680 },
+            inventory_type: { type: "WEAPON", name: "One-Hand" },
+          }),
+        ])
+      );
+      expect(gear.equippedItemLevel).toBe(Math.floor((660 + 680) / 16));
+    });
+
+    it("counts a two-hander twice when the off-hand is empty", () => {
+      const gear = mapGear(
+        equipment([
+          item({
+            slot: { type: "MAIN_HAND", name: "Main Hand" },
+            level: { value: 680 },
+            inventory_type: { type: "TWOHWEAPON", name: "Two-Hand" },
+          }),
+        ])
+      );
+      expect(gear.equippedItemLevel).toBe(Math.floor((680 * 2) / 16));
+    });
+
+    it("does not double a two-hander when an off-hand is equipped", () => {
+      const gear = mapGear(
+        equipment([
+          item({
+            slot: { type: "MAIN_HAND", name: "Main Hand" },
+            level: { value: 680 },
+            inventory_type: { type: "TWOHWEAPON", name: "Two-Hand" },
+          }),
+          filler("OFF_HAND", 660),
+        ])
+      );
+      expect(gear.equippedItemLevel).toBe(Math.floor((680 + 660) / 16));
+    });
+
+    it("ignores shirt/tabard slots in the average", () => {
+      const gear = mapGear(
+        equipment([filler("HEAD", 640), filler("SHIRT", 1), filler("TABARD", 1)])
+      );
+      expect(gear.equippedItemLevel).toBe(Math.floor(640 / 16));
+    });
   });
 });

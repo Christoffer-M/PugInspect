@@ -97,6 +97,8 @@ export type Encounter = {
 
 export type Gear = {
   __typename?: 'Gear';
+  /** Equipped item level computed from the equipment snapshot — always consistent with items, unlike the profile's equipped_item_level which lags */
+  equippedItemLevel: Scalars['Int']['output'];
   items: Array<GearItem>;
   tierSets: Array<TierSetSummary>;
 };
@@ -364,7 +366,7 @@ export type CharacterGearQueryVariables = Exact<{
 }>;
 
 
-export type CharacterGearQuery = { __typename?: 'Query', character?: { __typename?: 'Character', gear?: { __typename?: 'Gear', items: Array<{ __typename?: 'GearItem', slot: string, slotName: string, itemId: number, name: string, quality: string, itemLevel: number, iconUrl?: string | null, enchant?: string | null, missingEnchant: boolean, tierSetId?: number | null, tierSetName?: string | null, sockets: Array<{ __typename?: 'GearSocket', filled: boolean, display?: string | null }> }>, tierSets: Array<{ __typename?: 'TierSetSummary', id: number, name: string, equippedCount: number }> } | null } | null };
+export type CharacterGearQuery = { __typename?: 'Query', character?: { __typename?: 'Character', gear?: { __typename?: 'Gear', equippedItemLevel: number, items: Array<{ __typename?: 'GearItem', slot: string, slotName: string, itemId: number, name: string, quality: string, itemLevel: number, iconUrl?: string | null, enchant?: string | null, missingEnchant: boolean, tierSetId?: number | null, tierSetName?: string | null, sockets: Array<{ __typename?: 'GearSocket', filled: boolean, display?: string | null }> }>, tierSets: Array<{ __typename?: 'TierSetSummary', id: number, name: string, equippedCount: number }> } | null } | null };
 
 export type CharacterInfoQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -463,6 +465,7 @@ export const CharacterGearDocument = new TypedDocumentString(`
     bypassCache: $bypassCache
   ) {
     gear {
+      equippedItemLevel
       items {
         slot
         slotName

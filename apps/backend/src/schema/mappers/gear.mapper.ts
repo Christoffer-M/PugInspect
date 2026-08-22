@@ -74,5 +74,30 @@ export function mapGear(equipment: BlizzardCharacterEquipment): Gear {
     });
   }
 
-  return { items, tierSets: [...tierSets.values()] };
+  const counted = equipment.equipped_items.filter((it) => SLOT_ORDER.includes(it.slot.type));
+  return { items, tierSets: [...tierSets.values()], equippedItemLevel: computeEquippedItemLevel(counted) };
+}
+
+// Two-handers (incl. ranged) fill both weapon slots in Blizzard's equipped-ilvl
+// math; a 1H with an empty off-hand counts the off-hand as 0.
+const TWO_HANDED_TYPES = new Set(["TWOHWEAPON", "RANGED", "RANGEDRIGHT"]);
+
+/**
+ * Blizzard's equipped item level: sum over the 16 gear slots / 16, with a
+ * two-hand weapon counting for both weapon slots when the off-hand is empty.
+ * Computed here from the same snapshot the item tiles render from, so the
+ * header can never disagree with the items (the profile endpoint's
+ * equipped_item_level lags gear changes by up to its 24h cache TTL).
+ */
+function computeEquippedItemLevel(items: BlizzardEquippedItem[]): number {
+  let sum = 0;
+  for (const it of items) sum += it.level.value;
+
+  const mainHand = items.find((it) => it.slot.type === "MAIN_HAND");
+  const hasOffHand = items.some((it) => it.slot.type === "OFF_HAND");
+  if (mainHand && !hasOffHand && TWO_HANDED_TYPES.has(mainHand.inventory_type?.type ?? "")) {
+    sum += mainHand.level.value;
+  }
+
+  return Math.floor(sum / SLOT_ORDER.length);
 }
