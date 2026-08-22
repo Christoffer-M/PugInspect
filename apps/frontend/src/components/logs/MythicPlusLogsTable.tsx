@@ -6,6 +6,7 @@ import {
   Stack,
   Group,
   Anchor,
+  Box,
 } from "@mantine/core";
 import { Maybe, Metric } from "../../graphql/graphql";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -40,6 +41,12 @@ const SEASON_OPTIONS = (() => {
   }
   return Object.entries(groups).map(([group, items]) => ({ group, items }));
 })();
+
+// WCL allocates remixed-dungeon encounter ids by adding multiples of 50000 to
+// the canonical id (e.g. Kings' Rest 61762 -> 11762), so mod 50000 recovers
+// the id their icon CDN is keyed by — same trick their own site uses.
+const dungeonIconUrl = (id: number) =>
+  `https://assets.rpglogs.com/img/warcraft/bosses/${id % 50000}-icon.jpg`;
 
 const compactNumber = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -91,20 +98,37 @@ export function MythicPlusLogsTable({
   const rows = rankings.map((ranking, i) => (
     <Table.Tr key={ranking.dungeon?.id ?? i}>
       <Table.Td c={ranking.throughputPercent != null ? undefined : "dimmed"}>
-        {ranking.dungeon?.id ? (
-          <Anchor
-            size="sm"
-            c="inherit"
-            underline="hover"
-            href={wclDungeonUrl(ranking.dungeon.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {ranking.dungeon.name}
-          </Anchor>
-        ) : (
-          ranking.dungeon?.name
-        )}
+        <Group gap="xs" wrap="nowrap" align="center">
+          {ranking.dungeon?.id && (
+            <Box style={{
+              width: 26, height: 26, flexShrink: 0,
+              borderRadius: "var(--mantine-radius-md)",
+              overflow: "hidden",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08)",
+            }}>
+              <img
+                src={dungeonIconUrl(ranking.dungeon.id)}
+                alt={ranking.dungeon.name ?? ""}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+              />
+            </Box>
+          )}
+          {ranking.dungeon?.id ? (
+            <Anchor
+              size="sm"
+              c="inherit"
+              underline="hover"
+              href={wclDungeonUrl(ranking.dungeon.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ranking.dungeon.name}
+            </Anchor>
+          ) : (
+            ranking.dungeon?.name
+          )}
+        </Group>
       </Table.Td>
       <Table.Td>
         <ParsePill value={ranking.throughputPercent} />
