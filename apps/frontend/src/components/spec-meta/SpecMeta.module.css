@@ -105,8 +105,8 @@
   color: #6b7590; font-weight: 600;
 }
 .colRank { width: 24px; text-align: left; flex-shrink: 0; }
-.colSpec { flex: 1; min-width: 0; }
-.colBar { display: block; width: 300px; flex-shrink: 0; position: relative; }
+.colSpec { width: 180px; flex-shrink: 0; min-width: 0; }
+.colBar { display: block; flex: 1 1 auto; min-width: 120px; position: relative; }
 /* sortable stat columns: the active one wears the headline style */
 .headSort {
   width: 64px; flex-shrink: 0;
@@ -150,7 +150,7 @@
 
 .rank { font-family: var(--mono); font-size: 12px; color: #6b7590; }
 .rankTop { color: #c5bcf2; font-weight: 600; }
-.specCell { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.specCell { width: 180px; flex-shrink: 0; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .specLabels { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .specName { font-size: 14px; font-weight: 600; line-height: 1.2; }
 .className { font-size: 11px; color: #6b7590; line-height: 1.2; }
@@ -247,13 +247,13 @@
   .head { display: none; }
 
   .row { flex-wrap: wrap; gap: 9px; padding: 10px 11px; align-items: center; }
-  .colBar { width: 100%; order: 3; }
+  .colBar { width: 100%; flex: none; order: 3; }
   .track { height: 18px; }
   .trackBg { top: 6px; }
   .trackMid { height: 18px; }
   .fillMedian, .fillP95 { top: 6px; }
   .markMax { top: 5px; }
-  .specCell { flex: 1 1 auto; }
+  .specCell { width: auto; flex: 1 1 auto; }
   /* The header row is hidden on mobile: the active stat becomes the headline
      top-right, the inactive ones join the labeled meta line below the bar. */
   .statCol { width: auto; }
