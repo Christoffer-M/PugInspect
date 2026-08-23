@@ -136,6 +136,18 @@ describe("aggregate", () => {
     expect(fire.medianKey).toBe(14);
   });
 
+  it("carries the best parse's report reference for linking", () => {
+    const parses: Parse[] = [
+      ...Array.from({ length: 10 }, () => parse("Fire", 1, 14, 250)),
+      { ...parse("Fire", 1, 18, 400), reportCode: "AbCd1234", fightId: 7 },
+    ];
+    const fire = aggregate(parses, [14]).find(
+      (r) => r.encounterId === 0 && r.specSlug === "Fire"
+    )!;
+    expect(fire.maxReportCode).toBe("AbCd1234");
+    expect(fire.maxFightId).toBe(7);
+  });
+
   it("normalizes healers against healers, not against the damage field", () => {
     const parses: Parse[] = [
       ...Array.from({ length: 10 }, (_, i) => ({

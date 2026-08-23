@@ -42,6 +42,7 @@ const query = graphql(`
           max
           medianKey
           maxKey
+          maxReportUrl
         }
       }
     }

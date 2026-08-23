@@ -8,6 +8,9 @@ export type Parse = {
   encounterId: number;
   keyLevel: number;
   amount: number;
+  /** WCL report behind the parse, so the best run can be linked. */
+  reportCode?: string;
+  fightId?: number;
 };
 
 export type StatRow = {
@@ -26,6 +29,9 @@ export type StatRow = {
   medianKey: number;
   /** Keystone level of the single best parse — the run behind `max`. */
   maxKey: number;
+  /** WCL report of the single best parse, for a verification link. */
+  maxReportCode: string | null;
+  maxFightId: number | null;
 };
 
 /** Below this a spec's median is too noisy to rank; the UI says so explicitly. */
@@ -146,6 +152,8 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
           max: bestOf(specParses).amount,
           medianKey: Math.round(median(ascending(specParses.map((p) => p.keyLevel)))),
           maxKey: bestOf(specParses).keyLevel,
+          maxReportCode: bestOf(specParses).reportCode ?? null,
+          maxFightId: bestOf(specParses).fightId ?? null,
         });
 
         // Per dungeon: normalized against the same per-key buckets, rescaled
@@ -180,6 +188,8 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
             max: bestOf(dungeonParses).amount,
             medianKey: Math.round(median(ascending(dungeonParses.map((p) => p.keyLevel)))),
             maxKey: bestOf(dungeonParses).keyLevel,
+            maxReportCode: bestOf(dungeonParses).reportCode ?? null,
+            maxFightId: bestOf(dungeonParses).fightId ?? null,
           });
         }
       }

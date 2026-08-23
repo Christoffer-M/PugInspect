@@ -290,6 +290,8 @@ type SpecDungeonStat {
   max: Float!
   """Keystone level of the single best parse. Null for pre-existing rows."""
   maxKey: Int
+  """WarcraftLogs report link for the single best parse."""
+  maxReportUrl: String
   median: Float!
   medianKey: Int!
   p95: Float!

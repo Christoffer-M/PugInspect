@@ -89,6 +89,8 @@ export const characterTypedefs = gql`
     medianKey: Int!
     "Keystone level of the single best parse. Null for pre-existing rows."
     maxKey: Int
+    "WarcraftLogs report link for the single best parse."
+    maxReportUrl: String
   }
 
   type SiteStats {

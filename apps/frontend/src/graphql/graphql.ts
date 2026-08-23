@@ -373,6 +373,8 @@ export type SpecDungeonStat = {
   max: Scalars['Float']['output'];
   /** Keystone level of the single best parse. Null for pre-existing rows. */
   maxKey?: Maybe<Scalars['Int']['output']>;
+  /** WarcraftLogs report link for the single best parse. */
+  maxReportUrl?: Maybe<Scalars['String']['output']>;
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];
   p95: Scalars['Float']['output'];
@@ -510,7 +512,7 @@ export type MythicPlusSpecStatsQueryVariables = Exact<{
 }>;
 
 
-export type MythicPlusSpecStatsQuery = { __typename?: 'Query', mythicPlusSpecStats?: { __typename?: 'MythicPlusSpecStats', zoneId: number, refreshedAt: string, keyFloor: number, keyLevels: Array<number>, totalParses: number, minParsesToRank: number, sampleDepth: number, minKeyLevel: number, dungeons: Array<{ __typename?: 'MythicPlusDungeon', encounterId: number, name: string }>, specs: Array<{ __typename?: 'SpecStat', classSlug: string, specSlug: string, className: string, specName: string, role: SpecRole, metric: string, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, dungeons: Array<{ __typename?: 'SpecDungeonStat', encounterId: number, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null }> }> } | null };
+export type MythicPlusSpecStatsQuery = { __typename?: 'Query', mythicPlusSpecStats?: { __typename?: 'MythicPlusSpecStats', zoneId: number, refreshedAt: string, keyFloor: number, keyLevels: Array<number>, totalParses: number, minParsesToRank: number, sampleDepth: number, minKeyLevel: number, dungeons: Array<{ __typename?: 'MythicPlusDungeon', encounterId: number, name: string }>, specs: Array<{ __typename?: 'SpecStat', classSlug: string, specSlug: string, className: string, specName: string, role: SpecRole, metric: string, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, dungeons: Array<{ __typename?: 'SpecDungeonStat', encounterId: number, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, maxReportUrl?: string | null }> }> } | null };
 
 export type SiteStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -841,6 +843,7 @@ export const MythicPlusSpecStatsDocument = new TypedDocumentString(`
         max
         medianKey
         maxKey
+        maxReportUrl
       }
     }
   }

@@ -71,6 +71,13 @@
       "when": 1787484294949,
       "tag": "0009_melodic_gideon",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787484789357,
+      "tag": "0010_nifty_hulk",
+      "breakpoints": true
     }
   ]
 }

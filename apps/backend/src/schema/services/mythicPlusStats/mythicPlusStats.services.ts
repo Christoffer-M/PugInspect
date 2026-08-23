@@ -150,6 +150,7 @@ export type SpecStatDto = {
     max: number;
     medianKey: number;
     maxKey: number | null;
+    maxReportUrl: string | null;
   }[];
 };
 
@@ -166,6 +167,11 @@ export type MythicPlusSpecStatsDto = {
   dungeons: { encounterId: number; name: string }[];
   specs: SpecStatDto[];
 };
+
+const reportUrl = (code: string | null, fightId: number | null): string | null =>
+  code
+    ? `https://www.warcraftlogs.com/reports/${code}${fightId != null ? `#fight=${fightId}` : ""}`
+    : null;
 
 export async function getMythicPlusSpecStats(
   zoneId: number,
@@ -215,6 +221,7 @@ export async function getMythicPlusSpecStats(
             max: d.max,
             medianKey: d.medianKey,
             maxKey: d.maxKey,
+            maxReportUrl: reportUrl(d.maxReportCode, d.maxFightId),
           }))
           .sort((a, b) => b.median - a.median),
       };

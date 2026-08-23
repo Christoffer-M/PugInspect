@@ -38,6 +38,7 @@ const spec = (
     max: median * 1.3,
     medianKey: 11 + i,
     maxKey: 16,
+    maxReportUrl: "https://www.warcraftlogs.com/reports/AbCd1234#fight=7",
   })),
 });
 
@@ -178,6 +179,11 @@ test("stat columns sort the table and take the headline emphasis", async ({ page
   await expect(page.locator('[class*="detailValue"]').first()).toHaveText("323.6k");
   // …and the key badge is the max run's key, not the typical key.
   await expect(page.locator('[class*="detailKey"]').first()).toHaveText("+16");
+  // The max value links to the run's WarcraftLogs report.
+  await expect(page.locator('[class*="detailValue"]').first()).toHaveAttribute(
+    "href",
+    "https://www.warcraftlogs.com/reports/AbCd1234#fight=7"
+  );
 
   await page.locator('[class*="headSort"]', { hasText: "Median" }).click();
   await expect(page.locator('[class*="specName"]').first()).toHaveText("Elemental");

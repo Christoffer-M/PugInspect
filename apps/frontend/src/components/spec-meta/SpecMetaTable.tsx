@@ -433,7 +433,19 @@ function DungeonDetail({
                 }}
               />
             </span>
-            <span className={classes.detailValue}>{k(d.value)}</span>
+            {sortBy === "max" && d.maxReportUrl ? (
+              <a
+                className={`${classes.detailValue} ${classes.detailLink}`}
+                href={d.maxReportUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open the run on WarcraftLogs"
+              >
+                {k(d.value)}
+              </a>
+            ) : (
+              <span className={classes.detailValue}>{k(d.value)}</span>
+            )}
             <span className={classes.detailKey}>+{d.keyLevel}</span>
           </div>
         ))}

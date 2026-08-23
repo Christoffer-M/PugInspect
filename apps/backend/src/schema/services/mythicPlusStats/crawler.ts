@@ -62,6 +62,8 @@ function toParses(
         encounterId,
         keyLevel: row.bracketData,
         amount: row.amount,
+        reportCode: row.report?.code,
+        fightId: row.report?.fightID,
       });
     }
   };

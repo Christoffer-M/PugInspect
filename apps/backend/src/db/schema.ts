@@ -360,6 +360,9 @@ export const mplusSpecStats = pgTable(
     medianKey: integer("median_key").notNull(),
     // Nullable: rows written before this column existed fall back to medianKey.
     maxKey: integer("max_key"),
+    // WCL report of the best parse. Anonymous report codes carry an "a:" prefix.
+    maxReportCode: varchar("max_report_code", { length: 32 }),
+    maxFightId: integer("max_fight_id"),
     refreshedAt: timestamp("refreshed_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
