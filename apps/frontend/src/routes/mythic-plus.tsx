@@ -72,7 +72,27 @@ const MythicPlusMeta: React.FC = () => {
                 }}
               />
               <Stack gap={4}>
-                <Title order={1} size="26px">Mythic+ Spec Meta</Title>
+                <Group gap="sm" align="center" wrap="wrap">
+                  <Title order={1} size="26px">Mythic+ Spec Meta</Title>
+                  <Text
+                    component="span"
+                    size="13px"
+                    fw={600}
+                    ff="var(--mantine-font-family-headings)"
+                    style={{
+                      color: "#c5bcf2",
+                      background: "rgba(139, 127, 212, 0.12)",
+                      border: "1px solid rgba(139, 127, 212, 0.4)",
+                      borderRadius: 6,
+                      padding: "3px 10px",
+                      letterSpacing: "0.04em",
+                      whiteSpace: "nowrap",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {SEASON_LABEL}
+                  </Text>
+                </Group>
                 <Text size="13px" c="dimmed">
                   Every spec&apos;s fastest Mythic+ runs, ranked by throughput and adjusted for
                   the dungeons and keys they happen at.
@@ -81,9 +101,6 @@ const MythicPlusMeta: React.FC = () => {
             </Group>
 
             <Group gap="xs">
-              <Text size="13px" c="dimmed" fw={500} style={{ whiteSpace: "nowrap" }}>
-                {SEASON_LABEL}
-              </Text>
               {data && data.dungeons.length > 1 && (
                 <Select
                   data={[
