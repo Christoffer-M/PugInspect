@@ -314,7 +314,15 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
   const setSort = (key: SortKey) =>
     table.setSorting([{ id: key, desc: sortBy === key ? !sortDesc : true }]);
 
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return (
+      <div className={classes.panel}>
+        <div className={classes.lowSample} style={{ padding: "18px 16px" }}>
+          Nothing to show for this view — try another role, metric, or dungeon.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -472,11 +480,14 @@ function DungeonDetail({
 }) {
   // The panel mirrors whichever stat the table is sorted by, so the expanded
   // numbers always decompose the value the row is ranked on.
-  const detail = spec.dungeons.map((d) => ({
-    ...d,
-    name: dungeonNames.get(d.encounterId) ?? `Dungeon ${d.encounterId}`,
-    value: d[sortBy],
-  }));
+  const detail = spec.dungeons
+    .map((d) => ({
+      ...d,
+      name: dungeonNames.get(d.encounterId) ?? `Dungeon ${d.encounterId}`,
+      value: d[sortBy],
+    }))
+    // The backend orders by median; re-rank by whichever stat the panel shows.
+    .sort((a, b) => b.value - a.value);
   const detailPeak = Math.max(1, ...detail.map((d) => d.value));
   const color = getClassColor(spec.className);
   const statLabel = SORT_OPTIONS.find((o) => o.key === sortBy)?.label.toLowerCase() ?? "median";

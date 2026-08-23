@@ -21,6 +21,7 @@ import { getLinkedCharacters } from "../../db/persistence.js";
 import {
   defaultZoneId,
   getMythicPlusSpecStats,
+  type MythicPlusSpecStatsDto,
 } from "../services/mythicPlusStats/mythicPlusStats.services.js";
 import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
@@ -38,6 +39,7 @@ type GraphQLContext = { isBot?: boolean };
 
 // ponytail: module-level 60s cache — stats are count queries, no need to hit
 // the DB per request. Move to a shared cache layer if more queries need it.
+const specStatsCache = new Map<number, { data: MythicPlusSpecStatsDto | null; expiresAt: number }>();
 let statsCache: { data: SiteStats; expiresAt: number } | null = null;
 
 export default {
@@ -126,13 +128,16 @@ export default {
       return data;
     },
 
-    mythicPlusSpecStats: async (
-      _: unknown,
-      args: { zoneId?: number | null; keyFloor?: number | null }
-    ) => {
+    mythicPlusSpecStats: async (_: unknown, args: { zoneId?: number | null }) => {
       const zoneId = args.zoneId ?? defaultZoneId();
       if (zoneId == null) return null;
-      return getMythicPlusSpecStats(zoneId, args.keyFloor);
+      // Same memo pattern as siteStats: the data changes hourly, and the DTO
+      // build is two DB queries plus sorting — no reason to redo it per request.
+      const cached = specStatsCache.get(zoneId);
+      if (cached && Date.now() < cached.expiresAt) return cached.data;
+      const data = await getMythicPlusSpecStats(zoneId);
+      specStatsCache.set(zoneId, { data, expiresAt: Date.now() + 60_000 });
+      return data;
     },
 
     zonePartitions: async (

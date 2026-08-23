@@ -259,7 +259,6 @@ export type QueryCharacterSuggestionsArgs = {
 
 
 export type QueryMythicPlusSpecStatsArgs = {
-  keyFloor?: InputMaybe<Scalars['Int']['input']>;
   zoneId?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -508,7 +507,6 @@ export type CharacterSearchQuery = { __typename?: 'Query', characterSuggestions:
 
 export type MythicPlusSpecStatsQueryVariables = Exact<{
   zoneId?: InputMaybe<Scalars['Int']['input']>;
-  keyFloor?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
@@ -808,8 +806,8 @@ export const CharacterSearchDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<CharacterSearchQuery, CharacterSearchQueryVariables>;
 export const MythicPlusSpecStatsDocument = new TypedDocumentString(`
-    query MythicPlusSpecStats($zoneId: Int, $keyFloor: Int) {
-  mythicPlusSpecStats(zoneId: $zoneId, keyFloor: $keyFloor) {
+    query MythicPlusSpecStats($zoneId: Int) {
+  mythicPlusSpecStats(zoneId: $zoneId) {
     zoneId
     refreshedAt
     keyFloor

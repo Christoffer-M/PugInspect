@@ -231,6 +231,28 @@ describe("crawlDungeon", () => {
     expect(parses.every((p) => p.role === "HEALER")).toBe(true);
   });
 
+  it("isolates a failing spec instead of aborting the dungeon crawl", async () => {
+    // The roster is hand-maintained; one bad slug must not stall every hourly
+    // refresh forever.
+    const fetchPage: RankingsFetcher = async (_e, _p, className, specName) => {
+      if (className === "Mage" && specName === "Fire") throw new Error("WCL GraphQL error: boom");
+      return { dps: { rankings: [row(className, specName, 100)] } };
+    };
+    const crawl = await crawlDungeon(fetchPage, 1, "Test");
+    expect(crawl.parses.some((p) => p.specSlug === "Fire" && p.classSlug === "Mage")).toBe(false);
+    expect(crawl.parses.length).toBeGreaterThan(30);
+  });
+
+  it("lets a rate-limit error abort the whole crawl", async () => {
+    const rateLimited = Object.assign(new Error("rate limited"), {
+      extensions: { code: "RATE_LIMITED" },
+    });
+    const fetchPage: RankingsFetcher = async () => {
+      throw rateLimited;
+    };
+    await expect(crawlDungeon(fetchPage, 1, "Test")).rejects.toThrow("rate limited");
+  });
+
   it("reports the keystone levels seen in the sample", async () => {
     const fetchPage: RankingsFetcher = async (_e, _p, className, specName) => ({
       dps: { rankings: specName === "Fire" && className === "Mage"

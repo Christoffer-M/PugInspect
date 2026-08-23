@@ -2,6 +2,7 @@ import type { SpecRole } from "@repo/graphql-types";
 import { createLogger } from "../../utils/logger.js";
 import type { Parse } from "./stats.js";
 import { lookupSpec, metricForRole, SPECS } from "./specs.js";
+import { isRateLimitError } from "../warcraftLogs/wclGraphQLClient.js";
 import type {
   CharacterRankingRow,
   CharacterRankingsPage,
@@ -102,18 +103,31 @@ export async function crawlDungeon(
     // Healers are shown on both healing and damage; one dual-alias request
     // covers both for ~1 extra point.
     const metric = spec.role === "HEALER" ? "both" : metricForRole(spec.role);
-    for (let page = 1; page <= PAGES_PER_SPEC; page++) {
-      const result = await fetchPage(encounterId, page, spec.classSlug, spec.specSlug, metric);
-      requests++;
-      const pageParses = toParses(result, encounterId);
-      parses.push(...pageParses);
-      pageParses.forEach((p) => keyLevels.add(p.keyLevel));
+    try {
+      for (let page = 1; page <= PAGES_PER_SPEC; page++) {
+        const result = await fetchPage(encounterId, page, spec.classSlug, spec.specSlug, metric);
+        requests++;
+        const pageParses = toParses(result, encounterId);
+        parses.push(...pageParses);
+        pageParses.forEach((p) => keyLevels.add(p.keyLevel));
 
-      const rows = Math.max(
-        result.dps?.rankings?.length ?? 0,
-        result.hps?.rankings?.length ?? 0
-      );
-      if (rows < PAGE_SIZE) break;
+        const rows = Math.max(
+          result.dps?.rankings?.length ?? 0,
+          result.hps?.rankings?.length ?? 0
+        );
+        if (rows < PAGE_SIZE) break;
+      }
+    } catch (error) {
+      // Rate limiting must stop the whole crawl; anything else is isolated to
+      // the spec, so one bad slug (the roster is hand-maintained) cannot stall
+      // every hourly refresh forever.
+      if (isRateLimitError(error)) throw error;
+      logger.warn("Spec crawl failed, skipping spec", {
+        encounterId,
+        name,
+        spec: `${spec.classSlug}/${spec.specSlug}`,
+        error: String(error),
+      });
     }
   }
 

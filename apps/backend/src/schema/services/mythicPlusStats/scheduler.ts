@@ -8,13 +8,25 @@ const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 /** On boot, only crawl straight away if what's stored is older than this. */
 const STALE_AFTER_MS = 90 * 60 * 1000;
 
+let refreshInFlight = false;
+
 async function runOnce(zoneId: number) {
+  // A crawl slowed past the interval (WCL slowness, compounding circuit-breaker
+  // backoffs) must not spawn a second concurrent crawl — both would burn the
+  // shared rate-limit budget and race their wholesale replaces.
+  if (refreshInFlight) {
+    logger.warn("Mythic+ stats refresh still running, skipping this tick", { zoneId });
+    return;
+  }
+  refreshInFlight = true;
   try {
     await refreshMythicPlusStats(zoneId);
   } catch (error) {
     // A failed crawl leaves the previous refresh in place, so log and wait for
     // the next tick rather than taking the process down.
     logger.error("Mythic+ stats refresh failed", { zoneId, error: String(error) });
+  } finally {
+    refreshInFlight = false;
   }
 }
 

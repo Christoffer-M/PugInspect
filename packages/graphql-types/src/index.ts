@@ -255,7 +255,6 @@ export type QueryCharacterSuggestionsArgs = {
 
 
 export type QueryMythicPlusSpecStatsArgs = {
-  keyFloor?: InputMaybe<Scalars['Int']['input']>;
   zoneId?: InputMaybe<Scalars['Int']['input']>;
 };
 

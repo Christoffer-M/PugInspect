@@ -1,5 +1,6 @@
 import { createLogger } from "../../utils/logger.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
+import { isRateLimitError } from "../warcraftLogs/wclGraphQLClient.js";
 import { getMplusStats, getMplusStatsMeta, replaceMplusStats } from "../../../db/mplusStats.js";
 import { MYTHIC_PLUS_SEASONS, DEFAULT_MYTHIC_PLUS_SEASON } from "../../../generated/seasonConfig.js";
 import { crawlDungeon, parseZone, PAGES_PER_SPEC, type RankingsFetcher } from "./crawler.js";
@@ -34,13 +35,8 @@ const withRetry: RankingsFetcher = async (encounterId, page, className, specName
     try {
       return await WarcraftLogsService.getEncounterRankings(encounterId, page, className, specName, metric);
     } catch (error) {
-      const isRateLimit =
-        typeof error === "object" &&
-        error !== null &&
-        "extensions" in error &&
-        (error as { extensions?: { code?: string } }).extensions?.code === "RATE_LIMITED";
       const delay = RETRY_DELAYS_MS[attempt];
-      if (isRateLimit || delay === undefined) throw error;
+      if (isRateLimitError(error) || delay === undefined) throw error;
       logger.warn("Rankings page failed, retrying", {
         encounterId,
         className,
@@ -174,16 +170,17 @@ const reportUrl = (code: string | null, fightId: number | null): string | null =
     : null;
 
 export async function getMythicPlusSpecStats(
-  zoneId: number,
-  requestedKeyFloor?: number | null
+  zoneId: number
 ): Promise<MythicPlusSpecStatsDto | null> {
   const meta = await getMplusStatsMeta(zoneId);
-  const keyFloor = meta?.keyLevels[0];
-  if (!meta || keyFloor === undefined) return null;
-  void requestedKeyFloor; // single scope — the filter was dropped with per-class sampling
+  if (!meta || meta.keyLevels.length === 0) return null;
 
-  const rows = await getMplusStats(zoneId, keyFloor);
+  // Rows are read unfiltered and carry their own keyFloor: deriving the floor
+  // from meta and filtering on it opened a race across the hourly replace
+  // commit (stale meta + fresh rows → empty page).
+  const rows = await getMplusStats(zoneId);
   if (rows.length === 0) return null;
+  const keyFloor = rows[0]!.keyFloor;
 
   const pooled = rows.filter((r) => r.encounterId === 0);
   // Healer specs carry two row sets (hps and dps), so detail rows are keyed

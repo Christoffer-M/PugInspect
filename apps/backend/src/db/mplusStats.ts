@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDb } from "./index.js";
 import { mplusSpecStats, mplusStatsMeta } from "./schema.js";
 import type { MplusSpecStat, MplusStatsMeta, NewMplusSpecStat } from "./schema.js";
@@ -58,20 +58,18 @@ export async function getMplusStatsMeta(zoneId: number): Promise<MplusStatsMeta 
 }
 
 /**
- * Pooled rows for a scope, plus the per-dungeon detail rows for the same specs
- * in one round trip — the UI expands rows without a second request.
+ * Every stat row for a zone — pooled and per-dungeon — in one round trip.
+ * Only one keystone scope is ever written per zone, so no floor filter is
+ * needed; rows carry their own keyFloor.
  */
-export async function getMplusStats(
-  zoneId: number,
-  keyFloor: number
-): Promise<MplusSpecStat[]> {
+export async function getMplusStats(zoneId: number): Promise<MplusSpecStat[]> {
   try {
     return await getDb()
       .select()
       .from(mplusSpecStats)
-      .where(and(eq(mplusSpecStats.zoneId, zoneId), eq(mplusSpecStats.keyFloor, keyFloor)));
+      .where(eq(mplusSpecStats.zoneId, zoneId));
   } catch (err) {
-    logger.error("DB query failed (getMplusStats)", { zoneId, keyFloor, error: String(err) });
+    logger.error("DB query failed (getMplusStats)", { zoneId, error: String(err) });
     return [];
   }
 }

@@ -75,27 +75,6 @@
 .tabCount { font-family: var(--mono); font-size: 11px; color: #4a5670; }
 .tabActive .tabCount { color: #8b7fd4; }
 
-/* ---- key filter ---- */
-.keyFilter {
-  display: flex; align-items: center; gap: 2px;
-  padding: 3px;
-  border: 1px solid rgba(61, 79, 110, 0.5);
-  border-radius: 7px;
-  background: rgba(8, 14, 28, 0.7);
-}
-.keyBtn {
-  height: 28px; padding: 0 10px;
-  border: 0; border-radius: 5px; cursor: pointer;
-  font-family: var(--mono); font-size: 12px;
-  color: #8a96aa; background: transparent;
-}
-.keyBtn:hover { color: #c9d1e0; }
-.keyBtnActive {
-  color: #e6ebf5;
-  background: rgba(139, 127, 212, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(139, 127, 212, 0.4);
-}
-
 /* ---- table ---- */
 .head {
   display: flex; align-items: center; gap: 12px;

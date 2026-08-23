@@ -2513,6 +2513,16 @@ export type EncounterRankingsDpsQueryVariables = Exact<{
 
 export type EncounterRankingsDpsQuery = { __typename?: 'Query', worldData?: { __typename?: 'WorldData', encounter?: { __typename?: 'Encounter', dps?: any | null } | null } | null };
 
+export type EncounterRankingsBothQueryVariables = Exact<{
+  encounterID: Scalars['Int']['input'];
+  page: Scalars['Int']['input'];
+  className: Scalars['String']['input'];
+  specName: Scalars['String']['input'];
+}>;
+
+
+export type EncounterRankingsBothQuery = { __typename?: 'Query', worldData?: { __typename?: 'WorldData', encounter?: { __typename?: 'Encounter', dps?: any | null, hps?: any | null } | null } | null };
+
 export type EncounterRankingsHpsQueryVariables = Exact<{
   encounterID: Scalars['Int']['input'];
   page: Scalars['Int']['input'];

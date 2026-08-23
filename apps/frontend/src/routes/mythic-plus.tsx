@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Box, Container, Group, Select, Stack, Text, Title } from "@mantine/core";
 import { IconChartBar } from "@tabler/icons-react";
@@ -25,10 +25,14 @@ const SEASON_LABEL = CURRENT_SEASON
  * `keyLevels` alone spans every key seen at least once, which lets a single
  * outlier run (one +18) read as headline coverage.
  */
-function typicalKeyRange(data: { specs: { dungeons: { medianKey: number; parses: number }[] }[] }) {
+function typicalKeyRange(data: {
+  specs: { role: string; metric: string; dungeons: { medianKey: number; parses: number }[] }[];
+}) {
   const byKey = new Map<number, number>();
   let total = 0;
   for (const spec of data.specs) {
+    // Healer specs carry two metric row-sets over the same runs — weigh them once.
+    if (spec.role === "HEALER" && spec.metric === "dps") continue;
     for (const d of spec.dungeons) {
       byKey.set(d.medianKey, (byKey.get(d.medianKey) ?? 0) + d.parses);
       total += d.parses;
@@ -57,7 +61,15 @@ const MythicPlusMeta: React.FC = () => {
 
   const roleCounts = (r: Role) =>
     data?.specs.filter((s) => s.role === r && (r !== "HEALER" || s.metric === "hps")).length ?? 0;
-  const typical = data ? typicalKeyRange(data) : null;
+  const typical = useMemo(() => (data ? typicalKeyRange(data) : null), [data]);
+
+  // A refetch can replace the dungeon list (season rollover); a selection that
+  // no longer exists would silently blank the table.
+  useEffect(() => {
+    if (dungeon != null && data && !data.dungeons.some((d) => d.encounterId === dungeon)) {
+      setDungeon(null);
+    }
+  }, [data, dungeon]);
 
   return (
     <Page>

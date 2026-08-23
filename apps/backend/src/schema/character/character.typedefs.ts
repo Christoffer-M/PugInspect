@@ -20,7 +20,7 @@ export const characterTypedefs = gql`
     ): [SearchResult!]!
     zonePartitions(zoneId: Int!): [ZonePartition!]!
     siteStats: SiteStats!
-    mythicPlusSpecStats(zoneId: Int, keyFloor: Int): MythicPlusSpecStats
+    mythicPlusSpecStats(zoneId: Int): MythicPlusSpecStats
   }
 
   enum SpecRole {

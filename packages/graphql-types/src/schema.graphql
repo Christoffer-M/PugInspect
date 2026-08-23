@@ -191,7 +191,7 @@ type MythicPlusSpecStats {
 type Query {
   character(byBracket: Boolean, bypassCache: Boolean, difficulty: Difficulty, metric: Metric, name: String!, partition: Int, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
-  mythicPlusSpecStats(keyFloor: Int, zoneId: Int): MythicPlusSpecStats
+  mythicPlusSpecStats(zoneId: Int): MythicPlusSpecStats
   siteStats: SiteStats!
   zonePartitions(zoneId: Int!): [ZonePartition!]!
 }
