@@ -10,10 +10,9 @@ import {
   useTable,
   type ColumnDef,
   type Row,
-  type SortFn,
 } from "@tanstack/react-table";
 import { Tooltip } from "@mantine/core";
-import { IconArrowsSort, IconChevronDown } from "@tabler/icons-react";
+import { IconArrowsSort, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { CURRENT_DUNGEONS } from "../../generated/seasonConfig";
 import { getClassColor } from "../../util/util";
 import { SpecImage } from "../ui/SpecImage";
@@ -100,23 +99,16 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
   const columns = useMemo(() => {
     const isLow = (s: SpecStat) => s.parses < minParses;
 
-    // Descending stat sort with thin specs pinned to the bottom: their value
-    // reads as -Infinity, which the desc inversion pushes last.
-    const thinLast: SortFn<typeof features, SpecStat> = (a, b, columnId) => {
-      const value = (r: Row<typeof features, SpecStat>) =>
-        isLow(r.original) ? -Infinity : (r.getValue(columnId) as number);
-      const va = value(a);
-      const vb = value(b);
-      return va === vb ? 0 : va < vb ? -1 : 1;
-    };
-
     const pct = (v: number) => Math.max(0, Math.min(100, (v / domain) * 100));
 
+    // Thin specs read as undefined so sortUndefined pins them to the bottom in
+    // BOTH directions — a numeric sentinel would float them to the top when
+    // ascending.
     const stat = (key: SortKey, label: string) =>
-      columnHelper.accessor(key, {
+      columnHelper.accessor((row: SpecStat) => (isLow(row) ? undefined : row[key]), {
         id: key,
         header: label,
-        sortFn: thinLast,
+        sortUndefined: "last",
         sortDescFirst: true,
         cell: (info) => {
           const s = info.row.original;
@@ -127,7 +119,7 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
               className={`${classes.statCol} ${active ? classes.statActive : classes.statInactive}`}
               style={isLow(s) && active ? { color: "#6b7590" } : undefined}
             >
-              {isLow(s) ? "—" : k(info.getValue())}
+              {isLow(s) ? "—" : k(s[key])}
             </span>
           );
         },
@@ -277,8 +269,13 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, dungeon]);
 
-  const sortBy = (table.state.sorting?.[0]?.id ?? "median") as SortKey;
-  const setSort = (key: SortKey) => table.setSorting([{ id: key, desc: true }]);
+  const activeSort = table.state.sorting?.[0];
+  const sortBy = (activeSort?.id ?? "median") as SortKey;
+  const sortDesc = activeSort?.desc ?? true;
+  // First click on a column ranks by it (best first); clicking it again flips
+  // the direction.
+  const setSort = (key: SortKey) =>
+    table.setSorting([{ id: key, desc: sortBy === key ? !sortDesc : true }]);
 
   if (rows.length === 0) return null;
 
@@ -296,8 +293,10 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
                 onClick={() => setSort(header.column.id as SortKey)}
               >
                 {content}
-                {header.column.getIsSorted() ? (
+                {header.column.getIsSorted() === "desc" ? (
                   <IconChevronDown size={10} stroke={2.5} className={classes.sortIcon} />
+                ) : header.column.getIsSorted() === "asc" ? (
+                  <IconChevronUp size={10} stroke={2.5} className={classes.sortIcon} />
                 ) : (
                   <IconArrowsSort size={10} stroke={2} className={classes.sortIcon} />
                 )}
@@ -383,8 +382,8 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
           <span className={classes.legendItem}><span className={classes.swatchMax} /> best parse</span>
         </div>
         <span>
-          Rows sorted by {SORT_OPTIONS.find((o) => o.key === sortBy)?.label.toLowerCase() ?? "median"}.
-          Click a spec for its per-dungeon split.
+          Rows sorted by {SORT_OPTIONS.find((o) => o.key === sortBy)?.label.toLowerCase() ?? "median"}
+          {sortDesc ? "" : ", ascending"}. Click a spec for its per-dungeon split.
         </span>
       </div>
     </>
@@ -398,7 +397,7 @@ const HEADER_TOOLTIP: Record<string, string> = {
   median:
     "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log. Click to rank by it.",
   p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix. Click to rank by it.",
-  max: "The single best raw parse in the sample — a real, findable log. Click to rank by it, then expand a row to open the run on WarcraftLogs.",
+  max: "The single best raw parse in the sample — a real, findable log. Click to rank by it (again to flip direction), then expand a row to open the run on WarcraftLogs.",
   typicalKey: "Typical key level of this spec's sampled runs — where its fastest runs actually happen.",
 };
 

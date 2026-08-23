@@ -198,6 +198,13 @@ test("stat columns sort the table and take the headline emphasis", async ({ page
 
   await page.locator('[class*="headSort"]', { hasText: "Median" }).click();
   await expect(page.locator('[class*="specName"]').first()).toHaveText("Elemental");
+
+  // Clicking the active column again flips to ascending — worst ranked spec
+  // first, but thin specs stay pinned to the bottom in both directions.
+  await page.locator('[class*="headSort"]', { hasText: "Median" }).click();
+  await expect(page.locator('[class*="specName"]').first()).toHaveText("Arcane");
+  await expect(page.getByText("Rows sorted by median, ascending", { exact: false })).toBeVisible();
+  await expect(page.locator('[class*="specName"]').last()).toHaveText("Devourer");
 });
 
 test("falls back to an explanatory empty state when there is no data", async ({ page }) => {
