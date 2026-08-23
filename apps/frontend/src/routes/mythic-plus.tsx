@@ -159,8 +159,8 @@ const MythicPlusMeta: React.FC = () => {
               </div>
               <div className={classes.provNote}>
                 <span>
-                  bar = median · pale extension = top 5% (both adjusted for dungeon &amp; key mix) ·
-                  outline = best raw parse
+                  filled bar = median · hollow bar = top 5% (both adjusted for dungeon &amp; key
+                  mix) · wick = best raw parse
                 </span>
                 <span className={classes.sep}>·</span>
                 <span className={classes.provNoteDim}>

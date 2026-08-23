@@ -106,14 +106,13 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
   );
 
   // Zoomed axis: from 80% of the field's lowest ranked median to the field's
-  // p95 ceiling, rounded to a step one order of magnitude below the scale.
-  // Anchoring the top to the single best parse let one outlier run compress
-  // every bar into the left half; the p95 peak is the field's real ceiling,
-  // and max markers beyond it pin to the track's end.
+  // best parse, rounded to a step one order of magnitude below the scale.
+  // The candlestick wick runs out to the max, so the axis has to reach it —
+  // topping out at the p95 ceiling pinned nearly every wick to the track end.
   const { axisLo, axisHi } = useMemo(() => {
     const ranked = rows.filter((r) => r.parses >= minParses);
     const pool = ranked.length > 0 ? ranked : rows;
-    const ceiling = Math.max(0, ...pool.map((s) => s.p95));
+    const ceiling = Math.max(0, ...pool.map((s) => s.max));
     if (ceiling <= 0) return { axisLo: 0, axisHi: 50_000 };
     const step = 10 ** Math.floor(Math.log10(ceiling)) / 10;
     const floor = Math.min(...pool.map((s) => s.median));
@@ -230,35 +229,41 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
           const color = getClassColor(s.className);
           const medianPct = pct(s.median);
           const p95Pct = pct(s.p95);
+          const maxPct = pct(s.max);
           return (
             <span className={classes.colBar}>
               <span className={classes.track}>
-                <span className={classes.trackBg} />
-                <span className={classes.trackMid} />
+                <span className={classes.trackBase} />
                 {!isLow(s) && (
                   <>
                     <span
-                      className={classes.fillMedian}
+                      className={classes.wick}
                       style={{
-                        width: `${medianPct}%`,
-                        background: `linear-gradient(90deg, ${withAlpha(color, 0.45)} 0%, ${color} 100%)`,
+                        left: `${p95Pct}%`,
+                        width: `${Math.max(0, maxPct - p95Pct)}%`,
+                        background: withAlpha(color, 0.45),
                       }}
                     />
                     <span
-                      className={classes.fillP95}
+                      className={classes.tickMax}
+                      style={{ left: `${maxPct}%`, background: withAlpha(color, 0.6) }}
+                    />
+                    <span
+                      className={classes.bodyMedian}
+                      style={{ width: `${medianPct}%`, background: withAlpha(color, 0.8) }}
+                    />
+                    <span
+                      className={classes.bodyP95}
                       style={{
                         left: `${medianPct}%`,
                         width: `${Math.max(0, p95Pct - medianPct)}%`,
-                        background: withAlpha(color, 0.2),
+                        background: withAlpha(color, 0.24),
+                        boxShadow: `inset 0 0 0 1px ${color}`,
                       }}
                     />
                     <span
-                      className={classes.markMax}
-                      style={{
-                        left: `${pct(s.max)}%`,
-                        background: withAlpha(color, 0.35),
-                        boxShadow: `inset 0 0 0 1px ${withAlpha(color, 0.55)}`,
-                      }}
+                      className={classes.markMedian}
+                      style={{ left: `${medianPct}%`, background: color }}
                     />
                   </>
                 )}
@@ -453,7 +458,7 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
 const HEADER_TOOLTIP: Record<string, string> = {
   rank: "Position under the current sort. Specs with too few parses sit unranked at the bottom.",
   spec: "Class specialization, colored by class. The ~+N under the name is the typical key level of the spec's sampled runs.",
-  bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse (pinned to the end when it lies beyond the axis). The axis spans the field's range — lowest median to top-5% ceiling — not zero, to magnify the differences between specs.",
+  bar: "Filled body = median, hollow body = up to the top 5%, wick out to the single best parse. The axis spans the field's range — lowest median to best parse — not zero, to magnify the differences between specs.",
   median:
     "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log. Click to rank by it.",
   p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix. Click to rank by it.",
