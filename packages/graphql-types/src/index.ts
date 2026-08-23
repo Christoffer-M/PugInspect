@@ -147,6 +147,12 @@ export type MythicPlusClass = {
   slug: Scalars['String']['output'];
 };
 
+export type MythicPlusDungeon = {
+  __typename?: 'MythicPlusDungeon';
+  encounterId: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+};
+
 export type MythicPlusLogs = ZoneLogs & {
   __typename?: 'MythicPlusLogs';
   bestPerformanceAverage?: Maybe<Scalars['Float']['output']>;
@@ -192,10 +198,37 @@ export type MythicPlusSpec = {
   slug: Scalars['String']['output'];
 };
 
+/**
+ * Aggregated Mythic+ throughput for every spec, refreshed hourly from
+ * WarcraftLogs. Each spec's fastest runs are sampled separately, at the same
+ * depth, so every spec appears regardless of popularity or which keystone
+ * levels it reaches; values are real DPS/HPS, corrected so a spec cannot rank
+ * higher purely by being logged in the higher-damage dungeons or at other keys.
+ */
+export type MythicPlusSpecStats = {
+  __typename?: 'MythicPlusSpecStats';
+  dungeons: Array<MythicPlusDungeon>;
+  /** Lowest keystone level in the sample. */
+  keyFloor: Scalars['Int']['output'];
+  /** Every keystone level present in the sample, ascending. */
+  keyLevels: Array<Scalars['Int']['output']>;
+  /** Lowest keystone level in the sample. */
+  minKeyLevel: Scalars['Int']['output'];
+  /** Below this parse count a spec is shown but not ranked. */
+  minParsesToRank: Scalars['Int']['output'];
+  refreshedAt: Scalars['String']['output'];
+  /** How many of each spec's fastest runs were sampled per dungeon. */
+  sampleDepth: Scalars['Int']['output'];
+  specs: Array<SpecStat>;
+  totalParses: Scalars['Int']['output'];
+  zoneId: Scalars['Int']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
+  mythicPlusSpecStats?: Maybe<MythicPlusSpecStats>;
   siteStats: SiteStats;
   zonePartitions: Array<ZonePartition>;
 };
@@ -218,6 +251,12 @@ export type QueryCharacterArgs = {
 export type QueryCharacterSuggestionsArgs = {
   region: Scalars['String']['input'];
   searchString: Scalars['String']['input'];
+};
+
+
+export type QueryMythicPlusSpecStatsArgs = {
+  keyFloor?: InputMaybe<Scalars['Int']['input']>;
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -321,6 +360,39 @@ export type SiteStats = {
   searchesYesterday: Scalars['Int']['output'];
   totalCharacters: Scalars['Int']['output'];
   trendingCharacters: Array<TrendingCharacter>;
+};
+
+export type SpecDungeonStat = {
+  __typename?: 'SpecDungeonStat';
+  encounterId: Scalars['Int']['output'];
+  max: Scalars['Float']['output'];
+  median: Scalars['Float']['output'];
+  medianKey: Scalars['Int']['output'];
+  p95: Scalars['Float']['output'];
+  parses: Scalars['Int']['output'];
+};
+
+export type SpecRole =
+  | 'DPS'
+  | 'HEALER'
+  | 'TANK';
+
+export type SpecStat = {
+  __typename?: 'SpecStat';
+  className: Scalars['String']['output'];
+  classSlug: Scalars['String']['output'];
+  /** Raw, un-normalized throughput per dungeon. */
+  dungeons: Array<SpecDungeonStat>;
+  max: Scalars['Float']['output'];
+  median: Scalars['Float']['output'];
+  medianKey: Scalars['Int']['output'];
+  /** dps for damage specs and tanks, hps for healers. */
+  metric: Scalars['String']['output'];
+  p95: Scalars['Float']['output'];
+  parses: Scalars['Int']['output'];
+  role: SpecRole;
+  specName: Scalars['String']['output'];
+  specSlug: Scalars['String']['output'];
 };
 
 export type TierSetSummary = {

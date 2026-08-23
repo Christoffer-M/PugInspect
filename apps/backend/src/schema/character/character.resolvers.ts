@@ -18,6 +18,10 @@ import {
 } from "../services/raiderIo/raiderio.services.js";
 import { AchievementsService } from "../services/blizzard/achievements.service.js";
 import { getLinkedCharacters } from "../../db/persistence.js";
+import {
+  defaultZoneId,
+  getMythicPlusSpecStats,
+} from "../services/mythicPlusStats/mythicPlusStats.services.js";
 import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import { VALID_REGIONS } from "../utils/regions.js";
@@ -120,6 +124,15 @@ export default {
       const data = await getSiteStats();
       statsCache = { data, expiresAt: Date.now() + 60_000 };
       return data;
+    },
+
+    mythicPlusSpecStats: async (
+      _: unknown,
+      args: { zoneId?: number | null; keyFloor?: number | null }
+    ) => {
+      const zoneId = args.zoneId ?? defaultZoneId();
+      if (zoneId == null) return null;
+      return getMythicPlusSpecStats(zoneId, args.keyFloor);
     },
 
     zonePartitions: async (

@@ -53,7 +53,13 @@ export class WclGraphQLClient {
       throw new Error(`WCL request failed: ${res.status} ${res.statusText}`);
     }
 
-    const json = await res.json() as { data: T };
+    const json = (await res.json()) as { data: T; errors?: { message: string }[] };
+    // WCL answers 200 with an `errors` array on GraphQL-level failures. Left
+    // unchecked these surface as `data: undefined`, which a long crawl reads as
+    // "no more rows" and silently truncates.
+    if (json.errors?.length) {
+      throw new Error(`WCL GraphQL error: ${json.errors.map((e) => e.message).join("; ")}`);
+    }
     return { data: json.data, headers: res.headers };
   }
 }

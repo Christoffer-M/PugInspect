@@ -20,6 +20,69 @@ export const characterTypedefs = gql`
     ): [SearchResult!]!
     zonePartitions(zoneId: Int!): [ZonePartition!]!
     siteStats: SiteStats!
+    mythicPlusSpecStats(zoneId: Int, keyFloor: Int): MythicPlusSpecStats
+  }
+
+  enum SpecRole {
+    TANK
+    HEALER
+    DPS
+  }
+
+  """
+  Aggregated Mythic+ throughput for every spec, refreshed hourly from
+  WarcraftLogs. Each spec's fastest runs are sampled separately, at the same
+  depth, so every spec appears regardless of popularity or which keystone
+  levels it reaches; values are real DPS/HPS, corrected so a spec cannot rank
+  higher purely by being logged in the higher-damage dungeons or at other keys.
+  """
+  type MythicPlusSpecStats {
+    zoneId: Int!
+    refreshedAt: String!
+    "Lowest keystone level in the sample."
+    keyFloor: Int!
+    "Every keystone level present in the sample, ascending."
+    keyLevels: [Int!]!
+    totalParses: Int!
+    "Below this parse count a spec is shown but not ranked."
+    minParsesToRank: Int!
+    "How many of each spec's fastest runs were sampled per dungeon."
+    sampleDepth: Int!
+    "Lowest keystone level in the sample."
+    minKeyLevel: Int!
+    dungeons: [MythicPlusDungeon!]!
+    specs: [SpecStat!]!
+  }
+
+  type MythicPlusDungeon {
+    encounterId: Int!
+    name: String!
+  }
+
+  type SpecStat {
+    classSlug: String!
+    specSlug: String!
+    className: String!
+    specName: String!
+    role: SpecRole!
+    "dps for damage specs and tanks, hps for healers."
+    metric: String!
+    parses: Int!
+    median: Float!
+    p95: Float!
+    max: Float!
+    medianKey: Int!
+    "Raw, un-normalized throughput per dungeon."
+    dungeons: [SpecDungeonStat!]!
+  }
+
+  type SpecDungeonStat {
+    encounterId: Int!
+    parses: Int!
+    median: Float!
+    p95: Float!
+    max: Float!
+    medianKey: Int!
   }
 
   type SiteStats {

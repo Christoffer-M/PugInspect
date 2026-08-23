@@ -57,6 +57,13 @@
       "when": 1783602113493,
       "tag": "0007_last_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787441534959,
+      "tag": "0008_demonic_vector",
+      "breakpoints": true
     }
   ]
 }

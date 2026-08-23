@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MythicPlusRouteImport } from './routes/mythic-plus'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as RegionRealmNameRouteImport } from './routes/$region.$realm.$name'
@@ -17,6 +18,11 @@ import { Route as RegionRealmNameRouteImport } from './routes/$region.$realm.$na
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MythicPlusRoute = MythicPlusRouteImport.update({
+  id: '/mythic-plus',
+  path: '/mythic-plus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
@@ -37,12 +43,14 @@ const RegionRealmNameRoute = RegionRealmNameRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
@@ -50,20 +58,38 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/privacy-policy' | '/stats' | '/$region/$realm/$name'
+  fullPaths:
+    | '/'
+    | '/mythic-plus'
+    | '/privacy-policy'
+    | '/stats'
+    | '/$region/$realm/$name'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/privacy-policy' | '/stats' | '/$region/$realm/$name'
-  id: '__root__' | '/' | '/privacy-policy' | '/stats' | '/$region/$realm/$name'
+  to:
+    | '/'
+    | '/mythic-plus'
+    | '/privacy-policy'
+    | '/stats'
+    | '/$region/$realm/$name'
+  id:
+    | '__root__'
+    | '/'
+    | '/mythic-plus'
+    | '/privacy-policy'
+    | '/stats'
+    | '/$region/$realm/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MythicPlusRoute: typeof MythicPlusRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   StatsRoute: typeof StatsRoute
   RegionRealmNameRoute: typeof RegionRealmNameRoute
@@ -76,6 +102,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mythic-plus': {
+      id: '/mythic-plus'
+      path: '/mythic-plus'
+      fullPath: '/mythic-plus'
+      preLoaderRoute: typeof MythicPlusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -104,6 +137,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MythicPlusRoute: MythicPlusRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   StatsRoute: StatsRoute,
   RegionRealmNameRoute: RegionRealmNameRoute,

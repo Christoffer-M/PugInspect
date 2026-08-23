@@ -117,6 +117,11 @@ type MythicPlusClass {
   slug: String!
 }
 
+type MythicPlusDungeon {
+  encounterId: Int!
+  name: String!
+}
+
 type MythicPlusLogs implements ZoneLogs {
   bestPerformanceAverage: Float
   dungeonRankings: [MythicPlusRanking!]
@@ -158,9 +163,35 @@ type MythicPlusSpec {
   slug: String!
 }
 
+"""
+Aggregated Mythic+ throughput for every spec, refreshed hourly from
+WarcraftLogs. Each spec's fastest runs are sampled separately, at the same
+depth, so every spec appears regardless of popularity or which keystone
+levels it reaches; values are real DPS/HPS, corrected so a spec cannot rank
+higher purely by being logged in the higher-damage dungeons or at other keys.
+"""
+type MythicPlusSpecStats {
+  dungeons: [MythicPlusDungeon!]!
+  """Lowest keystone level in the sample."""
+  keyFloor: Int!
+  """Every keystone level present in the sample, ascending."""
+  keyLevels: [Int!]!
+  """Lowest keystone level in the sample."""
+  minKeyLevel: Int!
+  """Below this parse count a spec is shown but not ranked."""
+  minParsesToRank: Int!
+  refreshedAt: String!
+  """How many of each spec's fastest runs were sampled per dungeon."""
+  sampleDepth: Int!
+  specs: [SpecStat!]!
+  totalParses: Int!
+  zoneId: Int!
+}
+
 type Query {
   character(byBracket: Boolean, bypassCache: Boolean, difficulty: Difficulty, metric: Metric, name: String!, partition: Int, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
+  mythicPlusSpecStats(keyFloor: Int, zoneId: Int): MythicPlusSpecStats
   siteStats: SiteStats!
   zonePartitions(zoneId: Int!): [ZonePartition!]!
 }
@@ -252,6 +283,38 @@ type SiteStats {
   searchesYesterday: Int!
   totalCharacters: Int!
   trendingCharacters: [TrendingCharacter!]!
+}
+
+type SpecDungeonStat {
+  encounterId: Int!
+  max: Float!
+  median: Float!
+  medianKey: Int!
+  p95: Float!
+  parses: Int!
+}
+
+enum SpecRole {
+  DPS
+  HEALER
+  TANK
+}
+
+type SpecStat {
+  className: String!
+  classSlug: String!
+  """Raw, un-normalized throughput per dungeon."""
+  dungeons: [SpecDungeonStat!]!
+  max: Float!
+  median: Float!
+  medianKey: Int!
+  """dps for damage specs and tanks, hps for healers."""
+  metric: String!
+  p95: Float!
+  parses: Int!
+  role: SpecRole!
+  specName: String!
+  specSlug: String!
 }
 
 type TierSetSummary {

@@ -11,6 +11,16 @@ import {
 } from "./generated/index.js";
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { ZONE_PARTITIONS } from "./queries/zone.js";
+import {
+  ENCOUNTER_RANKINGS_DPS,
+  ENCOUNTER_RANKINGS_HPS,
+  MYTHIC_PLUS_ZONE,
+  RATE_LIMIT,
+} from "./queries/encounterRankings.js";
+import type {
+  CharacterRankingsPage,
+  MythicPlusZone,
+} from "./model/CharacterRankings.js";
 import { GraphQLError } from "graphql";
 import { QueryCharacterArgs } from "@repo/graphql-types";
 import { mapDifficulty, buildProfileParams } from "./warcraftlogs.helpers.js";
@@ -50,6 +60,50 @@ export class WarcraftLogsService {
 
   private static partitionCache = new Map<number, { partitions: ZonePartitionInfo[]; cachedAt: number }>();
   private static readonly PARTITION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+  /** Remaining rate-limit budget, so a crawl can yield to live lookups. */
+  static async getRateLimit(): Promise<{ limitPerHour: number; pointsSpentThisHour: number } | null> {
+    try {
+      const { data } = await this.client.query<{
+        rateLimitData?: { limitPerHour: number; pointsSpentThisHour: number };
+      }>(RATE_LIMIT.loc?.source.body ?? "", {});
+      return data?.rateLimitData ?? null;
+    } catch (error) {
+      logger.warn("Failed to read WarcraftLogs rate limit", { error: String(error) });
+      return null;
+    }
+  }
+
+  /** Dungeon list and keystone bracket range for a Mythic+ season zone. */
+  static async getMythicPlusZone(zoneId: number): Promise<MythicPlusZone | undefined> {
+    const { data } = await this.client.query<{ worldData?: { zone?: MythicPlusZone } }>(
+      MYTHIC_PLUS_ZONE.loc?.source.body ?? "",
+      { zoneID: zoneId }
+    );
+    return data?.worldData?.zone ?? undefined;
+  }
+
+  /**
+   * One page of one spec's dungeon rankings — hps for healers, dps otherwise.
+   */
+  static async getEncounterRankings(
+    encounterId: number,
+    page: number,
+    className: string,
+    specName: string,
+    metric: "dps" | "hps"
+  ): Promise<{ dps?: CharacterRankingsPage; hps?: CharacterRankingsPage }> {
+    const doc = metric === "hps" ? ENCOUNTER_RANKINGS_HPS : ENCOUNTER_RANKINGS_DPS;
+    const { data } = await this.client.query<{
+      worldData?: { encounter?: { dps?: CharacterRankingsPage; hps?: CharacterRankingsPage } };
+    }>(doc.loc?.source.body ?? "", {
+      encounterID: encounterId,
+      page,
+      className,
+      specName,
+    });
+    return data?.worldData?.encounter ?? {};
+  }
 
   static async getZonePartitions(zoneId: number): Promise<ZonePartitionInfo[]> {
     const cached = this.partitionCache.get(zoneId);
