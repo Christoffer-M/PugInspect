@@ -105,19 +105,20 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
     [data.dungeons]
   );
 
-  // Zoomed axis: starts at 80% of the field's lowest ranked median and tops
-  // out just above the single best parse, both rounded to a step one order of
-  // magnitude below the peak. A zero baseline compressed the whole field into
-  // a narrow band; anchoring near the floor spends the track on the
-  // differences between specs instead of on empty space.
+  // Zoomed axis: from 80% of the field's lowest ranked median to the field's
+  // p95 ceiling, rounded to a step one order of magnitude below the scale.
+  // Anchoring the top to the single best parse let one outlier run compress
+  // every bar into the left half; the p95 peak is the field's real ceiling,
+  // and max markers beyond it pin to the track's end.
   const { axisLo, axisHi } = useMemo(() => {
-    const peak = Math.max(0, ...rows.map((s) => s.max));
-    if (peak <= 0) return { axisLo: 0, axisHi: 50_000 };
-    const step = 10 ** Math.floor(Math.log10(peak)) / 10;
     const ranked = rows.filter((r) => r.parses >= minParses);
-    const floor = Math.min(...(ranked.length > 0 ? ranked : rows).map((s) => s.median));
+    const pool = ranked.length > 0 ? ranked : rows;
+    const ceiling = Math.max(0, ...pool.map((s) => s.p95));
+    if (ceiling <= 0) return { axisLo: 0, axisHi: 50_000 };
+    const step = 10 ** Math.floor(Math.log10(ceiling)) / 10;
+    const floor = Math.min(...pool.map((s) => s.median));
     const axisLo = Math.max(0, Math.floor((floor * 0.8) / step) * step);
-    const axisHi = Math.ceil(peak / step) * step;
+    const axisHi = Math.ceil(ceiling / step) * step;
     return { axisLo, axisHi };
   }, [rows, minParses]);
 
@@ -444,7 +445,7 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
 const HEADER_TOOLTIP: Record<string, string> = {
   rank: "Position under the current sort. Specs with too few parses sit unranked at the bottom.",
   spec: "Class specialization, colored by class. The ~+N under the name is the typical key level of the spec's sampled runs.",
-  bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse. The axis starts just below the field's lowest median — not at zero — to magnify the differences between specs.",
+  bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse (pinned to the end when it lies beyond the axis). The axis spans the field's range — lowest median to top-5% ceiling — not zero, to magnify the differences between specs.",
   median:
     "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log. Click to rank by it.",
   p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix. Click to rank by it.",
