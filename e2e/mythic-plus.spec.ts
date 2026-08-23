@@ -99,9 +99,8 @@ test("ranks specs by throughput with provenance", async ({ page }) => {
   const names = await page.locator('[class*="specName"]').allInnerTexts();
   expect(names.slice(0, 2)).toEqual(["Elemental", "Arcane"]);
 
-  // Typical key level sits in its own column.
-  await expect(page.getByText("Keys", { exact: true })).toBeVisible();
-  await expect(page.locator('[class*="keyCol"]').nth(1)).toHaveText("~+12");
+  // Typical key level rides under the spec name.
+  await expect(page.locator('[class*="className"]').first()).toHaveText("Shaman · ~+12");
 
   // Every column header explains itself on hover.
   await page.locator('[class*="headSort"]', { hasText: "Median" }).hover();

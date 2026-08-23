@@ -193,7 +193,10 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
                 >
                   {s.specName}
                 </span>
-                <span className={classes.className}>{s.className}</span>
+                <span className={classes.className}>
+                  {s.className}
+                  {!isLow(s) && <span className={classes.typicalKey}> · ~+{s.medianKey}</span>}
+                </span>
               </span>
             </span>
           );
@@ -253,19 +256,6 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
       stat("median", "Median"),
       stat("p95", "p95"),
       stat("max", "Max"),
-      columnHelper.accessor("medianKey", {
-        id: "typicalKey",
-        header: "Keys",
-        enableSorting: false,
-        cell: (info) => (
-          <span
-            className={classes.keyCol}
-            title="Typical key level of this spec's sampled runs"
-          >
-            {isLow(info.row.original) ? "—" : `~+${info.getValue()}`}
-          </span>
-        ),
-      }),
       columnHelper.display({
         id: "chev",
         header: "",
@@ -440,20 +430,18 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
 
 const HEADER_TOOLTIP: Record<string, string> = {
   rank: "Position under the current sort. Specs with too few parses sit unranked at the bottom.",
-  spec: "Class specialization. Colored by class; the icon is the spec.",
+  spec: "Class specialization, colored by class. The ~+N under the name is the typical key level of the spec's sampled runs.",
   bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse. Axis starts at zero and tops out just above the role's best parse.",
   median:
     "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log. Click to rank by it.",
   p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix. Click to rank by it.",
   max: "The single best raw parse in the sample — a real, findable log. Click to rank by it (again to flip direction), then expand a row to open the run on WarcraftLogs.",
-  typicalKey: "Typical key level of this spec's sampled runs — where its fastest runs actually happen.",
 };
 
 const HEADER_CLASS: Record<string, string> = {
   rank: classes.colRank!,
   spec: classes.colSpec!,
   bar: classes.colBar!,
-  typicalKey: classes.keyCol!,
   chev: classes.colChev!,
 };
 
