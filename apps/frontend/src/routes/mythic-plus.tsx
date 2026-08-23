@@ -13,12 +13,12 @@ import {
 import { timeAgo } from "../util/util";
 import classes from "../components/spec-meta/SpecMeta.module.css";
 
-const SEASON_OPTIONS = Object.entries(MYTHIC_PLUS_SEASONS)
-  .filter(([, s]) => s.zoneId != null)
-  .map(([slug, s]) => ({
-    value: slug,
-    label: `${s.displayName} · ${EXPANSION_DISPLAY_NAMES[s.expansion] ?? ""}`.trim(),
-  }));
+// The crawler only refreshes the current season, so there is nothing to
+// select — the page just states which season it is showing.
+const CURRENT_SEASON = MYTHIC_PLUS_SEASONS[DEFAULT_MYTHIC_PLUS_SEASON];
+const SEASON_LABEL = CURRENT_SEASON
+  ? `${CURRENT_SEASON.displayName} · ${EXPANSION_DISPLAY_NAMES[CURRENT_SEASON.expansion] ?? ""}`.trim()
+  : "";
 
 /**
  * Parse-weighted 10th–90th percentile of the sample's typical key levels.
@@ -48,11 +48,10 @@ function typicalKeyRange(data: { specs: { dungeons: { medianKey: number; parses:
 }
 
 const MythicPlusMeta: React.FC = () => {
-  const [season, setSeason] = useState(DEFAULT_MYTHIC_PLUS_SEASON);
   const [role, setRole] = useState<Role>("DPS");
   const [dungeon, setDungeon] = useState<number | null>(null);
 
-  const zoneId = MYTHIC_PLUS_SEASONS[season]?.zoneId;
+  const zoneId = CURRENT_SEASON?.zoneId;
   const { data, isPending, isError } = useMythicPlusSpecStats(zoneId);
 
   const roleCounts = (r: Role) => data?.specs.filter((s) => s.role === r).length ?? 0;
@@ -82,19 +81,9 @@ const MythicPlusMeta: React.FC = () => {
             </Group>
 
             <Group gap="xs">
-              <Select
-                data={SEASON_OPTIONS}
-                value={season}
-                onChange={(v) => {
-                  if (!v) return;
-                  setSeason(v);
-                  setDungeon(null);
-                }}
-                allowDeselect={false}
-                size="xs"
-                w={170}
-                aria-label="Season"
-              />
+              <Text size="13px" c="dimmed" fw={500} style={{ whiteSpace: "nowrap" }}>
+                {SEASON_LABEL}
+              </Text>
               {data && data.dungeons.length > 1 && (
                 <Select
                   data={[
