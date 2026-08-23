@@ -105,23 +105,29 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
     [data.dungeons]
   );
 
-  // Zero-baseline axis: the whole view shares one scale, topped out just above
-  // its single best parse. The rounding step scales with the data's magnitude —
-  // a fixed 50k step suits 400k DPS but wastes a sixth of the track on ~130k
-  // healer damage, squeezing every bar into the left half.
-  const domain = useMemo(() => {
+  // Zoomed axis: starts at 80% of the field's lowest ranked median and tops
+  // out just above the single best parse, both rounded to a step one order of
+  // magnitude below the peak. A zero baseline compressed the whole field into
+  // a narrow band; anchoring near the floor spends the track on the
+  // differences between specs instead of on empty space.
+  const { axisLo, axisHi } = useMemo(() => {
     const peak = Math.max(0, ...rows.map((s) => s.max));
-    if (peak <= 0) return 50_000;
+    if (peak <= 0) return { axisLo: 0, axisHi: 50_000 };
     const step = 10 ** Math.floor(Math.log10(peak)) / 10;
-    return Math.ceil(peak / step) * step;
-  }, [rows]);
+    const ranked = rows.filter((r) => r.parses >= minParses);
+    const floor = Math.min(...(ranked.length > 0 ? ranked : rows).map((s) => s.median));
+    const axisLo = Math.max(0, Math.floor((floor * 0.8) / step) * step);
+    const axisHi = Math.ceil(peak / step) * step;
+    return { axisLo, axisHi };
+  }, [rows, minParses]);
 
   const metricLabel = role === "HEALER" && healerMetric === "hps" ? "HPS" : "DPS";
 
   const columns = useMemo(() => {
     const isLow = (s: ViewSpec) => s.parses < minParses;
 
-    const pct = (v: number) => Math.max(0, Math.min(100, (v / domain) * 100));
+    const pct = (v: number) =>
+      Math.max(0, Math.min(100, ((v - axisLo) / (axisHi - axisLo)) * 100));
 
     // Thin specs read as undefined so sortUndefined pins them to the bottom in
     // BOTH directions — a numeric sentinel would float them to the top when
@@ -213,9 +219,9 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
         id: "bar",
         header: () => (
           <span className={classes.axis}>
-            <span>0</span>
-            <span className={classes.axisMid}>{k(domain / 2)}</span>
-            <span className={classes.axisHi}>{k(domain)}</span>
+            <span>{k(axisLo)}</span>
+            <span className={classes.axisMid}>{k((axisLo + axisHi) / 2)}</span>
+            <span className={classes.axisHi}>{k(axisHi)}</span>
           </span>
         ),
         cell: (info) => {
@@ -279,7 +285,7 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
         ),
       }),
     ];
-  }, [minParses, domain]) as ColumnDef<typeof features, SpecStat>[];
+  }, [minParses, axisLo, axisHi]) as ColumnDef<typeof features, SpecStat>[];
 
 
   const table = useTable({
@@ -438,7 +444,7 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
 const HEADER_TOOLTIP: Record<string, string> = {
   rank: "Position under the current sort. Specs with too few parses sit unranked at the bottom.",
   spec: "Class specialization, colored by class. The ~+N under the name is the typical key level of the spec's sampled runs.",
-  bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse. Axis starts at zero and tops out just above the role's best parse.",
+  bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse. The axis starts just below the field's lowest median — not at zero — to magnify the differences between specs.",
   median:
     "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log. Click to rank by it.",
   p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix. Click to rank by it.",
