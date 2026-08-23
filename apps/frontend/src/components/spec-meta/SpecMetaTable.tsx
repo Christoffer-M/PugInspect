@@ -230,16 +230,6 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
       stat("median", "Median"),
       stat("p95", "p95"),
       stat("max", "Max"),
-      columnHelper.accessor("parses", {
-        id: "parses",
-        header: "Parses",
-        enableSorting: false,
-        cell: (info) => (
-          <span className={`${classes.parses} ${isLow(info.row.original) ? classes.parsesLow : ""}`}>
-            {info.getValue().toLocaleString("en-US")}
-          </span>
-        ),
-      }),
       columnHelper.display({
         id: "chev",
         header: "",
@@ -382,7 +372,6 @@ const HEADER_CLASS: Record<string, string> = {
   rank: classes.colRank!,
   spec: classes.colSpec!,
   bar: classes.colBar!,
-  parses: classes.parses!,
   chev: classes.colChev!,
 };
 

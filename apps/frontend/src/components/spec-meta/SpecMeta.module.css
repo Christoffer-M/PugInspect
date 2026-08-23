@@ -162,8 +162,6 @@
 .fillP95 { position: absolute; top: 8px; height: 6px; border-radius: 0 999px 999px 0; }
 .markMax { position: absolute; top: 7px; width: 6px; height: 8px; margin-left: -3px; border-radius: 2px; }
 
-.parses { width: 54px; text-align: right; flex-shrink: 0; font-family: var(--mono); font-size: 11px; color: #6b7590; }
-.parsesLow { color: #8b7fd4; }
 .chev { display: flex; align-items: center; justify-content: center; color: #4a5670; transition: transform 160ms ease; }
 .chevOpen { color: #c5bcf2; transform: rotate(180deg); }
 
@@ -258,8 +256,6 @@
   .statActive { order: 0; margin-left: auto; }
   .statInactive { order: 4; font-size: 11px; }
   .statInactive::before { content: attr(data-label) " "; color: #6b7590; }
-  .parses { width: auto; order: 4; font-size: 11px; }
-  .parses::after { content: " parses"; }
   .colChev { order: 5; margin-left: auto; }
   .mobileSort {
     display: flex; gap: 2px; padding: 6px 11px;
