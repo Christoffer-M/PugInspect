@@ -105,11 +105,15 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
     [data.dungeons]
   );
 
-  // Zero-baseline axis: the whole role shares one scale, topped out just above
-  // its single best parse and rounded to a readable number.
+  // Zero-baseline axis: the whole view shares one scale, topped out just above
+  // its single best parse. The rounding step scales with the data's magnitude —
+  // a fixed 50k step suits 400k DPS but wastes a sixth of the track on ~130k
+  // healer damage, squeezing every bar into the left half.
   const domain = useMemo(() => {
     const peak = Math.max(0, ...rows.map((s) => s.max));
-    return Math.max(50_000, Math.ceil(peak / 50_000) * 50_000);
+    if (peak <= 0) return 50_000;
+    const step = 10 ** Math.floor(Math.log10(peak)) / 10;
+    return Math.ceil(peak / step) * step;
   }, [rows]);
 
   const metricLabel = role === "HEALER" && healerMetric === "hps" ? "HPS" : "DPS";
