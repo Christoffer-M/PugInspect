@@ -303,13 +303,19 @@ enum SpecRole {
 type SpecStat {
   className: String!
   classSlug: String!
-  """Raw, un-normalized throughput per dungeon."""
   dungeons: [SpecDungeonStat!]!
+  """The raw best parse in the sample, findable on WarcraftLogs."""
   max: Float!
+  """
+  Adjusted for dungeon and key mix — will not match any single WCL parse.
+  """
   median: Float!
   medianKey: Int!
   """dps for damage specs and tanks, hps for healers."""
   metric: String!
+  """
+  Adjusted for dungeon and key mix — will not match any single WCL parse.
+  """
   p95: Float!
   parses: Int!
   role: SpecRole!

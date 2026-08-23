@@ -381,13 +381,15 @@ export type SpecStat = {
   __typename?: 'SpecStat';
   className: Scalars['String']['output'];
   classSlug: Scalars['String']['output'];
-  /** Raw, un-normalized throughput per dungeon. */
   dungeons: Array<SpecDungeonStat>;
+  /** The raw best parse in the sample, findable on WarcraftLogs. */
   max: Scalars['Float']['output'];
+  /** Adjusted for dungeon and key mix — will not match any single WCL parse. */
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];
   /** dps for damage specs and tanks, hps for healers. */
   metric: Scalars['String']['output'];
+  /** Adjusted for dungeon and key mix — will not match any single WCL parse. */
   p95: Scalars['Float']['output'];
   parses: Scalars['Int']['output'];
   role: SpecRole;

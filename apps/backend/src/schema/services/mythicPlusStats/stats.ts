@@ -59,6 +59,10 @@ const bucketKey = (encounterId: number, keyLevel: number) => `${encounterId}:${k
  * — but a spec cannot climb the table merely by being logged more often in the
  * high-damage dungeons.
  *
+ * `max` alone stays RAW: it is presented as "single best parse" and must be a
+ * number someone can actually find on WarcraftLogs. A normalized max rescales
+ * to a throughput nobody ever logged.
+ *
  * The input is the fastest-runs sample, not the whole field (see
  * `PAGES_PER_BRACKET`), so these are percentiles among runs that went well.
  */
@@ -134,7 +138,7 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
           parses: normalized.length,
           median: median(normalized) * referenceRaw,
           p95: percentile(normalized, 0.95) * referenceRaw,
-          max: last(normalized) * referenceRaw,
+          max: last(ascending(specParses.map((p) => p.amount))),
           medianKey: Math.round(median(ascending(specParses.map((p) => p.keyLevel)))),
         });
 
@@ -167,7 +171,7 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
             parses: dNormalized.length,
             median: median(dNormalized) * ref,
             p95: percentile(dNormalized, 0.95) * ref,
-            max: last(dNormalized) * ref,
+            max: last(ascending(dungeonParses.map((p) => p.amount))),
             medianKey: Math.round(median(ascending(dungeonParses.map((p) => p.keyLevel)))),
           });
         }

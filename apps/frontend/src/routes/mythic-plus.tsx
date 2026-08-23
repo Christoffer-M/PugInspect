@@ -110,7 +110,10 @@ const MythicPlusMeta: React.FC = () => {
                 </div>
               </div>
               <div className={classes.provNote}>
-                <span>bar = median · pale extension = top 5% · outline = single best parse</span>
+                <span>
+                  bar = median · pale extension = top 5% (both adjusted for dungeon &amp; key mix) ·
+                  outline = best raw parse
+                </span>
                 <span className={classes.sep}>·</span>
                 <span className={classes.provNoteDim}>
                   season to date · each spec&apos;s fastest {data.sampleDepth.toLocaleString("en-US")}{" "}

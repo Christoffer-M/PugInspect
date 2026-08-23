@@ -68,11 +68,13 @@ export const characterTypedefs = gql`
     "dps for damage specs and tanks, hps for healers."
     metric: String!
     parses: Int!
+    "Adjusted for dungeon and key mix — will not match any single WCL parse."
     median: Float!
+    "Adjusted for dungeon and key mix — will not match any single WCL parse."
     p95: Float!
+    "The raw best parse in the sample, findable on WarcraftLogs."
     max: Float!
     medianKey: Int!
-    "Raw, un-normalized throughput per dungeon."
     dungeons: [SpecDungeonStat!]!
   }
 

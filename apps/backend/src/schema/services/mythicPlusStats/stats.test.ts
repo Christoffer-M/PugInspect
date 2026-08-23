@@ -105,6 +105,22 @@ describe("aggregate", () => {
     expect(pooled!.parses).toBe(10);
   });
 
+  it("keeps max as a raw parse someone can find on WarcraftLogs", () => {
+    // Fire logs a weak bucket (key 10, field median 150) and beats it 2x with
+    // 300. Normalizing the max would rescale that ratio to ~2x the reference —
+    // a throughput nobody ever logged. The displayed max must stay 300.
+    const parses = [
+      ...Array.from({ length: 10 }, () => parse("Fire", 1, 10, 300)),
+      ...Array.from({ length: 10 }, () => parse("Arcane", 1, 10, 150)),
+      ...Array.from({ length: 10 }, () => parse("Fire", 1, 15, 280)),
+      ...Array.from({ length: 10 }, () => parse("Arcane", 1, 15, 280)),
+    ];
+    const fire = aggregate(parses, [10]).find(
+      (r) => r.encounterId === 0 && r.specSlug === "Fire"
+    )!;
+    expect(fire.max).toBe(300);
+  });
+
   it("normalizes healers against healers, not against the damage field", () => {
     const parses: Parse[] = [
       ...Array.from({ length: 10 }, (_, i) => ({
