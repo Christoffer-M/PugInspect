@@ -1,4 +1,17 @@
-import { useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo } from "react";
+import {
+  createColumnHelper,
+  createExpandedRowModel,
+  createSortedRowModel,
+  flexRender,
+  rowExpandingFeature,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
+  type ColumnDef,
+  type Row,
+  type SortFn,
+} from "@tanstack/react-table";
 import { IconChevronDown } from "@tabler/icons-react";
 import { CURRENT_DUNGEONS } from "../../generated/seasonConfig";
 import { getClassColor } from "../../util/util";
@@ -8,6 +21,12 @@ import classes from "./SpecMeta.module.css";
 
 export type Role = "DPS" | "HEALER" | "TANK";
 
+export const ROLES: { id: Role; label: string }[] = [
+  { id: "DPS", label: "DPS" },
+  { id: "HEALER", label: "Healer" },
+  { id: "TANK", label: "Tank" },
+];
+
 export type SortKey = "median" | "p95" | "max";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -16,11 +35,14 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "max", label: "Max" },
 ];
 
-export const ROLES: { id: Role; label: string }[] = [
-  { id: "DPS", label: "DPS" },
-  { id: "HEALER", label: "Healer" },
-  { id: "TANK", label: "Tank" },
-];
+const features = tableFeatures({
+  rowSortingFeature,
+  rowExpandingFeature,
+  sortedRowModel: createSortedRowModel(),
+  expandedRowModel: createExpandedRowModel(),
+});
+
+const columnHelper = createColumnHelper<typeof features, SpecStat>();
 
 /** 304400 → "304.4k". Throughput is always large enough for this to read well. */
 const k = (v: number) => `${(v / 1000).toFixed(1)}k`;
@@ -42,9 +64,6 @@ type Props = {
 };
 
 export function SpecMetaTable({ data, role, dungeon }: Props) {
-  const [open, setOpen] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortKey>("median");
-
   const minParses =
     dungeon == null
       ? data.minParsesToRank
@@ -52,26 +71,17 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
 
   // Dungeon-scoped view swaps each spec's pooled numbers for its stats in that
   // dungeon — the per-dungeon rows are shipped with the response either way.
-  // Always re-sorted here: the backend orders by pooled median only, and the
-  // active stat column drives the ranking.
-  const specs = useMemo(() => {
+  const rows = useMemo(() => {
     const inRole = data.specs.filter((s) => s.role === role);
-    const view =
-      dungeon == null
-        ? inRole
-        : inRole.flatMap((s) => {
-            const d = s.dungeons.find((x) => x.encounterId === dungeon);
-            return d
-              ? [{ ...s, parses: d.parses, median: d.median, p95: d.p95, max: d.max, medianKey: d.medianKey, dungeons: [] }]
-              : [];
-          });
-    return view.slice().sort((a, b) => {
-      const aThin = a.parses < minParses;
-      const bThin = b.parses < minParses;
-      if (aThin !== bThin) return aThin ? 1 : -1;
-      return b[sortBy] - a[sortBy];
+    if (dungeon == null) return inRole;
+    return inRole.flatMap((s) => {
+      const d = s.dungeons.find((x) => x.encounterId === dungeon);
+      return d
+        ? [{ ...s, parses: d.parses, median: d.median, p95: d.p95, max: d.max, medianKey: d.medianKey, dungeons: [] }]
+        : [];
     });
-  }, [data, role, dungeon, sortBy, minParses]);
+  }, [data, role, dungeon]);
+
   const dungeonNames = useMemo(
     () => new Map(data.dungeons.map((d) => [d.encounterId, d.name])),
     [data.dungeons]
@@ -80,40 +90,222 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
   // Zero-baseline axis: the whole role shares one scale, topped out just above
   // its single best parse and rounded to a readable number.
   const domain = useMemo(() => {
-    const peak = Math.max(0, ...specs.map((s) => s.max));
+    const peak = Math.max(0, ...rows.map((s) => s.max));
     return Math.max(50_000, Math.ceil(peak / 50_000) * 50_000);
-  }, [specs]);
+  }, [rows]);
 
   const metricLabel = role === "HEALER" ? "HPS" : "DPS";
 
-  if (specs.length === 0) return null;
+  const columns = useMemo(() => {
+    const isLow = (s: SpecStat) => s.parses < minParses;
+
+    // Descending stat sort with thin specs pinned to the bottom: their value
+    // reads as -Infinity, which the desc inversion pushes last.
+    const thinLast: SortFn<typeof features, SpecStat> = (a, b, columnId) => {
+      const value = (r: Row<typeof features, SpecStat>) =>
+        isLow(r.original) ? -Infinity : (r.getValue(columnId) as number);
+      const va = value(a);
+      const vb = value(b);
+      return va === vb ? 0 : va < vb ? -1 : 1;
+    };
+
+    const pct = (v: number) => Math.max(0, Math.min(100, (v / domain) * 100));
+
+    const stat = (key: SortKey, label: string) =>
+      columnHelper.accessor(key, {
+        id: key,
+        header: label,
+        sortFn: thinLast,
+        sortDescFirst: true,
+        cell: (info) => {
+          const s = info.row.original;
+          const active = info.column.getIsSorted() !== false;
+          return (
+            <span
+              data-label={key === "median" ? "med" : key}
+              className={`${classes.statCol} ${active ? classes.statActive : classes.statInactive}`}
+              style={isLow(s) && active ? { color: "#6b7590" } : undefined}
+            >
+              {isLow(s) ? "—" : k(info.getValue())}
+            </span>
+          );
+        },
+      });
+
+    return [
+      columnHelper.display({
+        id: "rank",
+        header: "#",
+        cell: (info) => {
+          const s = info.row.original;
+          const rank = info.table.getRowModel().rows.findIndex((r) => r.id === info.row.id) + 1;
+          return (
+            <span className={`${classes.colRank} ${classes.rank} ${rank <= 3 && !isLow(s) ? classes.rankTop : ""}`}>
+              {isLow(s) ? "—" : rank}
+            </span>
+          );
+        },
+      }),
+      columnHelper.accessor("specName", {
+        id: "spec",
+        header: "Spec",
+        enableSorting: false,
+        cell: (info) => {
+          const s = info.row.original;
+          const color = getClassColor(s.className);
+          return (
+            <span className={classes.specCell}>
+              <SpecImage className={s.className} spec={s.specName} />
+              <span className={classes.specLabels}>
+                <span
+                  className={classes.specName}
+                  style={{
+                    color: isLow(s) ? "#8a96aa" : color,
+                    // Priest white vanishes against the panel without a halo.
+                    textShadow: s.classSlug === "Priest" ? "0 0 12px rgba(255,255,255,0.25)" : undefined,
+                  }}
+                >
+                  {s.specName}
+                </span>
+                <span className={classes.className}>
+                  {s.className}
+                  {!isLow(s) && <span className={classes.typicalKey}> · ~+{s.medianKey}</span>}
+                </span>
+              </span>
+            </span>
+          );
+        },
+      }),
+      columnHelper.display({
+        id: "bar",
+        header: () => (
+          <span className={classes.axis}>
+            <span>0</span>
+            <span className={classes.axisMid}>{k(domain / 2)}</span>
+            <span className={classes.axisHi}>{k(domain)}</span>
+          </span>
+        ),
+        cell: (info) => {
+          const s = info.row.original;
+          const color = getClassColor(s.className);
+          const medianPct = pct(s.median);
+          const p95Pct = pct(s.p95);
+          return (
+            <span className={classes.colBar}>
+              <span className={classes.track}>
+                <span className={classes.trackBg} />
+                <span className={classes.trackMid} />
+                {!isLow(s) && (
+                  <>
+                    <span
+                      className={classes.fillMedian}
+                      style={{
+                        width: `${medianPct}%`,
+                        background: `linear-gradient(90deg, ${withAlpha(color, 0.45)} 0%, ${color} 100%)`,
+                      }}
+                    />
+                    <span
+                      className={classes.fillP95}
+                      style={{
+                        left: `${medianPct}%`,
+                        width: `${Math.max(0, p95Pct - medianPct)}%`,
+                        background: withAlpha(color, 0.2),
+                      }}
+                    />
+                    <span
+                      className={classes.markMax}
+                      style={{
+                        left: `${pct(s.max)}%`,
+                        background: withAlpha(color, 0.35),
+                        boxShadow: `inset 0 0 0 1px ${withAlpha(color, 0.55)}`,
+                      }}
+                    />
+                  </>
+                )}
+              </span>
+            </span>
+          );
+        },
+      }),
+      stat("median", "Median"),
+      stat("p95", "p95"),
+      stat("max", "Max"),
+      columnHelper.accessor("parses", {
+        id: "parses",
+        header: "Parses",
+        enableSorting: false,
+        cell: (info) => (
+          <span className={`${classes.parses} ${isLow(info.row.original) ? classes.parsesLow : ""}`}>
+            {info.getValue().toLocaleString("en-US")}
+          </span>
+        ),
+      }),
+      columnHelper.display({
+        id: "chev",
+        header: "",
+        cell: (info) => (
+          <span className={classes.colChev}>
+            {info.row.getCanExpand() && (
+              <IconChevronDown
+                size={12}
+                stroke={2.5}
+                className={`${classes.chev} ${info.row.getIsExpanded() ? classes.chevOpen : ""}`}
+              />
+            )}
+          </span>
+        ),
+      }),
+    ];
+  }, [minParses, domain]) as ColumnDef<typeof features, SpecStat>[];
+
+
+  const table = useTable({
+    features,
+    columns,
+    data: rows,
+    getRowId: (s: SpecStat) => `${s.classSlug}/${s.specSlug}`,
+    getRowCanExpand: (row: Row<typeof features, SpecStat>) =>
+      row.original.parses >= minParses && row.original.dungeons.length > 0,
+    initialState: { sorting: [{ id: "median", desc: true }] },
+  });
+
+  // Row identity is spec-based and survives role/dungeon switches, so an open
+  // row would otherwise stay marked expanded across a view change.
+  useEffect(() => {
+    table.resetExpanded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, dungeon]);
+
+  const sortBy = (table.state.sorting?.[0]?.id ?? "median") as SortKey;
+  const setSort = (key: SortKey) => table.setSorting([{ id: key, desc: true }]);
+
+  if (rows.length === 0) return null;
 
   return (
     <>
       <div className={classes.panel}>
         <div className={classes.head}>
-          <span className={classes.colRank}>#</span>
-          <span className={classes.colSpec} style={{ paddingLeft: 34 }}>Spec</span>
-          <span className={classes.colBar}>
-            <span className={classes.axis}>
-              <span>0</span>
-              <span className={classes.axisMid}>{k(domain / 2)}</span>
-              <span className={classes.axisHi}>{k(domain)}</span>
-            </span>
-          </span>
-          {SORT_OPTIONS.map((o) => (
-            <button
-              key={o.key}
-              type="button"
-              className={`${classes.headSort} ${sortBy === o.key ? classes.headSortActive : ""}`}
-              aria-pressed={sortBy === o.key}
-              onClick={() => setSortBy(o.key)}
-            >
-              {o.label}
-            </button>
-          ))}
-          <span className={classes.parses}>Parses</span>
-          <span className={classes.colChev} />
+          {table.getFlatHeaders().map((header) =>
+            header.column.getCanSort() ? (
+              <button
+                key={header.id}
+                type="button"
+                className={`${classes.headSort} ${header.column.getIsSorted() ? classes.headSortActive : ""}`}
+                aria-pressed={!!header.column.getIsSorted()}
+                onClick={() => setSort(header.column.id as SortKey)}
+              >
+                {flexRender(header.column.columnDef.header, header.getContext())}
+              </button>
+            ) : (
+              <span
+                key={header.id}
+                className={HEADER_CLASS[header.column.id] ?? ""}
+                style={header.column.id === "spec" ? { paddingLeft: 34 } : undefined}
+              >
+                {flexRender(header.column.columnDef.header, header.getContext())}
+              </span>
+            )
+          )}
         </div>
 
         <div className={classes.mobileSort} role="group" aria-label="Sort by">
@@ -123,32 +315,47 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
               type="button"
               className={`${classes.keyBtn} ${sortBy === o.key ? classes.keyBtnActive : ""}`}
               aria-pressed={sortBy === o.key}
-              onClick={() => setSortBy(o.key)}
+              onClick={() => setSort(o.key)}
             >
               {o.label}
             </button>
           ))}
         </div>
 
-        {specs.map((spec, i) => (
-          <SpecRow
-            key={`${spec.classSlug}/${spec.specSlug}`}
-            spec={spec}
-            rank={i + 1}
-            domain={domain}
-            metricLabel={metricLabel}
-            minParses={minParses}
-            sortBy={sortBy}
-            dungeonNames={dungeonNames}
-            isOpen={open === `${spec.classSlug}/${spec.specSlug}`}
-            onToggle={() =>
-              setOpen((cur) => {
-                const key = `${spec.classSlug}/${spec.specSlug}`;
-                return cur === key ? null : key;
-              })
-            }
-          />
-        ))}
+        {table.getRowModel().rows.map((row) => {
+          const s = row.original;
+          const low = s.parses < minParses;
+          const isOpen = row.getIsExpanded();
+          const canExpand = row.getCanExpand();
+          return (
+            <div key={row.id} className={`${classes.rowWrap} ${isOpen ? classes.rowOpen : ""}`}>
+              <button
+                type="button"
+                className={`${classes.row} ${!canExpand ? classes.rowStatic : ""}`}
+                onClick={canExpand ? row.getToggleExpandedHandler() : undefined}
+                aria-expanded={canExpand ? isOpen : undefined}
+                disabled={!canExpand}
+              >
+                {row.getAllCells().map((cell) => (
+                  <Fragment key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </Fragment>
+                ))}
+              </button>
+
+              {isOpen && !low && (
+                <DungeonDetail spec={s} metricLabel={metricLabel} dungeonNames={dungeonNames} />
+              )}
+
+              {low && (
+                <div className={classes.lowSample}>
+                  Needs {minParses} parses to rank. Nothing is being hidden — this spec is simply too
+                  rare at these keys for a stable median.
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className={classes.legend}>
@@ -158,169 +365,65 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
           <span className={classes.legendItem}><span className={classes.swatchMax} /> best parse</span>
         </div>
         <span>
-          Rows sorted by {SORT_OPTIONS.find((o) => o.key === sortBy)!.label.toLowerCase()}. Click a
-          spec for its per-dungeon split.
+          Rows sorted by {SORT_OPTIONS.find((o) => o.key === sortBy)?.label.toLowerCase() ?? "median"}.
+          Click a spec for its per-dungeon split.
         </span>
       </div>
     </>
   );
 }
 
-type RowProps = {
-  spec: SpecStat;
-  rank: number;
-  domain: number;
-  metricLabel: string;
-  minParses: number;
-  sortBy: SortKey;
-  dungeonNames: Map<number, string>;
-  isOpen: boolean;
-  onToggle: () => void;
+const HEADER_CLASS: Record<string, string> = {
+  rank: classes.colRank!,
+  spec: classes.colSpec!,
+  bar: classes.colBar!,
+  parses: classes.parses!,
+  chev: classes.colChev!,
 };
 
-function SpecRow({
-  spec, rank, domain, metricLabel, minParses, sortBy, dungeonNames, isOpen, onToggle,
-}: RowProps) {
-  const color = getClassColor(spec.className);
-  const lowSample = spec.parses < minParses;
-  const pct = (v: number) => Math.max(0, Math.min(100, (v / domain) * 100));
-
-  const detail = useMemo(
-    () =>
-      spec.dungeons.map((d) => ({
-        ...d,
-        name: dungeonNames.get(d.encounterId) ?? `Dungeon ${d.encounterId}`,
-      })),
-    [spec.dungeons, dungeonNames]
-  );
+function DungeonDetail({
+  spec,
+  metricLabel,
+  dungeonNames,
+}: {
+  spec: SpecStat;
+  metricLabel: string;
+  dungeonNames: Map<number, string>;
+}) {
+  const detail = spec.dungeons.map((d) => ({
+    ...d,
+    name: dungeonNames.get(d.encounterId) ?? `Dungeon ${d.encounterId}`,
+  }));
   const detailPeak = Math.max(1, ...detail.map((d) => d.median));
-
-  const medianPct = pct(spec.median);
-  const p95Pct = pct(spec.p95);
+  const color = getClassColor(spec.className);
 
   return (
-    <div className={`${classes.rowWrap} ${isOpen ? classes.rowOpen : ""}`}>
-      <button
-        type="button"
-        className={`${classes.row} ${lowSample ? classes.rowStatic : ""}`}
-        onClick={lowSample || spec.dungeons.length === 0 ? undefined : onToggle}
-        aria-expanded={lowSample || spec.dungeons.length === 0 ? undefined : isOpen}
-        disabled={lowSample || spec.dungeons.length === 0}
-      >
-        <span className={`${classes.colRank} ${classes.rank} ${rank <= 3 && !lowSample ? classes.rankTop : ""}`}>
-          {lowSample ? "—" : rank}
+    <div className={classes.detail}>
+      <div className={classes.detailHead}>
+        <span>Per dungeon · {metricLabel} · fastest runs</span>
+        <span className={classes.detailNote}>
+          {spec.parses.toLocaleString("en-US")} parses · median {metricLabel} per run
         </span>
-
-        <span className={classes.specCell}>
-          <SpecImage className={spec.className} spec={spec.specName} />
-          <span className={classes.specLabels}>
-            <span
-              className={classes.specName}
-              style={{
-                color: lowSample ? "#8a96aa" : color,
-                // Priest white vanishes against the panel without a halo.
-                textShadow: spec.classSlug === "Priest" ? "0 0 12px rgba(255,255,255,0.25)" : undefined,
-              }}
-            >
-              {spec.specName}
+      </div>
+      <div className={classes.detailGrid}>
+        {detail.map((d) => (
+          <div className={classes.detailRow} key={d.encounterId}>
+            <span className={classes.detailShort}>{shortNameFor(d.name)}</span>
+            <span className={classes.detailName}>{d.name}</span>
+            <span className={classes.detailTrack}>
+              <span
+                className={classes.detailFill}
+                style={{
+                  width: `${(d.median / detailPeak) * 100}%`,
+                  background: `linear-gradient(90deg, ${withAlpha(color, 0.35)} 0%, ${color} 100%)`,
+                }}
+              />
             </span>
-            <span className={classes.className}>
-              {spec.className}
-              {!lowSample && <span className={classes.typicalKey}> · ~+{spec.medianKey}</span>}
-            </span>
-          </span>
-        </span>
-
-        <span className={classes.colBar}>
-          <span className={classes.track}>
-            <span className={classes.trackBg} />
-            <span className={classes.trackMid} />
-            {!lowSample && (
-              <>
-                <span
-                  className={classes.fillMedian}
-                  style={{
-                    width: `${medianPct}%`,
-                    background: `linear-gradient(90deg, ${withAlpha(color, 0.45)} 0%, ${color} 100%)`,
-                  }}
-                />
-                <span
-                  className={classes.fillP95}
-                  style={{
-                    left: `${medianPct}%`,
-                    width: `${Math.max(0, p95Pct - medianPct)}%`,
-                    background: withAlpha(color, 0.2),
-                  }}
-                />
-                <span
-                  className={classes.markMax}
-                  style={{
-                    left: `${pct(spec.max)}%`,
-                    background: withAlpha(color, 0.35),
-                    boxShadow: `inset 0 0 0 1px ${withAlpha(color, 0.55)}`,
-                  }}
-                />
-              </>
-            )}
-          </span>
-        </span>
-
-        {SORT_OPTIONS.map((o) => (
-          <span
-            key={o.key}
-            data-label={o.key === "median" ? "med" : o.key}
-            className={`${classes.statCol} ${sortBy === o.key ? classes.statActive : classes.statInactive}`}
-            style={lowSample && sortBy === o.key ? { color: "#6b7590" } : undefined}
-          >
-            {lowSample ? "—" : k(spec[o.key])}
-          </span>
+            <span className={classes.detailValue}>{k(d.median)}</span>
+            <span className={classes.detailKey}>+{d.medianKey}</span>
+          </div>
         ))}
-        <span className={`${classes.parses} ${lowSample ? classes.parsesLow : ""}`}>
-          {spec.parses.toLocaleString("en-US")}
-        </span>
-        <span className={classes.colChev}>
-          {!lowSample && spec.dungeons.length > 0 && (
-            <IconChevronDown size={12} stroke={2.5} className={`${classes.chev} ${isOpen ? classes.chevOpen : ""}`} />
-          )}
-        </span>
-      </button>
-
-      {isOpen && !lowSample && (
-        <div className={classes.detail}>
-          <div className={classes.detailHead}>
-            <span>Per dungeon · {metricLabel} · fastest runs</span>
-            <span className={classes.detailNote}>
-              {spec.parses.toLocaleString("en-US")} parses · median {metricLabel} per run
-            </span>
-          </div>
-          <div className={classes.detailGrid}>
-            {detail.map((d) => (
-              <div className={classes.detailRow} key={d.encounterId}>
-                <span className={classes.detailShort}>{shortNameFor(d.name)}</span>
-                <span className={classes.detailName}>{d.name}</span>
-                <span className={classes.detailTrack}>
-                  <span
-                    className={classes.detailFill}
-                    style={{
-                      width: `${(d.median / detailPeak) * 100}%`,
-                      background: `linear-gradient(90deg, ${withAlpha(color, 0.35)} 0%, ${color} 100%)`,
-                    }}
-                  />
-                </span>
-                <span className={classes.detailValue}>{k(d.median)}</span>
-                <span className={classes.detailKey}>+{d.medianKey}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {lowSample && (
-        <div className={classes.lowSample}>
-          Needs {minParses} parses to rank. Nothing is being hidden — this spec is simply too rare
-          at these keys for a stable median.
-        </div>
-      )}
+      </div>
     </div>
   );
 }
