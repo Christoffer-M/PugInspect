@@ -13,7 +13,7 @@ import {
   type SortFn,
 } from "@tanstack/react-table";
 import { Tooltip } from "@mantine/core";
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconArrowsSort, IconChevronDown } from "@tabler/icons-react";
 import { CURRENT_DUNGEONS } from "../../generated/seasonConfig";
 import { getClassColor } from "../../util/util";
 import { SpecImage } from "../ui/SpecImage";
@@ -296,6 +296,11 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
                 onClick={() => setSort(header.column.id as SortKey)}
               >
                 {content}
+                {header.column.getIsSorted() ? (
+                  <IconChevronDown size={10} stroke={2.5} className={classes.sortIcon} />
+                ) : (
+                  <IconArrowsSort size={10} stroke={2} className={classes.sortIcon} />
+                )}
               </button>
             ) : (
               <span
@@ -391,9 +396,9 @@ const HEADER_TOOLTIP: Record<string, string> = {
   spec: "Class specialization. Colored by class; the icon is the spec.",
   bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse. Axis starts at zero and tops out just above the role's best parse.",
   median:
-    "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log.",
-  p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix.",
-  max: "The single best raw parse in the sample — a real, findable log. Expand the row under this sort to open the run on WarcraftLogs.",
+    "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log. Click to rank by it.",
+  p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix. Click to rank by it.",
+  max: "The single best raw parse in the sample — a real, findable log. Click to rank by it, then expand a row to open the run on WarcraftLogs.",
   typicalKey: "Typical key level of this spec's sampled runs — where its fastest runs actually happen.",
 };
 
