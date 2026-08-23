@@ -403,9 +403,6 @@ function DungeonDetail({
     ...d,
     name: dungeonNames.get(d.encounterId) ?? `Dungeon ${d.encounterId}`,
     value: d[sortBy],
-    // Median/p95 describe the sample, so the typical key is their companion;
-    // max is one specific run, so it carries that run's actual key level.
-    keyLevel: sortBy === "max" ? (d.maxKey ?? d.medianKey) : d.medianKey,
   }));
   const detailPeak = Math.max(1, ...detail.map((d) => d.value));
   const color = getClassColor(spec.className);
@@ -446,7 +443,12 @@ function DungeonDetail({
             ) : (
               <span className={classes.detailValue}>{k(d.value)}</span>
             )}
-            <span className={classes.detailKey}>+{d.keyLevel}</span>
+            {/* Max is one specific run, so its key level is a fact worth showing.
+                A key badge next to a median or p95 would just be a typical value
+                masquerading as provenance. */}
+            {sortBy === "max" && d.maxKey != null && (
+              <span className={classes.detailKey}>+{d.maxKey}</span>
+            )}
           </div>
         ))}
       </div>

@@ -120,6 +120,9 @@ test("expanding a spec reveals its per-dungeon split", async ({ page }) => {
   const detail = page.locator('[class*="detailGrid"]');
   await expect(detail.getByText("Altar of Fangs")).toBeVisible();
   await expect(detail.getByText("Kings' Rest")).toBeVisible();
+  // Under a median sort there is no key badge — a typical key next to a
+  // sample statistic reads as provenance it isn't.
+  await expect(page.locator('[class*="detailKey"]')).toHaveCount(0);
 });
 
 test("role tabs switch the ranked population and the metric", async ({ page }) => {
