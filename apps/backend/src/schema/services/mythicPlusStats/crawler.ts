@@ -15,8 +15,8 @@ const PAGE_SIZE = 100;
 /**
  * How many pages of each spec's rankings to sample per dungeon.
  *
- * Rankings are score-sorted, so this takes each spec's ~100 fastest runs of
- * each dungeon (~800 per spec season-wide) — the same depth for all 40 specs.
+ * Rankings are score-sorted, so this takes each spec's ~200 fastest runs of
+ * each dungeon (~1,600 per spec season-wide) — the same depth for all 40 specs.
  *
  * Sampling per spec, at equal depth, is the load-bearing choice. Any broader
  * filter (per class, or unfiltered) samples a spec only as deeply as it appears
@@ -30,7 +30,7 @@ const PAGE_SIZE = 100;
  * field median (WarcraftLogs caps every query at 2,000 rows, so a census of the
  * popular keys is not obtainable at any budget).
  */
-export const PAGES_PER_SPEC = 1;
+export const PAGES_PER_SPEC = 2;
 
 export type RankingsFetcher = (
   encounterId: number,
