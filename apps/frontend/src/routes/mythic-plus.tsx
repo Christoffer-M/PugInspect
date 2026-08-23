@@ -49,12 +49,14 @@ function typicalKeyRange(data: { specs: { dungeons: { medianKey: number; parses:
 
 const MythicPlusMeta: React.FC = () => {
   const [role, setRole] = useState<Role>("DPS");
+  const [healerMetric, setHealerMetric] = useState<"hps" | "dps">("hps");
   const [dungeon, setDungeon] = useState<number | null>(null);
 
   const zoneId = CURRENT_SEASON?.zoneId;
   const { data, isPending, isError } = useMythicPlusSpecStats(zoneId);
 
-  const roleCounts = (r: Role) => data?.specs.filter((s) => s.role === r).length ?? 0;
+  const roleCounts = (r: Role) =>
+    data?.specs.filter((s) => s.role === r && (r !== "HEALER" || s.metric === "hps")).length ?? 0;
   const typical = data ? typicalKeyRange(data) : null;
 
   return (
@@ -174,9 +176,33 @@ const MythicPlusMeta: React.FC = () => {
             ))}
           </div>
 
+          {role === "HEALER" && (
+            <div className={classes.tabs} role="tablist" aria-label="Healer metric">
+              {(
+                [
+                  { id: "hps", label: "Healing (HPS)" },
+                  { id: "dps", label: "Damage (DPS)" },
+                ] as const
+              ).map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={healerMetric === m.id}
+                  className={`${classes.tab} ${healerMetric === m.id ? classes.tabActive : ""}`}
+                  onClick={() => setHealerMetric(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {isPending && <LoadingRows />}
           {!isPending && (isError || !data) && <EmptyState />}
-          {data && <SpecMetaTable data={data} role={role} dungeon={dungeon} />}
+          {data && (
+            <SpecMetaTable data={data} role={role} healerMetric={healerMetric} dungeon={dungeon} />
+          )}
         </Stack>
       </Container>
     </Page>

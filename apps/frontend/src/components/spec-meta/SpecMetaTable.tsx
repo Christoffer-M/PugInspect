@@ -65,11 +65,13 @@ const shortNameFor = (name: string) =>
 type Props = {
   data: MythicPlusSpecStats;
   role: Role;
+  /** Which healer throughput to rank — healers carry both. */
+  healerMetric: "hps" | "dps";
   /** null = pooled across all dungeons; otherwise one dungeon's encounterId. */
   dungeon: number | null;
 };
 
-export function SpecMetaTable({ data, role, dungeon }: Props) {
+export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
   const minParses =
     dungeon == null
       ? data.minParsesToRank
@@ -78,7 +80,8 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
   // Dungeon-scoped view swaps each spec's pooled numbers for its stats in that
   // dungeon — the per-dungeon rows are shipped with the response either way.
   const rows = useMemo<ViewSpec[]>(() => {
-    const inRole = data.specs.filter((s) => s.role === role);
+    const metric = role === "HEALER" ? healerMetric : "dps";
+    const inRole = data.specs.filter((s) => s.role === role && s.metric === metric);
     if (dungeon == null) return inRole;
     return inRole.flatMap((s) => {
       const d = s.dungeons.find((x) => x.encounterId === dungeon);
@@ -95,7 +98,7 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
           }]
         : [];
     });
-  }, [data, role, dungeon]);
+  }, [data, role, healerMetric, dungeon]);
 
   const dungeonNames = useMemo(
     () => new Map(data.dungeons.map((d) => [d.encounterId, d.name])),
@@ -109,7 +112,7 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
     return Math.max(50_000, Math.ceil(peak / 50_000) * 50_000);
   }, [rows]);
 
-  const metricLabel = role === "HEALER" ? "HPS" : "DPS";
+  const metricLabel = role === "HEALER" && healerMetric === "hps" ? "HPS" : "DPS";
 
   const columns = useMemo(() => {
     const isLow = (s: ViewSpec) => s.parses < minParses;
@@ -290,7 +293,7 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
   useEffect(() => {
     table.resetExpanded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, dungeon]);
+  }, [role, healerMetric, dungeon]);
 
   const activeSort = table.state.sorting?.[0];
   const sortBy = (activeSort?.id ?? "median") as SortKey;

@@ -26,7 +26,7 @@ const parse = (
   encounterId: number,
   keyLevel: number,
   amount: number
-): Parse => ({ classSlug: "Mage", specSlug, role: "DPS", encounterId, keyLevel, amount });
+): Parse => ({ classSlug: "Mage", specSlug, role: "DPS", encounterId, keyLevel, amount, metric: "dps" });
 
 describe("aggregate", () => {
   /**
@@ -152,11 +152,11 @@ describe("aggregate", () => {
     const parses: Parse[] = [
       ...Array.from({ length: 10 }, (_, i) => ({
         classSlug: "Druid", specSlug: "Restoration", role: "HEALER" as const,
-        encounterId: 1, keyLevel: 15, amount: 150_000 + i,
+        encounterId: 1, keyLevel: 15, amount: 150_000 + i, metric: "hps" as const,
       })),
       ...Array.from({ length: 10 }, (_, i) => ({
         classSlug: "Mage", specSlug: "Fire", role: "DPS" as const,
-        encounterId: 1, keyLevel: 15, amount: 400_000 + i,
+        encounterId: 1, keyLevel: 15, amount: 400_000 + i, metric: "dps" as const,
       })),
     ];
     const [healer] = aggregate(parses, [15]).filter(
@@ -190,15 +190,15 @@ describe("crawlDungeon", () => {
     expect(crawl.requests).toBe(40);
   });
 
-  it("requests hps for healer specs and dps for everyone else", async () => {
+  it("requests both metrics for healer specs and dps for everyone else", async () => {
     const metricFor = new Map<string, string>();
     const fetchPage: RankingsFetcher = async (_e, _p, className, specName, metric) => {
       metricFor.set(`${className}/${specName}`, metric);
       return {};
     };
     await crawlDungeon(fetchPage, 1, "Test");
-    expect(metricFor.get("Priest/Holy")).toBe("hps");
-    expect(metricFor.get("Shaman/Restoration")).toBe("hps");
+    expect(metricFor.get("Priest/Holy")).toBe("both");
+    expect(metricFor.get("Shaman/Restoration")).toBe("both");
     expect(metricFor.get("Shaman/Elemental")).toBe("dps");
     expect(metricFor.get("Warrior/Fury")).toBe("dps");
   });
@@ -213,19 +213,22 @@ describe("crawlDungeon", () => {
     expect(pagesSeen).toEqual([...Array(PAGES_PER_SPEC)].map((_, i) => i + 1));
   });
 
-  it("keeps healer amounts from the hps list only", async () => {
+  it("tags healer parses with the metric of the list they came from", async () => {
     const fetchPage: RankingsFetcher = async (_e, _p, className, specName, metric) => {
       if (className === "Druid" && specName === "Restoration") {
-        // A healer response only carries the hps list.
-        expect(metric).toBe("hps");
-        return { hps: { rankings: [row("Druid", "Restoration", 180)] } };
+        expect(metric).toBe("both");
+        return {
+          hps: { rankings: [row("Druid", "Restoration", 180)] },
+          dps: { rankings: [row("Druid", "Restoration", 55)] },
+        };
       }
       return { dps: { rankings: [] } };
     };
     const { parses } = await crawlDungeon(fetchPage, 1, "Test");
-    expect(parses).toHaveLength(1);
-    expect(parses[0]!.amount).toBe(180);
-    expect(parses[0]!.role).toBe("HEALER");
+    expect(parses).toHaveLength(2);
+    expect(parses.find((p) => p.metric === "hps")!.amount).toBe(180);
+    expect(parses.find((p) => p.metric === "dps")!.amount).toBe(55);
+    expect(parses.every((p) => p.role === "HEALER")).toBe(true);
   });
 
   it("reports the keystone levels seen in the sample", async () => {
@@ -235,6 +238,31 @@ describe("crawlDungeon", () => {
     });
     const crawl = await crawlDungeon(fetchPage, 1, "Test");
     expect(crawl.keyLevels).toEqual([12, 16]);
+  });
+});
+
+describe("healer damage", () => {
+  it("ranks healer dps against other healers, never the damage field", () => {
+    const healerDps = (spec: string, cls: string, amount: number): Parse => ({
+      classSlug: cls, specSlug: spec, role: "HEALER", encounterId: 1, keyLevel: 15,
+      amount, metric: "dps",
+    });
+    const parses: Parse[] = [
+      // The DPS field does 300k — if healer damage normalized against it,
+      // these 50k/70k healers would score ~0.2 and be crushed by the rescale.
+      ...Array.from({ length: 10 }, () => parse("Fire", 1, 15, 300_000)),
+      ...Array.from({ length: 10 }, () => healerDps("Restoration", "Druid", 50_000)),
+      ...Array.from({ length: 10 }, () => healerDps("Holy", "Paladin", 70_000)),
+    ];
+    const rows = aggregate(parses, [15]).filter(
+      (r) => r.encounterId === 0 && r.role === "HEALER" && r.metric === "dps"
+    );
+    const holy = rows.find((r) => r.specSlug === "Holy")!;
+    const resto = rows.find((r) => r.specSlug === "Restoration")!;
+    // Real units from the healer field's own median (60k), untouched by the 300k DPS group.
+    expect(holy.median).toBeGreaterThan(resto.median);
+    expect(holy.median).toBeLessThan(80_000);
+    expect(resto.median).toBeGreaterThan(40_000);
   });
 });
 

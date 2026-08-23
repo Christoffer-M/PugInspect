@@ -37,7 +37,7 @@ export type RankingsFetcher = (
   page: number,
   className: string,
   specName: string,
-  metric: "dps" | "hps"
+  metric: "dps" | "hps" | "both"
 ) => Promise<{ dps?: CharacterRankingsPage; hps?: CharacterRankingsPage }>;
 
 function toParses(
@@ -46,13 +46,13 @@ function toParses(
 ): Parse[] {
   const out: Parse[] = [];
 
-  // Healers are ranked on healing, everyone else on damage; each request asks
-  // for exactly one metric, so at most one of these lists is present.
-  const collect = (rows: CharacterRankingRow[], wantHealers: boolean) => {
+  // Requests are spec-filtered, so each alias list holds only the requested
+  // spec; which list a row came from is which throughput it measures. Healer
+  // requests carry both lists, everyone else only dps.
+  const collect = (rows: CharacterRankingRow[], metric: "dps" | "hps") => {
     for (const row of rows) {
       const spec = lookupSpec(row.class, row.spec);
       if (!spec) continue;
-      if ((spec.role === "HEALER") !== wantHealers) continue;
       if (typeof row.bracketData !== "number") continue;
       if (typeof row.amount !== "number" || row.amount <= 0) continue;
       out.push({
@@ -62,14 +62,15 @@ function toParses(
         encounterId,
         keyLevel: row.bracketData,
         amount: row.amount,
+        metric,
         reportCode: row.report?.code,
         fightId: row.report?.fightID,
       });
     }
   };
 
-  collect(page.dps?.rankings ?? [], false);
-  collect(page.hps?.rankings ?? [], true);
+  collect(page.dps?.rankings ?? [], "dps");
+  collect(page.hps?.rankings ?? [], "hps");
   return out;
 }
 
@@ -98,7 +99,9 @@ export async function crawlDungeon(
   let requests = 0;
 
   for (const spec of SPECS) {
-    const metric = metricForRole(spec.role);
+    // Healers are shown on both healing and damage; one dual-alias request
+    // covers both for ~1 extra point.
+    const metric = spec.role === "HEALER" ? "both" : metricForRole(spec.role);
     for (let page = 1; page <= PAGES_PER_SPEC; page++) {
       const result = await fetchPage(encounterId, page, spec.classSlug, spec.specSlug, metric);
       requests++;

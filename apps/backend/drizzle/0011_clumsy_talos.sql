@@ -1,0 +1,2 @@
+DROP INDEX "mplus_spec_stats_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "mplus_spec_stats_unique" ON "mplus_spec_stats" USING btree ("zone_id","key_floor","encounter_id","class_slug","spec_slug","metric");

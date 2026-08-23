@@ -371,7 +371,8 @@ export const mplusSpecStats = pgTable(
       t.keyFloor,
       t.encounterId,
       t.classSlug,
-      t.specSlug
+      t.specSlug,
+      t.metric
     ),
     index("mplus_spec_stats_lookup_idx").on(t.zoneId, t.keyFloor, t.encounterId),
   ]

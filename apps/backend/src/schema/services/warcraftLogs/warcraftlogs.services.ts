@@ -12,6 +12,7 @@ import {
 import { CHARACTER_PROFILE } from "./queries/characterProfile.js";
 import { ZONE_PARTITIONS } from "./queries/zone.js";
 import {
+  ENCOUNTER_RANKINGS_BOTH,
   ENCOUNTER_RANKINGS_DPS,
   ENCOUNTER_RANKINGS_HPS,
   MYTHIC_PLUS_ZONE,
@@ -84,16 +85,22 @@ export class WarcraftLogsService {
   }
 
   /**
-   * One page of one spec's dungeon rankings — hps for healers, dps otherwise.
+   * One page of one spec's dungeon rankings — dps for damage specs and tanks,
+   * both metrics for healers.
    */
   static async getEncounterRankings(
     encounterId: number,
     page: number,
     className: string,
     specName: string,
-    metric: "dps" | "hps"
+    metric: "dps" | "hps" | "both"
   ): Promise<{ dps?: CharacterRankingsPage; hps?: CharacterRankingsPage }> {
-    const doc = metric === "hps" ? ENCOUNTER_RANKINGS_HPS : ENCOUNTER_RANKINGS_DPS;
+    const doc =
+      metric === "both"
+        ? ENCOUNTER_RANKINGS_BOTH
+        : metric === "hps"
+          ? ENCOUNTER_RANKINGS_HPS
+          : ENCOUNTER_RANKINGS_DPS;
     const { data } = await this.client.query<{
       worldData?: { encounter?: { dps?: CharacterRankingsPage; hps?: CharacterRankingsPage } };
     }>(doc.loc?.source.body ?? "", {

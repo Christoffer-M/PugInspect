@@ -20,7 +20,23 @@ export const ENCOUNTER_RANKINGS_DPS: DocumentNode = gql`
   }
 `;
 
-/** Same, healing metric — healer specs are ranked on hps and need nothing else. */
+/**
+ * Both metrics in one request — for healer specs, whose healing AND damage
+ * rankings are both shown. The second alias costs ~1 extra rate-limit point,
+ * far cheaper than a second request.
+ */
+export const ENCOUNTER_RANKINGS_BOTH: DocumentNode = gql`
+  query EncounterRankingsBoth($encounterID: Int!, $page: Int!, $className: String!, $specName: String!) {
+    worldData {
+      encounter(id: $encounterID) {
+        dps: characterRankings(difficulty: 10, metric: dps, bracket: 0, page: $page, className: $className, specName: $specName)
+        hps: characterRankings(difficulty: 10, metric: hps, bracket: 0, page: $page, className: $className, specName: $specName)
+      }
+    }
+  }
+`;
+
+/** Same, healing metric only. */
 export const ENCOUNTER_RANKINGS_HPS: DocumentNode = gql`
   query EncounterRankingsHps($encounterID: Int!, $page: Int!, $className: String!, $specName: String!) {
     worldData {

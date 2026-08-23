@@ -8,6 +8,8 @@ export type Parse = {
   encounterId: number;
   keyLevel: number;
   amount: number;
+  /** Which throughput this parse measures — healers contribute both. */
+  metric: "dps" | "hps";
   /** WCL report behind the parse, so the best run can be linked. */
   reportCode?: string;
   fightId?: number;
@@ -80,14 +82,21 @@ const bucketKey = (encounterId: number, keyLevel: number) => `${encounterId}:${k
 export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
   const rows: StatRow[] = [];
 
+  // Healers appear twice: their healing ranked against healer healing, and
+  // their damage ranked against healer damage — never against the DPS field.
+  const combos: [SpecRole, "dps" | "hps"][] = [
+    ["DPS", "dps"],
+    ["TANK", "dps"],
+    ["HEALER", "hps"],
+    ["HEALER", "dps"],
+  ];
+
   for (const keyFloor of keyFloors) {
     const inScope = parses.filter((p) => p.keyLevel >= keyFloor);
 
-    for (const role of ["DPS", "HEALER", "TANK"] as SpecRole[]) {
-      const group = inScope.filter((p) => p.role === role);
+    for (const [role, metric] of combos) {
+      const group = inScope.filter((p) => p.role === role && p.metric === metric);
       if (group.length === 0) continue;
-
-      const metric: "dps" | "hps" = role === "HEALER" ? "hps" : "dps";
 
       // Per-(dungeon, keystone) median across every spec in this role.
       const buckets = new Map<string, number[]>();

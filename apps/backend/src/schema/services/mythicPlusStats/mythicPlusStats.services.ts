@@ -186,10 +186,12 @@ export async function getMythicPlusSpecStats(
   if (rows.length === 0) return null;
 
   const pooled = rows.filter((r) => r.encounterId === 0);
+  // Healer specs carry two row sets (hps and dps), so detail rows are keyed
+  // per metric as well.
   const detail = new Map<string, MplusSpecStat[]>();
   for (const r of rows) {
     if (r.encounterId === 0) continue;
-    const k = `${r.classSlug}/${r.specSlug}`;
+    const k = `${r.classSlug}/${r.specSlug}/${r.metric}`;
     const list = detail.get(k);
     if (list) list.push(r);
     else detail.set(k, [r]);
@@ -197,8 +199,8 @@ export async function getMythicPlusSpecStats(
 
   const specs = pooled
     .map((r) => {
-      const key = `${r.classSlug}/${r.specSlug}`;
-      const def = SPEC_BY_KEY.get(key);
+      const key = `${r.classSlug}/${r.specSlug}/${r.metric}`;
+      const def = SPEC_BY_KEY.get(`${r.classSlug}/${r.specSlug}`);
       return {
         classSlug: r.classSlug,
         specSlug: r.specSlug,
@@ -239,7 +241,10 @@ export async function getMythicPlusSpecStats(
     refreshedAt: meta.refreshedAt.toISOString(),
     keyFloor,
     keyLevels: meta.keyLevels,
-    totalParses: pooled.reduce((sum, r) => sum + r.parses, 0),
+    // Healer specs carry two metric rows over the same runs — count them once.
+    totalParses: pooled
+      .filter((r) => !(r.role === "HEALER" && r.metric === "dps"))
+      .reduce((sum, r) => sum + r.parses, 0),
     minParsesToRank: MIN_PARSES_TO_RANK,
     sampleDepth: PAGES_PER_SPEC * 100,
     minKeyLevel: keyFloor,

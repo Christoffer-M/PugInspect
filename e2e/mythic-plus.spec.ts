@@ -57,6 +57,7 @@ const stats = {
     spec("Arcane", "Mage", "Mage", "Arcane", "DPS", 248_900, 1317),
     spec("Devourer", "Demon Hunter", "DemonHunter", "Devourer", "DPS", 120_000, 7),
     spec("Holy", "Priest", "Priest", "Holy", "HEALER", 151_700, 139),
+    { ...spec("Holy", "Priest", "Priest", "Holy", "HEALER", 62_400, 139), metric: "dps" },
     spec("Blood", "Death Knight", "DeathKnight", "Blood", "TANK", 144_100, 1389),
   ],
 };
@@ -139,6 +140,13 @@ test("role tabs switch the ranked population and the metric", async ({ page }) =
   await page.getByRole("tab", { name: /Healer/ }).click();
   await expect(page.getByText("151.7k")).toBeVisible();
   await expect(page.getByText("Elemental")).toBeHidden();
+
+  // Healers carry a second ranking: their damage, against other healers only.
+  await page.getByRole("tab", { name: "Damage (DPS)" }).click();
+  await expect(page.getByText("62.4k")).toBeVisible();
+  await expect(page.getByText("151.7k")).toBeHidden();
+  await page.getByRole("tab", { name: "Healing (HPS)" }).click();
+  await expect(page.getByText("151.7k")).toBeVisible();
 
   await page.getByRole("tab", { name: /Tank/ }).click();
   await expect(page.getByText("144.1k")).toBeVisible();
