@@ -344,7 +344,12 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
               </button>
 
               {isOpen && !low && (
-                <DungeonDetail spec={s} metricLabel={metricLabel} dungeonNames={dungeonNames} />
+                <DungeonDetail
+                  spec={s}
+                  metricLabel={metricLabel}
+                  dungeonNames={dungeonNames}
+                  sortBy={sortBy}
+                />
               )}
 
               {low && (
@@ -385,24 +390,30 @@ function DungeonDetail({
   spec,
   metricLabel,
   dungeonNames,
+  sortBy,
 }: {
   spec: SpecStat;
   metricLabel: string;
   dungeonNames: Map<number, string>;
+  sortBy: SortKey;
 }) {
+  // The panel mirrors whichever stat the table is sorted by, so the expanded
+  // numbers always decompose the value the row is ranked on.
   const detail = spec.dungeons.map((d) => ({
     ...d,
     name: dungeonNames.get(d.encounterId) ?? `Dungeon ${d.encounterId}`,
+    value: d[sortBy],
   }));
-  const detailPeak = Math.max(1, ...detail.map((d) => d.median));
+  const detailPeak = Math.max(1, ...detail.map((d) => d.value));
   const color = getClassColor(spec.className);
+  const statLabel = SORT_OPTIONS.find((o) => o.key === sortBy)?.label.toLowerCase() ?? "median";
 
   return (
     <div className={classes.detail}>
       <div className={classes.detailHead}>
         <span>Per dungeon · {metricLabel} · fastest runs</span>
         <span className={classes.detailNote}>
-          {spec.parses.toLocaleString("en-US")} parses · median {metricLabel} per run
+          {spec.parses.toLocaleString("en-US")} parses · {statLabel} {metricLabel} per run
         </span>
       </div>
       <div className={classes.detailGrid}>
@@ -414,12 +425,12 @@ function DungeonDetail({
               <span
                 className={classes.detailFill}
                 style={{
-                  width: `${(d.median / detailPeak) * 100}%`,
+                  width: `${(d.value / detailPeak) * 100}%`,
                   background: `linear-gradient(90deg, ${withAlpha(color, 0.35)} 0%, ${color} 100%)`,
                 }}
               />
             </span>
-            <span className={classes.detailValue}>{k(d.median)}</span>
+            <span className={classes.detailValue}>{k(d.value)}</span>
             <span className={classes.detailKey}>+{d.medianKey}</span>
           </div>
         ))}

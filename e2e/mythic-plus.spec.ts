@@ -168,6 +168,13 @@ test("stat columns sort the table and take the headline emphasis", async ({ page
     page.locator('[class*="rowWrap"]').first().locator('[class*="statActive"]')
   ).toHaveText("400.0k");
 
+  // The expanded per-dungeon panel decomposes the stat the table is sorted by:
+  // under a Max sort it must show each dungeon's max, not its median.
+  await page.getByRole("button", { expanded: false }).first().click();
+  await expect(page.getByText("1,317 parses · max DPS per run")).toBeVisible();
+  // Arcane's fixture dungeon max = 248,900 × 1.3 = 323.6k (median would be 273.8k).
+  await expect(page.locator('[class*="detailValue"]').first()).toHaveText("323.6k");
+
   await page.locator('[class*="headSort"]', { hasText: "Median" }).click();
   await expect(page.locator('[class*="specName"]').first()).toHaveText("Elemental");
 });
