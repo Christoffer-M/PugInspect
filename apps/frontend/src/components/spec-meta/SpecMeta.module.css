@@ -142,7 +142,7 @@
 .mobileSortBtnActive .sortIcon { color: #c5bcf2; }
 .colChev { width: 16px; flex-shrink: 0; }
 
-.axis { display: block; height: 12px; }
+.axis { display: block; height: 12px; position: relative; }
 .axis span { position: absolute; top: 0; }
 .axisMid { left: 50%; transform: translateX(-50%); color: #8a96aa; white-space: nowrap; }
 .axisHi { right: 0; }
