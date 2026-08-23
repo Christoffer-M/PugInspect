@@ -160,6 +160,11 @@ test("selecting a dungeon re-scopes and re-ranks the table", async ({ page }) =>
   await expect(page.getByText("297.5k")).toBeVisible();
   // Rows are not expandable in the dungeon view — the split would be redundant.
   await expect(page.getByRole("button", { expanded: false })).toHaveCount(0);
+  // The max value links straight to that dungeon's best run.
+  await expect(page.locator('a[class*="statCol"]').first()).toHaveAttribute(
+    "href",
+    "https://www.warcraftlogs.com/reports/AbCd1234#fight=7"
+  );
 
   await page.getByRole("textbox", { name: "Dungeon" }).click();
   await page.getByRole("option", { name: "All dungeons" }).click();

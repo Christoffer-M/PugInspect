@@ -35,6 +35,12 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "max", label: "Max" },
 ];
 
+/**
+ * A table row: pooled spec stats, or — in the dungeon-scoped view — the spec
+ * with one dungeon's stats swapped in, including that dungeon's best-run link.
+ */
+type ViewSpec = SpecStat & { maxReportUrl?: string | null };
+
 const features = tableFeatures({
   rowSortingFeature,
   rowExpandingFeature,
@@ -42,7 +48,7 @@ const features = tableFeatures({
   expandedRowModel: createExpandedRowModel(),
 });
 
-const columnHelper = createColumnHelper<typeof features, SpecStat>();
+const columnHelper = createColumnHelper<typeof features, ViewSpec>();
 
 /** 304400 → "304.4k". Throughput is always large enough for this to read well. */
 const k = (v: number) => `${(v / 1000).toFixed(1)}k`;
@@ -71,13 +77,22 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
 
   // Dungeon-scoped view swaps each spec's pooled numbers for its stats in that
   // dungeon — the per-dungeon rows are shipped with the response either way.
-  const rows = useMemo(() => {
+  const rows = useMemo<ViewSpec[]>(() => {
     const inRole = data.specs.filter((s) => s.role === role);
     if (dungeon == null) return inRole;
     return inRole.flatMap((s) => {
       const d = s.dungeons.find((x) => x.encounterId === dungeon);
       return d
-        ? [{ ...s, parses: d.parses, median: d.median, p95: d.p95, max: d.max, medianKey: d.medianKey, dungeons: [] }]
+        ? [{
+            ...s,
+            parses: d.parses,
+            median: d.median,
+            p95: d.p95,
+            max: d.max,
+            medianKey: d.medianKey,
+            maxReportUrl: d.maxReportUrl,
+            dungeons: [],
+          }]
         : [];
     });
   }, [data, role, dungeon]);
@@ -97,7 +112,7 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
   const metricLabel = role === "HEALER" ? "HPS" : "DPS";
 
   const columns = useMemo(() => {
-    const isLow = (s: SpecStat) => s.parses < minParses;
+    const isLow = (s: ViewSpec) => s.parses < minParses;
 
     const pct = (v: number) => Math.max(0, Math.min(100, (v / domain) * 100));
 
@@ -105,7 +120,7 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
     // BOTH directions — a numeric sentinel would float them to the top when
     // ascending.
     const stat = (key: SortKey, label: string) =>
-      columnHelper.accessor((row: SpecStat) => (isLow(row) ? undefined : row[key]), {
+      columnHelper.accessor((row: ViewSpec) => (isLow(row) ? undefined : row[key]), {
         id: key,
         header: label,
         sortUndefined: "last",
@@ -113,11 +128,29 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
         cell: (info) => {
           const s = info.row.original;
           const active = info.column.getIsSorted() !== false;
+          const className = `${classes.statCol} ${active ? classes.statActive : classes.statInactive}`;
+          const style = isLow(s) && active ? { color: "#6b7590" } : undefined;
+          // In the dungeon-scoped view the max is one specific run, so it
+          // links straight to the log — same as the expanded overview.
+          if (key === "max" && !isLow(s) && s.maxReportUrl) {
+            return (
+              <a
+                data-label={key}
+                className={`${className} ${classes.detailLink}`}
+                href={s.maxReportUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open the run on WarcraftLogs"
+              >
+                {k(s[key])}
+              </a>
+            );
+          }
           return (
             <span
               data-label={key === "median" ? "med" : key}
-              className={`${classes.statCol} ${active ? classes.statActive : classes.statInactive}`}
-              style={isLow(s) && active ? { color: "#6b7590" } : undefined}
+              className={className}
+              style={style}
             >
               {isLow(s) ? "—" : k(s[key])}
             </span>
@@ -256,8 +289,8 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
     features,
     columns,
     data: rows,
-    getRowId: (s: SpecStat) => `${s.classSlug}/${s.specSlug}`,
-    getRowCanExpand: (row: Row<typeof features, SpecStat>) =>
+    getRowId: (s: ViewSpec) => `${s.classSlug}/${s.specSlug}`,
+    getRowCanExpand: (row: Row<typeof features, ViewSpec>) =>
       row.original.parses >= minParses && row.original.dungeons.length > 0,
     initialState: { sorting: [{ id: "median", desc: true }] },
   });
@@ -339,21 +372,27 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
           const low = s.parses < minParses;
           const isOpen = row.getIsExpanded();
           const canExpand = row.getCanExpand();
+          const cells = row.getAllCells().map((cell) => (
+            <Fragment key={cell.id}>
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </Fragment>
+          ));
           return (
             <div key={row.id} className={`${classes.rowWrap} ${isOpen ? classes.rowOpen : ""}`}>
-              <button
-                type="button"
-                className={`${classes.row} ${!canExpand ? classes.rowStatic : ""}`}
-                onClick={canExpand ? row.getToggleExpandedHandler() : undefined}
-                aria-expanded={canExpand ? isOpen : undefined}
-                disabled={!canExpand}
-              >
-                {row.getAllCells().map((cell) => (
-                  <Fragment key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Fragment>
-                ))}
-              </button>
+              {canExpand ? (
+                <button
+                  type="button"
+                  className={classes.row}
+                  onClick={row.getToggleExpandedHandler()}
+                  aria-expanded={isOpen}
+                >
+                  {cells}
+                </button>
+              ) : (
+                // A disabled button would swallow clicks on the max link, so
+                // non-expandable rows are plain divs.
+                <div className={`${classes.row} ${classes.rowStatic}`}>{cells}</div>
+              )}
 
               {isOpen && !low && (
                 <DungeonDetail
