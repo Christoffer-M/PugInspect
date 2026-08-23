@@ -1,0 +1,1 @@
+ALTER TABLE "mplus_spec_stats" ADD COLUMN "max_key" integer;

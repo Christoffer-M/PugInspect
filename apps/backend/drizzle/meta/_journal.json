@@ -57,6 +57,34 @@
       "when": 1783602113493,
       "tag": "0007_last_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787441534959,
+      "tag": "0008_demonic_vector",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787484294949,
+      "tag": "0009_melodic_gideon",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787484789357,
+      "tag": "0010_nifty_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787489158469,
+      "tag": "0011_clumsy_talos",
+      "breakpoints": true
     }
   ]
 }

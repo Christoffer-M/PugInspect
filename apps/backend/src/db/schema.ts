@@ -330,3 +330,67 @@ export const characterLinksRelations = relations(characterLinks, ({ one }) => ({
     relationName: "characterB",
   }),
 }));
+
+/**
+ * Aggregated Mythic+ throughput per spec, rebuilt wholesale by the crawler.
+ *
+ * Rows come in two flavours, distinguished by `encounterId`:
+ *   - `0`  — pooled across every dungeon, composition-normalized (the main table)
+ *   - `>0` — a single dungeon, raw values (the expanded per-spec detail)
+ *
+ * `keyFloor` is the scope: "keystone level N and above". Each scope is stored
+ * precomputed because percentiles cannot be re-derived from other percentiles.
+ */
+export const mplusSpecStats = pgTable(
+  "mplus_spec_stats",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    zoneId: integer("zone_id").notNull(),
+    keyFloor: integer("key_floor").notNull(),
+    // 0 = pooled across all dungeons (WarcraftLogs encounter IDs start at 1)
+    encounterId: integer("encounter_id").default(0).notNull(),
+    classSlug: varchar("class_slug", { length: 24 }).notNull(),
+    specSlug: varchar("spec_slug", { length: 24 }).notNull(),
+    role: varchar("role", { length: 8 }).notNull(),
+    metric: varchar("metric", { length: 8 }).notNull(),
+    parses: integer("parses").notNull(),
+    median: real("median").notNull(),
+    p95: real("p95").notNull(),
+    max: real("max").notNull(),
+    medianKey: integer("median_key").notNull(),
+    // Nullable: rows written before this column existed fall back to medianKey.
+    maxKey: integer("max_key"),
+    // WCL report of the best parse. Anonymous report codes carry an "a:" prefix.
+    maxReportCode: varchar("max_report_code", { length: 32 }),
+    maxFightId: integer("max_fight_id"),
+    refreshedAt: timestamp("refreshed_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("mplus_spec_stats_unique").on(
+      t.zoneId,
+      t.keyFloor,
+      t.encounterId,
+      t.classSlug,
+      t.specSlug,
+      t.metric
+    ),
+    index("mplus_spec_stats_lookup_idx").on(t.zoneId, t.keyFloor, t.encounterId),
+  ]
+);
+
+export type MplusSpecStat = typeof mplusSpecStats.$inferSelect;
+export type NewMplusSpecStat = typeof mplusSpecStats.$inferInsert;
+
+/** One row per crawled zone: provenance for the page's "how was this made" strip. */
+export const mplusStatsMeta = pgTable("mplus_stats_meta", {
+  zoneId: integer("zone_id").primaryKey(),
+  /** Keystone levels that came back as a complete census, ascending. */
+  keyLevels: jsonb("key_levels").$type<number[]>().notNull(),
+  totalParses: integer("total_parses").notNull(),
+  /** The crawled dungeons, so the UI can label per-dungeon rows. */
+  dungeons: jsonb("dungeons").$type<{ id: number; name: string }[]>().notNull(),
+  requests: integer("requests").notNull(),
+  refreshedAt: timestamp("refreshed_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type MplusStatsMeta = typeof mplusStatsMeta.$inferSelect;

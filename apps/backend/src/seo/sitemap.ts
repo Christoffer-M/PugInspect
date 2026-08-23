@@ -11,6 +11,7 @@ const MAX_CHARACTER_URLS = 49_000;
 // bump when the corresponding route component meaningfully changes.
 const STATIC_PAGES = [
   { path: "/", lastmod: "2026-07-10", changefreq: "weekly", priority: "1.0" },
+  { path: "/mythic-plus", lastmod: "2026-08-23", changefreq: "hourly", priority: "0.8" },
   { path: "/privacy-policy", lastmod: "2026-06-11", changefreq: "yearly", priority: "0.3" },
 ];
 

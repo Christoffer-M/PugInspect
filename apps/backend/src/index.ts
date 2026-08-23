@@ -1,5 +1,6 @@
 import { ApolloServer, BaseContext } from "@apollo/server";
 import { characterTypedefs } from "./schema/character/character.typedefs.js";
+import { startMythicPlusStatsRefresh } from "./schema/services/mythicPlusStats/scheduler.js";
 import characterResolvers from "./schema/character/character.resolvers.js";
 import { config } from "./config/index.js";
 import { initDb } from "./db/index.js";
@@ -109,6 +110,8 @@ function createRateLimiter(maxRequests: number, windowMs: number) {
 await runMigrations(config.databaseUrl);
 initDb(config.databaseUrl);
 console.log("[db] Database ready");
+
+startMythicPlusStatsRefresh();
 
 const app = express();
 // Production requests arrive through Cloudflare plus two local proxies

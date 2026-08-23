@@ -255,7 +255,32 @@ export const MAX_LEVEL = ${MAX_LEVEL};
 `;
 
   const backend = `${header}
+export type MythicPlusSeason = {
+  zoneId?: number;
+  displayName: string;
+  expansion: number;
+};
+
+export type Dungeon = {
+  id: number;
+  challenge_mode_id: number;
+  slug: string;
+  name: string;
+  short_name: string;
+  keystone_timer_seconds: number;
+  icon_url: string;
+  background_image_url: string;
+};
+
 export const DEFAULT_RAID = ${stringify(defaultRaid)};
+
+// Needed by the Mythic+ spec-meta crawler, which iterates zones/encounters
+// server-side rather than taking them as a client argument.
+export const MYTHIC_PLUS_SEASONS: Record<string, MythicPlusSeason> = ${stringify(mythicPlusSeasons)};
+
+export const DEFAULT_MYTHIC_PLUS_SEASON = ${stringify(currentSeason.slug)};
+
+export const CURRENT_DUNGEONS: Dungeon[] = ${stringify(dungeons)};
 
 // Raider.IO character-profile \`raid_progression\` field value: keyword scopes
 // for current/previous expansion plus explicit slugs for older raids.

@@ -2503,6 +2503,48 @@ export type CharacterProfileQueryVariables = Exact<{
 
 export type CharacterProfileQuery = { __typename?: 'Query', characterData?: { __typename?: 'CharacterData', character?: { __typename?: 'Character', zoneRankings?: any | null, name: string, hidden: boolean } | null } | null, rateLimitData?: { __typename?: 'RateLimitData', limitPerHour: number, pointsSpentThisHour: number, pointsResetIn: number } | null };
 
+export type EncounterRankingsDpsQueryVariables = Exact<{
+  encounterID: Scalars['Int']['input'];
+  page: Scalars['Int']['input'];
+  className: Scalars['String']['input'];
+  specName: Scalars['String']['input'];
+}>;
+
+
+export type EncounterRankingsDpsQuery = { __typename?: 'Query', worldData?: { __typename?: 'WorldData', encounter?: { __typename?: 'Encounter', dps?: any | null } | null } | null };
+
+export type EncounterRankingsBothQueryVariables = Exact<{
+  encounterID: Scalars['Int']['input'];
+  page: Scalars['Int']['input'];
+  className: Scalars['String']['input'];
+  specName: Scalars['String']['input'];
+}>;
+
+
+export type EncounterRankingsBothQuery = { __typename?: 'Query', worldData?: { __typename?: 'WorldData', encounter?: { __typename?: 'Encounter', dps?: any | null, hps?: any | null } | null } | null };
+
+export type EncounterRankingsHpsQueryVariables = Exact<{
+  encounterID: Scalars['Int']['input'];
+  page: Scalars['Int']['input'];
+  className: Scalars['String']['input'];
+  specName: Scalars['String']['input'];
+}>;
+
+
+export type EncounterRankingsHpsQuery = { __typename?: 'Query', worldData?: { __typename?: 'WorldData', encounter?: { __typename?: 'Encounter', hps?: any | null } | null } | null };
+
+export type MythicPlusZoneQueryVariables = Exact<{
+  zoneID: Scalars['Int']['input'];
+}>;
+
+
+export type MythicPlusZoneQuery = { __typename?: 'Query', worldData?: { __typename?: 'WorldData', zone?: { __typename?: 'Zone', id: number, name: string, brackets?: { __typename?: 'Bracket', min: number, max: number, bucket: number } | null, encounters?: Array<{ __typename?: 'Encounter', id: number, name: string } | null> | null } | null } | null };
+
+export type WclRateLimitQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WclRateLimitQuery = { __typename?: 'Query', rateLimitData?: { __typename?: 'RateLimitData', limitPerHour: number, pointsSpentThisHour: number, pointsResetIn: number } | null };
+
 export type ZonePartitionsQueryVariables = Exact<{
   zoneID: Scalars['Int']['input'];
 }>;
