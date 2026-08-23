@@ -121,6 +121,21 @@ describe("aggregate", () => {
     expect(fire.max).toBe(300);
   });
 
+  it("stamps max with the key level of the run that produced it", () => {
+    const parses = [
+      ...Array.from({ length: 10 }, () => parse("Fire", 1, 14, 250)),
+      // The single best parse happens at key 18, well above the typical key.
+      parse("Fire", 1, 18, 400),
+      ...Array.from({ length: 10 }, () => parse("Arcane", 1, 14, 250)),
+    ];
+    const fire = aggregate(parses, [14]).find(
+      (r) => r.encounterId === 0 && r.specSlug === "Fire"
+    )!;
+    expect(fire.max).toBe(400);
+    expect(fire.maxKey).toBe(18);
+    expect(fire.medianKey).toBe(14);
+  });
+
   it("normalizes healers against healers, not against the damage field", () => {
     const parses: Parse[] = [
       ...Array.from({ length: 10 }, (_, i) => ({

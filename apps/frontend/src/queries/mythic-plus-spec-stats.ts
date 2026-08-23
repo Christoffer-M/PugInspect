@@ -33,6 +33,7 @@ const query = graphql(`
         p95
         max
         medianKey
+        maxKey
         dungeons {
           encounterId
           parses
@@ -40,6 +41,7 @@ const query = graphql(`
           p95
           max
           medianKey
+          maxKey
         }
       }
     }

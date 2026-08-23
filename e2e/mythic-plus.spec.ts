@@ -29,6 +29,7 @@ const spec = (
   p95: median * 1.15,
   max: median * 1.35,
   medianKey: 12,
+  maxKey: 17,
   dungeons: dungeons.map((d, i) => ({
     encounterId: d.encounterId,
     parses: Math.round(parses / 2),
@@ -36,6 +37,7 @@ const spec = (
     p95: median * 1.2,
     max: median * 1.3,
     medianKey: 11 + i,
+    maxKey: 16,
   })),
 });
 
@@ -174,6 +176,8 @@ test("stat columns sort the table and take the headline emphasis", async ({ page
   await expect(page.getByText("1,317 parses · max DPS per run")).toBeVisible();
   // Arcane's fixture dungeon max = 248,900 × 1.3 = 323.6k (median would be 273.8k).
   await expect(page.locator('[class*="detailValue"]').first()).toHaveText("323.6k");
+  // …and the key badge is the max run's key, not the typical key.
+  await expect(page.locator('[class*="detailKey"]').first()).toHaveText("+16");
 
   await page.locator('[class*="headSort"]', { hasText: "Median" }).click();
   await expect(page.locator('[class*="specName"]').first()).toHaveText("Elemental");

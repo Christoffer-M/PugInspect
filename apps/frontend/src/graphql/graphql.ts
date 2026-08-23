@@ -371,6 +371,8 @@ export type SpecDungeonStat = {
   __typename?: 'SpecDungeonStat';
   encounterId: Scalars['Int']['output'];
   max: Scalars['Float']['output'];
+  /** Keystone level of the single best parse. Null for pre-existing rows. */
+  maxKey?: Maybe<Scalars['Int']['output']>;
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];
   p95: Scalars['Float']['output'];
@@ -387,13 +389,17 @@ export type SpecStat = {
   __typename?: 'SpecStat';
   className: Scalars['String']['output'];
   classSlug: Scalars['String']['output'];
-  /** Raw, un-normalized throughput per dungeon. */
   dungeons: Array<SpecDungeonStat>;
+  /** The raw best parse in the sample, findable on WarcraftLogs. */
   max: Scalars['Float']['output'];
+  /** Keystone level of the single best parse. Null for pre-existing rows. */
+  maxKey?: Maybe<Scalars['Int']['output']>;
+  /** Adjusted for dungeon and key mix — will not match any single WCL parse. */
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];
   /** dps for damage specs and tanks, hps for healers. */
   metric: Scalars['String']['output'];
+  /** Adjusted for dungeon and key mix — will not match any single WCL parse. */
   p95: Scalars['Float']['output'];
   parses: Scalars['Int']['output'];
   role: SpecRole;
@@ -504,7 +510,7 @@ export type MythicPlusSpecStatsQueryVariables = Exact<{
 }>;
 
 
-export type MythicPlusSpecStatsQuery = { __typename?: 'Query', mythicPlusSpecStats?: { __typename?: 'MythicPlusSpecStats', zoneId: number, refreshedAt: string, keyFloor: number, keyLevels: Array<number>, totalParses: number, minParsesToRank: number, sampleDepth: number, minKeyLevel: number, dungeons: Array<{ __typename?: 'MythicPlusDungeon', encounterId: number, name: string }>, specs: Array<{ __typename?: 'SpecStat', classSlug: string, specSlug: string, className: string, specName: string, role: SpecRole, metric: string, parses: number, median: number, p95: number, max: number, medianKey: number, dungeons: Array<{ __typename?: 'SpecDungeonStat', encounterId: number, parses: number, median: number, p95: number, max: number, medianKey: number }> }> } | null };
+export type MythicPlusSpecStatsQuery = { __typename?: 'Query', mythicPlusSpecStats?: { __typename?: 'MythicPlusSpecStats', zoneId: number, refreshedAt: string, keyFloor: number, keyLevels: Array<number>, totalParses: number, minParsesToRank: number, sampleDepth: number, minKeyLevel: number, dungeons: Array<{ __typename?: 'MythicPlusDungeon', encounterId: number, name: string }>, specs: Array<{ __typename?: 'SpecStat', classSlug: string, specSlug: string, className: string, specName: string, role: SpecRole, metric: string, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, dungeons: Array<{ __typename?: 'SpecDungeonStat', encounterId: number, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null }> }> } | null };
 
 export type SiteStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -826,6 +832,7 @@ export const MythicPlusSpecStatsDocument = new TypedDocumentString(`
       p95
       max
       medianKey
+      maxKey
       dungeons {
         encounterId
         parses
@@ -833,6 +840,7 @@ export const MythicPlusSpecStatsDocument = new TypedDocumentString(`
         p95
         max
         medianKey
+        maxKey
       }
     }
   }

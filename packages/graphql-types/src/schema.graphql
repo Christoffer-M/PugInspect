@@ -288,6 +288,8 @@ type SiteStats {
 type SpecDungeonStat {
   encounterId: Int!
   max: Float!
+  """Keystone level of the single best parse. Null for pre-existing rows."""
+  maxKey: Int
   median: Float!
   medianKey: Int!
   p95: Float!
@@ -306,6 +308,8 @@ type SpecStat {
   dungeons: [SpecDungeonStat!]!
   """The raw best parse in the sample, findable on WarcraftLogs."""
   max: Float!
+  """Keystone level of the single best parse. Null for pre-existing rows."""
+  maxKey: Int
   """
   Adjusted for dungeon and key mix — will not match any single WCL parse.
   """

@@ -141,6 +141,7 @@ export type SpecStatDto = {
   p95: number;
   max: number;
   medianKey: number;
+  maxKey: number | null;
   dungeons: {
     encounterId: number;
     parses: number;
@@ -148,6 +149,7 @@ export type SpecStatDto = {
     p95: number;
     max: number;
     medianKey: number;
+    maxKey: number | null;
   }[];
 };
 
@@ -203,6 +205,7 @@ export async function getMythicPlusSpecStats(
         p95: r.p95,
         max: r.max,
         medianKey: r.medianKey,
+        maxKey: r.maxKey,
         dungeons: (detail.get(key) ?? [])
           .map((d) => ({
             encounterId: d.encounterId,
@@ -211,6 +214,7 @@ export async function getMythicPlusSpecStats(
             p95: d.p95,
             max: d.max,
             medianKey: d.medianKey,
+            maxKey: d.maxKey,
           }))
           .sort((a, b) => b.median - a.median),
       };

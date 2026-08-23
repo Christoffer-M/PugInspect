@@ -366,6 +366,8 @@ export type SpecDungeonStat = {
   __typename?: 'SpecDungeonStat';
   encounterId: Scalars['Int']['output'];
   max: Scalars['Float']['output'];
+  /** Keystone level of the single best parse. Null for pre-existing rows. */
+  maxKey?: Maybe<Scalars['Int']['output']>;
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];
   p95: Scalars['Float']['output'];
@@ -384,6 +386,8 @@ export type SpecStat = {
   dungeons: Array<SpecDungeonStat>;
   /** The raw best parse in the sample, findable on WarcraftLogs. */
   max: Scalars['Float']['output'];
+  /** Keystone level of the single best parse. Null for pre-existing rows. */
+  maxKey?: Maybe<Scalars['Int']['output']>;
   /** Adjusted for dungeon and key mix — will not match any single WCL parse. */
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];

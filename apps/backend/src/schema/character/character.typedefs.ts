@@ -75,6 +75,8 @@ export const characterTypedefs = gql`
     "The raw best parse in the sample, findable on WarcraftLogs."
     max: Float!
     medianKey: Int!
+    "Keystone level of the single best parse. Null for pre-existing rows."
+    maxKey: Int
     dungeons: [SpecDungeonStat!]!
   }
 
@@ -85,6 +87,8 @@ export const characterTypedefs = gql`
     p95: Float!
     max: Float!
     medianKey: Int!
+    "Keystone level of the single best parse. Null for pre-existing rows."
+    maxKey: Int
   }
 
   type SiteStats {

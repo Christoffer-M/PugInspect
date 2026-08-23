@@ -24,6 +24,8 @@ export type StatRow = {
   max: number;
   /** Typical keystone level behind this row, for the detail label. */
   medianKey: number;
+  /** Keystone level of the single best parse — the run behind `max`. */
+  maxKey: number;
 };
 
 /** Below this a spec's median is too noisy to rank; the UI says so explicitly. */
@@ -45,6 +47,9 @@ const last = (values: number[]) => values[values.length - 1] ?? 0;
 export const median = (sortedAsc: number[]) => percentile(sortedAsc, 0.5);
 
 const ascending = (values: number[]) => values.slice().sort((a, b) => a - b);
+
+const bestOf = (parses: Parse[]): Parse =>
+  parses.reduce((a, b) => (b.amount > a.amount ? b : a));
 
 const bucketKey = (encounterId: number, keyLevel: number) => `${encounterId}:${keyLevel}`;
 
@@ -138,8 +143,9 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
           parses: normalized.length,
           median: median(normalized) * referenceRaw,
           p95: percentile(normalized, 0.95) * referenceRaw,
-          max: last(ascending(specParses.map((p) => p.amount))),
+          max: bestOf(specParses).amount,
           medianKey: Math.round(median(ascending(specParses.map((p) => p.keyLevel)))),
+          maxKey: bestOf(specParses).keyLevel,
         });
 
         // Per dungeon: normalized against the same per-key buckets, rescaled
@@ -171,8 +177,9 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
             parses: dNormalized.length,
             median: median(dNormalized) * ref,
             p95: percentile(dNormalized, 0.95) * ref,
-            max: last(ascending(dungeonParses.map((p) => p.amount))),
+            max: bestOf(dungeonParses).amount,
             medianKey: Math.round(median(ascending(dungeonParses.map((p) => p.keyLevel)))),
+            maxKey: bestOf(dungeonParses).keyLevel,
           });
         }
       }

@@ -403,6 +403,9 @@ function DungeonDetail({
     ...d,
     name: dungeonNames.get(d.encounterId) ?? `Dungeon ${d.encounterId}`,
     value: d[sortBy],
+    // Median/p95 describe the sample, so the typical key is their companion;
+    // max is one specific run, so it carries that run's actual key level.
+    keyLevel: sortBy === "max" ? (d.maxKey ?? d.medianKey) : d.medianKey,
   }));
   const detailPeak = Math.max(1, ...detail.map((d) => d.value));
   const color = getClassColor(spec.className);
@@ -431,7 +434,7 @@ function DungeonDetail({
               />
             </span>
             <span className={classes.detailValue}>{k(d.value)}</span>
-            <span className={classes.detailKey}>+{d.medianKey}</span>
+            <span className={classes.detailKey}>+{d.keyLevel}</span>
           </div>
         ))}
       </div>

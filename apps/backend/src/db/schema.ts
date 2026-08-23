@@ -358,6 +358,8 @@ export const mplusSpecStats = pgTable(
     p95: real("p95").notNull(),
     max: real("max").notNull(),
     medianKey: integer("median_key").notNull(),
+    // Nullable: rows written before this column existed fall back to medianKey.
+    maxKey: integer("max_key"),
     refreshedAt: timestamp("refreshed_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
