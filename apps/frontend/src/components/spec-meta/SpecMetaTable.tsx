@@ -358,11 +358,20 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
             <button
               key={o.key}
               type="button"
-              className={`${classes.keyBtn} ${sortBy === o.key ? classes.keyBtnActive : ""}`}
+              className={`${classes.mobileSortBtn} ${sortBy === o.key ? classes.mobileSortBtnActive : ""}`}
               aria-pressed={sortBy === o.key}
               onClick={() => setSort(o.key)}
             >
               {o.label}
+              {sortBy === o.key ? (
+                sortDesc ? (
+                  <IconChevronDown size={13} stroke={2.5} className={classes.sortIcon} />
+                ) : (
+                  <IconChevronUp size={13} stroke={2.5} className={classes.sortIcon} />
+                )
+              ) : (
+                <IconArrowsSort size={13} stroke={2} className={classes.sortIcon} />
+              )}
             </button>
           ))}
         </div>

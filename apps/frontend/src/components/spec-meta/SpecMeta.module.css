@@ -127,6 +127,19 @@
 }
 .statInactive { font-family: var(--mono); font-size: 12px; color: #6b7590; }
 .mobileSort { display: none; }
+.mobileSortBtn {
+  flex: 1; height: 42px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  border: 0; border-radius: 6px; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  color: #8a96aa; background: transparent;
+}
+.mobileSortBtnActive {
+  font-weight: 600; color: #e6ebf5;
+  background: linear-gradient(180deg, rgba(37, 51, 84, 0.95) 0%, rgba(24, 35, 62, 0.95) 100%);
+  box-shadow: inset 0 0 0 1px rgba(139, 127, 212, 0.35);
+}
+.mobileSortBtnActive .sortIcon { color: #c5bcf2; }
 .colChev { width: 16px; flex-shrink: 0; }
 
 .axis { display: block; height: 12px; }
@@ -264,7 +277,7 @@
   .keyCol::before { content: "keys "; color: #6b7590; }
   .colChev { order: 5; margin-left: auto; }
   .mobileSort {
-    display: flex; gap: 2px; padding: 6px 11px;
+    display: flex; gap: 3px; padding: 7px 8px;
     border-bottom: 1px solid rgba(61, 79, 110, 0.22);
   }
 
