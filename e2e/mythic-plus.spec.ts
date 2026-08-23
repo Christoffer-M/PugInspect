@@ -226,10 +226,10 @@ test("falls back to an explanatory empty state when there is no data", async ({ 
   await expect(page.getByText("No spec data yet")).toBeVisible();
 });
 
-test("the footer links to the spec meta page", async ({ page }) => {
+test("the header Rankings button links to the spec meta page", async ({ page }) => {
   await mockGraphql(page, stats);
   await page.goto("/stats");
 
-  await page.getByRole("link", { name: "Spec Meta" }).click();
+  await page.getByRole("link", { name: "Rankings" }).click();
   await expect(page).toHaveURL(/\/mythic-plus/);
 });

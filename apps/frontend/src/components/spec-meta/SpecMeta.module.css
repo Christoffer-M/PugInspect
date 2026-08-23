@@ -148,15 +148,14 @@
 .className { font-size: 11px; color: #6b7590; line-height: 1.2; }
 .typicalKey { font-family: var(--mono); color: #8a96aa; }
 
+/* candlestick: filled body to median, hollow body to p95, wick out to max */
 .track { display: block; height: 22px; position: relative; }
-.trackBg {
-  position: absolute; left: 0; right: 0; top: 8px; height: 6px;
-  border-radius: 999px; background: rgba(255, 255, 255, 0.045);
-}
-.trackMid { position: absolute; left: 50%; top: 0; width: 1px; height: 22px; background: rgba(255, 255, 255, 0.1); }
-.fillMedian { position: absolute; top: 8px; height: 6px; left: 0; border-radius: 999px; }
-.fillP95 { position: absolute; top: 8px; height: 6px; border-radius: 0 999px 999px 0; }
-.markMax { position: absolute; top: 7px; width: 6px; height: 8px; margin-left: -3px; border-radius: 2px; }
+.trackBase { position: absolute; left: 0; right: 0; top: 10.5px; height: 1px; background: rgba(255, 255, 255, 0.05); }
+.wick { position: absolute; top: 10.5px; height: 1px; }
+.tickMax { position: absolute; top: 5px; width: 1.5px; height: 12px; margin-left: -1.5px; }
+.bodyMedian { position: absolute; top: 4px; left: 0; height: 14px; border-radius: 1px 0 0 1px; }
+.bodyP95 { position: absolute; top: 4px; height: 14px; border-radius: 0 1px 1px 0; }
+.markMedian { position: absolute; top: 2px; width: 2px; height: 18px; }
 
 .chev { display: flex; align-items: center; justify-content: center; color: #4a5670; transition: transform 160ms ease; }
 .chevOpen { color: #c5bcf2; transform: rotate(180deg); }
@@ -202,9 +201,9 @@
 }
 .legendItems { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .legendItem { display: flex; align-items: center; gap: 6px; }
-.swatchMedian { width: 22px; height: 6px; border-radius: 999px; background: linear-gradient(90deg, rgba(201, 209, 224, 0.4) 0%, #c9d1e0 100%); }
-.swatchP95 { width: 16px; height: 6px; border-radius: 0 999px 999px 0; background: rgba(201, 209, 224, 0.2); }
-.swatchMax { width: 6px; height: 8px; border-radius: 2px; background: rgba(201, 209, 224, 0.3); box-shadow: inset 0 0 0 1px rgba(201, 209, 224, 0.55); }
+.swatchMedian { width: 20px; height: 10px; border-radius: 1px 0 0 1px; background: rgba(201, 209, 224, 0.8); }
+.swatchP95 { width: 14px; height: 10px; border-radius: 0 1px 1px 0; background: rgba(201, 209, 224, 0.24); box-shadow: inset 0 0 0 1px #c9d1e0; }
+.swatchMax { width: 2px; height: 10px; background: rgba(201, 209, 224, 0.6); }
 
 /* ---- states ---- */
 .skelRow { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid rgba(61, 79, 110, 0.22); }
@@ -241,10 +240,10 @@
   .row { flex-wrap: wrap; gap: 9px; padding: 10px 11px; align-items: center; }
   .colBar { width: 100%; flex: none; order: 3; padding-right: 0; }
   .track { height: 18px; }
-  .trackBg { top: 6px; }
-  .trackMid { height: 18px; }
-  .fillMedian, .fillP95 { top: 6px; }
-  .markMax { top: 5px; }
+  .trackBase, .wick { top: 8.5px; }
+  .tickMax { top: 4px; height: 10px; }
+  .bodyMedian, .bodyP95 { top: 3px; height: 12px; }
+  .markMedian { top: 1px; height: 16px; }
   .specCell { width: auto; flex: 1 1 auto; }
   /* The header row is hidden on mobile: the active stat becomes the headline
      top-right, the inactive ones join the labeled meta line below the bar. */

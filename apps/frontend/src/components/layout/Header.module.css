@@ -1,0 +1,26 @@
+.rankings {
+  height: 36px;
+  padding: 0 13px;
+  font-weight: 500;
+  color: #cfd4f2;
+  background: rgba(20, 27, 54, 0.7);
+  border: 1px solid rgba(61, 79, 110, 0.6);
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.rankings,
+.rankings:hover {
+  text-decoration: none;
+}
+.rankings:hover {
+  background: rgba(37, 51, 84, 0.95);
+  border-color: rgba(139, 127, 212, 0.55);
+  color: #e6ebf5;
+}
+.rankings[data-active] {
+  background: rgba(139, 127, 212, 0.16);
+  border-color: rgba(139, 127, 212, 0.6);
+  color: #e6ebf5;
+}
+.rankings[data-active]:hover {
+  background: rgba(139, 127, 212, 0.24);
+}
