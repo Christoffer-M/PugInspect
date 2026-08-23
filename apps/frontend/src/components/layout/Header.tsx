@@ -1,9 +1,29 @@
-import { ActionIcon, AppShell, Box, Container, Flex, Group, Text } from "@mantine/core";
-import { IconHistory } from "@tabler/icons-react";
-import { useMatchRoute, useNavigate } from "@tanstack/react-router";
+import {
+  ActionIcon,
+  AppShell,
+  Box,
+  Button,
+  Container,
+  Divider,
+  Drawer,
+  Flex,
+  Group,
+  Stack,
+  Text,
+  UnstyledButton,
+} from "@mantine/core";
+import {
+  IconChartBar,
+  IconHistory,
+  IconMenu2,
+  IconPuzzle,
+  IconSearch,
+} from "@tabler/icons-react";
+import { Link, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { SearchHistoryDrawer } from "../search/SearchHistoryDrawer/SearchHistoryDrawer";
 import CharacterSearchInput from "../search/CharacterSearchInput";
+import classes from "./Header.module.css";
 
 const logoTextStyle: React.CSSProperties = {
   fontFamily: "Space Grotesk, system-ui, sans-serif",
@@ -33,10 +53,63 @@ const Logo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   </Box>
 );
 
+const navIconBox: React.CSSProperties = {
+  width: 32,
+  height: 32,
+  borderRadius: 8,
+  border: "1px solid rgba(61, 79, 110, 0.5)",
+  background: "rgba(8, 14, 28, 0.7)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+};
+
+function NavRow({
+  icon,
+  label,
+  desc,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  desc: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <UnstyledButton
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: 12,
+        borderRadius: 10,
+        background: active ? "rgba(139, 127, 212, 0.14)" : "transparent",
+      }}
+    >
+      <Box style={navIconBox}>{icon}</Box>
+      <Stack gap={2}>
+        <Text size="sm" fw={active ? 600 : 500} c={active ? "#e6ebf5" : "#c2c8de"}>
+          {label}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {desc}
+        </Text>
+      </Stack>
+    </UnstyledButton>
+  );
+}
+
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const matchRoute = useMatchRoute();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+
+  const onRankings = !!matchRoute({ to: "/mythic-plus" });
 
   return (
     <>
@@ -56,18 +129,124 @@ const Header: React.FC = () => {
               </Flex>
             )}
             <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+              <Button
+                component={Link}
+                to="/mythic-plus"
+                visibleFrom="sm"
+                leftSection={<IconChartBar size={15} color="#8b7fd4" />}
+                variant="default"
+                className={classes.rankings}
+                data-active={onRankings || undefined}
+              >
+                Rankings
+              </Button>
               <ActionIcon
                 variant="subtle"
                 size="lg"
+                visibleFrom="sm"
                 aria-label="View recent characters"
                 onClick={() => setHistoryOpen(true)}
               >
                 <IconHistory />
               </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                size="lg"
+                hiddenFrom="sm"
+                aria-label="Open menu"
+                onClick={() => setNavOpen(true)}
+              >
+                <IconMenu2 />
+              </ActionIcon>
             </Group>
           </Group>
         </Container>
       </AppShell.Header>
+
+      <Drawer
+        opened={navOpen}
+        onClose={() => setNavOpen(false)}
+        position="right"
+        size={300}
+        title={
+          <Text size="xs" tt="uppercase" c="dimmed" fw={600} style={{ letterSpacing: "0.14em" }}>
+            Menu
+          </Text>
+        }
+        styles={{
+          // The theme's glassmorphism Paper background lets the page bleed
+          // through a full-height drawer — pin it to a solid panel color.
+          content: {
+            display: "flex",
+            flexDirection: "column",
+            background: "#0e1628",
+            borderLeft: "1px solid rgba(61, 79, 110, 0.5)",
+          },
+          header: { background: "transparent" },
+          body: { flex: 1, display: "flex", flexDirection: "column", paddingBottom: 20 },
+        }}
+      >
+        <NavRow
+          icon={<IconSearch size={17} color="#8b7fd4" />}
+          label="Character search"
+          desc="Stats, RIO and logs"
+          active={!!matchRoute({ to: "/" }) || !!matchRoute({ to: "/$region/$realm/$name" })}
+          onClick={() => {
+            setNavOpen(false);
+            navigate({ to: "/" });
+          }}
+        />
+        <NavRow
+          icon={<IconChartBar size={17} color="#8b7fd4" />}
+          label="Rankings"
+          desc="Mythic+ spec meta"
+          active={onRankings}
+          onClick={() => {
+            setNavOpen(false);
+            navigate({ to: "/mythic-plus" });
+          }}
+        />
+        <NavRow
+          icon={<IconHistory size={17} color="#8b7fd4" />}
+          label="Recent"
+          desc="Characters you viewed"
+          onClick={() => {
+            setNavOpen(false);
+            setHistoryOpen(true);
+          }}
+        />
+        <Divider mt="auto" mb="sm" color="rgba(61, 79, 110, 0.4)" />
+        <Stack gap={10} px={12}>
+          <Text
+            component="a"
+            href="https://www.curseforge.com/wow/addons/puginspect"
+            target="_blank"
+            rel="noopener noreferrer"
+            size="sm"
+            c="accent"
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <IconPuzzle size={15} /> Get the addon
+          </Text>
+          <Group gap={6}>
+            <Text component={Link} to="/stats" size="sm" c="dimmed" onClick={() => setNavOpen(false)}>
+              Stats
+            </Text>
+            <Text size="sm" c="dimmed">
+              ·
+            </Text>
+            <Text
+              component={Link}
+              to="/privacy-policy"
+              size="sm"
+              c="dimmed"
+              onClick={() => setNavOpen(false)}
+            >
+              Privacy Policy
+            </Text>
+          </Group>
+        </Stack>
+      </Drawer>
 
       <SearchHistoryDrawer opened={historyOpen} onClose={() => setHistoryOpen(false)} />
     </>
