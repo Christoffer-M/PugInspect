@@ -104,19 +104,19 @@
   font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
   color: #6b7590; font-weight: 600;
 }
-.colRank { width: 24px; text-align: right; flex-shrink: 0; }
+.colRank { width: 24px; text-align: left; flex-shrink: 0; }
 .colSpec { flex: 1; min-width: 0; }
 .colBar { display: block; width: 300px; flex-shrink: 0; position: relative; }
 /* sortable stat columns: the active one wears the headline style */
 .headSort {
-  width: 64px; text-align: right; flex-shrink: 0;
+  width: 64px; text-align: left; flex-shrink: 0;
   border: 0; background: transparent; cursor: pointer; padding: 0;
   font: inherit; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
   color: #6b7590; font-weight: 600;
 }
 .headSort:hover { color: #c9d1e0; }
 .headSortActive { color: #c5bcf2; }
-.statCol { width: 64px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.statCol { width: 64px; text-align: left; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .statActive {
   font-family: var(--mantine-font-family-headings), sans-serif;
   font-size: 17px; font-weight: 700; color: #e6ebf5;
@@ -150,7 +150,7 @@
 .specLabels { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .specName { font-size: 14px; font-weight: 600; line-height: 1.2; }
 .className { font-size: 11px; color: #6b7590; line-height: 1.2; }
-.keyCol { width: 46px; text-align: right; flex-shrink: 0; font-family: var(--mono); font-size: 12px; color: #8a96aa; }
+.keyCol { width: 46px; text-align: left; flex-shrink: 0; font-family: var(--mono); font-size: 12px; color: #8a96aa; }
 
 .track { display: block; height: 22px; position: relative; }
 .trackBg {

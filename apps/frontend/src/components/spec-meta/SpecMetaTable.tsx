@@ -12,6 +12,7 @@ import {
   type Row,
   type SortFn,
 } from "@tanstack/react-table";
+import { Tooltip } from "@mantine/core";
 import { IconChevronDown } from "@tabler/icons-react";
 import { CURRENT_DUNGEONS } from "../../generated/seasonConfig";
 import { getClassColor } from "../../util/util";
@@ -285,27 +286,34 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
     <>
       <div className={classes.panel}>
         <div className={classes.head}>
-          {table.getFlatHeaders().map((header) =>
-            header.column.getCanSort() ? (
+          {table.getFlatHeaders().map((header) => {
+            const content = flexRender(header.column.columnDef.header, header.getContext());
+            const element = header.column.getCanSort() ? (
               <button
-                key={header.id}
                 type="button"
                 className={`${classes.headSort} ${header.column.getIsSorted() ? classes.headSortActive : ""}`}
                 aria-pressed={!!header.column.getIsSorted()}
                 onClick={() => setSort(header.column.id as SortKey)}
               >
-                {flexRender(header.column.columnDef.header, header.getContext())}
+                {content}
               </button>
             ) : (
               <span
-                key={header.id}
                 className={HEADER_CLASS[header.column.id] ?? ""}
                 style={header.column.id === "spec" ? { paddingLeft: 34 } : undefined}
               >
-                {flexRender(header.column.columnDef.header, header.getContext())}
+                {content}
               </span>
-            )
-          )}
+            );
+            const tip = HEADER_TOOLTIP[header.column.id];
+            return tip ? (
+              <Tooltip key={header.id} label={tip} multiline maw={280} withArrow openDelay={200}>
+                {element}
+              </Tooltip>
+            ) : (
+              <Fragment key={header.id}>{element}</Fragment>
+            );
+          })}
         </div>
 
         <div className={classes.mobileSort} role="group" aria-label="Sort by">
@@ -377,6 +385,17 @@ export function SpecMetaTable({ data, role, dungeon }: Props) {
     </>
   );
 }
+
+const HEADER_TOOLTIP: Record<string, string> = {
+  rank: "Position under the current sort. Specs with too few parses sit unranked at the bottom.",
+  spec: "Class specialization. Colored by class; the icon is the spec.",
+  bar: "Solid bar = median, pale tail = up to the top 5%, hollow marker = single best parse. Axis starts at zero and tops out just above the role's best parse.",
+  median:
+    "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log.",
+  p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix.",
+  max: "The single best raw parse in the sample — a real, findable log. Expand the row under this sort to open the run on WarcraftLogs.",
+  typicalKey: "Typical key level of this spec's sampled runs — where its fastest runs actually happen.",
+};
 
 const HEADER_CLASS: Record<string, string> = {
   rank: classes.colRank!,
