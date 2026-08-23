@@ -20,6 +20,33 @@ const SEASON_OPTIONS = Object.entries(MYTHIC_PLUS_SEASONS)
     label: `${s.displayName} · ${EXPANSION_DISPLAY_NAMES[s.expansion] ?? ""}`.trim(),
   }));
 
+/**
+ * Parse-weighted 10th–90th percentile of the sample's typical key levels.
+ * `keyLevels` alone spans every key seen at least once, which lets a single
+ * outlier run (one +18) read as headline coverage.
+ */
+function typicalKeyRange(data: { specs: { dungeons: { medianKey: number; parses: number }[] }[] }) {
+  const byKey = new Map<number, number>();
+  let total = 0;
+  for (const spec of data.specs) {
+    for (const d of spec.dungeons) {
+      byKey.set(d.medianKey, (byKey.get(d.medianKey) ?? 0) + d.parses);
+      total += d.parses;
+    }
+  }
+  if (total === 0) return null;
+  const sorted = [...byKey.entries()].sort((a, b) => a[0] - b[0]);
+  const at = (q: number) => {
+    let cum = 0;
+    for (const [key, parses] of sorted) {
+      cum += parses;
+      if (cum >= total * q) return key;
+    }
+    return sorted[sorted.length - 1]![0];
+  };
+  return { lo: at(0.1), hi: at(0.9) };
+}
+
 const MythicPlusMeta: React.FC = () => {
   const [season, setSeason] = useState(DEFAULT_MYTHIC_PLUS_SEASON);
   const [role, setRole] = useState<Role>("DPS");
@@ -29,6 +56,7 @@ const MythicPlusMeta: React.FC = () => {
   const { data, isPending, isError } = useMythicPlusSpecStats(zoneId);
 
   const roleCounts = (r: Role) => data?.specs.filter((s) => s.role === r).length ?? 0;
+  const typical = data ? typicalKeyRange(data) : null;
 
   return (
     <Page>
@@ -88,9 +116,9 @@ const MythicPlusMeta: React.FC = () => {
             <div className={classes.panel}>
               <div className={classes.provGrid}>
                 <div className={classes.provCell}>
-                  <span className={classes.provLabel}>Keystone range</span>
+                  <span className={classes.provLabel}>Typical keys</span>
                   <span className={classes.provValue}>
-                    {data.keyLevels[0]}–{data.keyLevels[data.keyLevels.length - 1]}
+                    {typical ? `${typical.lo}–${typical.hi}` : "—"}
                   </span>
                 </div>
                 <div className={classes.provCell}>
@@ -117,7 +145,8 @@ const MythicPlusMeta: React.FC = () => {
                 <span className={classes.sep}>·</span>
                 <span className={classes.provNoteDim}>
                   season to date · each spec&apos;s fastest {data.sampleDepth.toLocaleString("en-US")}{" "}
-                  runs sampled per dungeon
+                  runs sampled per dungeon · runs from +{data.keyLevels[0]} to +
+                  {data.keyLevels[data.keyLevels.length - 1]} seen
                 </span>
               </div>
             </div>

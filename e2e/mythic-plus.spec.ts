@@ -82,7 +82,9 @@ test("ranks specs by throughput with provenance", async ({ page }) => {
 
   // Provenance strip is how the page earns trust — it must show real numbers.
   await expect(page.getByText("83,585")).toBeVisible();
-  await expect(page.getByText("10–17")).toBeVisible();
+  // Headline range is the parse-weighted typical band, not the outlier span.
+  await expect(page.getByText("11–12")).toBeVisible();
+  await expect(page.getByText("runs from +10 to +17 seen")).toBeVisible();
   await expect(page.getByText("8m ago")).toBeVisible();
   await expect(page.getByText("Warcraft Logs", { exact: true })).toBeVisible();
 
