@@ -5,6 +5,8 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { notifications, Notifications } from "@mantine/notifications";
+import { registerServiceWorker } from "./pwa/registerServiceWorker.tsx";
+import { listenForInstallPrompt } from "./pwa/installPrompt.ts";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen.ts";
@@ -115,6 +117,12 @@ const theme = createTheme({
     },
   },
 });
+
+// Makes the app installable to a phone home screen and openable offline.
+registerServiceWorker();
+// Must run before the header mounts: the browser only offers its install event
+// once, and it is not replayed for a listener that turns up late.
+listenForInstallPrompt();
 
 // Render the app
 const rootElement = document.getElementById("app");

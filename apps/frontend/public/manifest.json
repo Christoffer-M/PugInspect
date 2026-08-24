@@ -1,25 +1,54 @@
 {
-  "short_name": "PugInspect",
+  "id": "/",
   "name": "PugInspect - WoW Character Inspector",
+  "short_name": "PugInspect",
+  "description": "Inspect World of Warcraft characters — view gear, Raider.IO scores, raid progression, raid logs and Mythic+ runs.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#070f1e",
+  "background_color": "#0d1a2e",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["games", "utilities"],
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "/favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "/logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "/logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-maskable-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#070f1e",
-  "background_color": "#0d1a2e"
+  "shortcuts": [
+    {
+      "name": "Mythic+ rankings",
+      "short_name": "Rankings",
+      "description": "Mythic+ spec meta rankings",
+      "url": "/mythic-plus"
+    }
+  ]
 }
