@@ -103,9 +103,12 @@ test("ranks specs by throughput with provenance", async ({ page }) => {
   // Typical key level rides under the spec name.
   await expect(page.locator('[class*="className"]').first()).toHaveText("Shaman · ~+12");
 
-  // Every column header explains itself on hover.
+  // Every column header explains itself on hover — and says the numbers are raw,
+  // since the whole point of the column is that it matches a real log.
   await page.locator('[class*="headSort"]', { hasText: "Median" }).hover();
-  await expect(page.getByText("adjusted for dungeon and key mix", { exact: false }).first()).toBeVisible();
+  await expect(
+    page.getByText("the median of what was actually logged", { exact: false }).first()
+  ).toBeVisible();
 });
 
 test("a thinly-logged spec is shown but not ranked", async ({ page }) => {

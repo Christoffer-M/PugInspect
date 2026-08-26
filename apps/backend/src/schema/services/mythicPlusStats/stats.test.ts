@@ -30,25 +30,24 @@ const parse = (
 
 describe("aggregate", () => {
   /**
-   * The whole point of normalizing: a spec logged only in the high-damage
-   * dungeon must not out-rank an identically-performing spec logged only in the
-   * low-damage one.
+   * The normalization that used to hide this was removed deliberately: the page
+   * now reports where specs actually are. A spec logged only in the generous
+   * dungeon DOES read higher, and `medianKey` / the dungeon rows are what let a
+   * reader see why.
    */
-  it("does not reward a spec for the dungeons it happened to be logged in", () => {
+  it("reports raw throughput, including the dungeon mix a spec was logged in", () => {
     const parses: Parse[] = [];
     // Dungeon 1 pays double what dungeon 2 does.
     for (let i = 0; i < 20; i++) {
       parses.push(parse("Fire", 1, 15, 200 + i));
       parses.push(parse("Frost", 2, 15, 100 + i / 2));
-      // Filler so each bucket has a meaningful all-spec median.
-      parses.push(parse("Arcane", 1, 15, 200 + i));
-      parses.push(parse("Arcane", 2, 15, 100 + i / 2));
     }
 
     const rows = aggregate(parses, [15]).filter((r) => r.encounterId === 0);
     const fire = rows.find((r) => r.specSlug === "Fire")!;
     const frost = rows.find((r) => r.specSlug === "Frost")!;
-    expect(fire.median).toBeCloseTo(frost.median, 5);
+    expect(fire.median).toBeCloseTo(209.5, 5);
+    expect(frost.median).toBeCloseTo(104.75, 5);
   });
 
   it("ranks a genuinely stronger spec above a weaker one", () => {
@@ -80,22 +79,6 @@ describe("aggregate", () => {
     expect(detail.find((r) => r.encounterId === 2)!.median).toBe(100);
   });
 
-  it("corrects per-dungeon rows for key mix within the dungeon", () => {
-    // Same raw output, but Frost delivers it at key 10 where the field does
-    // half of what it does at 15 — Frost is beating its field harder and a
-    // dungeon-scoped ranking must reflect that, not the raw tie.
-    const parses = [
-      ...Array.from({ length: 10 }, () => parse("Fire", 1, 15, 300)),
-      ...Array.from({ length: 10 }, () => parse("Frost", 1, 10, 300)),
-      ...Array.from({ length: 10 }, () => parse("Arcane", 1, 15, 300)),
-      ...Array.from({ length: 10 }, () => parse("Arcane", 1, 10, 150)),
-    ];
-    const detail = aggregate(parses, [10]).filter((r) => r.encounterId === 1);
-    const fire = detail.find((r) => r.specSlug === "Fire")!;
-    const frost = detail.find((r) => r.specSlug === "Frost")!;
-    expect(frost.median).toBeGreaterThan(fire.median);
-  });
-
   it("excludes parses below the scope's keystone floor", () => {
     const parses = [
       ...Array.from({ length: 10 }, () => parse("Fire", 1, 18, 300)),
@@ -106,9 +89,7 @@ describe("aggregate", () => {
   });
 
   it("keeps max as a raw parse someone can find on WarcraftLogs", () => {
-    // Fire logs a weak bucket (key 10, field median 150) and beats it 2x with
-    // 300. Normalizing the max would rescale that ratio to ~2x the reference —
-    // a throughput nobody ever logged. The displayed max must stay 300.
+    // The displayed max is the single best parse, unchanged: 300.
     const parses = [
       ...Array.from({ length: 10 }, () => parse("Fire", 1, 10, 300)),
       ...Array.from({ length: 10 }, () => parse("Arcane", 1, 10, 150)),
@@ -148,7 +129,7 @@ describe("aggregate", () => {
     expect(fire.maxFightId).toBe(7);
   });
 
-  it("normalizes healers against healers, not against the damage field", () => {
+  it("ranks healers on healing, never against the damage field", () => {
     const parses: Parse[] = [
       ...Array.from({ length: 10 }, (_, i) => ({
         classSlug: "Druid", specSlug: "Restoration", role: "HEALER" as const,
@@ -165,6 +146,21 @@ describe("aggregate", () => {
     expect(healer!.metric).toBe("hps");
     expect(healer!.median).toBeGreaterThan(140_000);
     expect(healer!.median).toBeLessThan(160_000);
+  });
+  it("keeps median <= p95 <= max on every row", () => {
+    // The bug that killed normalization: p95 was a rescaled counterfactual and
+    // routinely landed above a spec's own best logged parse.
+    const parses = [
+      ...Array.from({ length: 20 }, (_, i) => parse("Fire", 1, 10, 150 + i)),
+      ...Array.from({ length: 80 }, (_, i) => parse("Frost", 1, 20, 300 + i)),
+      ...Array.from({ length: 60 }, (_, i) => parse("Arcane", 1, 10, 100 + i)),
+    ];
+    const rows = aggregate(parses, [10]);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) {
+      expect(r.median).toBeLessThanOrEqual(r.p95);
+      expect(r.p95).toBeLessThanOrEqual(r.max);
+    }
   });
 });
 
@@ -270,8 +266,8 @@ describe("healer damage", () => {
       amount, metric: "dps",
     });
     const parses: Parse[] = [
-      // The DPS field does 300k — if healer damage normalized against it,
-      // these 50k/70k healers would score ~0.2 and be crushed by the rescale.
+      // The DPS field does 300k — healer damage must be ranked in its own
+      // group, or these 50k/70k healers would sit at the bottom of the table.
       ...Array.from({ length: 10 }, () => parse("Fire", 1, 15, 300_000)),
       ...Array.from({ length: 10 }, () => healerDps("Restoration", "Druid", 50_000)),
       ...Array.from({ length: 10 }, () => healerDps("Holy", "Paladin", 70_000)),
