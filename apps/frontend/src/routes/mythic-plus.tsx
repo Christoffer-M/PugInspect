@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Box, Container, Group, Select, Stack, Text, Title, Tooltip } from "@mantine/core";
+import { useQueryClient } from "@tanstack/react-query";
+import { Box, Button, Container, Group, Select, Stack, Text, Title, Tooltip } from "@mantine/core";
 import { IconChartBar, IconInfoCircle } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
 import { ROLES, SpecMetaTable, type Role } from "../components/spec-meta/SpecMetaTable";
@@ -10,6 +11,7 @@ import {
   EXPANSION_DISPLAY_NAMES,
   MYTHIC_PLUS_SEASONS,
 } from "../generated/seasonConfig";
+import { config } from "../config";
 import { timeAgo } from "../util/util";
 import classes from "../components/spec-meta/SpecMeta.module.css";
 
@@ -115,6 +117,7 @@ const MythicPlusMeta: React.FC = () => {
             </Group>
 
             <Group gap="xs">
+              {import.meta.env.DEV && <RefreshButton />}
               {data && data.dungeons.length > 1 && (
                 <Select
                   data={[
@@ -235,6 +238,36 @@ const MythicPlusMeta: React.FC = () => {
         </Stack>
       </Container>
     </Page>
+  );
+};
+
+/**
+ * Dev-only: the hourly crawl runs in production only, so a local database
+ * starts empty and stays that way until this button fills it.
+ */
+const RefreshButton: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
+
+  const refresh = async () => {
+    setBusy(true);
+    try {
+      const response = await fetch(`${config.apiUrl}/dev/refresh-mplus-stats`, { method: "POST" });
+      const body: unknown = await response.json();
+      console.log("[dev] Mythic+ crawl", body);
+      if (!response.ok) throw new Error(JSON.stringify(body));
+      await queryClient.invalidateQueries({ queryKey: ["mythicPlusSpecStats"] });
+    } catch (error) {
+      console.error("[dev] Mythic+ crawl failed", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button size="xs" variant="light" loading={busy} onClick={() => void refresh()}>
+      Fetch rankings (dev)
+    </Button>
   );
 };
 
