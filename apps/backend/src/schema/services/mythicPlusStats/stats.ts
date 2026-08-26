@@ -50,8 +50,6 @@ export function percentile(sortedAsc: number[], p: number): number {
   return loVal + (hiVal - loVal) * (idx - lo);
 }
 
-const last = (values: number[]) => values[values.length - 1] ?? 0;
-
 export const median = (sortedAsc: number[]) => percentile(sortedAsc, 0.5);
 
 const ascending = (values: number[]) => values.slice().sort((a, b) => a - b);
@@ -59,25 +57,56 @@ const ascending = (values: number[]) => values.slice().sort((a, b) => a - b);
 const bestOf = (parses: Parse[]): Parse =>
   parses.reduce((a, b) => (b.amount > a.amount ? b : a));
 
-const bucketKey = (encounterId: number, keyLevel: number) => `${encounterId}:${keyLevel}`;
+/**
+ * One row from a set of parses. `median <= p95 <= max` holds by construction —
+ * all three come off the same raw sample.
+ */
+const summarize = (
+  base: Pick<StatRow, "keyFloor" | "classSlug" | "specSlug" | "role" | "metric">,
+  encounterId: number,
+  ps: Parse[]
+): StatRow => {
+  const amounts = ascending(ps.map((p) => p.amount));
+  const best = bestOf(ps);
+  return {
+    ...base,
+    encounterId,
+    parses: ps.length,
+    median: median(amounts),
+    p95: percentile(amounts, 0.95),
+    max: best.amount,
+    medianKey: Math.round(median(ascending(ps.map((p) => p.keyLevel)))),
+    maxKey: best.keyLevel,
+    maxReportCode: best.reportCode ?? null,
+    maxFightId: best.fightId ?? null,
+  };
+};
 
 /**
- * Raw DPS is not comparable across dungeons or keystone levels — a Ruby Life
- * Pools +15 pull is worth more damage than a Temple of Sethraliss +15 one. So
- * every parse is first divided by the median of its own (dungeon, keystone,
- * role) bucket, the spec's percentiles are taken over those ratios, and the
- * result is multiplied back by the role's overall median throughput.
+ * Every number here is RAW observed throughput — the median, p95 and max of the
+ * parses as WarcraftLogs reported them. Nothing is rescaled.
  *
- * The output is therefore in real DPS/HPS units — which is what the page shows
- * — but a spec cannot climb the table merely by being logged more often in the
- * high-damage dungeons.
+ * An earlier version normalized each parse against the median of its own
+ * (dungeon, keystone, role) bucket and multiplied a reference back on, to stop
+ * a spec ranking high merely for being logged in high-damage dungeons or at
+ * high keys. It was dropped: the correction cannot separate "this bracket is
+ * harder" from "this bracket has better players" from "low keys allow bigger
+ * pulls", and those pull in different directions. The output was a
+ * counterfactual — what a spec MIGHT do at some common key mix — which could
+ * not even be reconciled with the raw `max` beside it (p95 routinely came out
+ * above a spec's own best logged parse).
  *
- * `max` alone stays RAW: it is presented as "single best parse" and must be a
- * number someone can actually find on WarcraftLogs. A normalized max rescales
- * to a throughput nobody ever logged.
+ * So the page shows where specs actually are, not where a model says they might
+ * be. The cost is real and deliberate: a spec logged mostly in generous
+ * dungeons or at high keys WILL read higher, and `medianKey` is what tells the
+ * reader which. The gain is that every number is a real one someone logged.
+ *
+ * Grouping still matters and is kept: healers are ranked on healing against
+ * other healers, and their damage against other healers' damage — never against
+ * the DPS field.
  *
  * The input is the fastest-runs sample, not the whole field (see
- * `PAGES_PER_BRACKET`), so these are percentiles among runs that went well.
+ * `PAGES_PER_SPEC`), so these are percentiles among runs that went well.
  */
 export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
   const rows: StatRow[] = [];
@@ -98,35 +127,6 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
       const group = inScope.filter((p) => p.role === role && p.metric === metric);
       if (group.length === 0) continue;
 
-      // Per-(dungeon, keystone) median across every spec in this role.
-      const buckets = new Map<string, number[]>();
-      for (const p of group) {
-        const k = bucketKey(p.encounterId, p.keyLevel);
-        const list = buckets.get(k);
-        if (list) list.push(p.amount);
-        else buckets.set(k, [p.amount]);
-      }
-      const bucketMedians = new Map<string, number>();
-      for (const [k, values] of buckets) bucketMedians.set(k, median(ascending(values)));
-
-      // Scale factors that turn a normalized ratio back into real throughput —
-      // one overall, one per dungeon (so dungeon-scoped rows keep each
-      // dungeon's real pay level while still being corrected for key mix).
-      const referenceRaw = median(ascending(group.map((p) => p.amount)));
-      if (referenceRaw <= 0) continue;
-      const dungeonReference = new Map<number, number>();
-      {
-        const byEncounter = new Map<number, number[]>();
-        for (const p of group) {
-          const list = byEncounter.get(p.encounterId);
-          if (list) list.push(p.amount);
-          else byEncounter.set(p.encounterId, [p.amount]);
-        }
-        for (const [enc, values] of byEncounter) {
-          dungeonReference.set(enc, median(ascending(values)));
-        }
-      }
-
       const bySpec = new Map<string, Parse[]>();
       for (const p of group) {
         const k = `${p.classSlug}/${p.specSlug}`;
@@ -138,38 +138,16 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
       for (const specParses of bySpec.values()) {
         const first = specParses[0];
         if (!first) continue;
-        const { classSlug, specSlug } = first;
-        const base = { keyFloor, classSlug, specSlug, role, metric };
+        const base = {
+          keyFloor,
+          classSlug: first.classSlug,
+          specSlug: first.specSlug,
+          role,
+          metric,
+        };
 
-        // Pooled across dungeons: normalize, then rescale to real units.
-        const normalized = ascending(
-          specParses
-            .map((p) => {
-              const bm = bucketMedians.get(bucketKey(p.encounterId, p.keyLevel)) ?? 0;
-              return bm > 0 ? p.amount / bm : NaN;
-            })
-            .filter((v) => Number.isFinite(v))
-        );
-        if (normalized.length === 0) continue;
+        rows.push(summarize(base, 0, specParses));
 
-        rows.push({
-          ...base,
-          encounterId: 0,
-          parses: normalized.length,
-          median: median(normalized) * referenceRaw,
-          p95: percentile(normalized, 0.95) * referenceRaw,
-          max: bestOf(specParses).amount,
-          medianKey: Math.round(median(ascending(specParses.map((p) => p.keyLevel)))),
-          maxKey: bestOf(specParses).keyLevel,
-          maxReportCode: bestOf(specParses).reportCode ?? null,
-          maxFightId: bestOf(specParses).fightId ?? null,
-        });
-
-        // Per dungeon: normalized against the same per-key buckets, rescaled
-        // by that dungeon's own role median. This keeps real cross-dungeon pay
-        // differences visible while correcting for key mix — without it, a
-        // dungeon-scoped ranking would favor whichever specs happen to play
-        // higher keys there.
         const byDungeon = new Map<number, Parse[]>();
         for (const p of specParses) {
           const list = byDungeon.get(p.encounterId);
@@ -177,29 +155,7 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
           else byDungeon.set(p.encounterId, [p]);
         }
         for (const [encounterId, dungeonParses] of byDungeon) {
-          const ref = dungeonReference.get(encounterId) ?? 0;
-          if (ref <= 0) continue;
-          const dNormalized = ascending(
-            dungeonParses
-              .map((p) => {
-                const bm = bucketMedians.get(bucketKey(p.encounterId, p.keyLevel)) ?? 0;
-                return bm > 0 ? p.amount / bm : NaN;
-              })
-              .filter((v) => Number.isFinite(v))
-          );
-          if (dNormalized.length === 0) continue;
-          rows.push({
-            ...base,
-            encounterId,
-            parses: dNormalized.length,
-            median: median(dNormalized) * ref,
-            p95: percentile(dNormalized, 0.95) * ref,
-            max: bestOf(dungeonParses).amount,
-            medianKey: Math.round(median(ascending(dungeonParses.map((p) => p.keyLevel)))),
-            maxKey: bestOf(dungeonParses).keyLevel,
-            maxReportCode: bestOf(dungeonParses).reportCode ?? null,
-            maxFightId: bestOf(dungeonParses).fightId ?? null,
-          });
+          rows.push(summarize(base, encounterId, dungeonParses));
         }
       }
     }

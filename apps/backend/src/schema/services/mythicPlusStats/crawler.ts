@@ -86,9 +86,10 @@ export type DungeonCrawl = {
 /**
  * Sample each spec's fastest runs of one dungeon.
  *
- * Every parse is later normalized against its own (dungeon, keystone, role)
- * bucket, so specs contributing at different key levels remain comparable —
- * and each spec's `medianKey` reports where its runs actually happen.
+ * `bracket: 0` means all keystone levels in one ranked list, so what comes back
+ * is each spec's top parses by raw amount — which skews toward the highest keys
+ * that spec is played at. `medianKey` reports where the sampled runs sit, and
+ * the page shows it, because nothing downstream corrects for it.
  */
 export async function crawlDungeon(
   fetchPage: RankingsFetcher,

@@ -108,8 +108,8 @@ const MythicPlusMeta: React.FC = () => {
                   </Text>
                 </Group>
                 <Text size="13px" c="dimmed">
-                  Every spec&apos;s fastest Mythic+ runs, ranked by throughput and adjusted for
-                  the dungeons and keys they happen at.
+                  Every spec&apos;s fastest Mythic+ runs, ranked by raw throughput at the
+                  keys and dungeons they were actually logged in.
                 </Text>
               </Stack>
             </Group>
@@ -176,8 +176,8 @@ const MythicPlusMeta: React.FC = () => {
               </div>
               <div className={classes.provNote}>
                 <span>
-                  filled bar = median · hollow bar = top 5% (both adjusted for dungeon &amp; key
-                  mix) · wick = best raw parse
+                  filled bar = median · hollow bar = top 5% · wick = best parse · all raw,
+                  unadjusted
                 </span>
                 <span className={classes.sep}>·</span>
                 <span className={classes.provNoteDim}>

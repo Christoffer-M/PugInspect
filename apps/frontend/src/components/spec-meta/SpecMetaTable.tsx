@@ -458,11 +458,11 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
 const HEADER_TOOLTIP: Record<string, string> = {
   rank: "Position under the current sort. Specs with too few parses sit unranked at the bottom.",
   spec: "Class specialization, colored by class. The ~+N under the name is the typical key level of the spec's sampled runs.",
-  bar: "Filled body = median, hollow body = up to the top 5%, wick out to the single best parse. The axis spans the field's range — lowest median to best parse — not zero, to magnify the differences between specs.",
+  bar: "Filled body = median, hollow body = up to the top 5%, wick out to the single best parse — all raw, all the same scale. The axis spans the field's range — lowest median to best parse — not zero, to magnify the differences between specs.",
   median:
-    "Typical throughput across the spec's sampled runs, adjusted for dungeon and key mix — it will not match any single log. Click to rank by it.",
-  p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, adjusted for dungeon and key mix. Click to rank by it.",
-  max: "The single best raw parse in the sample — a real, findable log. Click to rank by it (again to flip direction), then expand a row to open the run on WarcraftLogs.",
+    "Typical raw throughput across the spec's sampled runs — the median of what was actually logged, at the keys it was logged at. Click to rank by it.",
+  p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, raw. Click to rank by it.",
+  max: "The single best parse in the sample — a real, findable log. Click to rank by it (again to flip direction), then expand a row to open the run on WarcraftLogs.",
 };
 
 const HEADER_CLASS: Record<string, string> = {
