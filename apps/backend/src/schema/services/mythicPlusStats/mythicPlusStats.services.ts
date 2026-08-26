@@ -4,15 +4,23 @@ import { isRateLimitError } from "../warcraftLogs/wclGraphQLClient.js";
 import { getMplusStats, getMplusStatsMeta, replaceMplusStats } from "../../../db/mplusStats.js";
 import { MYTHIC_PLUS_SEASONS, DEFAULT_MYTHIC_PLUS_SEASON } from "../../../generated/seasonConfig.js";
 import { crawlDungeon, parseZone, PAGES_PER_SPEC, type RankingsFetcher } from "./crawler.js";
-import { aggregate, MIN_PARSES_TO_RANK, type Parse } from "./stats.js";
+import {
+  aggregate,
+  MIN_PARSES_TO_RANK,
+  MIN_PARSES_TO_RANK_HERO,
+  type Parse,
+} from "./stats.js";
 import { SPECS } from "./specs.js";
+import { HERO_TALENTS_BY_SPEC } from "../../../generated/heroTalents.js";
 import type { MplusSpecStat } from "../../../db/schema.js";
 
 const logger = createLogger({ service: "MythicPlusStats" });
 
 /**
  * Leave this much of the hourly budget for live character lookups. A full
- * refresh measures ~650 points, so the crawl fits comfortably underneath.
+ * refresh measures ~765 points, so the crawl fits comfortably underneath.
+ * (Talent data rides along free — `includeCombatantInfo` was measured at the
+ * same per-request cost as the request without it.)
  */
 const POINTS_BUDGET_CEILING = 2_400;
 const RETRY_DELAYS_MS = [1_000, 4_000];
@@ -141,6 +149,35 @@ export async function refreshMythicPlusStats(
 
 const SPEC_BY_KEY = new Map(SPECS.map((s) => [`${s.classSlug}/${s.specSlug}`, s]));
 
+type DungeonStatDto = {
+  encounterId: number;
+  parses: number;
+  median: number;
+  p95: number;
+  max: number;
+  medianKey: number;
+  maxKey: number | null;
+  maxReportUrl: string | null;
+};
+
+/**
+ * One hero talent tree's slice of a spec — same numbers, smaller sample.
+ * `parses: 0` means the tree exists for the spec but no run of it made the
+ * sample; it is listed anyway so an unplayed tree reads as unplayed instead of
+ * silently missing.
+ */
+export type HeroTalentStatDto = {
+  name: string;
+  parses: number;
+  median: number;
+  p95: number;
+  max: number;
+  medianKey: number;
+  maxKey: number | null;
+  maxReportUrl: string | null;
+  dungeons: DungeonStatDto[];
+};
+
 export type SpecStatDto = {
   classSlug: string;
   specSlug: string;
@@ -154,16 +191,8 @@ export type SpecStatDto = {
   max: number;
   medianKey: number;
   maxKey: number | null;
-  dungeons: {
-    encounterId: number;
-    parses: number;
-    median: number;
-    p95: number;
-    max: number;
-    medianKey: number;
-    maxKey: number | null;
-    maxReportUrl: string | null;
-  }[];
+  dungeons: DungeonStatDto[];
+  heroTalents: HeroTalentStatDto[];
 };
 
 export type MythicPlusSpecStatsDto = {
@@ -173,6 +202,8 @@ export type MythicPlusSpecStatsDto = {
   keyLevels: number[];
   totalParses: number;
   minParsesToRank: number;
+  /** Same, for a single hero talent tree — a much smaller sample. */
+  minParsesToRankHero: number;
   /** How many of the fastest runs per dungeon and keystone level were sampled. */
   sampleDepth: number;
   minKeyLevel: number;
@@ -198,17 +229,88 @@ export async function getMythicPlusSpecStats(
   if (rows.length === 0) return null;
   const keyFloor = rows[0]!.keyFloor;
 
-  const pooled = rows.filter((r) => r.encounterId === 0);
+  // `heroTalent: ""` rows are the spec itself; the rest are its hero talent
+  // trees, stored the same way so both views read from one shape.
+  const pooled = rows.filter((r) => r.encounterId === 0 && r.heroTalent === "");
+  const heroPooled = rows.filter((r) => r.encounterId === 0 && r.heroTalent !== "");
   // Healer specs carry two row sets (hps and dps), so detail rows are keyed
-  // per metric as well.
+  // per metric — and per hero tree, since each tree has its own dungeon split.
   const detail = new Map<string, MplusSpecStat[]>();
   for (const r of rows) {
     if (r.encounterId === 0) continue;
-    const k = `${r.classSlug}/${r.specSlug}/${r.metric}`;
+    const k = `${r.classSlug}/${r.specSlug}/${r.metric}/${r.heroTalent}`;
     const list = detail.get(k);
     if (list) list.push(r);
     else detail.set(k, [r]);
   }
+
+  const dungeonsOf = (key: string): DungeonStatDto[] =>
+    (detail.get(key) ?? [])
+      .map((d) => ({
+        encounterId: d.encounterId,
+        parses: d.parses,
+        median: d.median,
+        p95: d.p95,
+        max: d.max,
+        medianKey: d.medianKey,
+        maxKey: d.maxKey,
+        maxReportUrl: reportUrl(d.maxReportCode, d.maxFightId),
+      }))
+      .sort((a, b) => b.median - a.median);
+
+  /**
+   * Every tree the spec can pick, measured ones first. A spec whose whole
+   * sample is one tree still lists the others at zero — "nobody in the fastest
+   * runs plays this" is the answer, and an absent row cannot say it.
+   */
+  const heroTalentsFor = (r: MplusSpecStat, key: string): HeroTalentStatDto[] => {
+    const roster = HERO_TALENTS_BY_SPEC[`${r.classSlug}/${r.specSlug}`] ?? [];
+    // A handful of rows come back tagged with a tree the spec cannot pick
+    // (Protection Warrior with Slayer, n=3) — a spec swap mid-key, or combatant
+    // info snapshotted against a different loadout. Two or three rows in 1,600,
+    // and an impossible combination on the page is worse than a dropped one.
+    // Guarded on a non-empty roster so a stale generated file cannot blank the
+    // whole split.
+    const allowed = roster.length > 0 ? new Set(roster) : null;
+
+    const measured = heroPooled
+      .filter(
+        (h) =>
+          h.classSlug === r.classSlug &&
+          h.specSlug === r.specSlug &&
+          h.metric === r.metric &&
+          (allowed === null || allowed.has(h.heroTalent))
+      )
+      .map((h) => ({
+        name: h.heroTalent,
+        parses: h.parses,
+        median: h.median,
+        p95: h.p95,
+        max: h.max,
+        medianKey: h.medianKey,
+        maxKey: h.maxKey,
+        maxReportUrl: reportUrl(h.maxReportCode, h.maxFightId),
+        dungeons: dungeonsOf(`${key}/${h.heroTalent}`),
+      }))
+      .sort((a, b) => b.median - a.median);
+
+    const seen = new Set(measured.map((h) => h.name));
+    const unplayed = roster
+      .filter((name) => !seen.has(name))
+      .map((name) => ({
+        name,
+        parses: 0,
+        median: 0,
+        p95: 0,
+        max: 0,
+        medianKey: 0,
+        maxKey: null,
+        maxReportUrl: null,
+        dungeons: [],
+      }));
+
+    return [...measured, ...unplayed];
+  };
 
   const specs = pooled
     .map((r) => {
@@ -227,18 +329,8 @@ export async function getMythicPlusSpecStats(
         max: r.max,
         medianKey: r.medianKey,
         maxKey: r.maxKey,
-        dungeons: (detail.get(key) ?? [])
-          .map((d) => ({
-            encounterId: d.encounterId,
-            parses: d.parses,
-            median: d.median,
-            p95: d.p95,
-            max: d.max,
-            medianKey: d.medianKey,
-            maxKey: d.maxKey,
-            maxReportUrl: reportUrl(d.maxReportCode, d.maxFightId),
-          }))
-          .sort((a, b) => b.median - a.median),
+        dungeons: dungeonsOf(`${key}/`),
+        heroTalents: heroTalentsFor(r, key),
       };
     })
     // Rows sort by raw throughput; specs too thin to rank drop to the bottom.
@@ -259,6 +351,7 @@ export async function getMythicPlusSpecStats(
       .filter((r) => !(r.role === "HEALER" && r.metric === "dps"))
       .reduce((sum, r) => sum + r.parses, 0),
     minParsesToRank: MIN_PARSES_TO_RANK,
+    minParsesToRankHero: MIN_PARSES_TO_RANK_HERO,
     sampleDepth: PAGES_PER_SPEC * 100,
     minKeyLevel: keyFloor,
     dungeons: meta.dungeons.map((d) => ({ encounterId: d.id, name: d.name })),

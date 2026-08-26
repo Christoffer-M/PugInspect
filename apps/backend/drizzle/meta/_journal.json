@@ -85,6 +85,13 @@
       "when": 1787489158469,
       "tag": "0011_clumsy_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787784186698,
+      "tag": "0012_chief_terror",
+      "breakpoints": true
     }
   ]
 }

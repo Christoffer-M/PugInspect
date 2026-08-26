@@ -46,6 +46,8 @@ export const characterTypedefs = gql`
     totalParses: Int!
     "Below this parse count a spec is shown but not ranked."
     minParsesToRank: Int!
+    "Same, for a single hero talent tree — a much smaller sample."
+    minParsesToRankHero: Int!
     "How many of each spec's fastest runs were sampled per dungeon."
     sampleDepth: Int!
     "Lowest keystone level in the sample."
@@ -77,6 +79,24 @@ export const characterTypedefs = gql`
     medianKey: Int!
     "Keystone level of the single best parse. Null for pre-existing rows."
     maxKey: Int
+    dungeons: [SpecDungeonStat!]!
+    "The same numbers per hero talent tree. Trees do not sum to the spec: runs whose log carried no combatant info belong to no tree."
+    heroTalents: [SpecHeroTalentStat!]!
+  }
+
+  "One hero talent tree's slice of a spec — same statistics, smaller sample."
+  type SpecHeroTalentStat {
+    "Hero talent tree name, e.g. Sunfury."
+    name: String!
+    parses: Int!
+    median: Float!
+    p95: Float!
+    max: Float!
+    medianKey: Int!
+    "Keystone level of the single best parse."
+    maxKey: Int
+    "WarcraftLogs report link for the single best parse."
+    maxReportUrl: String
     dungeons: [SpecDungeonStat!]!
   }
 

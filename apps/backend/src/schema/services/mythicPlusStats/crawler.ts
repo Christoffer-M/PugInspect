@@ -2,6 +2,7 @@ import type { SpecRole } from "@repo/graphql-types";
 import { createLogger } from "../../utils/logger.js";
 import type { Parse } from "./stats.js";
 import { lookupSpec, metricForRole, SPECS } from "./specs.js";
+import { HERO_TALENTS } from "../../../generated/heroTalents.js";
 import { isRateLimitError } from "../warcraftLogs/wclGraphQLClient.js";
 import type {
   CharacterRankingRow,
@@ -41,6 +42,19 @@ export type RankingsFetcher = (
   metric: "dps" | "hps" | "both"
 ) => Promise<{ dps?: CharacterRankingsPage; hps?: CharacterRankingsPage }>;
 
+/**
+ * The hero talent tree a ranking row was played with, or undefined when the
+ * log carried no combatant info (1–8% of rows, measured). Exactly one of a
+ * row's talent ids is a hero subtree entry, so the first hit is the answer.
+ */
+function heroTalentOf(row: CharacterRankingRow): string | undefined {
+  for (const t of row.talents ?? []) {
+    const tree = t.talentID != null ? HERO_TALENTS[t.talentID] : undefined;
+    if (tree) return tree;
+  }
+  return undefined;
+}
+
 function toParses(
   page: { dps?: CharacterRankingsPage; hps?: CharacterRankingsPage },
   encounterId: number
@@ -64,6 +78,7 @@ function toParses(
         keyLevel: row.bracketData,
         amount: row.amount,
         metric,
+        heroTalent: heroTalentOf(row),
         reportCode: row.report?.code,
         fightId: row.report?.fightID,
       });

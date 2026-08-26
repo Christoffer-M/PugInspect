@@ -353,6 +353,10 @@ export const mplusSpecStats = pgTable(
     specSlug: varchar("spec_slug", { length: 24 }).notNull(),
     role: varchar("role", { length: 8 }).notNull(),
     metric: varchar("metric", { length: 8 }).notNull(),
+    // "" = all hero talent trees pooled. Empty string rather than NULL so the
+    // unique index below actually constrains those rows (Postgres treats NULLs
+    // as distinct).
+    heroTalent: varchar("hero_talent", { length: 32 }).default("").notNull(),
     parses: integer("parses").notNull(),
     median: real("median").notNull(),
     p95: real("p95").notNull(),
@@ -372,7 +376,8 @@ export const mplusSpecStats = pgTable(
       t.encounterId,
       t.classSlug,
       t.specSlug,
-      t.metric
+      t.metric,
+      t.heroTalent
     ),
     index("mplus_spec_stats_lookup_idx").on(t.zoneId, t.keyFloor, t.encounterId),
   ]
