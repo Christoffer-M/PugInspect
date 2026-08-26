@@ -35,6 +35,7 @@ const query = graphql(`
         max
         medianKey
         maxKey
+        maxReportUrl
         dungeons {
           encounterId
           parses

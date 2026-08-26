@@ -40,7 +40,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
  * swapped in — one dungeon's, one hero talent tree's, or both. `heroTalent` is
  * set only in the split view, where a spec contributes one row per tree.
  */
-type ViewSpec = SpecStat & { heroTalent?: string; maxReportUrl?: string | null };
+type ViewSpec = SpecStat & { heroTalent?: string };
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -179,8 +179,10 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon, splitHero }: 
           const active = info.column.getIsSorted() !== false;
           const className = `${classes.statCol} ${active ? classes.statActive : classes.statInactive}`;
           const style = isLow(s) && active ? { color: "#6b7590" } : undefined;
-          // In the dungeon-scoped view the max is one specific run, so it
-          // links straight to the log — same as the expanded overview.
+          // The max is always one specific run, whatever the row's scope, so
+          // it links straight to that log. The link sits inside the row's
+          // expand button, hence the stopPropagation — opening a log should
+          // not also toggle the row open behind the new tab.
           if (key === "max" && !isLow(s) && s.maxReportUrl) {
             return (
               <a
@@ -190,6 +192,7 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon, splitHero }: 
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Open the run on WarcraftLogs"
+                onClick={(e) => e.stopPropagation()}
               >
                 {k(s[key])}
               </a>
@@ -526,7 +529,7 @@ const HEADER_TOOLTIP: Record<string, string> = {
   median:
     "Typical raw throughput across the spec's sampled runs — the median of what was actually logged, at the keys it was logged at. Click to rank by it.",
   p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, raw. Click to rank by it.",
-  max: "The single best parse in the sample — a real, findable log. Click to rank by it (again to flip direction), then expand a row to open the run on WarcraftLogs.",
+  max: "The single best parse in the sample — a real, findable log. The value links to that run on WarcraftLogs; the header ranks by it (click again to flip direction).",
 };
 
 const HEADER_CLASS: Record<string, string> = {

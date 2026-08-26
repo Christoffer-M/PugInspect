@@ -336,6 +336,8 @@ type SpecStat {
   max: Float!
   """Keystone level of the single best parse. Null for pre-existing rows."""
   maxKey: Int
+  """WarcraftLogs report link for the single best parse."""
+  maxReportUrl: String
   """
   Adjusted for dungeon and key mix — will not match any single WCL parse.
   """

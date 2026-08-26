@@ -79,6 +79,8 @@ export const characterTypedefs = gql`
     medianKey: Int!
     "Keystone level of the single best parse. Null for pre-existing rows."
     maxKey: Int
+    "WarcraftLogs report link for the single best parse."
+    maxReportUrl: String
     dungeons: [SpecDungeonStat!]!
     "The same numbers per hero talent tree. Trees do not sum to the spec: runs whose log carried no combatant info belong to no tree."
     heroTalents: [SpecHeroTalentStat!]!

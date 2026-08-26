@@ -191,6 +191,7 @@ export type SpecStatDto = {
   max: number;
   medianKey: number;
   maxKey: number | null;
+  maxReportUrl: string | null;
   dungeons: DungeonStatDto[];
   heroTalents: HeroTalentStatDto[];
 };
@@ -329,6 +330,7 @@ export async function getMythicPlusSpecStats(
         max: r.max,
         medianKey: r.medianKey,
         maxKey: r.maxKey,
+        maxReportUrl: reportUrl(r.maxReportCode, r.maxFightId),
         dungeons: dungeonsOf(`${key}/`),
         heroTalents: heroTalentsFor(r, key),
       };

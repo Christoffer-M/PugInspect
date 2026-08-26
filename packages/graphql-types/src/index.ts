@@ -410,6 +410,8 @@ export type SpecStat = {
   max: Scalars['Float']['output'];
   /** Keystone level of the single best parse. Null for pre-existing rows. */
   maxKey?: Maybe<Scalars['Int']['output']>;
+  /** WarcraftLogs report link for the single best parse. */
+  maxReportUrl?: Maybe<Scalars['String']['output']>;
   /** Adjusted for dungeon and key mix — will not match any single WCL parse. */
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];
