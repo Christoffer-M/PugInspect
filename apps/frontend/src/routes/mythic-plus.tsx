@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Box, Container, Group, Select, Stack, Text, Title } from "@mantine/core";
-import { IconChartBar } from "@tabler/icons-react";
+import { Box, Container, Group, Select, Stack, Text, Title, Tooltip } from "@mantine/core";
+import { IconChartBar, IconInfoCircle } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
 import { ROLES, SpecMetaTable, type Role } from "../components/spec-meta/SpecMetaTable";
 import { useMythicPlusSpecStats } from "../queries/mythic-plus-spec-stats";
@@ -146,7 +146,24 @@ const MythicPlusMeta: React.FC = () => {
                   <span className={classes.provValue}>{data.totalParses.toLocaleString("en-US")}</span>
                 </div>
                 <div className={classes.provCell}>
-                  <span className={classes.provLabel}>Last refresh</span>
+                  <span className={classes.provLabel}>
+                    Last refresh
+                    <Tooltip
+                      label="The crawl reruns every hour; a pass that finds the API budget already spent waits for the next one."
+                      withArrow
+                      multiline
+                      w={240}
+                      events={{ hover: true, focus: true, touch: true }}
+                    >
+                      <IconInfoCircle
+                        size={12}
+                        className={classes.provInfo}
+                        tabIndex={0}
+                        role="img"
+                        aria-label="How often this refreshes"
+                      />
+                    </Tooltip>
+                  </span>
                   <span className={classes.provFresh}>
                     <span className={classes.dot} />
                     {timeAgo(data.refreshedAt)}

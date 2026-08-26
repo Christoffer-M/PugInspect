@@ -56,6 +56,11 @@ export type RefreshResult = {
   rows: number;
   requests: number;
   keyLevels: number[];
+  /**
+   * WarcraftLogs API points spent during the crawl window. The hourly counter
+   * is per API client, so concurrent character lookups land in here too.
+   */
+  points: number | null;
   durationMs: number;
 };
 
@@ -102,21 +107,32 @@ export async function refreshMythicPlusStats(
   // One scope covering everything sampled — the page has no key filter; each
   // spec's medianKey reports where its runs actually happen.
   const rows = aggregate(parses, [floor]).map((r) => ({ ...r, zoneId }));
+  // Healers are sampled on both healing and damage, so they hold two parses per
+  // run — count each run once, the way the page reports it.
+  const runs = parses.filter((p) => !(p.role === "HEALER" && p.metric === "dps")).length;
   const persisted = await replaceMplusStats(zoneId, rows, {
     zoneId,
     keyLevels,
-    totalParses: parses.length,
+    totalParses: runs,
     dungeons: encounters.map((e) => ({ id: e.id, name: e.name })),
     requests,
   });
   if (!persisted) return null;
 
+  // ponytail: a crawl that straddles the hourly reset reads lower than it
+  // started; report null rather than a negative. Live lookups share the same
+  // counter — the crawl dominates it, and WCL gives no per-query cost to
+  // separate them.
+  const after = await WarcraftLogsService.getRateLimit();
+  const spent = after && rateLimit ? after.pointsSpentThisHour - rateLimit.pointsSpentThisHour : null;
+
   const result = {
     zoneId,
-    parses: parses.length,
+    parses: runs,
     rows: rows.length,
     requests,
     keyLevels,
+    points: spent != null && spent >= 0 ? spent : null,
     durationMs: Date.now() - start,
   };
   logger.info("Mythic+ spec stats refreshed", result);
