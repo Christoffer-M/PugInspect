@@ -56,7 +56,10 @@ export type RefreshResult = {
   rows: number;
   requests: number;
   keyLevels: number[];
-  /** WarcraftLogs API points the crawl spent. */
+  /**
+   * WarcraftLogs API points spent during the crawl window. The hourly counter
+   * is per API client, so concurrent character lookups land in here too.
+   */
   points: number | null;
   durationMs: number;
 };
@@ -117,7 +120,9 @@ export async function refreshMythicPlusStats(
   if (!persisted) return null;
 
   // ponytail: a crawl that straddles the hourly reset reads lower than it
-  // started; report null rather than a negative.
+  // started; report null rather than a negative. Live lookups share the same
+  // counter — the crawl dominates it, and WCL gives no per-query cost to
+  // separate them.
   const after = await WarcraftLogsService.getRateLimit();
   const spent = after && rateLimit ? after.pointsSpentThisHour - rateLimit.pointsSpentThisHour : null;
 
