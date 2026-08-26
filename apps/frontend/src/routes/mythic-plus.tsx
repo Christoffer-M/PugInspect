@@ -119,6 +119,20 @@ const MythicPlusMeta: React.FC = () => {
 
             <Group gap="sm">
               {import.meta.env.DEV && <RefreshButton />}
+              {data && data.dungeons.length > 1 && (
+                <Select
+                  data={[
+                    { value: "all", label: "All dungeons" },
+                    ...data.dungeons.map((d) => ({ value: String(d.encounterId), label: d.name })),
+                  ]}
+                  value={dungeon == null ? "all" : String(dungeon)}
+                  onChange={(v) => setDungeon(v == null || v === "all" ? null : Number(v))}
+                  allowDeselect={false}
+                  size="xs"
+                  w={190}
+                  aria-label="Dungeon"
+                />
+              )}
               <Tooltip
                 label="One row per hero talent tree instead of one per spec, ranked together on the same axis. Trees are a slice of a spec's sample, so they rank at a much lower parse count."
                 withArrow
@@ -135,20 +149,6 @@ const MythicPlusMeta: React.FC = () => {
                   styles={{ label: { fontSize: 13, paddingInlineStart: 8 } }}
                 />
               </Tooltip>
-              {data && data.dungeons.length > 1 && (
-                <Select
-                  data={[
-                    { value: "all", label: "All dungeons" },
-                    ...data.dungeons.map((d) => ({ value: String(d.encounterId), label: d.name })),
-                  ]}
-                  value={dungeon == null ? "all" : String(dungeon)}
-                  onChange={(v) => setDungeon(v == null || v === "all" ? null : Number(v))}
-                  allowDeselect={false}
-                  size="xs"
-                  w={190}
-                  aria-label="Dungeon"
-                />
-              )}
             </Group>
           </Group>
 
