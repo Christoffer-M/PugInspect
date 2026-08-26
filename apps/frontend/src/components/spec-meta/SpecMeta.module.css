@@ -25,6 +25,12 @@
   color: #6b7590;
   font-weight: 600;
 }
+.provInfo {
+  vertical-align: -1px;
+  margin-left: 4px;
+  color: #6b7590;
+  cursor: help;
+}
 .provValue {
   font-family: var(--mantine-font-family-headings), sans-serif;
   font-size: 19px;
