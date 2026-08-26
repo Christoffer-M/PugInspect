@@ -1,6 +1,10 @@
 import { ApolloServer, BaseContext } from "@apollo/server";
 import { characterTypedefs } from "./schema/character/character.typedefs.js";
 import { startMythicPlusStatsRefresh } from "./schema/services/mythicPlusStats/scheduler.js";
+import {
+  defaultZoneId,
+  refreshMythicPlusStats,
+} from "./schema/services/mythicPlusStats/mythicPlusStats.services.js";
 import characterResolvers from "./schema/character/character.resolvers.js";
 import { config } from "./config/index.js";
 import { initDb } from "./db/index.js";
@@ -111,7 +115,11 @@ await runMigrations(config.databaseUrl);
 initDb(config.databaseUrl);
 console.log("[db] Database ready");
 
-startMythicPlusStatsRefresh();
+// ponytail: local runs share the production WarcraftLogs budget, so the hourly
+// crawl only runs in the deployed container — locally it's the /dev button below.
+const isLocal = process.env.NODE_ENV !== "production";
+if (isLocal) console.log("[mplus] Local run — hourly spec meta crawl disabled");
+else startMythicPlusStatsRefresh();
 
 const app = express();
 // Production requests arrive through Cloudflare plus two local proxies
@@ -164,6 +172,34 @@ app.use(
     },
   })
 );
+
+// Local-only manual trigger for the Mythic+ spec meta crawl, since the hourly
+// scheduler is off outside production.
+if (isLocal) {
+  // Two tabs (or a reload mid-crawl) would otherwise run concurrent crawls,
+  // doubling the WCL spend and racing each other's wholesale replace.
+  let refreshInFlight = false;
+
+  app.post("/dev/refresh-mplus-stats", cors<cors.CorsRequest>(corsOptions), async (_, res) => {
+    const zoneId = defaultZoneId();
+    if (zoneId == null) {
+      res.status(400).json({ error: "No Mythic+ zone in season config" });
+      return;
+    }
+    if (refreshInFlight) {
+      res.status(409).json({ error: "A Mythic+ crawl is already running" });
+      return;
+    }
+    refreshInFlight = true;
+    try {
+      res.json(await refreshMythicPlusStats(zoneId));
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    } finally {
+      refreshInFlight = false;
+    }
+  });
+}
 
 // Analytics script proxy — cached for 1 hour to avoid depending on Umami on every request
 let statsJsCache: { body: string; expiresAt: number } | null = null;

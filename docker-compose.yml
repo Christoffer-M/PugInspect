@@ -33,6 +33,9 @@ services:
     env_file:
       - apps/backend/.env
     environment:
+      # Gates the hourly Mythic+ crawl (and GraphQL introspection) — the crawl
+      # only runs where NODE_ENV is production, never on a dev machine.
+      NODE_ENV: "production"
       PORT: "4000"
       DATABASE_URL: "postgresql://puginspect:${POSTGRES_PASSWORD:-localdev}@postgres:5432/puginspect"
       FRONTEND_ORIGIN: "http://frontend"
