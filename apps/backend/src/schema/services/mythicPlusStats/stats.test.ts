@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { aggregate, percentile, type Parse } from "./stats.js";
 import { crawlDungeon, PAGES_PER_SPEC, type RankingsFetcher } from "./crawler.js";
 import { SPECS } from "./specs.js";
+import { HERO_TALENTS } from "../../../generated/heroTalents.js";
 
 describe("percentile", () => {
   it("interpolates between neighbours", () => {
@@ -164,6 +165,47 @@ describe("aggregate", () => {
   });
 });
 
+describe("hero talent split", () => {
+  const heroParse = (specSlug: string, hero: string | undefined, amount: number): Parse => ({
+    ...parse(specSlug, 1, 15, amount),
+    heroTalent: hero,
+  });
+
+  it("gives each tree its own rows and leaves untagged parses out of them", () => {
+    const parses: Parse[] = [];
+    for (let i = 0; i < 10; i++) {
+      parses.push(heroParse("Fire", "Sunfury", 300 + i));
+      parses.push(heroParse("Fire", "Frostfire", 100 + i));
+      // No combatant info in the log: counts for the spec, for no tree.
+      parses.push(heroParse("Fire", undefined, 200 + i));
+    }
+
+    const pooled = aggregate(parses, [15]).filter((r) => r.encounterId === 0);
+    const spec = pooled.find((r) => r.heroTalent === "")!;
+    const sunfury = pooled.find((r) => r.heroTalent === "Sunfury")!;
+    const frostfire = pooled.find((r) => r.heroTalent === "Frostfire")!;
+
+    expect(spec.parses).toBe(30);
+    expect(sunfury.parses).toBe(10);
+    expect(frostfire.parses).toBe(10);
+    // The whole point of the split: the trees separate, and neither equals the
+    // spec's own median, which the untagged parses sit in the middle of.
+    expect(sunfury.median).toBeGreaterThan(spec.median);
+    expect(frostfire.median).toBeLessThan(spec.median);
+    // Trees do not sum to the spec — untagged parses belong to no tree.
+    expect(sunfury.parses + frostfire.parses).toBeLessThan(spec.parses);
+  });
+
+  it("splits each tree per dungeon too, so the dungeon filter still works", () => {
+    const parses = [
+      { ...heroParse("Fire", "Sunfury", 300), encounterId: 1 },
+      { ...heroParse("Fire", "Sunfury", 310), encounterId: 2 },
+    ];
+    const rows = aggregate(parses, [15]).filter((r) => r.heroTalent === "Sunfury");
+    expect(rows.map((r) => r.encounterId).sort()).toEqual([0, 1, 2]);
+  });
+});
+
 describe("crawlDungeon", () => {
   const row = (cls: string, spec: string, amount: number, key = 15) => ({
     class: cls, spec, amount, bracketData: key,
@@ -184,6 +226,25 @@ describe("crawlDungeon", () => {
     expect(specsAsked.has("Rogue/Assassination")).toBe(true);
     // One short page per spec ends it: exactly one request each.
     expect(crawl.requests).toBe(40);
+  });
+
+  it("reads the hero talent tree off a ranking row's talents", async () => {
+    // Ids come from the generated map rather than being hardcoded — they are
+    // re-issued each expansion, and this should track the map, not a snapshot.
+    const [id, tree] = Object.entries(HERO_TALENTS)[0]!;
+    const fetchPage: RankingsFetcher = async (_e, _p, className, specName) => ({
+      dps: {
+        rankings: [
+          { ...row(className, specName, 100), talents: [{ talentID: Number(id) }, { talentID: 1 }] },
+          // Log without combatant info: still a parse, just no tree.
+          row(className, specName, 90),
+        ],
+      },
+    });
+    const crawl = await crawlDungeon(fetchPage, 1, "Test");
+    expect(Object.keys(HERO_TALENTS).length).toBeGreaterThan(50);
+    expect(crawl.parses.filter((p) => p.heroTalent === tree).length).toBe(40);
+    expect(crawl.parses.filter((p) => p.heroTalent === undefined).length).toBe(40);
   });
 
   it("requests both metrics for healer specs and dps for everyone else", async () => {

@@ -15,6 +15,7 @@ const query = graphql(`
       keyLevels
       totalParses
       minParsesToRank
+      minParsesToRankHero
       sampleDepth
       minKeyLevel
       dungeons {
@@ -34,6 +35,7 @@ const query = graphql(`
         max
         medianKey
         maxKey
+        maxReportUrl
         dungeons {
           encounterId
           parses
@@ -44,6 +46,26 @@ const query = graphql(`
           maxKey
           maxReportUrl
         }
+        heroTalents {
+          name
+          parses
+          median
+          p95
+          max
+          medianKey
+          maxKey
+          maxReportUrl
+          dungeons {
+            encounterId
+            parses
+            median
+            p95
+            max
+            medianKey
+            maxKey
+            maxReportUrl
+          }
+        }
       }
     }
   }
@@ -52,6 +74,7 @@ const query = graphql(`
 export type MythicPlusSpecStats = NonNullable<MythicPlusSpecStatsQuery["mythicPlusSpecStats"]>;
 export type SpecStat = MythicPlusSpecStats["specs"][number];
 export type SpecDungeonStat = SpecStat["dungeons"][number];
+export type SpecHeroTalentStat = SpecStat["heroTalents"][number];
 
 export const useMythicPlusSpecStats = (zoneId?: number) =>
   useQuery({

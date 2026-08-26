@@ -36,10 +36,11 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ];
 
 /**
- * A table row: pooled spec stats, or — in the dungeon-scoped view — the spec
- * with one dungeon's stats swapped in, including that dungeon's best-run link.
+ * A table row: pooled spec stats, or the same spec with a narrower sample
+ * swapped in — one dungeon's, one hero talent tree's, or both. `heroTalent` is
+ * set only in the split view, where a spec contributes one row per tree.
  */
-type ViewSpec = SpecStat & { maxReportUrl?: string | null };
+type ViewSpec = SpecStat & { heroTalent?: string };
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -69,11 +70,19 @@ type Props = {
   healerMetric: "hps" | "dps";
   /** null = pooled across all dungeons; otherwise one dungeon's encounterId. */
   dungeon: number | null;
+  /** One row per hero talent tree instead of one per spec. */
+  splitHero: boolean;
 };
 
-export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
-  const minParses =
-    dungeon == null
+export function SpecMetaTable({ data, role, healerMetric, dungeon, splitHero }: Props) {
+  // A hero tree is a fraction of its spec's sample, so it gets its own much
+  // lower floor — otherwise the split view would be almost entirely unranked.
+  // It is NOT scaled down again per dungeon the way the spec floor is: dividing
+  // an already-minimal floor by the dungeon count leaves 1, which ranked trees
+  // off three runs above specs measured over hundreds.
+  const minParses = splitHero
+    ? data.minParsesToRankHero
+    : dungeon == null
       ? data.minParsesToRank
       : Math.ceil(data.minParsesToRank / Math.max(1, data.dungeons.length));
 
@@ -82,23 +91,50 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
   const rows = useMemo<ViewSpec[]>(() => {
     const metric = role === "HEALER" ? healerMetric : "dps";
     const inRole = data.specs.filter((s) => s.role === role && s.metric === metric);
-    if (dungeon == null) return inRole;
-    return inRole.flatMap((s) => {
+
+    // Split on, every tree of every spec is its own row, ranked together on the
+    // one axis — which is what makes "does this tree actually hit harder?"
+    // answerable by looking at two adjacent bars.
+    const variants: ViewSpec[] = splitHero
+      ? inRole.flatMap((s) =>
+          // No tree at all means no run of this spec carried talent data — keep
+          // the spec's own row rather than dropping it out of the table.
+          s.heroTalents.length === 0
+            ? [s]
+            : s.heroTalents.map((h) => ({
+                ...s,
+                heroTalent: h.name,
+                parses: h.parses,
+                median: h.median,
+                p95: h.p95,
+                max: h.max,
+                medianKey: h.medianKey,
+                maxKey: h.maxKey,
+                maxReportUrl: h.maxReportUrl,
+                dungeons: h.dungeons,
+              }))
+        )
+      : inRole;
+
+    if (dungeon == null) return variants;
+    return variants.flatMap((s) => {
       const d = s.dungeons.find((x) => x.encounterId === dungeon);
-      return d
-        ? [{
-            ...s,
-            parses: d.parses,
-            median: d.median,
-            p95: d.p95,
-            max: d.max,
-            medianKey: d.medianKey,
-            maxReportUrl: d.maxReportUrl,
-            dungeons: [],
-          }]
-        : [];
+      // Split view keeps a tree with no runs in this dungeon as a zero row, so
+      // the spec's full set of trees is the same list whichever dungeon is
+      // picked. Un-split, a spec absent from a dungeon still drops out.
+      if (!d) return splitHero ? [{ ...s, parses: 0, median: 0, p95: 0, max: 0, dungeons: [] }] : [];
+      return [{
+        ...s,
+        parses: d.parses,
+        median: d.median,
+        p95: d.p95,
+        max: d.max,
+        medianKey: d.medianKey,
+        maxReportUrl: d.maxReportUrl,
+        dungeons: [],
+      }];
     });
-  }, [data, role, healerMetric, dungeon]);
+  }, [data, role, healerMetric, dungeon, splitHero]);
 
   const dungeonNames = useMemo(
     () => new Map(data.dungeons.map((d) => [d.encounterId, d.name])),
@@ -143,8 +179,10 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
           const active = info.column.getIsSorted() !== false;
           const className = `${classes.statCol} ${active ? classes.statActive : classes.statInactive}`;
           const style = isLow(s) && active ? { color: "#6b7590" } : undefined;
-          // In the dungeon-scoped view the max is one specific run, so it
-          // links straight to the log — same as the expanded overview.
+          // The max is always one specific run, whatever the row's scope, so
+          // it links straight to that log. The link sits inside the row's
+          // expand button, hence the stopPropagation — opening a log should
+          // not also toggle the row open behind the new tab.
           if (key === "max" && !isLow(s) && s.maxReportUrl) {
             return (
               <a
@@ -154,6 +192,7 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Open the run on WarcraftLogs"
+                onClick={(e) => e.stopPropagation()}
               >
                 {k(s[key])}
               </a>
@@ -206,10 +245,24 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
                 >
                   {s.specName}
                 </span>
+                {/* Class is already carried by the icon and the name colour,
+                    so the split view spends this line on the tree instead —
+                    and gives the tree the line to itself, since tree names run
+                    long enough to wrap ("Rider of the Apocalypse"). */}
                 <span className={classes.className}>
-                  {s.className}
-                  {!isLow(s) && <span className={classes.typicalKey}> · ~+{s.medianKey}</span>}
+                  {s.heroTalent ?? s.className}
+                  {!s.heroTalent && !isLow(s) && (
+                    <span className={classes.typicalKey}> · ~+{s.medianKey}</span>
+                  )}
                 </span>
+                {/* A tree can rank on as few as 5 runs, so the sample size has
+                    to sit on the row itself, not only in the tooltip. */}
+                {s.heroTalent && (
+                  <span className={`${classes.className} ${classes.typicalKey}`}>
+                    {!isLow(s) && <>~+{s.medianKey} · </>}
+                    n={s.parses.toLocaleString("en-US")}
+                  </span>
+                )}
               </span>
             </span>
           );
@@ -291,14 +344,14 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
         ),
       }),
     ];
-  }, [minParses, axisLo, axisHi]) as ColumnDef<typeof features, SpecStat>[];
+  }, [minParses, axisLo, axisHi]) as ColumnDef<typeof features, ViewSpec>[];
 
 
   const table = useTable({
     features,
     columns,
     data: rows,
-    getRowId: (s: ViewSpec) => `${s.classSlug}/${s.specSlug}`,
+    getRowId: (s: ViewSpec) => `${s.classSlug}/${s.specSlug}/${s.heroTalent ?? ""}`,
     getRowCanExpand: (row: Row<typeof features, ViewSpec>) =>
       row.original.parses >= minParses && row.original.dungeons.length > 0,
     initialState: { sorting: [{ id: "median", desc: true }] },
@@ -309,7 +362,7 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
   useEffect(() => {
     table.resetExpanded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, healerMetric, dungeon]);
+  }, [role, healerMetric, dungeon, splitHero]);
 
   const activeSort = table.state.sorting?.[0];
   const sortBy = (activeSort?.id ?? "median") as SortKey;
@@ -431,8 +484,20 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
 
               {low && (
                 <div className={classes.lowSample}>
-                  Needs {minParses} parses to rank. Nothing is being hidden — this spec is simply too
-                  rare at these keys for a stable median.
+                  {s.parses === 0 ? (
+                    <>
+                      No runs of this hero talent tree{dungeon != null ? " in this dungeon" : ""} —
+                      nobody played it among the fastest{" "}
+                      {data.sampleDepth.toLocaleString("en-US")} runs sampled per dungeon. That is
+                      the finding, not a gap.
+                    </>
+                  ) : (
+                    <>
+                      Needs {minParses} parses to rank. Nothing is being hidden —{" "}
+                      {s.heroTalent ? "this hero talent tree" : "this spec"} is simply too rare at
+                      these keys for a stable median.
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -448,7 +513,9 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
         </div>
         <span>
           Rows sorted by {SORT_OPTIONS.find((o) => o.key === sortBy)?.label.toLowerCase() ?? "median"}
-          {sortDesc ? "" : ", ascending"}. Click a spec for its per-dungeon split.
+          {sortDesc ? "" : ", ascending"}. Click a row for its per-dungeon split.
+          {splitHero &&
+            " Hero talent trees do not add up to their spec — runs whose log carried no talent data belong to no tree."}
         </span>
       </div>
     </>
@@ -457,12 +524,12 @@ export function SpecMetaTable({ data, role, healerMetric, dungeon }: Props) {
 
 const HEADER_TOOLTIP: Record<string, string> = {
   rank: "Position under the current sort. Specs with too few parses sit unranked at the bottom.",
-  spec: "Class specialization, colored by class. The ~+N under the name is the typical key level of the spec's sampled runs.",
+  spec: "Class specialization, colored by class. The ~+N under the name is the typical key level of the spec's sampled runs. Split by hero talents, the line shows the tree and n= how many runs it was measured over.",
   bar: "Filled body = median, hollow body = up to the top 5%, wick out to the single best parse — all raw, all the same scale. The axis spans the field's range — lowest median to best parse — not zero, to magnify the differences between specs.",
   median:
     "Typical raw throughput across the spec's sampled runs — the median of what was actually logged, at the keys it was logged at. Click to rank by it.",
   p95: "What the spec does when played well: the top-5% cutoff of its sampled runs, raw. Click to rank by it.",
-  max: "The single best parse in the sample — a real, findable log. Click to rank by it (again to flip direction), then expand a row to open the run on WarcraftLogs.",
+  max: "The single best parse in the sample — a real, findable log. The value links to that run on WarcraftLogs; the header ranks by it (click again to flip direction).",
 };
 
 const HEADER_CLASS: Record<string, string> = {
@@ -478,7 +545,7 @@ function DungeonDetail({
   dungeonNames,
   sortBy,
 }: {
-  spec: SpecStat;
+  spec: ViewSpec;
   metricLabel: string;
   dungeonNames: Map<number, string>;
   sortBy: SortKey;
@@ -500,7 +567,10 @@ function DungeonDetail({
   return (
     <div className={classes.detail}>
       <div className={classes.detailHead}>
-        <span>Per dungeon · {metricLabel} · fastest runs</span>
+        <span>
+          Per dungeon · {spec.heroTalent ? `${spec.heroTalent} · ` : ""}
+          {metricLabel} · fastest runs
+        </span>
         <span className={classes.detailNote}>
           {spec.parses.toLocaleString("en-US")} parses · {statLabel} {metricLabel} per run
         </span>

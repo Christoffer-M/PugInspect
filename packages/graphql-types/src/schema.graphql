@@ -180,6 +180,8 @@ type MythicPlusSpecStats {
   minKeyLevel: Int!
   """Below this parse count a spec is shown but not ranked."""
   minParsesToRank: Int!
+  """Same, for a single hero talent tree — a much smaller sample."""
+  minParsesToRankHero: Int!
   refreshedAt: String!
   """How many of each spec's fastest runs were sampled per dungeon."""
   sampleDepth: Int!
@@ -298,6 +300,24 @@ type SpecDungeonStat {
   parses: Int!
 }
 
+"""
+One hero talent tree's slice of a spec — same statistics, smaller sample.
+"""
+type SpecHeroTalentStat {
+  dungeons: [SpecDungeonStat!]!
+  max: Float!
+  """Keystone level of the single best parse."""
+  maxKey: Int
+  """WarcraftLogs report link for the single best parse."""
+  maxReportUrl: String
+  median: Float!
+  medianKey: Int!
+  """Hero talent tree name, e.g. Sunfury."""
+  name: String!
+  p95: Float!
+  parses: Int!
+}
+
 enum SpecRole {
   DPS
   HEALER
@@ -308,10 +328,16 @@ type SpecStat {
   className: String!
   classSlug: String!
   dungeons: [SpecDungeonStat!]!
+  """
+  The same numbers per hero talent tree. Trees do not sum to the spec: runs whose log carried no combatant info belong to no tree.
+  """
+  heroTalents: [SpecHeroTalentStat!]!
   """The raw best parse in the sample, findable on WarcraftLogs."""
   max: Float!
   """Keystone level of the single best parse. Null for pre-existing rows."""
   maxKey: Int
+  """WarcraftLogs report link for the single best parse."""
+  maxReportUrl: String
   """
   Adjusted for dungeon and key mix — will not match any single WCL parse.
   """

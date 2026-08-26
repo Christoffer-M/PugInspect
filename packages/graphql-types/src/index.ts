@@ -216,6 +216,8 @@ export type MythicPlusSpecStats = {
   minKeyLevel: Scalars['Int']['output'];
   /** Below this parse count a spec is shown but not ranked. */
   minParsesToRank: Scalars['Int']['output'];
+  /** Same, for a single hero talent tree — a much smaller sample. */
+  minParsesToRankHero: Scalars['Int']['output'];
   refreshedAt: Scalars['String']['output'];
   /** How many of each spec's fastest runs were sampled per dungeon. */
   sampleDepth: Scalars['Int']['output'];
@@ -375,6 +377,23 @@ export type SpecDungeonStat = {
   parses: Scalars['Int']['output'];
 };
 
+/** One hero talent tree's slice of a spec — same statistics, smaller sample. */
+export type SpecHeroTalentStat = {
+  __typename?: 'SpecHeroTalentStat';
+  dungeons: Array<SpecDungeonStat>;
+  max: Scalars['Float']['output'];
+  /** Keystone level of the single best parse. */
+  maxKey?: Maybe<Scalars['Int']['output']>;
+  /** WarcraftLogs report link for the single best parse. */
+  maxReportUrl?: Maybe<Scalars['String']['output']>;
+  median: Scalars['Float']['output'];
+  medianKey: Scalars['Int']['output'];
+  /** Hero talent tree name, e.g. Sunfury. */
+  name: Scalars['String']['output'];
+  p95: Scalars['Float']['output'];
+  parses: Scalars['Int']['output'];
+};
+
 export type SpecRole =
   | 'DPS'
   | 'HEALER'
@@ -385,10 +404,14 @@ export type SpecStat = {
   className: Scalars['String']['output'];
   classSlug: Scalars['String']['output'];
   dungeons: Array<SpecDungeonStat>;
+  /** The same numbers per hero talent tree. Trees do not sum to the spec: runs whose log carried no combatant info belong to no tree. */
+  heroTalents: Array<SpecHeroTalentStat>;
   /** The raw best parse in the sample, findable on WarcraftLogs. */
   max: Scalars['Float']['output'];
   /** Keystone level of the single best parse. Null for pre-existing rows. */
   maxKey?: Maybe<Scalars['Int']['output']>;
+  /** WarcraftLogs report link for the single best parse. */
+  maxReportUrl?: Maybe<Scalars['String']['output']>;
   /** Adjusted for dungeon and key mix — will not match any single WCL parse. */
   median: Scalars['Float']['output'];
   medianKey: Scalars['Int']['output'];

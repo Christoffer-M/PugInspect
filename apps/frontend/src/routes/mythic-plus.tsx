@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Box, Button, Container, Group, Select, Stack, Text, Title, Tooltip } from "@mantine/core";
+import { Box, Button, Container, Group, Select, Stack, Switch, Text, Title, Tooltip } from "@mantine/core";
 import { IconChartBar, IconInfoCircle } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
 import { ROLES, SpecMetaTable, type Role } from "../components/spec-meta/SpecMetaTable";
@@ -57,6 +57,7 @@ const MythicPlusMeta: React.FC = () => {
   const [role, setRole] = useState<Role>("DPS");
   const [healerMetric, setHealerMetric] = useState<"hps" | "dps">("hps");
   const [dungeon, setDungeon] = useState<number | null>(null);
+  const [splitHero, setSplitHero] = useState(false);
 
   const zoneId = CURRENT_SEASON?.zoneId;
   const { data, isPending, isError } = useMythicPlusSpecStats(zoneId);
@@ -116,7 +117,7 @@ const MythicPlusMeta: React.FC = () => {
               </Stack>
             </Group>
 
-            <Group gap="xs">
+            <Group gap="sm">
               {import.meta.env.DEV && <RefreshButton />}
               {data && data.dungeons.length > 1 && (
                 <Select
@@ -132,6 +133,22 @@ const MythicPlusMeta: React.FC = () => {
                   aria-label="Dungeon"
                 />
               )}
+              <Tooltip
+                label="One row per hero talent tree instead of one per spec, ranked together on the same axis. Trees are a slice of a spec's sample, so they rank at a much lower parse count."
+                withArrow
+                multiline
+                w={260}
+                events={{ hover: true, focus: true, touch: true }}
+              >
+                <Switch
+                  size="sm"
+                  color="accent"
+                  checked={splitHero}
+                  onChange={(e) => setSplitHero(e.currentTarget.checked)}
+                  label="Hero talents"
+                  styles={{ label: { fontSize: 13, paddingInlineStart: 8 } }}
+                />
+              </Tooltip>
             </Group>
           </Group>
 
@@ -233,7 +250,13 @@ const MythicPlusMeta: React.FC = () => {
           {isPending && <LoadingRows />}
           {!isPending && (isError || !data) && <EmptyState />}
           {data && (
-            <SpecMetaTable data={data} role={role} healerMetric={healerMetric} dungeon={dungeon} />
+            <SpecMetaTable
+              data={data}
+              role={role}
+              healerMetric={healerMetric}
+              dungeon={dungeon}
+              splitHero={splitHero}
+            />
           )}
         </Stack>
       </Container>

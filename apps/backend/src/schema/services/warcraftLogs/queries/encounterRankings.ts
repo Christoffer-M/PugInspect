@@ -9,12 +9,16 @@ import { DocumentNode } from "graphql";
  * it appears in the *filter population's* fastest runs — a spec that is rare
  * within its class contributes only its elite tail and its median inflates.
  * A per-spec query gives every spec the same sample depth.
+ *
+ * `includeCombatantInfo` adds each row's talent selections — which is how the
+ * hero talent tree is identified. Measured against the live API it costs the
+ * same 2.01 rate-limit points as the request without it, so it is always on.
  */
 export const ENCOUNTER_RANKINGS_DPS: DocumentNode = gql`
   query EncounterRankingsDps($encounterID: Int!, $page: Int!, $className: String!, $specName: String!) {
     worldData {
       encounter(id: $encounterID) {
-        dps: characterRankings(difficulty: 10, metric: dps, bracket: 0, page: $page, className: $className, specName: $specName)
+        dps: characterRankings(difficulty: 10, metric: dps, bracket: 0, page: $page, className: $className, specName: $specName, includeCombatantInfo: true)
       }
     }
   }
@@ -29,8 +33,8 @@ export const ENCOUNTER_RANKINGS_BOTH: DocumentNode = gql`
   query EncounterRankingsBoth($encounterID: Int!, $page: Int!, $className: String!, $specName: String!) {
     worldData {
       encounter(id: $encounterID) {
-        dps: characterRankings(difficulty: 10, metric: dps, bracket: 0, page: $page, className: $className, specName: $specName)
-        hps: characterRankings(difficulty: 10, metric: hps, bracket: 0, page: $page, className: $className, specName: $specName)
+        dps: characterRankings(difficulty: 10, metric: dps, bracket: 0, page: $page, className: $className, specName: $specName, includeCombatantInfo: true)
+        hps: characterRankings(difficulty: 10, metric: hps, bracket: 0, page: $page, className: $className, specName: $specName, includeCombatantInfo: true)
       }
     }
   }
@@ -41,7 +45,7 @@ export const ENCOUNTER_RANKINGS_HPS: DocumentNode = gql`
   query EncounterRankingsHps($encounterID: Int!, $page: Int!, $className: String!, $specName: String!) {
     worldData {
       encounter(id: $encounterID) {
-        hps: characterRankings(difficulty: 10, metric: hps, bracket: 0, page: $page, className: $className, specName: $specName)
+        hps: characterRankings(difficulty: 10, metric: hps, bracket: 0, page: $page, className: $className, specName: $specName, includeCombatantInfo: true)
       }
     }
   }

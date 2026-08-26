@@ -4,6 +4,7 @@
  *   - Raider.IO static-data  → M+ seasons, dungeon pool, raid slugs/names, defaults
  *   - WarcraftLogs zones     → WCL zone IDs (matched by name)
  *   - Blizzard item-set index → new tier-set id blocks (contiguous runs of 13)
+ *   - Raidbots talent trees  → hero talent subtree ids (heroTalents.ts)
  *
  * Run with `pnpm season:update` (needs apps/backend/.env for WCL + Blizzard
  * credentials), then review the diff. Hand-maintained inputs live in
@@ -83,6 +84,53 @@ async function fetchBlizzardItemSetIds(): Promise<number[]> {
   return (index.item_sets as { id: number }[]).map((s) => s.id).sort((a, b) => a - b);
 }
 
+/**
+ * Hero talent subtree ids, keyed by the trait-node-entry id WarcraftLogs
+ * reports in a ranking row's `talents` array.
+ *
+ * Blizzard's talent-tree API is NOT usable here: it exposes trait DEFINITION
+ * ids, a different id space that shares nothing with what WCL sends. Raidbots
+ * publishes the same tree dump SimC uses, and its `subTreeNodes[].entries[].id`
+ * values are exactly the ids that show up in WCL rows — one per hero tree, so a
+ * single id in the row names the tree with no fingerprinting.
+ */
+async function fetchHeroTalents(): Promise<{
+  byId: Record<number, string>;
+  bySpec: Record<string, string[]>;
+}> {
+  const trees = (await getJson(
+    "https://www.raidbots.com/static/data/live/talents.json"
+  )) as {
+    className?: string;
+    specName?: string;
+    subTreeNodes?: { entries?: { id: number; name: string }[] }[];
+  }[];
+
+  const byId: Record<number, string> = {};
+  const bySpec: Record<string, string[]> = {};
+  for (const spec of trees) {
+    // Raidbots spells class and spec out ("Death Knight", "Beast Mastery");
+    // WarcraftLogs slugs are the same words without spaces, which is the key
+    // the crawler's SPECS roster uses.
+    const key = `${spec.className?.replace(/\s+/g, "")}/${spec.specName?.replace(/\s+/g, "")}`;
+    const names = new Set<string>();
+    for (const node of spec.subTreeNodes ?? [])
+      for (const entry of node.entries ?? [])
+        if (entry.id && entry.name) {
+          byId[entry.id] = entry.name;
+          names.add(entry.name);
+        }
+    if (names.size > 0) bySpec[key] = [...names].sort();
+  }
+
+  const specsWithout = 40 - Object.keys(bySpec).length;
+  if (specsWithout > 0)
+    warnings.push(
+      `${specsWithout} of 40 specs have no hero talent trees in the Raidbots dump — their Mythic+ hero talent split will be blank`
+    );
+  return { byId, bySpec };
+}
+
 /** Match a Raider.IO name against WCL zones of the same expansion. */
 function matchWclZone(
   rioName: string,
@@ -113,10 +161,11 @@ const started = (r: { starts: { us: string } }) => Date.parse(r.starts.us) <= no
 
 async function main() {
   const current = EXPANSIONS[0]!;
-  const [mplus, wclZones, itemSetIds, ...raidData] = await Promise.all([
+  const [mplus, wclZones, itemSetIds, heroTalents, ...raidData] = await Promise.all([
     getJson(`https://raider.io/api/v1/mythic-plus/static-data?expansion_id=${current.rioId}`),
     fetchWclZones(),
     fetchBlizzardItemSetIds(),
+    fetchHeroTalents(),
     ...EXPANSIONS.map((e) =>
       getJson(`https://raider.io/api/v1/raiding/static-data?expansion_id=${e.rioId}`)
     ),
@@ -290,13 +339,34 @@ export const RAID_PROGRESSION_FIELD = ${stringify(raidProgressionField)};
 export const ENCHANTABLE_SLOTS = ${stringify(ENCHANTABLE_SLOTS)};
 `;
 
+  // Backend-only: the crawler resolves ids to names before anything is stored,
+  // so the frontend never sees a trait id.
+  const heroTalentsFile = `${header}
+// Trait-node-entry id → hero talent tree name. WarcraftLogs puts exactly one of
+// these ids in a ranking row's \`talents\` array, which is what identifies the
+// tree. Source: Raidbots talent dump (subTreeNodes entries).
+export const HERO_TALENTS: Record<number, string> = ${stringify(heroTalents.byId)};
+
+// Every hero talent tree each spec CAN pick, keyed by WCL "classSlug/specSlug".
+// The page lists a spec's full set so a tree nobody in the sample played reads
+// as "nobody played it" rather than silently not existing.
+export const HERO_TALENTS_BY_SPEC: Record<string, string[]> = ${stringify(
+    heroTalents.bySpec
+  )};
+`;
+
   const frontendPath = resolve(root, "apps/frontend/src/generated/seasonConfig.ts");
   const backendPath = resolve(root, "apps/backend/src/generated/seasonConfig.ts");
+  const heroTalentsPath = resolve(root, "apps/backend/src/generated/heroTalents.ts");
   writeFileSync(frontendPath, frontend);
   writeFileSync(backendPath, backend);
+  writeFileSync(heroTalentsPath, heroTalentsFile);
 
   console.log(`Wrote ${frontendPath}`);
   console.log(`Wrote ${backendPath}`);
+  console.log(
+    `Wrote ${heroTalentsPath} (${new Set(Object.values(heroTalents.byId)).size} hero trees across ${Object.keys(heroTalents.bySpec).length} specs)`
+  );
   console.log(
     `Current: ${currentSeason.slug} (default raid: ${defaultRaid}, ${dungeons.length} dungeons, ${tierRanges.length} tier ranges)`
   );

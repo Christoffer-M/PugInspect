@@ -10,6 +10,8 @@ export type Parse = {
   amount: number;
   /** Which throughput this parse measures — healers contribute both. */
   metric: "dps" | "hps";
+  /** Hero talent tree, absent when the log carried no combatant info. */
+  heroTalent?: string;
   /** WCL report behind the parse, so the best run can be linked. */
   reportCode?: string;
   fightId?: number;
@@ -23,6 +25,8 @@ export type StatRow = {
   specSlug: string;
   role: SpecRole;
   metric: "dps" | "hps";
+  /** "" = every hero talent tree pooled; otherwise the tree this row is for. */
+  heroTalent: string;
   parses: number;
   median: number;
   p95: number;
@@ -38,6 +42,15 @@ export type StatRow = {
 
 /** Below this a spec's median is too noisy to rank; the UI says so explicitly. */
 export const MIN_PARSES_TO_RANK = 50;
+
+/**
+ * Same idea for a single hero talent tree, but far lower: splitting a spec
+ * three ways — and only over rows that carried combatant info — leaves the
+ * off-meta tree with a fraction of the spec's sample. The floor is low enough
+ * that those trees still appear, and the parse count is shown beside every row
+ * so a thin one reads as thin.
+ */
+export const MIN_PARSES_TO_RANK_HERO = 5;
 
 /** Linear-interpolated percentile over an ascending-sorted array. */
 export function percentile(sortedAsc: number[], p: number): number {
@@ -62,7 +75,7 @@ const bestOf = (parses: Parse[]): Parse =>
  * all three come off the same raw sample.
  */
 const summarize = (
-  base: Pick<StatRow, "keyFloor" | "classSlug" | "specSlug" | "role" | "metric">,
+  base: Pick<StatRow, "keyFloor" | "classSlug" | "specSlug" | "role" | "metric" | "heroTalent">,
   encounterId: number,
   ps: Parse[]
 ): StatRow => {
@@ -138,24 +151,41 @@ export function aggregate(parses: Parse[], keyFloors: number[]): StatRow[] {
       for (const specParses of bySpec.values()) {
         const first = specParses[0];
         if (!first) continue;
-        const base = {
-          keyFloor,
-          classSlug: first.classSlug,
-          specSlug: first.specSlug,
-          role,
-          metric,
-        };
 
-        rows.push(summarize(base, 0, specParses));
-
-        const byDungeon = new Map<number, Parse[]>();
+        // Each hero talent tree gets the same treatment as the spec itself —
+        // pooled plus per-dungeon — so the UI can switch between "spec" and
+        // "spec, split by hero tree" without a second shape. Parses whose log
+        // carried no combatant info have no tree and land only in the "" rows,
+        // which is why a spec's tree parses do not add up to its total.
+        const byHero = new Map<string, Parse[]>([["", specParses]]);
         for (const p of specParses) {
-          const list = byDungeon.get(p.encounterId);
+          if (!p.heroTalent) continue;
+          const list = byHero.get(p.heroTalent);
           if (list) list.push(p);
-          else byDungeon.set(p.encounterId, [p]);
+          else byHero.set(p.heroTalent, [p]);
         }
-        for (const [encounterId, dungeonParses] of byDungeon) {
-          rows.push(summarize(base, encounterId, dungeonParses));
+
+        for (const [heroTalent, heroParses] of byHero) {
+          const base = {
+            keyFloor,
+            classSlug: first.classSlug,
+            specSlug: first.specSlug,
+            role,
+            metric,
+            heroTalent,
+          };
+
+          rows.push(summarize(base, 0, heroParses));
+
+          const byDungeon = new Map<number, Parse[]>();
+          for (const p of heroParses) {
+            const list = byDungeon.get(p.encounterId);
+            if (list) list.push(p);
+            else byDungeon.set(p.encounterId, [p]);
+          }
+          for (const [encounterId, dungeonParses] of byDungeon) {
+            rows.push(summarize(base, encounterId, dungeonParses));
+          }
         }
       }
     }

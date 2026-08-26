@@ -31,6 +31,13 @@ export type CharacterRankingRow = {
   affixes?: number[];
   faction?: number;
   leaderboard?: number;
+  /**
+   * Present only with `includeCombatantInfo: true`, and missing on rows whose
+   * log carried no combatant info (1–8% of rows, measured). `talentID` is a
+   * trait-node-entry id — see `HERO_TALENTS` for the one that names the hero
+   * talent tree.
+   */
+  talents?: { talentID?: number; points?: number }[];
   report?: { code?: string; fightID?: number; startTime?: number };
   guild?: { id?: number; name?: string; faction?: number };
   server?: { id?: number; name?: string; region?: string };
