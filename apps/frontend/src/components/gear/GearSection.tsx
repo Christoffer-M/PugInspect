@@ -11,7 +11,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { Gear } from "../../graphql/graphql";
 import { getTierNumber } from "../../data/tierSets";
 import { MAX_LEVEL } from "../../generated/seasonConfig";
-import { GearItemTile } from "./GearItemTile";
+import { ENCHANT_COLOR, GearItemTile, SOCKET_COLOR } from "./GearItemTile";
 import classes from "./GearSection.module.css";
 
 // Distinct hue per tier so mixed loadouts (e.g. 2pc T35 + 2pc T36) read at a
@@ -19,6 +19,12 @@ import classes from "./GearSection.module.css";
 // (T34 → purple, T35 → gold, T36 → cyan, then the palette cycles).
 const TIER_COLORS = ["#5ac8e6", "#c98af0", "#e6b450"];
 const getTierColor = (tier: number) => TIER_COLORS[tier % TIER_COLORS.length]!;
+
+// Explains the bar under each item tile — same colors, same two-segment split.
+const LEGEND = [
+  ["missing enchant", ENCHANT_COLOR],
+  ["empty socket", SOCKET_COLOR],
+] as const;
 
 type GearSectionProps = {
   gear: Gear | null | undefined;
@@ -61,14 +67,24 @@ export const GearSection: React.FC<GearSectionProps> = ({
     (sum, i) => sum + i.sockets.filter((s) => !s.filled).length,
     0,
   );
-  const issueParts = [
+  const issues = [
     ...(missingEnchants > 0
       ? [
-          `${missingEnchants} missing enchant${missingEnchants === 1 ? "" : "s"}`,
+          {
+            color: ENCHANT_COLOR,
+            glyph: "E",
+            label: `${missingEnchants} missing enchant${missingEnchants === 1 ? "" : "s"}`,
+          },
         ]
       : []),
     ...(emptySockets > 0
-      ? [`${emptySockets} empty socket${emptySockets === 1 ? "" : "s"}`]
+      ? [
+          {
+            color: SOCKET_COLOR,
+            glyph: null,
+            label: `${emptySockets} empty socket${emptySockets === 1 ? "" : "s"}`,
+          },
+        ]
       : []),
   ];
   const isMaxLevel = level != null && level >= MAX_LEVEL;
@@ -140,13 +156,15 @@ export const GearSection: React.FC<GearSectionProps> = ({
         )}
 
         {isMaxLevel && (
-          <div className={`${classes.stat} ${classes.statDivided}`}>
+          <div
+            className={`${classes.stat} ${classes.statDivided} ${classes.gearCheckStat}`}
+          >
             <div className={classes.statLabel}>
               Gear Check
-              {issueParts.length > 0 ? (
+              {issues.length > 0 ? (
                 <span
                   className={classes.gearCheckIcon}
-                  style={{ color: "#f0983d" }}
+                  style={{ color: ENCHANT_COLOR }}
                 >
                   &#9888;
                 </span>
@@ -160,10 +178,28 @@ export const GearSection: React.FC<GearSectionProps> = ({
               )}
             </div>
             <div className={classes.statContent}>
-              {issueParts.length > 0 ? (
-                <div className={classes.gearCheck} style={{ color: "#f0b878" }}>
-                  {issueParts.map((part) => (
-                    <div key={part}>{part}</div>
+              {issues.length > 0 ? (
+                <div className={classes.gearCheckChips}>
+                  {issues.map((issue) => (
+                    <div
+                      key={issue.label}
+                      className={classes.chip}
+                      style={{
+                        background: `${issue.color}1f`,
+                        borderColor: `${issue.color}73`,
+                        color: issue.color,
+                      }}
+                    >
+                      <span
+                        className={
+                          issue.glyph ? classes.chipPip : classes.chipPipDiamond
+                        }
+                        style={{ background: issue.color }}
+                      >
+                        {issue.glyph}
+                      </span>
+                      <span className={classes.chipLabel}>{issue.label}</span>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -193,7 +229,23 @@ export const GearSection: React.FC<GearSectionProps> = ({
 
       <Collapse in={opened}>
         <div className={classes.gridWrap}>
-          <div className={classes.grid}>
+          {issues.length > 0 && (
+            <div className={classes.legend}>
+              {LEGEND.map(([label, ...colors]) => (
+                <span key={label as string} className={classes.legendItem}>
+                  <span className={classes.legendBar}>
+                    {(colors as string[]).map((c) => (
+                      <span key={c} style={{ background: c }} />
+                    ))}
+                  </span>
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+          <div
+            className={`${classes.grid} ${issues.length === 0 ? classes.gridPlain : ""}`}
+          >
             {items.map((item) => (
               <GearItemTile
                 key={item.slot}

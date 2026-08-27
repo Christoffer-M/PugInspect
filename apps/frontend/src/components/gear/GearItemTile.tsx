@@ -7,6 +7,11 @@ import classes from "./GearSection.module.css";
 // Light quality colors need dark badge text (COMMON is literally white).
 const LIGHT_QUALITIES = new Set(["COMMON", "UNCOMMON", "ARTIFACT", "HEIRLOOM"]);
 
+// Shared with the gear-check chips in GearSection so pip, ring and chip match.
+export const ENCHANT_COLOR = "#f0b429";
+export const SOCKET_COLOR = "#e85a74";
+const BOTH_COLOR = "#ff8a5c";
+
 export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
   item,
   tierColor,
@@ -15,6 +20,17 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
   const badgeTextColor = LIGHT_QUALITIES.has(item.quality) ? "#060b16" : "#ffffff";
   // Only mark real raid tier pieces — crafted/PvP/legacy item sets don't count.
   const tierNumber = item.tierSetId != null ? getTierNumber(item.tierSetId) : null;
+
+  // Flagged items get the issue color on the ring instead of the quality color —
+  // a missing enchant/gem matters more at a glance than the item's rarity.
+  const emptySockets = item.sockets.filter((s) => !s.filled).length;
+  const flagColor = item.missingEnchant
+    ? emptySockets > 0
+      ? BOTH_COLOR
+      : ENCHANT_COLOR
+    : emptySockets > 0
+      ? SOCKET_COLOR
+      : null;
 
   return (
     <HoverCard width={260} shadow="md" withArrow openDelay={150} closeDelay={100}>
@@ -26,7 +42,15 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
           rel="noopener noreferrer"
           aria-label={`${item.name} on Wowhead`}
         >
-          <div className={classes.tile} style={{ borderColor: qualityColor }}>
+          <div
+            className={classes.tile}
+            style={{
+              borderColor: flagColor ?? qualityColor,
+              boxShadow: flagColor
+                ? `inset 0 0 0 1px rgba(0,0,0,0.45), 0 0 0 2px ${flagColor}55, 0 1px 3px rgba(0,0,0,0.5)`
+                : undefined,
+            }}
+          >
             {item.iconUrl && (
               <img src={item.iconUrl} alt={item.name} className={classes.tileIcon} loading="lazy" />
             )}
@@ -35,12 +59,14 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
                 T
               </div>
             )}
-            <div className={classes.indicators}>
-              {item.enchant != null && <div className={classes.enchantDot} />}
-              {item.missingEnchant && <div className={classes.missingEnchantDot} />}
-              {item.sockets.some((s) => s.filled) && <div className={classes.gemDiamond} />}
-              {item.sockets.some((s) => !s.filled) && <div className={classes.emptySocketDiamond} />}
-            </div>
+          </div>
+          {/* Issue bar sits on the card background, clear of every icon —
+              amber = missing enchant, rose = empty socket, both = two halves. */}
+          <div className={classes.flagBar}>
+            {item.missingEnchant && (
+              <span style={{ background: ENCHANT_COLOR }} />
+            )}
+            {emptySockets > 0 && <span style={{ background: SOCKET_COLOR }} />}
           </div>
           <div
             className={classes.ilvlBadge}
@@ -70,10 +96,10 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
           </div>
         )}
         {item.missingEnchant && (
-          <div className={classes.tooltipLine} style={{ color: "#f0983d" }}>
+          <div className={classes.tooltipLine} style={{ color: ENCHANT_COLOR }}>
             <span
               className={classes.tooltipDot}
-              style={{ background: "#1a1206", border: "1.5px solid #f0983d" }}
+              style={{ background: "#1a1206", border: `1.5px solid ${ENCHANT_COLOR}` }}
             />
             Missing enchant
           </div>
@@ -85,10 +111,10 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
               {socket.display ?? "Gem socketed"}
             </div>
           ) : (
-            <div key={i} className={classes.tooltipLine} style={{ color: "#f56b6b" }}>
+            <div key={i} className={classes.tooltipLine} style={{ color: SOCKET_COLOR }}>
               <span
                 className={classes.tooltipDiamond}
-                style={{ background: "#1a0d0d", border: "1.5px solid #f56b6b" }}
+                style={{ background: "#1a0d0d", border: `1.5px solid ${SOCKET_COLOR}` }}
               />
               Empty socket
             </div>
