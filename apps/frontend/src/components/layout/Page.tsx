@@ -72,10 +72,20 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <>
       <div className={classes.appBg} />
-      <AppShell header={{ height: 60 }} className={classes.shell}>
+      {/* Installed on iOS the app draws under the status bar, so the header
+          grows by the safe-area inset and the main content clears the home
+          indicator. Both insets are 0 in an ordinary browser tab. */}
+      <AppShell
+        header={{ height: "calc(60px + env(safe-area-inset-top))" }}
+        className={classes.shell}
+      >
         <Typography>
           <Header />
-          <AppShell.Main pb={"lg"}>
+          <AppShell.Main
+            style={{
+              paddingBottom: "calc(var(--mantine-spacing-lg) + env(safe-area-inset-bottom))",
+            }}
+          >
             {children}
             <Footer />
           </AppShell.Main>

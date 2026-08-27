@@ -11,6 +11,7 @@ Production site: [puginspect.com](https://puginspect.com/)
 - Raider.IO integration for Mythic+ scores, best and recent dungeon runs, and raid progression.
 - Warcraft Logs integration for raid rankings, parses, metrics, zone partitions, and difficulty-specific performance data.
 - Potential alt detection based on Blizzard achievement timestamps.
+- Installable as a progressive web app, so it can be added to a phone home screen and opened offline.
 - PostgreSQL-backed caching for external API responses using Drizzle migrations.
 - Docker Compose setup for running Postgres, the backend, and the frontend together.
 
@@ -166,6 +167,51 @@ docker compose down --volumes
 | `pnpm --filter backend db:generate` | Generate a new Drizzle migration               |
 | `pnpm --filter backend db:studio`   | Open Drizzle Studio                            |
 | `pnpm --filter frontend test`       | Run frontend tests                             |
+
+## Progressive Web App
+
+The frontend is installable. On Android and desktop Chromium the browser fires
+`beforeinstallprompt`, which the app defers and replays from an **Install app**
+entry in the mobile menu; iOS Safari has no install API, so that entry opens
+Add-to-Home-Screen instructions instead. Once installed the app opens
+standalone, drawing under the status bar with safe-area insets applied to the
+header and main content.
+
+The pieces:
+
+| File | Role |
+| --- | --- |
+| `apps/frontend/public/manifest.json` | Name, icons, standalone display, theme colors, shortcuts |
+| `apps/frontend/public/sw.js` | Service worker: precache, offline shell, cache strategies |
+| `apps/frontend/src/pwa/installPrompt.ts` | Captures the browser install event at startup |
+| `apps/frontend/src/pwa/registerServiceWorker.tsx` | Registration plus the update prompt |
+
+The service worker is written by hand and deliberately small:
+
+- **Navigations** are network-first with the cached shell as fallback, so an
+  online visit always gets the current build and an offline one still opens.
+- **`/assets/`** is cache-first — Vite content-hashes those filenames.
+- **`/graphql`, `/api/`, `/card/`, `/meta/`, `/sitemap.xml`, `/stats.js`** are
+  never cached; they are rendered per request by the backend.
+- On install it fetches the shell and precaches the build assets it references,
+  so the app opens offline from its first visit rather than its second.
+- It is registered in production builds only — in dev it would just serve back
+  the change you were trying to see.
+
+Bump `CACHE_VERSION` in `sw.js` when the strategies change; ordinary deploys do
+not need it because build assets are content-hashed. A deployed worker is
+picked up on the next visit, which prompts the user to reload.
+
+Nginx supports this with per-path cache policy (`nginx/docker.conf`): `sw.js`
+and `index.html` must revalidate so a deploy is never pinned behind a cache,
+while `/assets/` is immutable for a year.
+
+### Regenerating icons
+
+`logo-maskable-*.png` are `logo512.png` scaled into the 80% maskable safe zone,
+and `apple-touch-icon.png` is a 180px square of the same source. Regenerate
+them from a new `logo512.png` if the logo changes; keep the maskable variants
+padded or Android will crop into the mark.
 
 ## Data Flow
 

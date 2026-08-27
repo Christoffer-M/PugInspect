@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 import {
   IconChartBar,
+  IconDeviceMobileDown,
   IconHistory,
   IconMenu2,
   IconPuzzle,
@@ -23,6 +24,8 @@ import { Link, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { SearchHistoryDrawer } from "../search/SearchHistoryDrawer/SearchHistoryDrawer";
 import CharacterSearchInput from "../search/CharacterSearchInput";
+import { InstallInstructionsModal } from "../pwa/InstallInstructionsModal";
+import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 import classes from "./Header.module.css";
 
 const logoTextStyle: React.CSSProperties = {
@@ -108,6 +111,8 @@ const Header: React.FC = () => {
   const matchRoute = useMatchRoute();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [installHelpOpen, setInstallHelpOpen] = useState(false);
+  const { canInstall, needsManualInstructions, promptInstall } = useInstallPrompt();
 
   const onRankings = !!matchRoute({ to: "/mythic-plus" });
 
@@ -118,6 +123,10 @@ const Header: React.FC = () => {
           backgroundColor: "rgba(4, 10, 20, 0.92)",
           backdropFilter: "blur(12px)",
           borderBottom: "1px solid rgba(139, 127, 212, 0.35)",
+          // Keeps the bar's contents below the status bar when installed.
+          paddingTop: "env(safe-area-inset-top)",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)",
         }}
       >
         <Container h="100%">
@@ -215,6 +224,21 @@ const Header: React.FC = () => {
             setHistoryOpen(true);
           }}
         />
+        {canInstall && (
+          <NavRow
+            icon={<IconDeviceMobileDown size={17} color="#8b7fd4" />}
+            label="Install app"
+            desc="Add PugInspect to your home screen"
+            onClick={() => {
+              setNavOpen(false);
+              if (needsManualInstructions) {
+                setInstallHelpOpen(true);
+                return;
+              }
+              void promptInstall();
+            }}
+          />
+        )}
         <Divider mt="auto" mb="sm" color="rgba(61, 79, 110, 0.4)" />
         <Stack gap={10} px={12}>
           <Text
@@ -249,6 +273,11 @@ const Header: React.FC = () => {
       </Drawer>
 
       <SearchHistoryDrawer opened={historyOpen} onClose={() => setHistoryOpen(false)} />
+
+      <InstallInstructionsModal
+        opened={installHelpOpen}
+        onClose={() => setInstallHelpOpen(false)}
+      />
     </>
   );
 };
