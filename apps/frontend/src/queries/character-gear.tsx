@@ -3,11 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { graphql } from "../graphql";
 import { execute } from "../api/graphqlClient";
 import { queryKeys } from "../queryKeys";
-import {
-  CharacterGearQuery,
-  CharacterGearQueryVariables,
-  Gear,
-} from "../graphql/graphql";
+import { CharacterGearQuery, CharacterGearQueryVariables } from "../graphql/graphql";
+
+/** Exactly what this query selects — narrower than the schema's Gear type, so
+    dropping a field from the document is a compile error at every consumer. */
+export type CharacterGear = NonNullable<
+  NonNullable<CharacterGearQuery["character"]>["gear"]
+>;
+export type CharacterGearItem = CharacterGear["items"][number];
 
 export const CharacterGearQueryDoc = graphql(`
   query CharacterGear($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
@@ -16,23 +19,19 @@ export const CharacterGearQueryDoc = graphql(`
         equippedItemLevel
         items {
           slot
-          slotName
           itemId
           name
           quality
           itemLevel
           iconUrl
-          enchant
           enchantId
           bonusIds
           missingEnchant
           sockets {
             filled
-            display
             itemId
           }
           tierSetId
-          tierSetName
         }
         tierSets {
           id
@@ -55,7 +54,7 @@ export const useCharacterGearQuery = ({
   useQuery({
     queryKey: queryKeys.characterGear(name, realm, region),
     retry: false,
-    queryFn: async (): Promise<Gear | undefined | null> => {
+    queryFn: async (): Promise<CharacterGear | undefined | null> => {
       const response = await execute<CharacterGearQuery, CharacterGearQueryVariables>(
         CharacterGearQueryDoc,
         {

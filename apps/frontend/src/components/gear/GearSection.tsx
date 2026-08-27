@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { Gear } from "../../graphql/graphql";
+import type { CharacterGear } from "../../queries/character-gear";
 import { getTierNumber } from "../../data/tierSets";
 import { MAX_LEVEL } from "../../generated/seasonConfig";
 import { ENCHANT_COLOR, GearItemTile, SOCKET_COLOR } from "./GearItemTile";
@@ -50,7 +50,7 @@ function loadWowheadTooltips() {
 }
 
 type GearSectionProps = {
-  gear: Gear | null | undefined;
+  gear: CharacterGear | null | undefined;
   equippedItemLevel: number | null | undefined;
   level: number | null | undefined;
   isLoading: boolean;

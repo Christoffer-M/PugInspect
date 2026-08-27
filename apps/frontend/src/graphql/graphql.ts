@@ -475,7 +475,7 @@ export type CharacterGearQueryVariables = Exact<{
 }>;
 
 
-export type CharacterGearQuery = { __typename?: 'Query', character?: { __typename?: 'Character', gear?: { __typename?: 'Gear', equippedItemLevel: number, items: Array<{ __typename?: 'GearItem', slot: string, slotName: string, itemId: number, name: string, quality: string, itemLevel: number, iconUrl?: string | null, enchant?: string | null, enchantId?: number | null, bonusIds: Array<number>, missingEnchant: boolean, tierSetId?: number | null, tierSetName?: string | null, sockets: Array<{ __typename?: 'GearSocket', filled: boolean, display?: string | null, itemId?: number | null }> }>, tierSets: Array<{ __typename?: 'TierSetSummary', id: number, name: string, equippedCount: number }> } | null } | null };
+export type CharacterGearQuery = { __typename?: 'Query', character?: { __typename?: 'Character', gear?: { __typename?: 'Gear', equippedItemLevel: number, items: Array<{ __typename?: 'GearItem', slot: string, itemId: number, name: string, quality: string, itemLevel: number, iconUrl?: string | null, enchantId?: number | null, bonusIds: Array<number>, missingEnchant: boolean, tierSetId?: number | null, sockets: Array<{ __typename?: 'GearSocket', filled: boolean, itemId?: number | null }> }>, tierSets: Array<{ __typename?: 'TierSetSummary', id: number, name: string, equippedCount: number }> } | null } | null };
 
 export type CharacterInfoQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -584,23 +584,19 @@ export const CharacterGearDocument = new TypedDocumentString(`
       equippedItemLevel
       items {
         slot
-        slotName
         itemId
         name
         quality
         itemLevel
         iconUrl
-        enchant
         enchantId
         bonusIds
         missingEnchant
         sockets {
           filled
-          display
           itemId
         }
         tierSetId
-        tierSetName
       }
       tierSets {
         id

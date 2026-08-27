@@ -1,4 +1,4 @@
-import { GearItem } from "../../graphql/graphql";
+import type { CharacterGearItem } from "../../queries/character-gear";
 import { getTierNumber } from "../../data/tierSets";
 import { getQualityColor } from "../../util/util";
 import classes from "./GearSection.module.css";
@@ -13,8 +13,12 @@ const BOTH_COLOR = "#ff8a5c";
 
 // Wowhead's tooltip script reads this off the anchor and renders the item as
 // this character actually has it. Multi-value params are colon-separated.
-const wowheadData = (item: GearItem) => {
-  const gems = item.sockets.flatMap((s) => (s.itemId != null ? [s.itemId] : []));
+export const wowheadData = (item: CharacterGearItem) => {
+  // Position matters: Wowhead maps gems onto sockets by index, so an empty
+  // socket has to be sent as 0 rather than skipped. Trailing empties are the
+  // one exception — the script trims them itself.
+  const gems = item.sockets.map((s) => s.itemId ?? 0);
+  while (gems.length > 0 && gems[gems.length - 1] === 0) gems.pop();
   return [
     `item=${item.itemId}`,
     `ilvl=${item.itemLevel}`,
@@ -24,7 +28,7 @@ const wowheadData = (item: GearItem) => {
   ].join("&");
 };
 
-export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
+export const GearItemTile: React.FC<{ item: CharacterGearItem; tierColor?: string }> = ({
   item,
   tierColor,
 }) => {
