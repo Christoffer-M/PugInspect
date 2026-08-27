@@ -102,8 +102,12 @@ export type Gear = {
 
 export type GearItem = {
   __typename?: 'GearItem';
+  /** Item modifier ids — Wowhead tooltip bonus= param */
+  bonusIds: Array<Scalars['Int']['output']>;
   /** Permanent enchant display text, null if unenchanted */
   enchant?: Maybe<Scalars['String']['output']>;
+  /** Permanent enchant id — Wowhead tooltip ench= param */
+  enchantId?: Maybe<Scalars['Int']['output']>;
   iconUrl?: Maybe<Scalars['String']['output']>;
   /** Blizzard item id — e.g. for wowhead.com/item=<id> links */
   itemId: Scalars['Int']['output'];
@@ -127,6 +131,8 @@ export type GearSocket = {
   /** Gem display text (e.g. +176 Haste) or gem name; null when empty */
   display?: Maybe<Scalars['String']['output']>;
   filled: Scalars['Boolean']['output'];
+  /** Socketed gem's item id, null when the socket is empty */
+  itemId?: Maybe<Scalars['Int']['output']>;
 };
 
 export type Guild = {

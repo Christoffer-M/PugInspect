@@ -36,6 +36,8 @@ export interface BlizzardEquippedItem {
   item_class?: BlizzardKeyedEntity;
   item_subclass?: BlizzardKeyedEntity;
   inventory_type?: BlizzardTypedValue;
+  /** Item modifiers (crafting quality, upgrade track, socket-added, …) — needed for accurate Wowhead tooltips. */
+  bonus_list?: number[];
   enchantments?: BlizzardItemEnchantment[];
   sockets?: BlizzardItemSocket[];
   set?: BlizzardItemSet;

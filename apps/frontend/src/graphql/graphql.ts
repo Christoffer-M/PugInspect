@@ -105,8 +105,12 @@ export type Gear = {
 
 export type GearItem = {
   __typename?: 'GearItem';
+  /** Item modifier ids — Wowhead tooltip bonus= param */
+  bonusIds: Array<Scalars['Int']['output']>;
   /** Permanent enchant display text, null if unenchanted */
   enchant?: Maybe<Scalars['String']['output']>;
+  /** Permanent enchant id — Wowhead tooltip ench= param */
+  enchantId?: Maybe<Scalars['Int']['output']>;
   iconUrl?: Maybe<Scalars['String']['output']>;
   /** Blizzard item id — e.g. for wowhead.com/item=<id> links */
   itemId: Scalars['Int']['output'];
@@ -130,6 +134,8 @@ export type GearSocket = {
   /** Gem display text (e.g. +176 Haste) or gem name; null when empty */
   display?: Maybe<Scalars['String']['output']>;
   filled: Scalars['Boolean']['output'];
+  /** Socketed gem's item id, null when the socket is empty */
+  itemId?: Maybe<Scalars['Int']['output']>;
 };
 
 export type Guild = {
@@ -469,7 +475,7 @@ export type CharacterGearQueryVariables = Exact<{
 }>;
 
 
-export type CharacterGearQuery = { __typename?: 'Query', character?: { __typename?: 'Character', gear?: { __typename?: 'Gear', equippedItemLevel: number, items: Array<{ __typename?: 'GearItem', slot: string, slotName: string, itemId: number, name: string, quality: string, itemLevel: number, iconUrl?: string | null, enchant?: string | null, missingEnchant: boolean, tierSetId?: number | null, tierSetName?: string | null, sockets: Array<{ __typename?: 'GearSocket', filled: boolean, display?: string | null }> }>, tierSets: Array<{ __typename?: 'TierSetSummary', id: number, name: string, equippedCount: number }> } | null } | null };
+export type CharacterGearQuery = { __typename?: 'Query', character?: { __typename?: 'Character', gear?: { __typename?: 'Gear', equippedItemLevel: number, items: Array<{ __typename?: 'GearItem', slot: string, itemId: number, name: string, quality: string, itemLevel: number, iconUrl?: string | null, enchantId?: number | null, bonusIds: Array<number>, missingEnchant: boolean, tierSetId?: number | null, sockets: Array<{ __typename?: 'GearSocket', filled: boolean, itemId?: number | null }> }>, tierSets: Array<{ __typename?: 'TierSetSummary', id: number, name: string, equippedCount: number }> } | null } | null };
 
 export type CharacterInfoQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -578,20 +584,19 @@ export const CharacterGearDocument = new TypedDocumentString(`
       equippedItemLevel
       items {
         slot
-        slotName
         itemId
         name
         quality
         itemLevel
         iconUrl
-        enchant
+        enchantId
+        bonusIds
         missingEnchant
         sockets {
           filled
-          display
+          itemId
         }
         tierSetId
-        tierSetName
       }
       tierSets {
         id

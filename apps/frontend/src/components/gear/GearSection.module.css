@@ -272,39 +272,6 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* Tooltip content */
-.tooltipLine {
-  font-size: 11px;
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tooltipDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.tooltipDiamond {
-  width: 8px;
-  height: 8px;
-  transform: rotate(45deg);
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.tooltipSquare {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
 @media (max-width: 700px) {
   .strip {
     gap: 14px;

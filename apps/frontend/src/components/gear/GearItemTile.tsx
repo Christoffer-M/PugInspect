@@ -1,5 +1,4 @@
-import { HoverCard, Text } from "@mantine/core";
-import { GearItem } from "../../graphql/graphql";
+import type { CharacterGearItem } from "../../queries/character-gear";
 import { getTierNumber } from "../../data/tierSets";
 import { getQualityColor } from "../../util/util";
 import classes from "./GearSection.module.css";
@@ -12,7 +11,24 @@ export const ENCHANT_COLOR = "#f0b429";
 export const SOCKET_COLOR = "#e85a74";
 const BOTH_COLOR = "#ff8a5c";
 
-export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
+// Wowhead's tooltip script reads this off the anchor and renders the item as
+// this character actually has it. Multi-value params are colon-separated.
+export const wowheadData = (item: CharacterGearItem) => {
+  // Position matters: Wowhead maps gems onto sockets by index, so an empty
+  // socket has to be sent as 0 rather than skipped. Trailing empties are the
+  // one exception — the script trims them itself.
+  const gems = item.sockets.map((s) => s.itemId ?? 0);
+  while (gems.length > 0 && gems[gems.length - 1] === 0) gems.pop();
+  return [
+    `item=${item.itemId}`,
+    `ilvl=${item.itemLevel}`,
+    ...(item.bonusIds.length > 0 ? [`bonus=${item.bonusIds.join(":")}`] : []),
+    ...(item.enchantId != null ? [`ench=${item.enchantId}`] : []),
+    ...(gems.length > 0 ? [`gems=${gems.join(":")}`] : []),
+  ].join("&");
+};
+
+export const GearItemTile: React.FC<{ item: CharacterGearItem; tierColor?: string }> = ({
   item,
   tierColor,
 }) => {
@@ -33,94 +49,44 @@ export const GearItemTile: React.FC<{ item: GearItem; tierColor?: string }> = ({
       : null;
 
   return (
-    <HoverCard width={260} shadow="md" withArrow openDelay={150} closeDelay={100}>
-      <HoverCard.Target>
-        <a
-          className={classes.itemCol}
-          href={`https://www.wowhead.com/item=${item.itemId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`${item.name} on Wowhead`}
-        >
-          <div
-            className={classes.tile}
-            style={{
-              borderColor: flagColor ?? qualityColor,
-              boxShadow: flagColor
-                ? `inset 0 0 0 1px rgba(0,0,0,0.45), 0 0 0 2px ${flagColor}55, 0 1px 3px rgba(0,0,0,0.5)`
-                : undefined,
-            }}
-          >
-            {item.iconUrl && (
-              <img src={item.iconUrl} alt={item.name} className={classes.tileIcon} loading="lazy" />
-            )}
-            {tierNumber != null && (
-              <div className={classes.tierMarker} style={{ background: tierColor }}>
-                T
-              </div>
-            )}
-          </div>
-          {/* Issue bar sits on the card background, clear of every icon —
-              amber = missing enchant, rose = empty socket, both = two halves. */}
-          <div className={classes.flagBar}>
-            {item.missingEnchant && (
-              <span style={{ background: ENCHANT_COLOR }} />
-            )}
-            {emptySockets > 0 && <span style={{ background: SOCKET_COLOR }} />}
-          </div>
-          <div
-            className={classes.ilvlBadge}
-            style={{ background: qualityColor, color: badgeTextColor }}
-          >
-            {item.itemLevel}
-          </div>
-        </a>
-      </HoverCard.Target>
-      <HoverCard.Dropdown p="sm">
-        <Text size="sm" fw={700} ff="heading" style={{ color: qualityColor }}>
-          {item.name}
-        </Text>
-        <Text size="xs" c="dimmed" mt={2}>
-          {item.slotName} · Item Level <b>{item.itemLevel}</b>
-        </Text>
+    <a
+      className={classes.itemCol}
+      href={`https://www.wowhead.com/item=${item.itemId}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${item.name} on Wowhead`}
+      data-wowhead={wowheadData(item)}
+    >
+      <div
+        className={classes.tile}
+        style={{
+          borderColor: flagColor ?? qualityColor,
+          boxShadow: flagColor
+            ? `inset 0 0 0 1px rgba(0,0,0,0.45), 0 0 0 2px ${flagColor}55, 0 1px 3px rgba(0,0,0,0.5)`
+            : undefined,
+        }}
+      >
+        {item.iconUrl && (
+          <img src={item.iconUrl} alt={item.name} className={classes.tileIcon} loading="lazy" />
+        )}
         {tierNumber != null && (
-          <div className={classes.tooltipLine} style={{ color: tierColor }}>
-            <span className={classes.tooltipSquare} style={{ background: tierColor }} />
-            Tier set piece · T{tierNumber} · {item.tierSetName}
+          <div className={classes.tierMarker} style={{ background: tierColor }}>
+            T
           </div>
         )}
-        {item.enchant != null && (
-          <div className={classes.tooltipLine} style={{ color: "#4d93ff" }}>
-            <span className={classes.tooltipDot} style={{ background: "#4d93ff" }} />
-            {item.enchant}
-          </div>
-        )}
-        {item.missingEnchant && (
-          <div className={classes.tooltipLine} style={{ color: ENCHANT_COLOR }}>
-            <span
-              className={classes.tooltipDot}
-              style={{ background: "#1a1206", border: `1.5px solid ${ENCHANT_COLOR}` }}
-            />
-            Missing enchant
-          </div>
-        )}
-        {item.sockets.map((socket, i) =>
-          socket.filled ? (
-            <div key={i} className={classes.tooltipLine} style={{ color: "#46d160" }}>
-              <span className={classes.tooltipDiamond} style={{ background: "#46d160" }} />
-              {socket.display ?? "Gem socketed"}
-            </div>
-          ) : (
-            <div key={i} className={classes.tooltipLine} style={{ color: SOCKET_COLOR }}>
-              <span
-                className={classes.tooltipDiamond}
-                style={{ background: "#1a0d0d", border: `1.5px solid ${SOCKET_COLOR}` }}
-              />
-              Empty socket
-            </div>
-          )
-        )}
-      </HoverCard.Dropdown>
-    </HoverCard>
+      </div>
+      {/* Issue bar sits on the card background, clear of every icon —
+          amber = missing enchant, rose = empty socket, both = two halves. */}
+      <div className={classes.flagBar}>
+        {item.missingEnchant && <span style={{ background: ENCHANT_COLOR }} />}
+        {emptySockets > 0 && <span style={{ background: SOCKET_COLOR }} />}
+      </div>
+      <div
+        className={classes.ilvlBadge}
+        style={{ background: qualityColor, color: badgeTextColor }}
+      >
+        {item.itemLevel}
+      </div>
+    </a>
   );
 };

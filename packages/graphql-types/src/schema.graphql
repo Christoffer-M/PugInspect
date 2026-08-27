@@ -72,8 +72,12 @@ type Gear {
 }
 
 type GearItem {
+  """Item modifier ids — Wowhead tooltip bonus= param"""
+  bonusIds: [Int!]!
   """Permanent enchant display text, null if unenchanted"""
   enchant: String
+  """Permanent enchant id — Wowhead tooltip ench= param"""
+  enchantId: Int
   iconUrl: String
   """Blizzard item id — e.g. for wowhead.com/item=<id> links"""
   itemId: Int!
@@ -98,6 +102,8 @@ type GearSocket {
   """Gem display text (e.g. +176 Haste) or gem name; null when empty"""
   display: String
   filled: Boolean!
+  """Socketed gem's item id, null when the socket is empty"""
+  itemId: Int
 }
 
 type Guild {

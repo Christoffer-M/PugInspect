@@ -8,3 +8,11 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Wowhead's tooltip inlines crafting-quality icons as bare <img> tags with no
+   width — they render at the texture's natural 30x34, dwarfing the 12px text.
+   The tooltip is appended to <body>, so this has to be global. */
+.wowhead-tooltip img[src*="TextureAtlas"] {
+  height: 18px;
+  width: auto;
+}
