@@ -170,8 +170,8 @@ describe("mapGear", () => {
     );
 
     expect(gear.items[0]!.sockets).toEqual([
-      { filled: true, display: "+176 Haste" },
-      { filled: false, display: null },
+      { filled: true, display: "+176 Haste", itemId: 213746 },
+      { filled: false, display: null, itemId: null },
     ]);
   });
 

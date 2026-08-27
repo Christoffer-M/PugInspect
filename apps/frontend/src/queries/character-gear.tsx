@@ -23,10 +23,13 @@ export const CharacterGearQueryDoc = graphql(`
           itemLevel
           iconUrl
           enchant
+          enchantId
+          bonusIds
           missingEnchant
           sockets {
             filled
             display
+            itemId
           }
           tierSetId
           tierSetName

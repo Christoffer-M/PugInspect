@@ -230,6 +230,10 @@ export const characterTypedefs = gql`
     iconUrl: String
     "Permanent enchant display text, null if unenchanted"
     enchant: String
+    "Permanent enchant id — Wowhead tooltip ench= param"
+    enchantId: Int
+    "Item modifier ids — Wowhead tooltip bonus= param"
+    bonusIds: [Int!]!
     "True when the slot is enchantable this season but has no permanent enchant"
     missingEnchant: Boolean!
     sockets: [GearSocket!]!
@@ -239,6 +243,8 @@ export const characterTypedefs = gql`
 
   type GearSocket {
     filled: Boolean!
+    "Socketed gem's item id, null when the socket is empty"
+    itemId: Int
     "Gem display text (e.g. +176 Haste) or gem name; null when empty"
     display: String
   }

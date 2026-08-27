@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Button,
   Collapse,
@@ -26,6 +27,28 @@ const LEGEND = [
   ["empty socket", SOCKET_COLOR],
 ] as const;
 
+// ponytail: single consumer, so the loader lives here rather than in a hook.
+// The inline config a <script> tag would need is blocked by our CSP, so
+// whTooltips is set from here instead.
+const TOOLTIP_SRC = "https://wow.zamimg.com/js/tooltips.js";
+
+declare global {
+  interface Window {
+    whTooltips?: Record<string, boolean>;
+    $WowheadPower?: { refreshLinks: () => void };
+  }
+}
+
+function loadWowheadTooltips() {
+  if (document.querySelector(`script[src="${TOOLTIP_SRC}"]`)) return;
+  // Leave our own link text, colors and icons alone — we style the tiles.
+  window.whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };
+  const script = document.createElement("script");
+  script.src = TOOLTIP_SRC;
+  script.async = true;
+  document.head.appendChild(script);
+}
+
 type GearSectionProps = {
   gear: Gear | null | undefined;
   equippedItemLevel: number | null | undefined;
@@ -44,6 +67,14 @@ export const GearSection: React.FC<GearSectionProps> = ({
   isError,
 }) => {
   const [opened, { toggle }] = useDisclosure(false);
+
+  // Wowhead's script scans the DOM once on load; in an SPA every later render
+  // needs an explicit refresh. Only pulled in when the grid is actually shown.
+  useEffect(() => {
+    if (!opened) return;
+    loadWowheadTooltips();
+    window.$WowheadPower?.refreshLinks();
+  }, [opened, gear]);
 
   // Prefer the value computed from the equipment snapshot — the profile's
   // equippedItemLevel can lag gear changes by up to 24h of cache.

@@ -53,10 +53,16 @@ export function mapGear(equipment: BlizzardCharacterEquipment): Gear {
         itemLevel: it.level.value,
         iconUrl: it.iconUrl ?? null,
         enchant: permanentEnchant ? stripUiTags(permanentEnchant.display_string) : null,
+        enchantId: permanentEnchant?.enchantment_id ?? null,
+        bonusIds: it.bonus_list ?? [],
         missingEnchant: isEnchantable(it) && !permanentEnchant,
         sockets: (it.sockets ?? []).map((s) => {
           const display = s.display_string ?? s.item?.name ?? null;
-          return { filled: !!s.item, display: display ? stripUiTags(display) : null };
+          return {
+            filled: !!s.item,
+            display: display ? stripUiTags(display) : null,
+            itemId: s.item?.id ?? null,
+          };
         }),
         tierSetId: it.set?.item_set.id ?? null,
         tierSetName: it.set?.item_set.name ?? null,
