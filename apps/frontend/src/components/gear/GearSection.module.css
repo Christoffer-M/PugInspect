@@ -82,6 +82,51 @@
   font-weight: 600;
 }
 
+/* Gear-check chips — count plus the actual slot names, so the fix list is
+   readable without expanding the item grid. */
+.gearCheckChips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 5px 10px 5px 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.chipPip,
+.chipPipDiamond {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: #1a1204;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+.chipPip {
+  border-radius: 5px;
+}
+
+.chipPipDiamond {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.chipLabel {
+  flex: 0 0 auto;
+}
+
 .gearCheckIcon {
   font-size: 13px;
   line-height: 1;
@@ -107,11 +152,50 @@
   padding-top: 16px;
 }
 
-/* Expanded icon grid. Extra top padding because the tiles' corner markers
-   overflow 5px above the tile tops. */
-.grid {
-  padding-top: 24px;
+/* Legend for the issue bars, above the expanded grid. */
+.legend {
   border-top: 1px solid rgba(61, 79, 110, 0.28);
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 16px;
+  font-size: 11.5px;
+  color: var(--mantine-color-dark-2);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legendBar {
+  display: flex;
+  gap: 2px;
+  width: 22px;
+}
+
+.legendBar > span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* Expanded icon grid. Extra top padding because the tiles' tier markers
+   overflow 5px above the tile tops. */
+/* Nothing flagged: the legend is gone, so the grid carries the divider and the
+   per-item bars collapse out of the column. */
+.gridPlain {
+  border-top: 1px solid rgba(61, 79, 110, 0.28);
+}
+
+.gridPlain .flagBar {
+  display: none;
+}
+
+.grid {
+  padding-top: 18px;
   display: flex;
   flex-wrap: wrap;
   gap: 16px 13px;
@@ -122,7 +206,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   width: 46px;
   /* The column is an <a> to Wowhead — suppress link styling on the badge text */
   text-decoration: none;
@@ -166,50 +250,16 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
-.indicators {
-  position: absolute;
-  top: -5px;
-  right: -5px;
+.flagBar {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  align-items: center;
+  gap: 2px;
+  width: 46px;
+  height: 4px;
 }
 
-.enchantDot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #4d93ff;
-  border: 1.5px solid #060b16;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-.missingEnchantDot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #1a1206;
-  border: 1.5px solid #f0983d;
-  box-shadow: 0 0 0 1.5px #060b16, 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-.gemDiamond {
-  width: 10px;
-  height: 10px;
-  background: #46d160;
-  border: 1.5px solid #060b16;
-  transform: rotate(45deg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-.emptySocketDiamond {
-  width: 10px;
-  height: 10px;
-  background: #1a0d0d;
-  border: 1.5px solid #f56b6b;
-  transform: rotate(45deg);
-  box-shadow: 0 0 0 1.5px #060b16, 0 1px 2px rgba(0, 0, 0, 0.6);
+.flagBar > span {
+  flex: 1;
+  border-radius: 2px;
 }
 
 .ilvlBadge {
@@ -262,5 +312,27 @@
 
   .statDivided {
     padding-left: 14px;
+  }
+
+  /* Chips get their own full-width rows so they stay readable. */
+  .gearCheckStat {
+    flex-basis: 100%;
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .gearCheckChips {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .chip {
+    padding: 8px 10px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    justify-items: center;
   }
 }
