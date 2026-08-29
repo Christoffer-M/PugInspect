@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+  Anchor,
   Box,
   Button,
   Container,
@@ -21,6 +22,8 @@ import { getRaidDisplayName, DEFAULT_RAID } from "../data/raidZones";
 import classes from "../components/roster/Roster.module.css";
 
 const MAX_CHARACTERS = 30;
+// Same destination as the footer's "Get the addon" link.
+const ADDON_URL = "https://www.curseforge.com/wow/addons/puginspect";
 
 /** Class/role hints from the export string, stashed for the results page so
  *  pending cards render in class colors before the lookup resolves. */
@@ -113,9 +116,12 @@ const RosterPaste: React.FC = () => {
                 </Text>
               </Group>
               <Text size="13px" c="dimmed" maw={720}>
-                Paste a roster export from the PugInspect addon and every character gets looked up
-                at once - item level, RIO score, raid progress and log percentiles for the whole
-                team on one screen.
+                Paste a roster export from the{" "}
+                <Anchor size="13px" href={ADDON_URL} target="_blank" rel="noopener noreferrer">
+                  PugInspect addon
+                </Anchor>{" "}
+                and every character gets looked up at once - item level, RIO score, raid progress
+                and log percentiles for the whole team on one screen.
               </Text>
             </Stack>
           </Group>
@@ -224,7 +230,11 @@ const RosterPaste: React.FC = () => {
           <Group gap={8} c="dimmed">
             <IconUsersGroup size={16} />
             <Text size="12.5px" c="dimmed">
-              Get the export string with the PugInspect addon - type{" "}
+              Get the export string with the{" "}
+              <Anchor size="12.5px" href={ADDON_URL} target="_blank" rel="noopener noreferrer">
+                PugInspect addon
+              </Anchor>{" "}
+              - type{" "}
               <Text component="span" ff="monospace" size="12px" c="bright">
                 /pi export
               </Text>{" "}
