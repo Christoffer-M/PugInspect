@@ -132,13 +132,24 @@
   color: #ff8a3d;
 }
 
-/* Summary stat bar reuses the card stat cells at a slightly wider rhythm */
+/* Summary stat bar. Every cell carries a left divider and equal padding; the
+ * row is pulled left by exactly (padding + border) and the clip wrapper hides
+ * whatever sticks out — so the leading divider of EVERY row (not just the
+ * first) is clipped and wrapped rows stay flush with the row above. */
 .summaryBar {
+  padding: 14px 16px;
+}
+
+.summaryClip {
+  overflow: hidden;
+}
+
+.summaryRow {
   display: flex;
   align-items: stretch;
   flex-wrap: wrap;
   gap: 14px 0;
-  padding: 14px 16px;
+  margin-left: -19px;
 }
 
 .summaryCell {
@@ -147,13 +158,7 @@
   gap: 3px;
   padding: 0 18px;
   min-width: 96px;
-}
-
-.summaryCell:first-child {
-  padding-left: 0;
-}
-
-.summaryCell + .summaryCell {
+  flex: 1;
   border-left: 1px solid rgba(61, 79, 110, 0.28);
 }
 

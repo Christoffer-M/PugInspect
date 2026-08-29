@@ -76,6 +76,8 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
   return (
     <Paper withBorder radius="md" p={0}>
       <div className={classes.summaryBar}>
+        <div className={classes.summaryClip}>
+          <div className={classes.summaryRow}>
         <div className={classes.summaryCell}>
           <span className={classes.summaryLabel}>Members</span>
           <span className={classes.summaryValue} style={{ color: "#e6ebf5" }}>
@@ -155,6 +157,8 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
               </div>
             ))}
           </Group>
+        </div>
+          </div>
         </div>
       </div>
       {loading && (
