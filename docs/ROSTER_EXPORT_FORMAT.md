@@ -3,7 +3,7 @@
 The contract between the PugInspect in-game addon (lives in its own repo, distributed on
 CurseForge) and the web app's Roster Check page (`/roster`). The two implementations:
 
-- **Encode (addon)**: [`docs/addon/RosterExport.lua`](addon/RosterExport.lua) - reference module, drop into the addon.
+- **Encode (addon)**: lives in the addon repo - LibDeflate `CompressDeflate` + `EncodeForPrint` over the payload below.
 - **Decode (web)**: `apps/frontend/src/util/rosterImport.ts` - tested against a Node mirror of the encode pipeline in `rosterImport.test.ts`.
 
 ## Format
