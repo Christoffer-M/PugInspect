@@ -28,6 +28,7 @@ import {
   useRoster,
   useRosterChunks,
   useUpdateRoster,
+  type RosterCharacterKey,
   type RosterEntry,
 } from "../queries/roster";
 import { useQueryClient } from "@tanstack/react-query";
@@ -127,6 +128,21 @@ const RosterResults: React.FC = () => {
   const notFoundCount = resolvedEntries.filter((e) => e.notFound).length;
   const failedChunks = chunkResults.filter((r) => r.isError);
 
+  /** Pre-fill the chunk cache for an edited character list from entries we
+   *  already have, so an edit re-renders in place instead of dropping every
+   *  card back to a skeleton (and refetching data that can't have changed). */
+  const seedChunkCache = (next: RosterCharacterKey[]) => {
+    const byKey = new Map(characters.map((c, i) => [`${c.name}:${c.realm}`, entriesByIndex[i]]));
+    for (let i = 0; i < next.length; i += ROSTER_CHUNK_SIZE) {
+      const chunk = next.slice(i, i + ROSTER_CHUNK_SIZE);
+      const entries = chunk.map((c) => byKey.get(`${c.name}:${c.realm}`));
+      // Only seed fully-known chunks — an added member still needs a real fetch.
+      if (entries.every((e): e is RosterEntry => e !== undefined)) {
+        queryClient.setQueryData(queryKeys.rosterChunk(region, difficulty, chunk), entries);
+      }
+    }
+  };
+
   /** With the creator's edit secret the slug is updated in place; anyone else
    *  forks the roster into a new slug (and becomes owner of the fork). */
   const editRoster = (next: { name: string; realm: string }[]) => {
@@ -143,8 +159,10 @@ const RosterResults: React.FC = () => {
       updateRoster.mutate(
         { region, slug, editSecret: secret, characters: next },
         {
-          onSuccess: (updated) =>
-            queryClient.setQueryData(queryKeys.roster(region, slug), updated),
+          onSuccess: (updated) => {
+            seedChunkCache(updated.characters);
+            queryClient.setQueryData(queryKeys.roster(region, slug), updated);
+          },
           // Secret rejected (e.g. copied URL to another browser with a stale
           // secret): fall back to forking so the edit still lands.
           onError: () => forkRoster(next),
@@ -161,10 +179,20 @@ const RosterResults: React.FC = () => {
       {
         onSuccess: (newRoster) => {
           storeRosterSecret(newRoster.region, newRoster.slug, newRoster.editSecret);
+          // Seed the new slug's caches so the swap renders in place — without
+          // this the page unmounts into the full-screen loader and the
+          // browser loses the scroll position.
+          seedChunkCache(newRoster.characters);
+          queryClient.setQueryData(queryKeys.roster(newRoster.region, newRoster.slug), {
+            slug: newRoster.slug,
+            region: newRoster.region,
+            characters: newRoster.characters,
+          });
           void navigate({
             to: "/roster/$region/$slug",
             params: { region: newRoster.region, slug: newRoster.slug },
             replace: true,
+            resetScroll: false,
           });
         },
       }
