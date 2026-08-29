@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Center,
@@ -12,7 +13,6 @@ import {
   SegmentedControl,
   Stack,
   Text,
-  TextInput,
   Title,
   Tooltip,
 } from "@mantine/core";
@@ -37,7 +37,8 @@ import { Difficulty, RoleType } from "../graphql/graphql";
 import { getRaidDisplayName, DEFAULT_RAID, RAIDS } from "../data/raidZones";
 import { parseNameRealm, type RosterImportCharacter } from "../util/rosterImport";
 import { normalizeRealm, parseCharacterUrl } from "../util/util";
-import { useWindowEvent } from "@mantine/hooks";
+import { useDebouncedValue, useWindowEvent } from "@mantine/hooks";
+import { useCharacterSearchQuery } from "../queries/character-search";
 import classes from "../components/roster/Roster.module.css";
 
 const MAX_CHARACTERS = 30;
@@ -49,21 +50,31 @@ const DIFFICULTY_OPTIONS = [
 ];
 
 /** Owns the input state so typing re-renders only this control, not the
- *  30-card grid behind it. */
+ *  30-card grid behind it. Suggestions come from the same characterSuggestions
+ *  lookup as the main search, scoped to the roster's region. */
 const AddMemberControl: React.FC<{
+  region: string;
   isOwner: boolean;
   full: boolean;
   slotsText: string;
   loading: boolean;
   onAdd: (c: { name: string; realm: string }) => void;
-}> = ({ isOwner, full, slotsText, loading, onAdd }) => {
+}> = ({ region, isOwner, full, slotsText, loading, onAdd }) => {
   const [value, setValue] = useState("");
-  const add = () => {
+  const [debounced] = useDebouncedValue(value, 300);
+  const { data: suggestions = [], isLoading: isSearching } = useCharacterSearchQuery(
+    debounced,
+    region.toUpperCase(),
+    !isOwner || full
+  );
+  const add = (input: string) => {
     // Same parser as the export-string decoder, so a manually typed
     // "Bob-TarrenMill" or a Russian realm slugs identically to a paste.
-    const parsed = parseNameRealm(value);
+    const parsed = parseNameRealm(input);
     if (!parsed) return;
-    setValue("");
+    // Deferred: Mantine writes the picked option into the input after
+    // onOptionSubmit, which would overwrite a synchronous clear.
+    setTimeout(() => setValue(""), 0);
     onAdd(parsed);
   };
   return (
@@ -73,19 +84,29 @@ const AddMemberControl: React.FC<{
       disabled={isOwner}
     >
       <Group gap={8}>
-        <TextInput
+        <Autocomplete
           size="xs"
-          w={180}
+          w={220}
+          limit={10}
           placeholder="Add Name-Realm"
+          data={suggestions.map((r) => `${r.name}-${r.realm}`)}
           value={value}
-          onChange={(e) => setValue(e.currentTarget.value)}
+          onChange={setValue}
+          onOptionSubmit={add}
           onKeyDown={(e) => {
-            if (e.key === "Enter") add();
+            // Mirrors the main search input: Enter submits the raw text only
+            // when there are no suggestions to pick from.
+            if (e.key === "Enter" && suggestions.length === 0) {
+              e.preventDefault();
+              add(value);
+            }
           }}
           leftSection={<IconUserPlus size={14} />}
+          rightSection={isSearching ? <Loader size="xs" /> : null}
           disabled={!isOwner || full}
+          comboboxProps={{ transitionProps: { transition: "pop", duration: 200 } }}
         />
-        <Button size="xs" variant="light" onClick={add} disabled={!isOwner} loading={loading}>
+        <Button size="xs" variant="light" onClick={() => add(value)} disabled={!isOwner} loading={loading}>
           Add
         </Button>
         <Text size="11.5px" c="dimmed">
@@ -427,6 +448,7 @@ const RosterResults: React.FC = () => {
               />
             </Group>
             <AddMemberControl
+              region={region}
               isOwner={isOwner}
               full={characters.length >= MAX_CHARACTERS}
               slotsText={`${characters.length} / ${MAX_CHARACTERS} slots`}
