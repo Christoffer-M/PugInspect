@@ -201,3 +201,109 @@
   font-size: 11px;
   color: var(--mantine-color-dark-2);
 }
+
+/* Compact rows view. The grid template is shared by the header, so columns
+ * line up without a real <table>; the whole thing scrolls sideways below
+ * the width where the numeric columns stop fitting. */
+.rowsScroll {
+  overflow-x: auto;
+}
+
+.rowsInner {
+  min-width: 900px;
+}
+
+.rowGrid {
+  display: grid;
+  grid-template-columns: 1fr 88px 92px 86px 148px 148px 28px;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 16px;
+}
+
+.rowsHeader {
+  border-bottom: 1px solid rgba(61, 79, 110, 0.4);
+  padding: 10px 16px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px;
+  background: rgba(8, 14, 28, 0.45);
+  border-bottom: 1px solid rgba(61, 79, 110, 0.25);
+}
+
+.groupDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot-color);
+  flex-shrink: 0;
+}
+
+.groupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dark-2);
+}
+
+.groupCount {
+  font-family: var(--mantine-font-family-headings);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mantine-color-dark-3);
+}
+
+.row {
+  border-bottom: 1px solid rgba(61, 79, 110, 0.18);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.row:hover {
+  background-color: rgba(139, 127, 212, 0.07);
+}
+
+.rowNotFound {
+  cursor: default;
+}
+
+.rowNotFound:hover {
+  background-color: transparent;
+}
+
+.rowIconRing {
+  border-radius: 50%;
+  border: 2px solid var(--class-color, rgba(61, 79, 110, 0.8));
+  padding: 1px;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.rowName {
+  font-family: var(--mantine-font-family-headings);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--class-color, var(--mantine-color-text));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowValue {
+  font-family: var(--mantine-font-family-headings);
+  font-size: 14.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rowParse {
+  font-size: 14.5px;
+  font-family: var(--mantine-font-family-headings);
+}

@@ -19,6 +19,7 @@ import {
 import { IconAlertTriangle, IconCheck, IconLink, IconUserPlus } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
 import { RosterCard, type RosterCardHint } from "../components/roster/RosterCard";
+import { RosterRows } from "../components/roster/RosterRows";
 import { RosterSummary } from "../components/roster/RosterSummary";
 import {
   clearRosterSecret,
@@ -37,11 +38,16 @@ import { Difficulty, RoleType } from "../graphql/graphql";
 import { getRaidDisplayName, DEFAULT_RAID, RAIDS } from "../data/raidZones";
 import { parseNameRealm, type RosterImportCharacter } from "../util/rosterImport";
 import { normalizeRealm, parseCharacterUrl } from "../util/util";
-import { useDebouncedValue, useWindowEvent } from "@mantine/hooks";
+import { useDebouncedValue, useLocalStorage, useWindowEvent } from "@mantine/hooks";
 import { useCharacterSearchQuery } from "../queries/character-search";
 import classes from "../components/roster/Roster.module.css";
 
 const MAX_CHARACTERS = 30;
+
+const VIEW_OPTIONS = [
+  { value: "cards", label: "Cards" },
+  { value: "rows", label: "Compact rows" },
+];
 
 const DIFFICULTY_OPTIONS = [
   { value: Difficulty.Normal, label: "Normal" },
@@ -135,6 +141,12 @@ const RosterResults: React.FC = () => {
   const updateRoster = useUpdateRoster();
   const queryClient = useQueryClient();
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.Heroic);
+  // Read synchronously - the deferred default would flash the card grid.
+  const [view, setView] = useLocalStorage<"cards" | "rows">({
+    key: "roster-view",
+    defaultValue: "cards",
+    getInitialValueInEffect: false,
+  });
   const hints = useMemo(() => readHints(slug), [slug]);
   // Owner = whoever holds this slug's edit secret. State (not a memo) so a
   // server-rejected secret can drop the page to read-only immediately.
@@ -266,6 +278,14 @@ const RosterResults: React.FC = () => {
           });
         },
       }
+    );
+  };
+
+  const removeCharacter = (c: RosterCharacterKey) => {
+    editRoster(
+      characters
+        .filter((x) => !(x.name === c.name && x.realm === c.realm))
+        .map(({ name, realm }) => ({ name, realm }))
     );
   };
 
@@ -447,6 +467,17 @@ const RosterResults: React.FC = () => {
                 data={DIFFICULTY_OPTIONS}
               />
             </Group>
+            <Group gap={10}>
+              <Text size="10.5px" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.1em" }}>
+                View
+              </Text>
+              <SegmentedControl
+                size="xs"
+                value={view}
+                onChange={(value) => setView(value as "cards" | "rows")}
+                data={VIEW_OPTIONS}
+              />
+            </Group>
             <AddMemberControl
               region={region}
               isOwner={isOwner}
@@ -478,29 +509,30 @@ const RosterResults: React.FC = () => {
             </Alert>
           )}
 
-          <div className={classes.grid}>
-            {sortedCards.map(({ character, entry, hint }) => (
-              <RosterCard
-                key={`${character.name}-${character.realm}`}
-                region={region}
-                hint={hint}
-                entry={entry}
-                difficulty={difficulty}
-                onRemove={
-                  isOwner
-                    ? () =>
-                        editRoster(
-                          characters
-                            .filter(
-                              (c) => !(c.name === character.name && c.realm === character.realm)
-                            )
-                            .map(({ name, realm }) => ({ name, realm }))
-                        )
-                    : undefined
-                }
-              />
-            ))}
-          </div>
+          {view === "cards" ? (
+            <div className={classes.grid}>
+              {sortedCards.map(({ character, entry, hint }) => (
+                <RosterCard
+                  key={`${character.name}-${character.realm}`}
+                  region={region}
+                  hint={hint}
+                  entry={entry}
+                  difficulty={difficulty}
+                  onRemove={isOwner ? () => removeCharacter(character) : undefined}
+                />
+              ))}
+            </div>
+          ) : (
+            <RosterRows
+              region={region}
+              difficulty={difficulty}
+              items={sortedCards.map(({ character, entry, hint }) => ({
+                hint,
+                entry,
+                onRemove: isOwner ? () => removeCharacter(character) : undefined,
+              }))}
+            />
+          )}
 
           <Text size="11.5px" c="dimmed" mt={2}>
             Percentiles are all-star ranks for {difficulty} {getRaidDisplayName(DEFAULT_RAID)} ·
