@@ -23,14 +23,13 @@ import { RosterSummary } from "../components/roster/RosterSummary";
 import {
   readRosterSecret,
   ROSTER_CHUNK_SIZE,
-  storeRosterSecret,
-  useCreateRoster,
   useRoster,
   useRosterChunks,
   useUpdateRoster,
   type RosterCharacterKey,
   type RosterEntry,
 } from "../queries/roster";
+import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../queryKeys";
 import { Difficulty } from "../graphql/graphql";
@@ -62,7 +61,6 @@ const RosterResults: React.FC = () => {
   const { region, slug } = Route.useParams();
   const navigate = useNavigate();
   const roster = useRoster(region, slug);
-  const createRoster = useCreateRoster();
   const updateRoster = useUpdateRoster();
   const queryClient = useQueryClient();
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.Heroic);
@@ -143,58 +141,33 @@ const RosterResults: React.FC = () => {
     }
   };
 
-  /** With the creator's edit secret the slug is updated in place; anyone else
-   *  forks the roster into a new slug (and becomes owner of the fork). */
+  /** Rosters are read-only for everyone except the creator: edits require the
+   *  slug's edit secret from localStorage. */
   const editRoster = (next: { name: string; realm: string }[]) => {
+    const secret = readRosterSecret(region, slug);
     if (
+      !secret ||
       next.length === 0 ||
       next.length > MAX_CHARACTERS ||
-      createRoster.isPending ||
       updateRoster.isPending
     ) {
       return;
     }
-    const secret = readRosterSecret(region, slug);
-    if (secret) {
-      updateRoster.mutate(
-        { region, slug, editSecret: secret, characters: next },
-        {
-          onSuccess: (updated) => {
-            seedChunkCache(updated.characters);
-            queryClient.setQueryData(queryKeys.roster(region, slug), updated);
-          },
-          // Secret rejected (e.g. copied URL to another browser with a stale
-          // secret): fall back to forking so the edit still lands.
-          onError: () => forkRoster(next),
-        }
-      );
-    } else {
-      forkRoster(next);
-    }
-  };
-
-  const forkRoster = (next: { name: string; realm: string }[]) => {
-    createRoster.mutate(
-      { region, characters: next },
+    updateRoster.mutate(
+      { region, slug, editSecret: secret, characters: next },
       {
-        onSuccess: (newRoster) => {
-          storeRosterSecret(newRoster.region, newRoster.slug, newRoster.editSecret);
-          // Seed the new slug's caches so the swap renders in place — without
-          // this the page unmounts into the full-screen loader and the
-          // browser loses the scroll position.
-          seedChunkCache(newRoster.characters);
-          queryClient.setQueryData(queryKeys.roster(newRoster.region, newRoster.slug), {
-            slug: newRoster.slug,
-            region: newRoster.region,
-            characters: newRoster.characters,
-          });
-          void navigate({
-            to: "/roster/$region/$slug",
-            params: { region: newRoster.region, slug: newRoster.slug },
-            replace: true,
-            resetScroll: false,
-          });
+        onSuccess: (updated) => {
+          seedChunkCache(updated.characters);
+          queryClient.setQueryData(queryKeys.roster(region, slug), updated);
         },
+        // e.g. a stale secret in another browser profile — mutations don't
+        // hit the global query-error toast, so surface it here.
+        onError: () =>
+          notifications.show({
+            title: "Couldn't update roster",
+            message: "Only the browser that created this roster can edit it.",
+            color: "red",
+          }),
       }
     );
   };
@@ -324,7 +297,7 @@ const RosterResults: React.FC = () => {
               />
             </Group>
             <Tooltip
-              label="Only the roster's creator can add members — paste your own roster to build on this one"
+              label="This roster is read-only — only its creator can edit it. Paste your own roster to build on this one."
               withArrow
               disabled={isOwner}
             >
@@ -346,7 +319,7 @@ const RosterResults: React.FC = () => {
                   variant="light"
                   onClick={addCharacter}
                   disabled={!isOwner}
-                  loading={createRoster.isPending || updateRoster.isPending}
+                  loading={updateRoster.isPending}
                 >
                   Add
                 </Button>
@@ -392,12 +365,17 @@ const RosterResults: React.FC = () => {
                 hint={hint}
                 entry={entry}
                 difficulty={difficulty}
-                onRemove={() =>
-                  editRoster(
-                    characters
-                      .filter((c) => !(c.name === character.name && c.realm === character.realm))
-                      .map(({ name, realm }) => ({ name, realm }))
-                  )
+                onRemove={
+                  isOwner
+                    ? () =>
+                        editRoster(
+                          characters
+                            .filter(
+                              (c) => !(c.name === character.name && c.realm === character.realm)
+                            )
+                            .map(({ name, realm }) => ({ name, realm }))
+                        )
+                    : undefined
                 }
               />
             ))}

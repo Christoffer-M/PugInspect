@@ -53,7 +53,8 @@ type RosterCardProps = {
   /** undefined while the chunk is still loading */
   entry?: RosterEntry;
   difficulty: Difficulty;
-  onRemove: () => void;
+  /** Omitted for read-only viewers — hides the remove button. */
+  onRemove?: () => void;
 };
 
 export const RosterCard: React.FC<RosterCardProps> = ({ region, hint, entry, difficulty, onRemove }) => {
@@ -124,21 +125,23 @@ export const RosterCard: React.FC<RosterCardProps> = ({ region, hint, entry, dif
               {ROLE_TAGS[role]}
             </span>
           )}
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            size="sm"
-            className={classes.removeButton}
-            title="Remove from roster"
-            onClick={(e) => {
-              // Inside an anchor: preventDefault stops the card link opening.
-              e.preventDefault();
-              e.stopPropagation();
-              onRemove();
-            }}
-          >
-            <IconX size={14} />
-          </ActionIcon>
+          {onRemove && (
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              className={classes.removeButton}
+              title="Remove from roster"
+              onClick={(e) => {
+                // Inside an anchor: preventDefault stops the card link opening.
+                e.preventDefault();
+                e.stopPropagation();
+                onRemove();
+              }}
+            >
+              <IconX size={14} />
+            </ActionIcon>
+          )}
         </Group>
       </Group>
 
