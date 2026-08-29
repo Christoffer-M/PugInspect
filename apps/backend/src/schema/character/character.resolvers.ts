@@ -1,6 +1,7 @@
 import { GraphQLError, GraphQLResolveInfo } from "graphql";
 import {
   Character,
+  Difficulty,
   QueryCharacterArgs,
   QueryCharacterSuggestionsArgs,
   QueryZonePartitionsArgs,
@@ -26,6 +27,9 @@ import {
 import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import { VALID_REGIONS } from "../utils/regions.js";
+import { getRosterProfiles } from "../services/character/roster.service.js";
+import { getRosterBySlug, insertRoster, updateRosterCharacters } from "../../db/persistence.js";
+import { normalizeName, normalizeRealm } from "../utils/helpers.js";
 
 /**
  * Return type for the Query.character resolver.
@@ -36,6 +40,59 @@ type CharacterWithMeta = Omit<Character, "achievements" | "potentialAlts"> & { _
 
 /** Set per-request in the Apollo context (see index.ts). Optional so tests without a context still work. */
 type GraphQLContext = { isBot?: boolean };
+
+type Profiles = Awaited<ReturnType<typeof getCharacterProfiles>>;
+
+/** Assemble the GraphQL Character from upstream profiles — shared by
+ *  Query.character and Query.rosterCharacters. */
+function buildCharacter(
+  key: { name: string; realm: string; region: string },
+  { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId, equipment }: Profiles,
+  requested: { raiderIo: boolean; raidLogs: boolean; mythicPlusLogs: boolean; gear: boolean }
+): CharacterWithMeta {
+  return {
+    name: blizzardProfile?.name ?? key.name,
+    realm: blizzardProfile?.realm.name ?? key.realm,
+    region: key.region,
+    // Internal field — not in the GraphQL schema, used by field resolvers below
+    _characterId: characterId ?? null,
+    ...(blizzardProfile ? mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl ?? null) : {}),
+    raiderIo: requested.raiderIo && rioProfile ? mapRaiderIo(rioProfile) : null,
+    raidLogs: requested.raidLogs && warcraftLogsProfile ? mapRaidLogs(warcraftLogsProfile) : null,
+    mythicPlusLogs:
+      requested.mythicPlusLogs && warcraftLogsProfile ? mapMythicPlusLogs(warcraftLogsProfile) : null,
+    gear: requested.gear && equipment ? mapGear(equipment) : null,
+  };
+}
+
+/** Shared by createRoster and updateRoster: region check + normalize, dedupe
+ *  and cap the character list. */
+function validateRosterInput(args: {
+  region: string;
+  characters: { name: string; realm: string }[];
+}): { region: string; chars: { name: string; realm: string }[] } {
+  const region = args.region.toLowerCase();
+  if (!VALID_REGIONS.has(region)) {
+    throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
+  }
+  const seen = new Set<string>();
+  const chars = args.characters
+    .map((c) => ({ name: normalizeName(c.name), realm: normalizeRealm(c.realm) }))
+    .filter((c) => {
+      const key = `${c.name}:${c.realm}`;
+      if (!c.name || !c.realm || c.name.length > 50 || c.realm.length > 100 || seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  if (chars.length < 1 || chars.length > 30) {
+    throw new GraphQLError("characters must contain 1–30 valid entries", {
+      extensions: { code: "BAD_USER_INPUT" },
+    });
+  }
+  return { region, chars };
+}
 
 // ponytail: module-level 60s cache — stats are count queries, no need to hit
 // the DB per request. Move to a shared cache layer if more queries need it.
@@ -102,25 +159,60 @@ export default {
         });
       }
 
-      return {
-        name: blizzardProfile?.name ?? args.name,
-        realm: blizzardProfile?.realm.name ?? args.realm,
-        region: args.region,
-        // Internal field — not in the GraphQL schema, used by field resolvers below
-        _characterId: characterId ?? null,
-        ...(blizzardProfile ? mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl ?? null) : {}),
-        raiderIo: raiderIoRequested && rioProfile ? mapRaiderIo(rioProfile) : null,
-        raidLogs:
-          raidLogsRequested && warcraftLogsProfile
-            ? mapRaidLogs(warcraftLogsProfile)
-            : null,
-        mythicPlusLogs:
-          mythicPlusLogsRequested && warcraftLogsProfile
-            ? mapMythicPlusLogs(warcraftLogsProfile)
-            : null,
-        gear: gearRequested && equipment ? mapGear(equipment) : null,
-      };
+      return buildCharacter(
+        args,
+        { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId, equipment },
+        {
+          raiderIo: raiderIoRequested,
+          raidLogs: raidLogsRequested,
+          mythicPlusLogs: mythicPlusLogsRequested,
+          gear: gearRequested,
+        }
+      );
     },
+    roster: async (_: unknown, args: { region: string; slug: string }) => {
+      if (!VALID_REGIONS.has(args.region.toLowerCase())) {
+        throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
+      }
+      return getRosterBySlug(args.region.toLowerCase(), args.slug);
+    },
+
+    rosterCharacters: async (
+      _: unknown,
+      args: {
+        region: string;
+        characters: { name: string; realm: string }[];
+        difficulty?: Difficulty | null;
+        zoneId?: number | null;
+      },
+      context: GraphQLContext
+    ) => {
+      if (!VALID_REGIONS.has(args.region.toLowerCase())) {
+        throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
+      }
+      // No recordSearchEvent / alt enrichment here: a roster view isn't a
+      // "search", and 30 background achievement fetches per view is real load.
+      const bundles = await getRosterProfiles(args, context?.isBot === true);
+      return bundles.map(({ name, realm, role, profiles }) => {
+        const notFound = !profiles.blizzardProfile && !profiles.rioProfile;
+        const blizz = profiles.blizzardProfile;
+        return {
+          name: blizz?.name ?? name,
+          realm: blizz?.realm.name ?? realm,
+          notFound,
+          role,
+          character: notFound
+            ? null
+            : buildCharacter({ name, realm, region: args.region }, profiles, {
+                raiderIo: true,
+                raidLogs: true,
+                mythicPlusLogs: false,
+                gear: false,
+              }),
+        };
+      });
+    },
+
     siteStats: async (): Promise<SiteStats> => {
       if (statsCache && Date.now() < statsCache.expiresAt) return statsCache.data;
       const data = await getSiteStats();
@@ -173,6 +265,37 @@ export default {
       }
 
       return await RaiderIOService.getCharacterSuggestions(args);
+    },
+  },
+
+  Mutation: {
+    createRoster: async (
+      _: unknown,
+      args: { region: string; characters: { name: string; realm: string }[] }
+    ) => {
+      const { region, chars } = validateRosterInput(args);
+      const { slug, editSecret } = await insertRoster(region, chars);
+      return { slug, region, characters: chars, editSecret };
+    },
+
+    updateRoster: async (
+      _: unknown,
+      args: {
+        region: string;
+        slug: string;
+        editSecret: string;
+        characters: { name: string; realm: string }[];
+      }
+    ) => {
+      const { region, chars } = validateRosterInput(args);
+      const updated = await updateRosterCharacters(region, args.slug, args.editSecret, chars);
+      if (!updated) {
+        // Wrong secret and unknown slug are deliberately the same error.
+        throw new GraphQLError("Roster not found or edit secret invalid", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+      return updated;
     },
   },
 

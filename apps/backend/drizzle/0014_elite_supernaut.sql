@@ -1,0 +1,1 @@
+ALTER TABLE "rosters" ADD COLUMN "edit_secret" varchar(64);

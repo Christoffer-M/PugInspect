@@ -4,8 +4,14 @@ import { characterTypedefs } from "./character.typedefs.js";
 import characterResolvers from "./character.resolvers.js";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
-import { getLinkedCharacters } from "../../db/persistence.js";
+import {
+  getLinkedCharacters,
+  getRosterBySlug,
+  insertRoster,
+  updateRosterCharacters,
+} from "../../db/persistence.js";
 import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.js";
+import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import type { BlizzardCharacterProfile } from "../services/blizzard/model/CharacterProfile.js";
 import type { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
 
@@ -19,10 +25,17 @@ vi.mock("../services/raiderIo/raiderio.services.js", () => ({
   RaiderIOService: { getCharacterSuggestions: vi.fn() },
 }));
 vi.mock("../services/warcraftLogs/warcraftlogs.services.js", () => ({
-  WarcraftLogsService: { getZonePartitions: vi.fn() },
+  WarcraftLogsService: {
+    getZonePartitions: vi.fn(),
+    isCircuitOpen: vi.fn(() => false),
+    getCharacterProfile: vi.fn().mockResolvedValue({ data: null, fetchedAt: 0 }),
+  },
 }));
 vi.mock("../../db/persistence.js", () => ({
   getLinkedCharacters: vi.fn().mockResolvedValue([]),
+  insertRoster: vi.fn(),
+  getRosterBySlug: vi.fn(),
+  updateRosterCharacters: vi.fn(),
 }));
 vi.mock("../../db/stats.js", () => ({
   getSiteStats: vi.fn(),
@@ -263,5 +276,234 @@ describe("Query.siteStats", () => {
     expect(second.errors).toBeUndefined();
     expect(second.data!.siteStats).toEqual(statsFixture);
     expect(getSiteStats).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Roster Check", () => {
+  const ROSTER_CHARACTERS_QUERY = `
+    query RosterCharacters($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty) {
+      rosterCharacters(region: $region, characters: $characters, difficulty: $difficulty) {
+        name
+        realm
+        notFound
+        role
+        character { name class activeSpec raiderIo { currentSeason { all { score } } } }
+      }
+    }
+  `;
+
+  it("maps found and missing characters, deriving role from class + spec", async () => {
+    vi.mocked(getCharacterProfiles).mockImplementation(async ({ name }) =>
+      name === "pugsley"
+        ? {
+            blizzardProfile,
+            blizzardAvatarUrl: null,
+            rioProfile,
+            warcraftLogsProfile: undefined,
+            characterId: "char-uuid-1",
+            equipment: undefined,
+          }
+        : {
+            blizzardProfile: undefined,
+            blizzardAvatarUrl: undefined,
+            rioProfile: undefined,
+            warcraftLogsProfile: undefined,
+            characterId: null,
+            equipment: undefined,
+          }
+    );
+
+    const result = await execute(ROSTER_CHARACTERS_QUERY, {
+      region: "eu",
+      characters: [
+        { name: "Pugsley", realm: "Kazzak" },
+        { name: "Typoed", realm: "Kazzak" },
+      ],
+      difficulty: "Heroic",
+    });
+
+    expect(result.errors).toBeUndefined();
+    const entries = result.data!.rosterCharacters as Array<Record<string, unknown>>;
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toMatchObject({
+      name: "Pugsley",
+      notFound: false,
+      role: "DPS", // Enhancement Shaman
+    });
+    expect((entries[0]!.character as Record<string, unknown>).class).toBe("Shaman");
+    expect(entries[1]).toMatchObject({ name: "typoed", notFound: true, role: null, character: null });
+    // notFound is expected input — no search events fired for roster views
+    expect(recordSearchEvent).not.toHaveBeenCalled();
+  });
+
+  it("requests hps parses for healers and default (dps) for everyone else", async () => {
+    vi.mocked(getCharacterProfiles).mockImplementation(async ({ name }) => ({
+      blizzardProfile: {
+        ...blizzardProfile,
+        name,
+        character_class: { name: name === "treeboi" ? "Druid" : "Shaman" },
+        active_spec: { name: name === "treeboi" ? "Restoration" : "Enhancement" },
+      } as unknown as BlizzardCharacterProfile,
+      blizzardAvatarUrl: null,
+      rioProfile,
+      warcraftLogsProfile: undefined,
+      characterId: "char-uuid-1",
+      equipment: undefined,
+    }));
+
+    const result = await execute(ROSTER_CHARACTERS_QUERY, {
+      region: "eu",
+      characters: [
+        { name: "Treeboi", realm: "Kazzak" },
+        { name: "Pugsley", realm: "Kazzak" },
+      ],
+      difficulty: "Heroic",
+    });
+
+    expect(result.errors).toBeUndefined();
+    const wclCalls = vi.mocked(WarcraftLogsService.getCharacterProfile).mock.calls;
+    expect(wclCalls.find(([a]) => a.name === "treeboi")?.[0].metric).toBe("hps");
+    expect(wclCalls.find(([a]) => a.name === "pugsley")?.[0].metric).toBeUndefined();
+  });
+
+  it("rejects chunks over the per-request cap", async () => {
+    const result = await execute(ROSTER_CHARACTERS_QUERY, {
+      region: "eu",
+      characters: Array.from({ length: 11 }, (_, i) => ({ name: `char${i}`, realm: "kazzak" })),
+      difficulty: null,
+    });
+
+    expect(result.errors?.[0]?.extensions?.code).toBe("BAD_USER_INPUT");
+    expect(getCharacterProfiles).not.toHaveBeenCalled();
+  });
+
+  const CREATE_ROSTER_MUTATION = `
+    mutation CreateRoster($region: String!, $characters: [RosterCharacterInput!]!) {
+      createRoster(region: $region, characters: $characters) {
+        slug
+        region
+        characters { name realm }
+        editSecret
+      }
+    }
+  `;
+
+  it("creates a roster with normalized, deduped characters and returns the edit secret", async () => {
+    vi.mocked(insertRoster).mockResolvedValue({ slug: "abcd1234", editSecret: "s3cret" });
+
+    const result = await execute(CREATE_ROSTER_MUTATION, {
+      region: "EU",
+      characters: [
+        { name: "Pugsley", realm: "Tarren Mill" },
+        { name: "pugsley", realm: "Tarren-Mill" }, // duplicate after normalization
+      ],
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data!.createRoster).toEqual({
+      slug: "abcd1234",
+      region: "eu",
+      characters: [{ name: "pugsley", realm: "tarren-mill" }],
+      editSecret: "s3cret",
+    });
+  });
+
+  const UPDATE_ROSTER_MUTATION = `
+    mutation UpdateRoster($region: String!, $slug: String!, $editSecret: String!, $characters: [RosterCharacterInput!]!) {
+      updateRoster(region: $region, slug: $slug, editSecret: $editSecret, characters: $characters) {
+        slug
+        characters { name realm }
+      }
+    }
+  `;
+
+  it("updates a roster in place with the right secret", async () => {
+    vi.mocked(updateRosterCharacters).mockResolvedValue({
+      slug: "abcd1234",
+      region: "eu",
+      characters: [{ name: "pugsley", realm: "kazzak" }],
+    });
+
+    const result = await execute(UPDATE_ROSTER_MUTATION, {
+      region: "eu",
+      slug: "abcd1234",
+      editSecret: "s3cret",
+      characters: [{ name: "Pugsley", realm: "Kazzak" }],
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data!.updateRoster).toEqual({
+      slug: "abcd1234",
+      characters: [{ name: "pugsley", realm: "kazzak" }],
+    });
+    expect(updateRosterCharacters).toHaveBeenCalledWith("eu", "abcd1234", "s3cret", [
+      { name: "pugsley", realm: "kazzak" },
+    ]);
+  });
+
+  it("rejects an update with a wrong secret as FORBIDDEN", async () => {
+    vi.mocked(updateRosterCharacters).mockResolvedValue(null);
+
+    const result = await execute(UPDATE_ROSTER_MUTATION, {
+      region: "eu",
+      slug: "abcd1234",
+      editSecret: "wrong",
+      characters: [{ name: "Pugsley", realm: "Kazzak" }],
+    });
+
+    expect(result.errors?.[0]?.extensions?.code).toBe("FORBIDDEN");
+  });
+
+  it("never exposes the edit secret through Query.roster", async () => {
+    // getRosterBySlug doesn't even select the column; the field resolves null.
+    vi.mocked(getRosterBySlug).mockResolvedValue({
+      slug: "abcd1234",
+      region: "eu",
+      characters: [{ name: "pugsley", realm: "kazzak" }],
+    });
+
+    const result = await execute(
+      `query Roster($region: String!, $slug: String!) {
+        roster(region: $region, slug: $slug) { slug editSecret }
+      }`,
+      { region: "eu", slug: "abcd1234" }
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect((result.data!.roster as Record<string, unknown>).editSecret).toBeNull();
+  });
+
+  it("rejects rosters with no valid characters or an invalid region", async () => {
+    const empty = await execute(CREATE_ROSTER_MUTATION, { region: "eu", characters: [{ name: "", realm: "" }] });
+    expect(empty.errors?.[0]?.extensions?.code).toBe("BAD_USER_INPUT");
+
+    const badRegion = await execute(CREATE_ROSTER_MUTATION, {
+      region: "zz",
+      characters: [{ name: "Pugsley", realm: "Kazzak" }],
+    });
+    expect(badRegion.errors?.[0]?.extensions?.code).toBe("BAD_USER_INPUT");
+    expect(insertRoster).not.toHaveBeenCalled();
+  });
+
+  it("reads a roster back by slug", async () => {
+    vi.mocked(getRosterBySlug).mockResolvedValue({
+      slug: "abcd1234",
+      region: "eu",
+      characters: [{ name: "pugsley", realm: "kazzak" }],
+    });
+
+    const result = await execute(
+      `query Roster($region: String!, $slug: String!) {
+        roster(region: $region, slug: $slug) { slug region characters { name realm } }
+      }`,
+      { region: "eu", slug: "abcd1234" }
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data!.roster).toEqual({
+      slug: "abcd1234",
+      region: "eu",
+      characters: [{ name: "pugsley", realm: "kazzak" }],
+    });
   });
 });

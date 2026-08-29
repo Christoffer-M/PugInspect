@@ -44,6 +44,14 @@ export const queryKeys = {
       args.partition,
     ];
   },
+  roster: (region: string, slug: string) => ["roster", region.toLowerCase(), slug],
+  rosterChunk: (region: string, difficulty: string, chunk: { name: string; realm: string }[]) => [
+    "rosterChunk",
+    region.toLowerCase(),
+    difficulty,
+    // Names are already normalized (they come from the server-stored roster)
+    chunk.map((c) => `${c.name}-${c.realm}`).join(","),
+  ],
   characterMythicPlusLogs: (args: CharacterMythicPlusLogsQueryVariables) => {
     const {
       name: normName,

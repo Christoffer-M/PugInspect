@@ -147,6 +147,30 @@ export type Metric =
   | 'points_and_damage'
   | 'points_and_healing';
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  createRoster: Roster;
+  /**
+   * Replace a roster's character list. Requires the editSecret handed out by
+   * createRoster; without it, fork the roster via createRoster instead.
+   */
+  updateRoster: Roster;
+};
+
+
+export type MutationCreateRosterArgs = {
+  characters: Array<RosterCharacterInput>;
+  region: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateRosterArgs = {
+  characters: Array<RosterCharacterInput>;
+  editSecret: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+  slug: Scalars['String']['input'];
+};
+
 export type MythicPlusClass = {
   __typename?: 'MythicPlusClass';
   name: Scalars['String']['output'];
@@ -237,6 +261,8 @@ export type Query = {
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
   mythicPlusSpecStats?: Maybe<MythicPlusSpecStats>;
+  roster?: Maybe<Roster>;
+  rosterCharacters: Array<RosterEntry>;
   siteStats: SiteStats;
   zonePartitions: Array<ZonePartition>;
 };
@@ -263,6 +289,20 @@ export type QueryCharacterSuggestionsArgs = {
 
 
 export type QueryMythicPlusSpecStatsArgs = {
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryRosterArgs = {
+  region: Scalars['String']['input'];
+  slug: Scalars['String']['input'];
+};
+
+
+export type QueryRosterCharactersArgs = {
+  characters: Array<RosterCharacterInput>;
+  difficulty?: InputMaybe<Difficulty>;
+  region: Scalars['String']['input'];
   zoneId?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -332,6 +372,46 @@ export type RoleType =
   | 'DPS'
   | 'Healer'
   | 'Tank';
+
+/**
+ * A saved Roster Check share link. The creator can edit it in place with the
+ * editSecret; anyone else forks it into a new slug.
+ */
+export type Roster = {
+  __typename?: 'Roster';
+  characters: Array<RosterCharacterKey>;
+  /**
+   * Only present in the createRoster response — the caller stores it client-side
+   * to edit the roster later. Never returned by Query.roster.
+   */
+  editSecret?: Maybe<Scalars['String']['output']>;
+  region: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+};
+
+export type RosterCharacterInput = {
+  name: Scalars['String']['input'];
+  realm: Scalars['String']['input'];
+};
+
+export type RosterCharacterKey = {
+  __typename?: 'RosterCharacterKey';
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+};
+
+/**
+ * One character in a roster lookup. notFound is expected user input (typo'd
+ * name/realm), never an error; character is null in that case.
+ */
+export type RosterEntry = {
+  __typename?: 'RosterEntry';
+  character?: Maybe<Character>;
+  name: Scalars['String']['output'];
+  notFound: Scalars['Boolean']['output'];
+  realm: Scalars['String']['output'];
+  role?: Maybe<SpecRole>;
+};
 
 export type SearchResult = {
   __typename?: 'SearchResult';

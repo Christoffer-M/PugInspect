@@ -8,6 +8,7 @@ import {
   characterEquipmentSnapshots,
   characterAchievements,
   characterLinks,
+  rosters,
 } from "./schema.js";
 import type { RaiderIoCharacterApiResponse, RaidProgression } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
@@ -743,4 +744,77 @@ export async function getSitemapCharacters(limit: number): Promise<SitemapCharac
     logger.error("DB query failed (getSitemapCharacters)", { error: String(err) });
     return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// Rosters (Roster Check share links)
+// ---------------------------------------------------------------------------
+
+function randomSlug(): string {
+  // 8 chars of base36 from crypto randomness — ~41 bits, plenty for a table
+  // that only grows by explicit user shares.
+  return Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => (b % 36).toString(36)).join("");
+}
+
+function randomSecret(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) =>
+    b.toString(16).padStart(2, "0")
+  ).join("");
+}
+
+/** Insert a roster and return its slug plus the one-time edit secret. Retries on
+ *  the (astronomically unlikely) slug collision instead of failing the request. */
+export async function insertRoster(
+  region: string,
+  chars: { name: string; realm: string }[]
+): Promise<{ slug: string; editSecret: string }> {
+  const editSecret = randomSecret();
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const slug = randomSlug();
+    try {
+      await getDb().insert(rosters).values({ slug, region, characters: chars, editSecret });
+      return { slug, editSecret };
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
+export async function getRosterBySlug(
+  region: string,
+  slug: string
+): Promise<{ slug: string; region: string; characters: { name: string; realm: string }[] } | null> {
+  try {
+    const rows = await getDb()
+      // editSecret is deliberately not selected — it must never reach Query.roster.
+      .select({ slug: rosters.slug, region: rosters.region, characters: rosters.characters })
+      .from(rosters)
+      .where(and(eq(rosters.region, region), eq(rosters.slug, slug)))
+      .limit(1);
+    return rows[0] ?? null;
+  } catch (err) {
+    logger.error("DB query failed (getRosterBySlug)", { error: String(err) });
+    return null;
+  }
+}
+
+/** Replace a roster's character list in place. Returns the updated roster, or
+ *  null when slug+region+secret don't match a row (wrong or missing secret —
+ *  indistinguishable from a missing roster on purpose). */
+export async function updateRosterCharacters(
+  region: string,
+  slug: string,
+  editSecret: string,
+  chars: { name: string; realm: string }[]
+): Promise<{ slug: string; region: string; characters: { name: string; realm: string }[] } | null> {
+  const rows = await getDb()
+    .update(rosters)
+    .set({ characters: chars })
+    .where(
+      and(eq(rosters.region, region), eq(rosters.slug, slug), eq(rosters.editSecret, editSecret))
+    )
+    .returning({ slug: rosters.slug, region: rosters.region, characters: rosters.characters });
+  return rows[0] ?? null;
 }

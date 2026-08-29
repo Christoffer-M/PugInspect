@@ -399,3 +399,23 @@ export const mplusStatsMeta = pgTable("mplus_stats_meta", {
 });
 
 export type MplusStatsMeta = typeof mplusStatsMeta.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// rosters
+// A shared "Roster Check" import: the character list behind a short link
+// (/roster/{region}/{slug}). The creator gets edit_secret back exactly once
+// (stored in their browser's localStorage) and can update the list in place;
+// anyone without it forks the roster into a new slug instead. The secret is
+// never exposed through Query.roster.
+// ---------------------------------------------------------------------------
+export const rosters = pgTable("rosters", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: varchar("slug", { length: 16 }).notNull().unique(),
+  region: varchar("region", { length: 2 }).notNull(),
+  characters: jsonb("characters").$type<{ name: string; realm: string }[]>().notNull(),
+  // Nullable: rows created before ownership existed stay fork-only forever.
+  editSecret: varchar("edit_secret", { length: 64 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type RosterRow = typeof rosters.$inferSelect;

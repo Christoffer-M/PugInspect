@@ -21,6 +21,64 @@ export const characterTypedefs = gql`
     zonePartitions(zoneId: Int!): [ZonePartition!]!
     siteStats: SiteStats!
     mythicPlusSpecStats(zoneId: Int): MythicPlusSpecStats
+    roster(region: String!, slug: String!): Roster
+    rosterCharacters(
+      region: String!
+      characters: [RosterCharacterInput!]!
+      difficulty: Difficulty
+      zoneId: Int
+    ): [RosterEntry!]!
+  }
+
+  type Mutation {
+    createRoster(region: String!, characters: [RosterCharacterInput!]!): Roster!
+    """
+    Replace a roster's character list. Requires the editSecret handed out by
+    createRoster; without it, fork the roster via createRoster instead.
+    """
+    updateRoster(
+      region: String!
+      slug: String!
+      editSecret: String!
+      characters: [RosterCharacterInput!]!
+    ): Roster!
+  }
+
+  input RosterCharacterInput {
+    name: String!
+    realm: String!
+  }
+
+  type RosterCharacterKey {
+    name: String!
+    realm: String!
+  }
+
+  """
+  A saved Roster Check share link. The creator can edit it in place with the
+  editSecret; anyone else forks it into a new slug.
+  """
+  type Roster {
+    slug: String!
+    region: String!
+    characters: [RosterCharacterKey!]!
+    """
+    Only present in the createRoster response — the caller stores it client-side
+    to edit the roster later. Never returned by Query.roster.
+    """
+    editSecret: String
+  }
+
+  """
+  One character in a roster lookup. notFound is expected user input (typo'd
+  name/realm), never an error; character is null in that case.
+  """
+  type RosterEntry {
+    name: String!
+    realm: String!
+    notFound: Boolean!
+    role: SpecRole
+    character: Character
   }
 
   enum SpecRole {
