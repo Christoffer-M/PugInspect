@@ -164,7 +164,8 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
       {loading && (
         <Group gap={10} px={16} pb={12} pt={0} wrap="nowrap">
           <Text size="12px" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-            Fetching {entries.length} / {totalCount} characters - Blizzard, Raider.IO, Warcraft Logs
+            Fetching {entries.length} / {totalCount} character{totalCount === 1 ? "" : "s"} -
+            Blizzard, Raider.IO, Warcraft Logs
           </Text>
           <Progress value={(entries.length / Math.max(totalCount, 1)) * 100} size={4} flex={1} />
         </Group>
