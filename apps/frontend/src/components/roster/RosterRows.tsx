@@ -64,15 +64,16 @@ const Row = React.memo(function Row({
   const realm = upperCaseFirstLetter(character?.realm ?? hint.realm);
   const rio = character?.raiderIo?.currentSeason?.all?.score;
   const best = character?.raidLogs?.bestPerformanceAverage;
+  // Cast keeps `href` typed; React drops it when it's undefined on a div.
+  const Tag = (notFound ? "div" : "a") as "a";
 
   return (
-    <Paper
-      component={notFound ? "div" : "a"}
+    // Plain <a>, not <Paper component="a">: Paper writes an inline background
+    // that the :hover rule can't override.
+    <Tag
       href={notFound ? undefined : `/${region.toLowerCase()}/${normalizeRealm(character?.realm ?? hint.realm)}/${name.toLowerCase()}`}
       target="_blank"
       rel="noopener noreferrer"
-      radius={0}
-      bg="transparent"
       className={`${classes.rowGrid} ${classes.row} ${notFound ? classes.rowNotFound : ""}`}
       style={{ "--class-color": classColor } as React.CSSProperties}
     >
@@ -151,7 +152,7 @@ const Row = React.memo(function Row({
       ) : (
         <span />
       )}
-    </Paper>
+    </Tag>
   );
 });
 

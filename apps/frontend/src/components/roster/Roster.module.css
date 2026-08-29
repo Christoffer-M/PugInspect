@@ -266,8 +266,10 @@
   transition: background-color 120ms ease;
 }
 
+/* Whole-row highlight, tinted by the character's class color like the cards */
 .row:hover {
-  background-color: rgba(139, 127, 212, 0.07);
+  background-color: color-mix(in srgb, var(--class-color, #8b7fd4) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--class-color, #8b7fd4);
 }
 
 .rowNotFound {
@@ -276,6 +278,7 @@
 
 .rowNotFound:hover {
   background-color: transparent;
+  box-shadow: none;
 }
 
 .rowIconRing {
