@@ -20,7 +20,7 @@ const DIFF_COLOR: Record<string, string> = {
 };
 
 type RosterSummaryProps = {
-  /** Entries from resolved chunks only — the bar recomputes as chunks land. */
+  /** Entries from resolved chunks only - the bar recomputes as chunks land. */
   entries: RosterEntry[];
   totalCount: number;
   difficulty: Difficulty;
@@ -90,7 +90,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
         <div className={classes.summaryCell}>
           <span className={classes.summaryLabel}>Avg item level</span>
           <span className={classes.summaryValue} style={{ color: "#e6ebf5" }}>
-            {stats.avgIlvl ?? "—"}
+            {stats.avgIlvl ?? "-"}
           </span>
           <span className={classes.summarySub}>
             {stats.minIlvl != null ? `low ${stats.minIlvl} · high ${stats.maxIlvl}` : ""}
@@ -99,7 +99,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
         <div className={classes.summaryCell}>
           <span className={classes.summaryLabel}>Avg RIO</span>
           <span className={classes.summaryValue} style={{ color: "#e6ebf5" }}>
-            {stats.avgRio?.toLocaleString() ?? "—"}
+            {stats.avgRio?.toLocaleString() ?? "-"}
           </span>
           <span className={classes.summarySub}>
             {stats.minRio != null ? `low ${stats.minRio.toLocaleString()}` : ""}
@@ -110,7 +110,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
           <span className={classes.summaryValue} style={{ color: DIFF_COLOR[difficulty] }}>
             {stats.avgKills != null
               ? `${stats.avgKills}/${stats.totalBosses} ${DIFF_LETTER[difficulty]}`
-              : "—"}
+              : "-"}
           </span>
           <span className={classes.summarySub}>
             {stats.progCount ? `${stats.cleared} of ${stats.progCount} cleared` : ""}
@@ -122,7 +122,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
             className={classes.summaryValue}
             style={{ color: stats.avgBest != null ? getParseColor(stats.avgBest) : "var(--mantine-color-dark-2)" }}
           >
-            {stats.avgBest ?? "—"}
+            {stats.avgBest ?? "-"}
           </span>
           <span className={classes.summarySub}>{stats.logged} logged</span>
         </div>
@@ -134,7 +134,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
               color: stats.avgMedian != null ? getParseColor(stats.avgMedian) : "var(--mantine-color-dark-2)",
             }}
           >
-            {stats.avgMedian ?? "—"}
+            {stats.avgMedian ?? "-"}
           </span>
           <span className={classes.summarySub}>{stats.logged} logged</span>
         </div>
@@ -164,7 +164,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
       {loading && (
         <Group gap={10} px={16} pb={12} pt={0} wrap="nowrap">
           <Text size="12px" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-            Fetching {entries.length} / {totalCount} characters — Blizzard, Raider.IO, Warcraft Logs
+            Fetching {entries.length} / {totalCount} characters - Blizzard, Raider.IO, Warcraft Logs
           </Text>
           <Progress value={(entries.length / Math.max(totalCount, 1)) * 100} size={4} flex={1} />
         </Group>

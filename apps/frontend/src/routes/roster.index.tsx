@@ -28,7 +28,7 @@ export function stashRosterHints(slug: string, decoded: RosterImport) {
   try {
     sessionStorage.setItem(`roster-hints-${slug}`, JSON.stringify(decoded.characters));
   } catch {
-    // Session storage can be unavailable (private mode) — hints are cosmetic.
+    // Session storage can be unavailable (private mode) - hints are cosmetic.
   }
 }
 
@@ -114,7 +114,7 @@ const RosterPaste: React.FC = () => {
               </Group>
               <Text size="13px" c="dimmed" maw={720}>
                 Paste a roster export from the PugInspect addon and every character gets looked up
-                at once — item level, RIO score, raid progress and log percentiles for the whole
+                at once - item level, RIO score, raid progress and log percentiles for the whole
                 team on one screen.
               </Text>
             </Stack>
@@ -224,7 +224,7 @@ const RosterPaste: React.FC = () => {
           <Group gap={8} c="dimmed">
             <IconUsersGroup size={16} />
             <Text size="12.5px" c="dimmed">
-              Get the export string with the PugInspect addon — type{" "}
+              Get the export string with the PugInspect addon - type{" "}
               <Text component="span" ff="monospace" size="12px" c="bright">
                 /pi export
               </Text>{" "}
@@ -244,7 +244,7 @@ export const Route = createFileRoute("/roster/")({
       {
         name: "description",
         content:
-          "Paste a raid roster export and inspect the whole team at once — item level, RIO score, raid progress and log percentiles for every character on one screen.",
+          "Paste a raid roster export and inspect the whole team at once - item level, RIO score, raid progress and log percentiles for every character on one screen.",
       },
     ],
     links: [{ rel: "canonical", href: "https://puginspect.com/roster" }],

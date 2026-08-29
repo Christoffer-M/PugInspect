@@ -59,7 +59,7 @@ export function isAnyFieldRequestedBesides(
   );
 }
 
-/** Like isFieldRequested, but for Query.rosterCharacters — the Character type
+/** Like isFieldRequested, but for Query.rosterCharacters - the Character type
  * sits one level down, under RosterEntry.character. */
 export function isRosterCharacterFieldRequested(
   info: GraphQLResolveInfo,

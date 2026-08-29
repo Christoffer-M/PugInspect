@@ -9,7 +9,7 @@ import { createLogger } from "../../utils/logger.js";
 
 const logger = createLogger({ service: "Roster" });
 
-/** Hard cap per request — the client chunks a 30-man roster into 3 calls. */
+/** Hard cap per request - the client chunks a 30-man roster into 3 calls. */
 export const ROSTER_CHUNK_LIMIT = 10;
 
 /** Upstream fan-out cap: 5 characters in flight × ≤3 upstreams each.
@@ -24,7 +24,7 @@ const ROLE_BY_CLASS_SPEC = new Map(SPECS.map((s) => [`${s.className}/${s.specNam
 const RIO_ROLES: Record<string, SpecRole> = { TANK: "TANK", HEALING: "HEALER", DPS: "DPS" };
 
 /** Role from the Blizzard profile, falling back to RaiderIO when Blizzard is
- *  down — without the fallback a healer would be ranked on damage and dropped
+ *  down - without the fallback a healer would be ranked on damage and dropped
  *  from the composition counts during a Blizzard outage. */
 export function roleForProfiles(profiles: {
   blizzardProfile?: BlizzardCharacterProfile;
@@ -49,7 +49,7 @@ export type RosterProfileBundle = {
 };
 
 /**
- * Look up a chunk of roster characters. Never throws per character — a typo'd
+ * Look up a chunk of roster characters. Never throws per character - a typo'd
  * name simply yields empty profiles (the resolver marks it notFound).
  */
 const EMPTY_PROFILES: Awaited<ReturnType<typeof getCharacterProfiles>> = {
@@ -76,7 +76,7 @@ export async function getRosterProfiles(
     });
   }
 
-  // The response is strictly 1:1 with the request — the client maps entries
+  // The response is strictly 1:1 with the request - the client maps entries
   // back to its list by position, so invalid or duplicate inputs become
   // notFound placeholders instead of being silently dropped (which would
   // shift every later card onto the wrong character).
@@ -85,7 +85,7 @@ export async function getRosterProfiles(
     const name = normalizeName(c.name);
     const realm = normalizeRealm(c.realm);
     const key = `${name}:${realm}`;
-    // Same sanity caps as createRoster — oversized input never reaches
+    // Same sanity caps as createRoster - oversized input never reaches
     // upstream URLs or cache keys.
     const skip = !name || !realm || name.length > 50 || realm.length > 100 || seen.has(key);
     if (!skip) seen.add(key);
@@ -106,7 +106,7 @@ export async function getRosterProfiles(
       zoneId: args.zoneId,
     };
     // Phase 1: identity (Blizzard, usually a 24h-cached DB hit) + RIO.
-    // getCharacterProfiles allSettles its upstreams — a missing character
+    // getCharacterProfiles allSettles its upstreams - a missing character
     // comes back as empty profiles, never a rejection.
     const profiles = await getCharacterProfiles(charArgs, {
       blizzardRequested: true,
@@ -121,7 +121,7 @@ export async function getRosterProfiles(
     const role = roleForProfiles(profiles);
     const found = profiles.blizzardProfile || profiles.rioProfile;
 
-    // Phase 2: WCL parses, only for characters that exist — sequenced after
+    // Phase 2: WCL parses, only for characters that exist - sequenced after
     // the profile so healers can be ranked on healing. Omitting the metric
     // makes WCL rank everyone on damage, healers included. Circuit checked
     // per character so a breaker tripped mid-chunk stops the remaining calls.

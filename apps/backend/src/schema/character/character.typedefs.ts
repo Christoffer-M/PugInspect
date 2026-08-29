@@ -63,7 +63,7 @@ export const characterTypedefs = gql`
     region: String!
     characters: [RosterCharacterKey!]!
     """
-    Only present in the createRoster response — the caller stores it client-side
+    Only present in the createRoster response - the caller stores it client-side
     to edit the roster later. Never returned by Query.roster.
     """
     editSecret: String

@@ -54,7 +54,7 @@ type RosterCardProps = {
   /** undefined while the chunk is still loading */
   entry?: RosterEntry;
   difficulty: Difficulty;
-  /** Omitted for read-only viewers — hides the remove button. */
+  /** Omitted for read-only viewers - hides the remove button. */
   onRemove?: () => void;
 };
 
@@ -178,7 +178,7 @@ export const RosterCard = React.memo(function RosterCard({
                     character?.equippedItemLevel != null ? "#e6ebf5" : "var(--mantine-color-dark-2)",
                 }}
               >
-                {character?.equippedItemLevel ?? "—"}
+                {character?.equippedItemLevel ?? "-"}
               </span>
             </div>
             <div className={classes.statCell}>
@@ -189,7 +189,7 @@ export const RosterCard = React.memo(function RosterCard({
               >
                 {character?.raiderIo?.currentSeason?.all?.score != null
                   ? Math.round(character.raiderIo.currentSeason.all.score).toLocaleString()
-                  : "—"}
+                  : "-"}
               </span>
             </div>
             <div className={classes.statCell}>
@@ -198,7 +198,7 @@ export const RosterCard = React.memo(function RosterCard({
                 className={classes.statValue}
                 style={{ color: prog && prog.kills > 0 ? diff.color : "var(--mantine-color-dark-2)" }}
               >
-                {prog ? `${prog.kills}/${prog.total} ${diff.letter}` : "—"}
+                {prog ? `${prog.kills}/${prog.total} ${diff.letter}` : "-"}
               </span>
             </div>
           </div>

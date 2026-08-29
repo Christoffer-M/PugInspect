@@ -40,7 +40,7 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
       // Queries that render their errors inline (e.g. roster chunks) opt out
-      // of the global toast — a 30-man roster would otherwise fire 3 of them.
+      // of the global toast - a 30-man roster would otherwise fire 3 of them.
       if (query.meta?.suppressErrorToast) return;
       console.error("Global query error:", error, "on", query.queryKey);
       notifications.show({

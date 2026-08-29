@@ -1,5 +1,5 @@
 /* Page wraps routes in Mantine <Typography>, whose `:where(p)` rule gives every
- * Text a 20px bottom margin — that breaks flex centering of the small labels
+ * Text a 20px bottom margin - that breaks flex centering of the small labels
  * and the tight line rhythm inside cards. Same specificity, later order: wins. */
 .typographyReset :where(p) {
   margin-bottom: 0;
@@ -41,7 +41,7 @@
   cursor: default;
 }
 
-/* Not-found cards aren't links — no lift, no glow */
+/* Not-found cards aren't links - no lift, no glow */
 .cardNotFound:hover {
   border-color: rgba(255, 138, 61, 0.35);
   transform: none;
@@ -153,7 +153,7 @@
 
 /* Summary stat bar. Every cell carries a left divider and equal padding; the
  * row is pulled left by exactly (padding + border) and the clip wrapper hides
- * whatever sticks out — so the leading divider of EVERY row (not just the
+ * whatever sticks out - so the leading divider of EVERY row (not just the
  * first) is clipped and wrapped rows stay flush with the row above. */
 .summaryBar {
   padding: 14px 16px;

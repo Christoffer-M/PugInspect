@@ -7,7 +7,7 @@ import { normalizeRealm } from "./util";
  *   payload = region;record;record;...
  *   record  = Name-Realm:CLASSFILE:ROLE[:SPEC]
  *
- * See docs/ROSTER_EXPORT_FORMAT.md — this file and the addon's RosterExport.lua
+ * See docs/ROSTER_EXPORT_FORMAT.md - this file and the addon's RosterExport.lua
  * are the two sides of that contract.
  */
 
@@ -49,7 +49,7 @@ const REGIONS = new Set(["us", "eu", "kr", "tw", "cn"]);
 const ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789()";
 const ROLES: Record<string, RosterImportCharacter["role"]> = { T: "TANK", H: "HEALER", D: "DPS" };
 
-/** Mirror of LibDeflate:DecodeForPrint — little-endian 6-bit groups. */
+/** Mirror of LibDeflate:DecodeForPrint - little-endian 6-bit groups. */
 function decodeForPrint(encoded: string): Uint8Array | null {
   const out: number[] = [];
   let cache = 0;
@@ -113,7 +113,7 @@ const SPECIAL_REALM_SLUGS: Record<string, string> = {
 };
 
 /** Split a "Name-Realm" string on the FIRST dash (realm slugs contain dashes)
- * and slug the realm, including the special-realm table — the single parsing
+ * and slug the realm, including the special-realm table - the single parsing
  * path for both the export-string decoder and manual entry. */
 export function parseNameRealm(input: string): { name: string; realm: string } | null {
   const trimmed = input.trim();
@@ -128,7 +128,7 @@ export function parseNameRealm(input: string): { name: string; realm: string } |
 /**
  * The addon sends Blizzard-normalized realms ("TarrenMill"); API slugs are
  * dashed ("tarren-mill"), so re-insert dashes at case/digit boundaries.
- * ponytail: heuristic — a space and an apostrophe both normalize to a case
+ * ponytail: heuristic - a space and an apostrophe both normalize to a case
  * boundary, so "MalGanis" wrongly becomes "mal-ganis" (slug is "malganis").
  * Fix with a realm table from Blizzard's realm index if it bites.
  */
@@ -167,7 +167,7 @@ function parsePayload(payload: string): RosterImport | null {
 }
 
 /** Decode a pasted export string. Returns null for anything that isn't a valid
- *  !PI1! string — corruption shows as "invalid", never a thrown error. */
+ *  !PI1! string - corruption shows as "invalid", never a thrown error. */
 export async function decodeRosterImport(pasted: string): Promise<RosterImport | null> {
   const compact = pasted.replace(/\s+/g, "");
   if (!compact.startsWith(PREFIX)) return null;

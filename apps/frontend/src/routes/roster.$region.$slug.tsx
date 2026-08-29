@@ -68,7 +68,7 @@ const AddMemberControl: React.FC<{
   };
   return (
     <Tooltip
-      label="This roster is read-only — only its creator can edit it. Paste your own roster to build on this one."
+      label="This roster is read-only - only its creator can edit it. Paste your own roster to build on this one."
       withArrow
       disabled={isOwner}
     >
@@ -197,7 +197,7 @@ const RosterResults: React.FC = () => {
     for (let i = 0; i < next.length; i += ROSTER_CHUNK_SIZE) {
       const chunk = next.slice(i, i + ROSTER_CHUNK_SIZE);
       const entries = chunk.map((c) => byKey.get(`${c.name}:${c.realm}`));
-      // Only seed fully-known chunks — an added member still needs a real fetch.
+      // Only seed fully-known chunks - an added member still needs a real fetch.
       if (entries.every((e): e is RosterEntry => e !== undefined)) {
         queryClient.setQueryData(queryKeys.rosterChunk(region, difficulty, chunk), entries);
       }
@@ -224,7 +224,7 @@ const RosterResults: React.FC = () => {
           queryClient.setQueryData(queryKeys.roster(region, slug), updated);
         },
         // Mutations don't hit the global query-error toast, so surface
-        // failures here — and only treat an actual secret rejection as an
+        // failures here - and only treat an actual secret rejection as an
         // ownership problem; a network blip or 500 is not one.
         onError: (error) => {
           const secretRejected = /edit secret/i.test(
@@ -232,15 +232,15 @@ const RosterResults: React.FC = () => {
           );
           if (secretRejected) {
             // Keeping the dead secret would leave the edit UI enabled with
-            // every action failing — evict it and drop to read-only.
+            // every action failing - evict it and drop to read-only.
             clearRosterSecret(region, slug);
             setIsOwner(false);
           }
           notifications.show({
             title: "Couldn't update roster",
             message: secretRejected
-              ? "This browser's edit access is no longer valid — the roster is now read-only here."
-              : "Something went wrong — try again.",
+              ? "This browser's edit access is no longer valid - the roster is now read-only here."
+              : "Something went wrong - try again.",
             color: "red",
           });
         },
@@ -276,7 +276,7 @@ const RosterResults: React.FC = () => {
     if (charRegion !== region.toLowerCase()) {
       notifications.show({
         title: "Different region",
-        message: `This roster is ${region.toUpperCase()} — that character is ${charRegion.toUpperCase()}.`,
+        message: `This roster is ${region.toUpperCase()} - that character is ${charRegion.toUpperCase()}.`,
         color: "yellow",
       });
       return;
@@ -302,7 +302,7 @@ const RosterResults: React.FC = () => {
     );
   }
 
-  // A failed fetch is NOT "roster not found" — the backend only returns null
+  // A failed fetch is NOT "roster not found" - the backend only returns null
   // for a genuinely missing row, and this null gets cached with
   // staleTime: Infinity, so a network blip must never be mistaken for it.
   if (roster.isError) {
@@ -314,7 +314,7 @@ const RosterResults: React.FC = () => {
               Couldn't load this roster
             </Title>
             <Text c="dimmed" size="14px">
-              Something went wrong while fetching the roster — this is usually temporary.
+              Something went wrong while fetching the roster - this is usually temporary.
             </Text>
             <Button onClick={() => void roster.refetch()}>Try again</Button>
           </Stack>
@@ -447,7 +447,7 @@ const RosterResults: React.FC = () => {
                   {failedChunks.length === chunkResults.length
                     ? "The lookup failed"
                     : "Part of the roster couldn't be fetched"}{" "}
-                  — this can happen when upstream APIs are briefly rate-limited.
+                  - this can happen when upstream APIs are briefly rate-limited.
                 </Text>
                 <Button size="compact-xs" variant="light" color="orange" onClick={() => failedChunks.forEach((r) => void r.refetch())}>
                   Retry
@@ -496,7 +496,7 @@ export const Route = createFileRoute("/roster/$region/$slug")({
       { title: "Roster Check | PugInspect" },
       {
         name: "description",
-        content: "A shared raid roster check — every character's gear, score and logs at a glance.",
+        content: "A shared raid roster check - every character's gear, score and logs at a glance.",
       },
     ],
     links: [

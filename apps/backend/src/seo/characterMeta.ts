@@ -156,7 +156,7 @@ export async function renderCharacterPageHtml(
 }
 
 /**
- * Meta for a shared Roster Check link (/roster/{region}/{slug}) — the core
+ * Meta for a shared Roster Check link (/roster/{region}/{slug}) - the core
  * loop is pasting these into Discord, so unfurlers need real tags, not the
  * homepage defaults. Returns null for an invalid region or unknown slug.
  */
@@ -176,7 +176,7 @@ export async function renderRosterPageHtml(region: string, slug: string): Promis
 
   const count = roster.characters.length;
   const title = `Roster Check (${count} character${count === 1 ? "" : "s"}) | PugInspect`;
-  const description = `A shared ${regionLc.toUpperCase()} raid roster — item level, Raider.IO score, raid progress and log percentiles for all ${count} characters at a glance.`;
+  const description = `A shared ${regionLc.toUpperCase()} raid roster - item level, Raider.IO score, raid progress and log percentiles for all ${count} characters at a glance.`;
   const canonical = `${config.publicOrigin}/roster/${regionLc}/${slug}`;
 
   const metaBlock = [

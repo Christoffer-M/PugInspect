@@ -47,7 +47,7 @@ type GraphQLContext = { isBot?: boolean };
 
 type Profiles = Awaited<ReturnType<typeof getCharacterProfiles>>;
 
-/** Assemble the GraphQL Character from upstream profiles — shared by
+/** Assemble the GraphQL Character from upstream profiles - shared by
  *  Query.character and Query.rosterCharacters. */
 function buildCharacter(
   key: { name: string; realm: string; region: string },
@@ -58,7 +58,7 @@ function buildCharacter(
     name: blizzardProfile?.name ?? key.name,
     realm: blizzardProfile?.realm.name ?? key.realm,
     region: key.region,
-    // Internal field — not in the GraphQL schema, used by field resolvers below
+    // Internal field - not in the GraphQL schema, used by field resolvers below
     _characterId: characterId ?? null,
     ...(blizzardProfile ? mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl ?? null) : {}),
     raiderIo: requested.raiderIo && rioProfile ? mapRaiderIo(rioProfile) : null,
@@ -196,7 +196,7 @@ export default {
         throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
       }
       // Only spend upstream quota on what the selection set actually asks
-      // for — an identity-only query must not trigger 10 RIO + WCL lookups.
+      // for - an identity-only query must not trigger 10 RIO + WCL lookups.
       const raiderIoRequested = isRosterCharacterFieldRequested(info, "raiderIo");
       const raidLogsRequested = isRosterCharacterFieldRequested(info, "raidLogs");
       // No recordSearchEvent / alt enrichment here: a roster view isn't a

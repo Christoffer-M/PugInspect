@@ -52,7 +52,7 @@ describe("decodeRosterImport", () => {
     expect(result?.characters).toEqual([
       { name: "Пуговка", realm: "gordunni", classFile: "MAGE", role: "DPS" },
       { name: "Тест", realm: "howling-fjord", classFile: "DRUID", role: "HEALER" },
-      // Realm itself contains a dash — first-dash split keeps it intact.
+      // Realm itself contains a dash - first-dash split keeps it intact.
       { name: "Лич", realm: "lich-king", classFile: "PRIEST", role: "HEALER" },
     ]);
   });
@@ -63,9 +63,9 @@ describe("decodeRosterImport", () => {
     );
     const result = await decodeRosterImport(encoded);
     expect(result?.characters.map((c) => c.realm)).toEqual([
-      "malganis", // NOT mal-ganis — the apostrophe left a case boundary
+      "malganis", // NOT mal-ganis - the apostrophe left a case boundary
       "kelthuzad",
-      "kiljaeden", // lowercase after apostrophe — heuristic already correct
+      "kiljaeden", // lowercase after apostrophe - heuristic already correct
     ]);
   });
 

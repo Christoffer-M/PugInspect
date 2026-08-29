@@ -15,7 +15,7 @@ job is only the addon side: produce the string and make it easy to copy.
    list it in the `.toc` / embeds.xml the way the addon's other libraries are handled. It's
    the standard LibStub library used by WeakAuras/Details for export strings.
 
-2. **Export module** — use this reference implementation as the starting point (adapt naming
+2. **Export module** - use this reference implementation as the starting point (adapt naming
    to the addon's existing module/namespace conventions):
 
 ```lua
@@ -78,14 +78,14 @@ local function BuildRosterExport()
 end
 ```
 
-3. **Slash command `/pi export`** — the website's copy tells users to type exactly this. Wire
+3. **Slash command `/pi export`** - the website's copy tells users to type exactly this. Wire
    it into the addon's existing slash-command handling. On success, open a copy dialog; on
    failure, print the reason to chat (e.g. "PugInspect: you're not in a group").
 
-4. **Copy dialog** — a small frame with a read-only, auto-highlighted `EditBox` containing
+4. **Copy dialog** - a small frame with a read-only, auto-highlighted `EditBox` containing
    the string (the WeakAuras-export pattern): `HighlightText()` on show and on click,
    close on Escape/Ctrl+C-then-Escape. Reuse the addon's existing frame styling if there is
-   one. The string is a few hundred characters for a full raid — a one-line EditBox is fine.
+   one. The string is a few hundred characters for a full raid - a one-line EditBox is fine.
 
 ## Format contract (must not drift)
 
@@ -96,16 +96,16 @@ record  = Name-Realm:CLASSFILE:ROLE[:SPEC]
 ```
 
 - `region`: lowercase `us|kr|eu|tw|cn` from `GetCurrentRegion()`.
-- `Name-Realm`: realm is Blizzard-normalized ("TarrenMill") — the site re-slugs it; don't
+- `Name-Realm`: realm is Blizzard-normalized ("TarrenMill") - the site re-slugs it; don't
   transform it in the addon.
 - `CLASSFILE`: e.g. `DEATHKNIGHT`; empty string allowed. Display hint only.
 - `ROLE`: `T`/`H`/`D`; empty when unassigned.
-- `SPEC`: leave empty — deliberately unused (other raiders' specs would need inspect
+- `SPEC`: leave empty - deliberately unused (other raiders' specs would need inspect
   round-trips; the website's lookup fills specs in).
-- Separators `;` and `:` never occur in character or realm names — no escaping.
+- Separators `;` and `:` never occur in character or realm names - no escaping.
 - Max 30 members; truncate beyond that.
 - `!PI1!` is version 1 of the format. Never change the payload shape without bumping the
-  prefix (`!PI2!`) — the website matches the prefix exactly.
+  prefix (`!PI2!`) - the website matches the prefix exactly.
 
 The website decoder is `apps/frontend/src/util/rosterImport.ts` in the web repo, and the full
 contract doc is `docs/ROSTER_EXPORT_FORMAT.md` there.
@@ -118,7 +118,7 @@ contract doc is `docs/ROSTER_EXPORT_FORMAT.md` there.
   realms, class colors and role tags.
 - Sanity-check the pipeline in-game before UI work:
   `/dump LibStub("LibDeflate"):EncodeForPrint(LibStub("LibDeflate"):CompressDeflate("eu;Test-Kazzak:MAGE:D"))`
-  then paste `!PI1!<that output>` into the site — it should detect "Test" on kazzak as a mage.
+  then paste `!PI1!<that output>` into the site - it should detect "Test" on kazzak as a mage.
 - Test all three group states: solo (should refuse), 5-man party (player included via the
   party branch), raid. Cross-realm members must come out as `Name-TheirRealm`, same-realm as
-  `Name-YourRealm` — never bare names.
+  `Name-YourRealm` - never bare names.

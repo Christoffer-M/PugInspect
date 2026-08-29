@@ -338,7 +338,7 @@ describe("Roster Check", () => {
     });
     expect((entries[0]!.character as Record<string, unknown>).class).toBe("Shaman");
     expect(entries[1]).toMatchObject({ name: "typoed", notFound: true, role: null, character: null });
-    // notFound is expected input — no search events fired for roster views
+    // notFound is expected input - no search events fired for roster views
     expect(recordSearchEvent).not.toHaveBeenCalled();
   });
 
@@ -393,7 +393,7 @@ describe("Roster Check", () => {
 
     expect(result.errors).toBeUndefined();
     const entries = result.data!.rosterCharacters as Array<Record<string, unknown>>;
-    // The client maps entries to its list by position — dupes must not shrink the array
+    // The client maps entries to its list by position - dupes must not shrink the array
     expect(entries).toHaveLength(2);
     expect(entries[0]!.notFound).toBe(false);
     expect(entries[1]!.notFound).toBe(true);

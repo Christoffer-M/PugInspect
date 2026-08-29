@@ -1,4 +1,4 @@
--- RosterExport.lua — reference implementation of the PugInspect roster export.
+-- RosterExport.lua - reference implementation of the PugInspect roster export.
 -- Drop into the PugInspect addon (requires LibDeflate, e.g. via LibStub).
 -- Format contract: docs/ROSTER_EXPORT_FORMAT.md in the PugInspect web repo.
 

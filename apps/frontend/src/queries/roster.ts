@@ -17,7 +17,7 @@ import { queryKeys } from "../queryKeys";
 export type RosterEntry = RosterCharactersQuery["rosterCharacters"][number];
 export type RosterCharacterKey = { name: string; realm: string };
 
-/** Server-side per-request cap — a 30-man roster becomes 3 chunked requests,
+/** Server-side per-request cap - a 30-man roster becomes 3 chunked requests,
  *  which keeps a paste + two difficulty toggles well under the backend's
  *  100 req/min per-IP limit. */
 export const ROSTER_CHUNK_SIZE = 10;
@@ -139,7 +139,7 @@ export const useUpdateRoster = () =>
 
 /**
  * The roster edit secret, handed out once by createRoster and kept in
- * localStorage — whoever holds it edits the slug in place; rosters are
+ * localStorage - whoever holds it edits the slug in place; rosters are
  * read-only for everyone else. The in-memory map is a fallback for browsers
  * where localStorage is unavailable (private mode / storage blocked), so a
  * creator can at least edit their roster for the lifetime of the tab.
@@ -167,7 +167,7 @@ export function readRosterSecret(region: string, slug: string): string | null {
   }
 }
 
-/** Forget a secret the server has rejected — keeping it leaves the edit UI
+/** Forget a secret the server has rejected - keeping it leaves the edit UI
  * enabled with every action dead-ending. */
 export function clearRosterSecret(region: string, slug: string) {
   memorySecrets.delete(secretKey(region, slug));
@@ -185,7 +185,7 @@ export const useRoster = (region: string, slug: string) =>
       const response = await execute<RosterQuery, RosterQueryVariables>(rosterQuery, { region, slug });
       return response.roster ?? null;
     },
-    // Rosters are immutable — a slug's character list never changes.
+    // Rosters are immutable - a slug's character list never changes.
     staleTime: Infinity,
     gcTime: 1000 * 60 * 60,
   });
@@ -225,7 +225,7 @@ export const useRosterChunks = ({
       retry: false,
       // Keep showing the previous difficulty's cards while the new one loads.
       placeholderData: (prev: RosterEntry[] | undefined) => prev,
-      // Roster lookups fan out to three upstreams per character — errors render
+      // Roster lookups fan out to three upstreams per character - errors render
       // inline per chunk, not as a global red toast per failed chunk.
       meta: { suppressErrorToast: true },
       queryFn: async (): Promise<RosterEntry[]> => {

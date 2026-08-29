@@ -751,7 +751,7 @@ export async function getSitemapCharacters(limit: number): Promise<SitemapCharac
 // ---------------------------------------------------------------------------
 
 function randomSlug(): string {
-  // 8 chars of base36 from crypto randomness — ~41 bits, plenty for a table
+  // 8 chars of base36 from crypto randomness - ~41 bits, plenty for a table
   // that only grows by explicit user shares.
   return Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => (b % 36).toString(36)).join("");
 }
@@ -789,7 +789,7 @@ export async function insertRoster(
   throw lastError;
 }
 
-/** Returns null only when no row matches — a DB failure throws, so the client
+/** Returns null only when no row matches - a DB failure throws, so the client
  *  can tell "roster doesn't exist" apart from "the lookup failed" (it caches
  *  not-found aggressively). */
 export async function getRosterBySlug(
@@ -797,7 +797,7 @@ export async function getRosterBySlug(
   slug: string
 ): Promise<{ slug: string; region: string; characters: { name: string; realm: string }[] } | null> {
   const rows = await getDb()
-    // editSecret is deliberately not selected — it must never reach Query.roster.
+    // editSecret is deliberately not selected - it must never reach Query.roster.
     .select({ slug: rosters.slug, region: rosters.region, characters: rosters.characters })
     .from(rosters)
     .where(and(eq(rosters.region, region), eq(rosters.slug, slug)))
@@ -806,7 +806,7 @@ export async function getRosterBySlug(
 }
 
 /** Replace a roster's character list in place. Returns the updated roster, or
- *  null when slug+region+secret don't match a row (wrong or missing secret —
+ *  null when slug+region+secret don't match a row (wrong or missing secret -
  *  indistinguishable from a missing roster on purpose). */
 export async function updateRosterCharacters(
   region: string,
