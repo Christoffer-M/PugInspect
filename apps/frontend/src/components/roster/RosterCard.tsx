@@ -100,7 +100,7 @@ export const RosterCard = React.memo(function RosterCard({
       <Group gap={12} wrap="nowrap" align="center">
         {className && character?.activeSpec ? (
           <span className={classes.iconRing}>
-            <SpecImage className={className} spec={character.activeSpec} />
+            <SpecImage className={className} spec={character.activeSpec} round />
           </span>
         ) : (
           <Skeleton circle h={30} w={30} animate={pending} />
