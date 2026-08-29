@@ -22,6 +22,9 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const pastedText = event.clipboardData?.getData("text");
 
     if (pastedText) {
+      // The roster results page has its own paste handler that ADDS the
+      // character to the roster instead of navigating away from it.
+      if (/^\/roster\/[^/]+\/[^/]+/.test(window.location.pathname)) return;
       const characterUrl = parseCharacterUrl(pastedText);
       if (characterUrl) {
         event.preventDefault();

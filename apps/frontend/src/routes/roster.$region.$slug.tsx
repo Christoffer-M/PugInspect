@@ -33,9 +33,11 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../queryKeys";
-import { Difficulty } from "../graphql/graphql";
+import { Difficulty, RoleType } from "../graphql/graphql";
 import { getRaidDisplayName, DEFAULT_RAID, RAIDS } from "../data/raidZones";
 import { parseNameRealm, type RosterImportCharacter } from "../util/rosterImport";
+import { normalizeRealm, parseCharacterUrl } from "../util/util";
+import { useWindowEvent } from "@mantine/hooks";
 import classes from "../components/roster/Roster.module.css";
 
 const MAX_CHARACTERS = 30;
@@ -252,6 +254,43 @@ const RosterResults: React.FC = () => {
       { name: c.name.toLowerCase(), realm: c.realm },
     ]);
   };
+
+  // A pasted PugInspect/RaiderIO character URL adds that character to the
+  // roster (the site-wide handler in Page.tsx yields to this route). Read-only
+  // viewers keep the site-wide behavior: the character page opens instead.
+  useWindowEvent("paste", (event: ClipboardEvent) => {
+    const characterUrl = parseCharacterUrl(event.clipboardData?.getData("text") ?? "");
+    if (!characterUrl) return;
+    event.preventDefault();
+    const name = characterUrl.name.toLowerCase();
+    const realm = normalizeRealm(characterUrl.realm);
+    const charRegion = characterUrl.region.toLowerCase();
+    if (!isOwner) {
+      void navigate({
+        to: "/$region/$realm/$name",
+        params: { region: charRegion, realm, name },
+        search: { roleType: RoleType.Any },
+      });
+      return;
+    }
+    if (charRegion !== region.toLowerCase()) {
+      notifications.show({
+        title: "Different region",
+        message: `This roster is ${region.toUpperCase()} — that character is ${charRegion.toUpperCase()}.`,
+        color: "yellow",
+      });
+      return;
+    }
+    if (characters.some((c) => c.name === name && c.realm === realm)) {
+      notifications.show({
+        title: "Already in the roster",
+        message: `${characterUrl.name} is already on this roster.`,
+        color: "yellow",
+      });
+      return;
+    }
+    addCharacter({ name, realm });
+  });
 
   if (roster.isPending) {
     return (
