@@ -67,6 +67,8 @@ const RosterResults: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.Heroic);
   const [addValue, setAddValue] = useState("");
   const hints = useMemo(() => readHints(slug), [slug]);
+  // Owner = whoever holds this slug's edit secret in localStorage.
+  const isOwner = useMemo(() => readRosterSecret(region, slug) !== null, [region, slug]);
 
   const characters = useMemo(() => roster.data?.characters ?? [], [roster.data]);
   const zoneId = RAIDS[DEFAULT_RAID]?.zoneId;
@@ -293,31 +295,38 @@ const RosterResults: React.FC = () => {
                 data={DIFFICULTY_OPTIONS}
               />
             </Group>
-            <Group gap={8}>
-              <TextInput
-                size="xs"
-                w={180}
-                placeholder="Add Name-Realm"
-                value={addValue}
-                onChange={(e) => setAddValue(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addCharacter();
-                }}
-                leftSection={<IconUserPlus size={14} />}
-                disabled={characters.length >= MAX_CHARACTERS}
-              />
-              <Button
-                size="xs"
-                variant="light"
-                onClick={addCharacter}
-                loading={createRoster.isPending || updateRoster.isPending}
-              >
-                Add
-              </Button>
-              <Text size="11.5px" c="dimmed">
-                {characters.length} / {MAX_CHARACTERS} slots
-              </Text>
-            </Group>
+            <Tooltip
+              label="Only the roster's creator can add members — paste your own roster to build on this one"
+              withArrow
+              disabled={isOwner}
+            >
+              <Group gap={8}>
+                <TextInput
+                  size="xs"
+                  w={180}
+                  placeholder="Add Name-Realm"
+                  value={addValue}
+                  onChange={(e) => setAddValue(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addCharacter();
+                  }}
+                  leftSection={<IconUserPlus size={14} />}
+                  disabled={!isOwner || characters.length >= MAX_CHARACTERS}
+                />
+                <Button
+                  size="xs"
+                  variant="light"
+                  onClick={addCharacter}
+                  disabled={!isOwner}
+                  loading={createRoster.isPending || updateRoster.isPending}
+                >
+                  Add
+                </Button>
+                <Text size="11.5px" c="dimmed">
+                  {characters.length} / {MAX_CHARACTERS} slots
+                </Text>
+              </Group>
+            </Tooltip>
           </Group>
 
           {failedChunks.length > 0 && (
