@@ -1,3 +1,4 @@
+import React from "react";
 import { ActionIcon, Badge, Group, Paper, Skeleton, Stack, Text } from "@mantine/core";
 import { IconChartBarOff, IconX } from "@tabler/icons-react";
 import { Difficulty } from "../../graphql/graphql";
@@ -57,7 +58,15 @@ type RosterCardProps = {
   onRemove?: () => void;
 };
 
-export const RosterCard: React.FC<RosterCardProps> = ({ region, hint, entry, difficulty, onRemove }) => {
+// Memoized: a 30-card grid re-rendering on every route render is the page's
+// dominant cost, and card props only change when data or difficulty does.
+export const RosterCard = React.memo(function RosterCard({
+  region,
+  hint,
+  entry,
+  difficulty,
+  onRemove,
+}: RosterCardProps) {
   const character = entry?.character;
   const notFound = entry?.notFound === true;
   const pending = entry === undefined;
@@ -221,4 +230,4 @@ export const RosterCard: React.FC<RosterCardProps> = ({ region, hint, entry, dif
       )}
     </Paper>
   );
-};
+});

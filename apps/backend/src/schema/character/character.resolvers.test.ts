@@ -287,7 +287,13 @@ describe("Roster Check", () => {
         realm
         notFound
         role
-        character { name class activeSpec raiderIo { currentSeason { all { score } } } }
+        character {
+          name
+          class
+          activeSpec
+          raiderIo { currentSeason { all { score } } }
+          raidLogs { bestPerformanceAverage }
+        }
       }
     }
   `;
@@ -364,6 +370,59 @@ describe("Roster Check", () => {
     const wclCalls = vi.mocked(WarcraftLogsService.getCharacterProfile).mock.calls;
     expect(wclCalls.find(([a]) => a.name === "treeboi")?.[0].metric).toBe("hps");
     expect(wclCalls.find(([a]) => a.name === "pugsley")?.[0].metric).toBeUndefined();
+  });
+
+  it("returns a 1:1 response, mapping duplicates to notFound placeholders", async () => {
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile,
+      blizzardAvatarUrl: null,
+      rioProfile,
+      warcraftLogsProfile: undefined,
+      characterId: "char-uuid-1",
+      equipment: undefined,
+    });
+
+    const result = await execute(ROSTER_CHARACTERS_QUERY, {
+      region: "eu",
+      characters: [
+        { name: "Pugsley", realm: "Kazzak" },
+        { name: "pugsley", realm: "Kazzak" }, // duplicate after normalization
+      ],
+      difficulty: "Heroic",
+    });
+
+    expect(result.errors).toBeUndefined();
+    const entries = result.data!.rosterCharacters as Array<Record<string, unknown>>;
+    // The client maps entries to its list by position — dupes must not shrink the array
+    expect(entries).toHaveLength(2);
+    expect(entries[0]!.notFound).toBe(false);
+    expect(entries[1]!.notFound).toBe(true);
+    expect(getCharacterProfiles).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips RIO and WCL entirely for identity-only selections", async () => {
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile,
+      blizzardAvatarUrl: null,
+      rioProfile: undefined,
+      warcraftLogsProfile: undefined,
+      characterId: "char-uuid-1",
+      equipment: undefined,
+    });
+
+    const result = await execute(
+      `query Roster($region: String!, $characters: [RosterCharacterInput!]!) {
+        rosterCharacters(region: $region, characters: $characters) { name notFound role }
+      }`,
+      { region: "eu", characters: [{ name: "Pugsley", realm: "Kazzak" }] }
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(getCharacterProfiles).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ raiderIoRequested: false })
+    );
+    expect(WarcraftLogsService.getCharacterProfile).not.toHaveBeenCalled();
   });
 
   it("rejects chunks over the per-request cap", async () => {

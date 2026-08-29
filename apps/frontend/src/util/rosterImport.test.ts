@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deflateRawSync } from "node:zlib";
-import { decodeRosterImport } from "./rosterImport";
+import { decodeRosterImport, parseNameRealm } from "./rosterImport";
 
 // Mirror of the addon's LibDeflate CompressDeflate + EncodeForPrint pipeline,
 // so these tests pin both sides of the export-string contract.
@@ -57,10 +57,30 @@ describe("decodeRosterImport", () => {
     ]);
   });
 
+  it("maps apostrophe realms to their dash-less slugs", async () => {
+    const encoded = encodeExportString(
+      "us;Bob-MalGanis:MAGE:D;Alice-KelThuzad:PRIEST:H;Carl-Kiljaeden:ROGUE:D"
+    );
+    const result = await decodeRosterImport(encoded);
+    expect(result?.characters.map((c) => c.realm)).toEqual([
+      "malganis", // NOT mal-ganis — the apostrophe left a case boundary
+      "kelthuzad",
+      "kiljaeden", // lowercase after apostrophe — heuristic already correct
+    ]);
+  });
+
   it("dedupes repeated characters and survives surrounding whitespace", async () => {
     const encoded = encodeExportString("eu;Pug-Kazzak:MAGE:D;Pug-Kazzak:MAGE:D");
     const result = await decodeRosterImport(`  ${encoded}\n`);
     expect(result?.characters).toHaveLength(1);
+  });
+
+  it("parseNameRealm slugs manual entry the same way as a paste", () => {
+    expect(parseNameRealm("Bob-TarrenMill")).toEqual({ name: "Bob", realm: "tarren-mill" });
+    expect(parseNameRealm("Bob-Tarren Mill")).toEqual({ name: "Bob", realm: "tarren-mill" });
+    expect(parseNameRealm("Имя-РевущийФьорд")).toEqual({ name: "Имя", realm: "howling-fjord" });
+    expect(parseNameRealm("Bob-MalGanis")).toEqual({ name: "Bob", realm: "malganis" });
+    expect(parseNameRealm("NoRealm")).toBeNull();
   });
 
   it("returns null for non-export text, bad regions, and corrupted strings", async () => {

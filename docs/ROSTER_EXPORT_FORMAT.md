@@ -47,8 +47,9 @@ unknown region or zero valid records is rejected the same way.
 ## Known limitation
 
 Blizzard-normalized realm names are re-slugged heuristically (case/digit boundaries → dashes):
-`TarrenMill` → `tarren-mill`, `Area52` → `area-52`. Russian realms are special-cased: their
-API slugs are transliterated (`РевущийФьорд` → `howling-fjord`), so the web decoder carries a
-lookup table of all 20 RU realms. Latin realms whose normalization removed an apostrophe are
-still ambiguous (`MalGanis` → `mal-ganis`, but the real slug is `malganis`) and come back
-"not found". Fix, if it bites: extend the table from Blizzard's realm index API.
+`TarrenMill` → `tarren-mill`, `Area52` → `area-52`. Realms the heuristic can't derive are
+special-cased in a lookup table (`SPECIAL_REALM_SLUGS`): all 20 Russian realms, whose API
+slugs are transliterated (`РевущийФьорд` → `howling-fjord`), and apostrophe realms whose
+stripped apostrophe left a case boundary (`MalGanis` → `malganis`, `KelThuzad` →
+`kelthuzad`). A realm missing from the table comes back "not found" — extend the table
+(or replace it with Blizzard's realm index API) when one surfaces.

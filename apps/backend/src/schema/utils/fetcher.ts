@@ -58,3 +58,14 @@ export function isAnyFieldRequestedBesides(
     (f) => !excluded.has(f)
   );
 }
+
+/** Like isFieldRequested, but for Query.rosterCharacters — the Character type
+ * sits one level down, under RosterEntry.character. */
+export function isRosterCharacterFieldRequested(
+  info: GraphQLResolveInfo,
+  field: string
+): boolean {
+  const parsed = parseResolveInfo(info) as ResolveTree | null;
+  const character = parsed?.fieldsByTypeName?.RosterEntry?.character as ResolveTree | undefined;
+  return Boolean(character?.fieldsByTypeName?.Character?.[field]);
+}

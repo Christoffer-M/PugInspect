@@ -12,7 +12,7 @@ import { runMigrations } from "./db/migrate.js";
 import express from "express";
 import cors from "cors";
 import { isbot } from "isbot";
-import { renderCharacterPageHtml } from "./seo/characterMeta.js";
+import { renderCharacterPageHtml, renderRosterPageHtml } from "./seo/characterMeta.js";
 import { renderCharacterCard } from "./seo/characterCard.js";
 import { renderSitemapXml } from "./seo/sitemap.js";
 import { expressMiddleware } from "@as-integrations/express5";
@@ -274,6 +274,22 @@ app.get("/sitemap.xml", sitemapRateLimiter, async (_, res) => {
 // Character page meta injection for crawlers/link unfurlers — nginx routes
 // bot requests for /{region}/{realm}/{name} here (rewritten to /meta/...).
 const metaRateLimiter = createRateLimiter(60, 60_000);
+
+// Registered before the character route: /meta/roster/... would otherwise
+// match it with region="roster".
+app.get("/meta/roster/:region/:slug", metaRateLimiter, async (req, res) => {
+  const { region, slug } = req.params;
+  const html =
+    typeof region === "string" && typeof slug === "string"
+      ? await renderRosterPageHtml(region, slug)
+      : null;
+  if (!html) {
+    res.status(404).type("text/plain").send("Not found");
+    return;
+  }
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.type("html").send(html);
+});
 
 app.get("/meta/:region/:realm/:name", metaRateLimiter, async (req, res) => {
   const { region, realm, name } = req.params;

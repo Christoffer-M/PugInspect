@@ -12,7 +12,11 @@ import { mapRaiderIo } from "../mappers/raiderIo.mapper.js";
 import { mapRaidLogs } from "../mappers/raidLogs.mapper.js";
 import { mapMythicPlusLogs } from "../mappers/mythicPlusLogs.mapper.js";
 import { mapGear } from "../mappers/gear.mapper.js";
-import { isAnyFieldRequestedBesides, isFieldRequested } from "../utils/fetcher.js";
+import {
+  isAnyFieldRequestedBesides,
+  isFieldRequested,
+  isRosterCharacterFieldRequested,
+} from "../utils/fetcher.js";
 import {
   CharacterSearchResponse,
   RaiderIOService,
@@ -185,14 +189,23 @@ export default {
         difficulty?: Difficulty | null;
         zoneId?: number | null;
       },
-      context: GraphQLContext
+      context: GraphQLContext,
+      info: GraphQLResolveInfo
     ) => {
       if (!VALID_REGIONS.has(args.region.toLowerCase())) {
         throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
       }
+      // Only spend upstream quota on what the selection set actually asks
+      // for — an identity-only query must not trigger 10 RIO + WCL lookups.
+      const raiderIoRequested = isRosterCharacterFieldRequested(info, "raiderIo");
+      const raidLogsRequested = isRosterCharacterFieldRequested(info, "raidLogs");
       // No recordSearchEvent / alt enrichment here: a roster view isn't a
       // "search", and 30 background achievement fetches per view is real load.
-      const bundles = await getRosterProfiles(args, context?.isBot === true);
+      const bundles = await getRosterProfiles(args, {
+        cacheOnly: context?.isBot === true,
+        raiderIoRequested,
+        raidLogsRequested,
+      });
       return bundles.map(({ name, realm, role, profiles }) => {
         const notFound = !profiles.blizzardProfile && !profiles.rioProfile;
         const blizz = profiles.blizzardProfile;
@@ -204,8 +217,8 @@ export default {
           character: notFound
             ? null
             : buildCharacter({ name, realm, region: args.region }, profiles, {
-                raiderIo: true,
-                raidLogs: true,
+                raiderIo: raiderIoRequested,
+                raidLogs: raidLogsRequested,
                 mythicPlusLogs: false,
                 gear: false,
               }),

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Alert,
@@ -21,6 +21,7 @@ import { Page } from "../components/layout/Page";
 import { RosterCard, type RosterCardHint } from "../components/roster/RosterCard";
 import { RosterSummary } from "../components/roster/RosterSummary";
 import {
+  clearRosterSecret,
   readRosterSecret,
   ROSTER_CHUNK_SIZE,
   useRoster,
@@ -33,9 +34,8 @@ import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../queryKeys";
 import { Difficulty } from "../graphql/graphql";
-import { normalizeRealm } from "../util/util";
 import { getRaidDisplayName, DEFAULT_RAID, RAIDS } from "../data/raidZones";
-import type { RosterImportCharacter } from "../util/rosterImport";
+import { parseNameRealm, type RosterImportCharacter } from "../util/rosterImport";
 import classes from "../components/roster/Roster.module.css";
 
 const MAX_CHARACTERS = 30;
@@ -45,6 +45,54 @@ const DIFFICULTY_OPTIONS = [
   { value: Difficulty.Heroic, label: "Heroic" },
   { value: Difficulty.Mythic, label: "Mythic" },
 ];
+
+/** Owns the input state so typing re-renders only this control, not the
+ *  30-card grid behind it. */
+const AddMemberControl: React.FC<{
+  isOwner: boolean;
+  full: boolean;
+  slotsText: string;
+  loading: boolean;
+  onAdd: (c: { name: string; realm: string }) => void;
+}> = ({ isOwner, full, slotsText, loading, onAdd }) => {
+  const [value, setValue] = useState("");
+  const add = () => {
+    // Same parser as the export-string decoder, so a manually typed
+    // "Bob-TarrenMill" or a Russian realm slugs identically to a paste.
+    const parsed = parseNameRealm(value);
+    if (!parsed) return;
+    setValue("");
+    onAdd(parsed);
+  };
+  return (
+    <Tooltip
+      label="This roster is read-only — only its creator can edit it. Paste your own roster to build on this one."
+      withArrow
+      disabled={isOwner}
+    >
+      <Group gap={8}>
+        <TextInput
+          size="xs"
+          w={180}
+          placeholder="Add Name-Realm"
+          value={value}
+          onChange={(e) => setValue(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") add();
+          }}
+          leftSection={<IconUserPlus size={14} />}
+          disabled={!isOwner || full}
+        />
+        <Button size="xs" variant="light" onClick={add} disabled={!isOwner} loading={loading}>
+          Add
+        </Button>
+        <Text size="11.5px" c="dimmed">
+          {slotsText}
+        </Text>
+      </Group>
+    </Tooltip>
+  );
+};
 
 function readHints(slug: string): Map<string, RosterCardHint> {
   try {
@@ -64,10 +112,13 @@ const RosterResults: React.FC = () => {
   const updateRoster = useUpdateRoster();
   const queryClient = useQueryClient();
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.Heroic);
-  const [addValue, setAddValue] = useState("");
   const hints = useMemo(() => readHints(slug), [slug]);
-  // Owner = whoever holds this slug's edit secret in localStorage.
-  const isOwner = useMemo(() => readRosterSecret(region, slug) !== null, [region, slug]);
+  // Owner = whoever holds this slug's edit secret. State (not a memo) so a
+  // server-rejected secret can drop the page to read-only immediately.
+  const [isOwner, setIsOwner] = useState(() => readRosterSecret(region, slug) !== null);
+  useEffect(() => {
+    setIsOwner(readRosterSecret(region, slug) !== null);
+  }, [region, slug]);
 
   const characters = useMemo(() => roster.data?.characters ?? [], [roster.data]);
   const zoneId = RAIDS[DEFAULT_RAID]?.zoneId;
@@ -128,9 +179,19 @@ const RosterResults: React.FC = () => {
 
   /** Pre-fill the chunk cache for an edited character list from entries we
    *  already have, so an edit re-renders in place instead of dropping every
-   *  card back to a skeleton (and refetching data that can't have changed). */
+   *  card back to a skeleton (and refetching data that can't have changed).
+   *  Placeholder chunks are excluded: during a difficulty switch they still
+   *  hold the PREVIOUS difficulty's entries, and seeding those under the new
+   *  difficulty's keys would show wrong parses as fresh for 15 minutes. */
   const seedChunkCache = (next: RosterCharacterKey[]) => {
-    const byKey = new Map(characters.map((c, i) => [`${c.name}:${c.realm}`, entriesByIndex[i]]));
+    const byKey = new Map<string, RosterEntry>();
+    chunkResults.forEach((result, chunk) => {
+      if (!result.data || result.isPlaceholderData) return;
+      result.data.forEach((entry, i) => {
+        const c = characters[chunk * ROSTER_CHUNK_SIZE + i];
+        if (c) byKey.set(`${c.name}:${c.realm}`, entry);
+      });
+    });
     for (let i = 0; i < next.length; i += ROSTER_CHUNK_SIZE) {
       const chunk = next.slice(i, i + ROSTER_CHUNK_SIZE);
       const entries = chunk.map((c) => byKey.get(`${c.name}:${c.realm}`));
@@ -160,27 +221,36 @@ const RosterResults: React.FC = () => {
           seedChunkCache(updated.characters);
           queryClient.setQueryData(queryKeys.roster(region, slug), updated);
         },
-        // e.g. a stale secret in another browser profile — mutations don't
-        // hit the global query-error toast, so surface it here.
-        onError: () =>
+        // Mutations don't hit the global query-error toast, so surface
+        // failures here — and only treat an actual secret rejection as an
+        // ownership problem; a network blip or 500 is not one.
+        onError: (error) => {
+          const secretRejected = /edit secret/i.test(
+            error instanceof Error ? error.message : String(error)
+          );
+          if (secretRejected) {
+            // Keeping the dead secret would leave the edit UI enabled with
+            // every action failing — evict it and drop to read-only.
+            clearRosterSecret(region, slug);
+            setIsOwner(false);
+          }
           notifications.show({
             title: "Couldn't update roster",
-            message: "Only the browser that created this roster can edit it.",
+            message: secretRejected
+              ? "This browser's edit access is no longer valid — the roster is now read-only here."
+              : "Something went wrong — try again.",
             color: "red",
-          }),
+          });
+        },
       }
     );
   };
 
-  const addCharacter = () => {
-    const trimmed = addValue.trim();
-    const dash = trimmed.indexOf("-");
-    if (dash <= 0) return;
-    const name = trimmed.slice(0, dash).trim().toLowerCase();
-    const realm = normalizeRealm(trimmed.slice(dash + 1));
-    if (!name || !realm) return;
-    setAddValue("");
-    editRoster([...characters.map(({ name, realm }) => ({ name, realm })), { name, realm }]);
+  const addCharacter = (c: { name: string; realm: string }) => {
+    editRoster([
+      ...characters.map(({ name, realm }) => ({ name, realm })),
+      { name: c.name.toLowerCase(), realm: c.realm },
+    ]);
   };
 
   if (roster.isPending) {
@@ -189,6 +259,27 @@ const RosterResults: React.FC = () => {
         <Center py={120}>
           <Loader />
         </Center>
+      </Page>
+    );
+  }
+
+  // A failed fetch is NOT "roster not found" — the backend only returns null
+  // for a genuinely missing row, and this null gets cached with
+  // staleTime: Infinity, so a network blip must never be mistaken for it.
+  if (roster.isError) {
+    return (
+      <Page>
+        <Container size={960} px="md" py="xl" className={classes.typographyReset}>
+          <Stack align="flex-start" gap="sm">
+            <Title order={1} size="26px">
+              Couldn't load this roster
+            </Title>
+            <Text c="dimmed" size="14px">
+              Something went wrong while fetching the roster — this is usually temporary.
+            </Text>
+            <Button onClick={() => void roster.refetch()}>Try again</Button>
+          </Stack>
+        </Container>
       </Page>
     );
   }
@@ -296,38 +387,13 @@ const RosterResults: React.FC = () => {
                 data={DIFFICULTY_OPTIONS}
               />
             </Group>
-            <Tooltip
-              label="This roster is read-only — only its creator can edit it. Paste your own roster to build on this one."
-              withArrow
-              disabled={isOwner}
-            >
-              <Group gap={8}>
-                <TextInput
-                  size="xs"
-                  w={180}
-                  placeholder="Add Name-Realm"
-                  value={addValue}
-                  onChange={(e) => setAddValue(e.currentTarget.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") addCharacter();
-                  }}
-                  leftSection={<IconUserPlus size={14} />}
-                  disabled={!isOwner || characters.length >= MAX_CHARACTERS}
-                />
-                <Button
-                  size="xs"
-                  variant="light"
-                  onClick={addCharacter}
-                  disabled={!isOwner}
-                  loading={updateRoster.isPending}
-                >
-                  Add
-                </Button>
-                <Text size="11.5px" c="dimmed">
-                  {characters.length} / {MAX_CHARACTERS} slots
-                </Text>
-              </Group>
-            </Tooltip>
+            <AddMemberControl
+              isOwner={isOwner}
+              full={characters.length >= MAX_CHARACTERS}
+              slotsText={`${characters.length} / ${MAX_CHARACTERS} slots`}
+              loading={updateRoster.isPending}
+              onAdd={addCharacter}
+            />
           </Group>
 
           {failedChunks.length > 0 && (
@@ -339,7 +405,7 @@ const RosterResults: React.FC = () => {
             >
               <Group gap="sm">
                 <Text size="13px">
-                  {failedChunks.length * 10 >= characters.length
+                  {failedChunks.length === chunkResults.length
                     ? "The lookup failed"
                     : "Part of the roster couldn't be fetched"}{" "}
                   — this can happen when upstream APIs are briefly rate-limited.
@@ -351,13 +417,7 @@ const RosterResults: React.FC = () => {
             </Alert>
           )}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-              gap: 12,
-            }}
-          >
+          <div className={classes.grid}>
             {sortedCards.map(({ character, entry, hint }) => (
               <RosterCard
                 key={`${character.name}-${character.realm}`}

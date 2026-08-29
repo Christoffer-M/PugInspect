@@ -20,13 +20,25 @@ const CONCURRENCY = 5;
 // which is exactly SPECS' className/specName.
 const ROLE_BY_CLASS_SPEC = new Map(SPECS.map((s) => [`${s.className}/${s.specName}`, s.role]));
 
-export function roleForBlizzardProfile(
-  profile: BlizzardCharacterProfile | undefined
-): SpecRole | null {
-  if (!profile) return null;
-  return (
-    ROLE_BY_CLASS_SPEC.get(`${profile.character_class.name}/${profile.active_spec.name}`) ?? null
-  );
+// RIO reports the role directly; its vocabulary differs from SpecRole.
+const RIO_ROLES: Record<string, SpecRole> = { TANK: "TANK", HEALING: "HEALER", DPS: "DPS" };
+
+/** Role from the Blizzard profile, falling back to RaiderIO when Blizzard is
+ *  down — without the fallback a healer would be ranked on damage and dropped
+ *  from the composition counts during a Blizzard outage. */
+export function roleForProfiles(profiles: {
+  blizzardProfile?: BlizzardCharacterProfile;
+  rioProfile?: { active_spec_role?: string } | undefined;
+}): SpecRole | null {
+  const blizz = profiles.blizzardProfile;
+  if (blizz) {
+    const role = ROLE_BY_CLASS_SPEC.get(
+      `${blizz.character_class.name}/${blizz.active_spec.name}`
+    );
+    if (role) return role;
+  }
+  const rioRole = profiles.rioProfile?.active_spec_role;
+  return rioRole ? (RIO_ROLES[rioRole.toUpperCase()] ?? null) : null;
 }
 
 export type RosterProfileBundle = {
@@ -40,6 +52,15 @@ export type RosterProfileBundle = {
  * Look up a chunk of roster characters. Never throws per character — a typo'd
  * name simply yields empty profiles (the resolver marks it notFound).
  */
+const EMPTY_PROFILES: Awaited<ReturnType<typeof getCharacterProfiles>> = {
+  blizzardProfile: undefined,
+  blizzardAvatarUrl: undefined,
+  characterId: null,
+  rioProfile: undefined,
+  warcraftLogsProfile: undefined,
+  equipment: undefined,
+};
+
 export async function getRosterProfiles(
   args: {
     region: string;
@@ -47,30 +68,36 @@ export async function getRosterProfiles(
     difficulty?: Difficulty | null;
     zoneId?: number | null;
   },
-  cacheOnly: boolean
+  options: { cacheOnly: boolean; raiderIoRequested: boolean; raidLogsRequested: boolean }
 ): Promise<RosterProfileBundle[]> {
-  const seen = new Set<string>();
-  const chars = args.characters
-    .map((c) => ({ name: normalizeName(c.name), realm: normalizeRealm(c.realm) }))
-    .filter((c) => {
-      const key = `${c.name}:${c.realm}`;
-      if (!c.name || !c.realm || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-  if (chars.length === 0 || chars.length > ROSTER_CHUNK_LIMIT) {
+  if (args.characters.length === 0 || args.characters.length > ROSTER_CHUNK_LIMIT) {
     throw new GraphQLError(`characters must contain 1–${ROSTER_CHUNK_LIMIT} entries`, {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
 
-  // One circuit check for the whole chunk: when WCL is rate-limited, skip
-  // parse lookups entirely and let cards degrade to "no parses" instead of
-  // burning 10 requests into an open breaker.
-  const wclAvailable = !WarcraftLogsService.isCircuitOpen();
+  // The response is strictly 1:1 with the request — the client maps entries
+  // back to its list by position, so invalid or duplicate inputs become
+  // notFound placeholders instead of being silently dropped (which would
+  // shift every later card onto the wrong character).
+  const seen = new Set<string>();
+  const chars = args.characters.map((c) => {
+    const name = normalizeName(c.name);
+    const realm = normalizeRealm(c.realm);
+    const key = `${name}:${realm}`;
+    // Same sanity caps as createRoster — oversized input never reaches
+    // upstream URLs or cache keys.
+    const skip = !name || !realm || name.length > 50 || realm.length > 100 || seen.has(key);
+    if (!skip) seen.add(key);
+    return { name, realm, skip };
+  });
 
-  const lookupOne = async (c: { name: string; realm: string }): Promise<RosterProfileBundle> => {
+  const lookupOne = async (c: {
+    name: string;
+    realm: string;
+    skip: boolean;
+  }): Promise<RosterProfileBundle> => {
+    if (c.skip) return { name: c.name, realm: c.realm, role: null, profiles: EMPTY_PROFILES };
     const charArgs = {
       name: c.name,
       realm: c.realm,
@@ -83,31 +110,32 @@ export async function getRosterProfiles(
     // comes back as empty profiles, never a rejection.
     const profiles = await getCharacterProfiles(charArgs, {
       blizzardRequested: true,
-      raiderIoRequested: true,
+      raiderIoRequested: options.raiderIoRequested,
       raidLogsRequested: false,
       mythicPlusLogsRequested: false,
       gearRequested: false,
       bypassCache: false,
-      cacheOnly,
+      cacheOnly: options.cacheOnly,
     });
 
-    const role = roleForBlizzardProfile(profiles.blizzardProfile);
+    const role = roleForProfiles(profiles);
     const found = profiles.blizzardProfile || profiles.rioProfile;
 
     // Phase 2: WCL parses, only for characters that exist — sequenced after
     // the profile so healers can be ranked on healing. Omitting the metric
-    // makes WCL rank everyone on damage, healers included.
-    if (found && wclAvailable) {
+    // makes WCL rank everyone on damage, healers included. Circuit checked
+    // per character so a breaker tripped mid-chunk stops the remaining calls.
+    if (found && options.raidLogsRequested && !WarcraftLogsService.isCircuitOpen()) {
       try {
         const wcl = await WarcraftLogsService.getCharacterProfile(
           { ...charArgs, metric: role === "HEALER" ? "hps" : undefined },
           false,
-          cacheOnly
+          options.cacheOnly
         );
         profiles.warcraftLogsProfile = wcl?.data;
       } catch (err) {
         // Degrade to a card without parses; rate limits open the breaker upstream.
-        logger.warn("Roster WCL lookup failed", { ...c, error: String(err) });
+        logger.warn("Roster WCL lookup failed", { name: c.name, realm: c.realm, error: String(err) });
       }
     }
 
