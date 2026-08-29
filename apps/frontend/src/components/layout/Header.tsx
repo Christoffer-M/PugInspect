@@ -18,6 +18,7 @@ import {
   IconMenu2,
   IconPuzzle,
   IconSearch,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 import { Link, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -110,6 +111,8 @@ const Header: React.FC = () => {
   const [navOpen, setNavOpen] = useState(false);
 
   const onRankings = !!matchRoute({ to: "/mythic-plus" });
+  const onRoster =
+    !!matchRoute({ to: "/roster" }) || !!matchRoute({ to: "/roster/$region/$slug" });
 
   return (
     <>
@@ -139,6 +142,17 @@ const Header: React.FC = () => {
                 data-active={onRankings || undefined}
               >
                 Rankings
+              </Button>
+              <Button
+                component={Link}
+                to="/roster"
+                visibleFrom="sm"
+                leftSection={<IconUsersGroup size={15} color="#8b7fd4" />}
+                variant="default"
+                className={classes.rankings}
+                data-active={onRoster || undefined}
+              >
+                Roster
               </Button>
               <ActionIcon
                 variant="subtle"
@@ -204,6 +218,16 @@ const Header: React.FC = () => {
           onClick={() => {
             setNavOpen(false);
             navigate({ to: "/mythic-plus" });
+          }}
+        />
+        <NavRow
+          icon={<IconUsersGroup size={17} color="#8b7fd4" />}
+          label="Roster Check"
+          desc="Inspect a whole raid at once"
+          active={onRoster}
+          onClick={() => {
+            setNavOpen(false);
+            navigate({ to: "/roster" });
           }}
         />
         <NavRow

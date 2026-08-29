@@ -1,5 +1,6 @@
 schema {
   query: Query
+  mutation: Mutation
 }
 
 type AltCharacter {
@@ -118,6 +119,15 @@ enum Metric {
   points_and_healing
 }
 
+type Mutation {
+  createRoster(characters: [RosterCharacterInput!]!, region: String!): Roster!
+  """
+  Replace a roster's character list. Requires the editSecret handed out by
+  createRoster; without it, fork the roster via createRoster instead.
+  """
+  updateRoster(characters: [RosterCharacterInput!]!, editSecret: String!, region: String!, slug: String!): Roster!
+}
+
 type MythicPlusClass {
   name: String!
   slug: String!
@@ -200,6 +210,8 @@ type Query {
   character(byBracket: Boolean, bypassCache: Boolean, difficulty: Difficulty, metric: Metric, name: String!, partition: Int, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
   mythicPlusSpecStats(zoneId: Int): MythicPlusSpecStats
+  roster(region: String!, slug: String!): Roster
+  rosterCharacters(characters: [RosterCharacterInput!]!, difficulty: Difficulty, region: String!, zoneId: Int): [RosterEntry!]!
   siteStats: SiteStats!
   zonePartitions(zoneId: Int!): [ZonePartition!]!
 }
@@ -259,6 +271,43 @@ enum RoleType {
   DPS
   Healer
   Tank
+}
+
+"""
+A saved Roster Check share link. The creator can edit it in place with the
+editSecret; anyone else forks it into a new slug.
+"""
+type Roster {
+  characters: [RosterCharacterKey!]!
+  """
+  Only present in the createRoster response - the caller stores it client-side
+  to edit the roster later. Never returned by Query.roster.
+  """
+  editSecret: String
+  region: String!
+  slug: String!
+}
+
+input RosterCharacterInput {
+  name: String!
+  realm: String!
+}
+
+type RosterCharacterKey {
+  name: String!
+  realm: String!
+}
+
+"""
+One character in a roster lookup. notFound is expected user input (typo'd
+name/realm), never an error; character is null in that case.
+"""
+type RosterEntry {
+  character: Character
+  name: String!
+  notFound: Boolean!
+  realm: String!
+  role: SpecRole
 }
 
 type SearchResult {

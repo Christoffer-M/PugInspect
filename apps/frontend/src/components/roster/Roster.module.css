@@ -1,0 +1,203 @@
+/* Page wraps routes in Mantine <Typography>, whose `:where(p)` rule gives every
+ * Text a 20px bottom margin - that breaks flex centering of the small labels
+ * and the tight line rhythm inside cards. Same specificity, later order: wins. */
+.typographyReset :where(p) {
+  margin-bottom: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: 14px;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+/* Lift + glow tinted by the character's class color */
+.card:hover {
+  border-color: color-mix(in srgb, var(--class-color, #8b7fd4) 45%, rgba(61, 79, 110, 0.5));
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 28px rgba(2, 5, 11, 0.45),
+    0 0 18px color-mix(in srgb, var(--class-color, #8b7fd4) 12%, transparent);
+}
+
+.card:hover .accent {
+  opacity: 1;
+}
+
+.cardNotFound {
+  border-color: rgba(255, 138, 61, 0.35);
+  opacity: 0.85;
+  cursor: default;
+}
+
+/* Not-found cards aren't links - no lift, no glow */
+.cardNotFound:hover {
+  border-color: rgba(255, 138, 61, 0.35);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Class-colored accent line along the card's top edge */
+.accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0.85;
+  background: linear-gradient(90deg, transparent, var(--class-color, rgba(61, 79, 110, 0.6)), transparent);
+}
+
+.iconRing {
+  border-radius: 50%;
+  border: 2px solid var(--class-color, rgba(61, 79, 110, 0.8));
+  padding: 2px;
+  display: inline-flex;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--class-color, transparent) 14%, transparent);
+}
+
+.name {
+  font-family: var(--mantine-font-family-headings);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--class-color, var(--mantine-color-text));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roleTag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--role-color);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid color-mix(in srgb, var(--role-color) 33%, transparent);
+  border-radius: 5px;
+  padding: 3px 6px;
+  flex-shrink: 0;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dark-2);
+}
+
+.statValue {
+  font-family: var(--mantine-font-family-headings);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 14px;
+  flex: 1;
+}
+
+.statCell:first-child {
+  padding-left: 0;
+}
+
+.statCell + .statCell {
+  border-left: 1px solid rgba(61, 79, 110, 0.28);
+}
+
+.statsRow {
+  display: flex;
+  align-items: stretch;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(61, 79, 110, 0.28);
+}
+
+.noLogs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px dashed rgba(61, 79, 110, 0.6);
+  background: rgba(8, 14, 28, 0.4);
+}
+
+.removeButton {
+  opacity: 0.6;
+}
+
+.removeButton:hover {
+  opacity: 1;
+  color: #ff8a3d;
+}
+
+/* Summary stat bar. Every cell carries a left divider and equal padding; the
+ * row is pulled left by exactly (padding + border) and the clip wrapper hides
+ * whatever sticks out - so the leading divider of EVERY row (not just the
+ * first) is clipped and wrapped rows stay flush with the row above. */
+.summaryBar {
+  padding: 14px 16px;
+}
+
+.summaryClip {
+  overflow: hidden;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 14px 0;
+  margin-left: -19px;
+}
+
+.summaryCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 18px;
+  min-width: 96px;
+  flex: 1;
+  border-left: 1px solid rgba(61, 79, 110, 0.28);
+}
+
+.summaryLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dark-2);
+}
+
+.summaryValue {
+  font-family: var(--mantine-font-family-headings);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.summarySub {
+  font-size: 11px;
+  color: var(--mantine-color-dark-2);
+}

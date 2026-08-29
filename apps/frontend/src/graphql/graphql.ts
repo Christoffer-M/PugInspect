@@ -151,6 +151,30 @@ export enum Metric {
   PointsAndHealing = 'points_and_healing'
 }
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  createRoster: Roster;
+  /**
+   * Replace a roster's character list. Requires the editSecret handed out by
+   * createRoster; without it, fork the roster via createRoster instead.
+   */
+  updateRoster: Roster;
+};
+
+
+export type MutationCreateRosterArgs = {
+  characters: Array<RosterCharacterInput>;
+  region: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateRosterArgs = {
+  characters: Array<RosterCharacterInput>;
+  editSecret: Scalars['String']['input'];
+  region: Scalars['String']['input'];
+  slug: Scalars['String']['input'];
+};
+
 export type MythicPlusClass = {
   __typename?: 'MythicPlusClass';
   name: Scalars['String']['output'];
@@ -241,6 +265,8 @@ export type Query = {
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
   mythicPlusSpecStats?: Maybe<MythicPlusSpecStats>;
+  roster?: Maybe<Roster>;
+  rosterCharacters: Array<RosterEntry>;
   siteStats: SiteStats;
   zonePartitions: Array<ZonePartition>;
 };
@@ -267,6 +293,20 @@ export type QueryCharacterSuggestionsArgs = {
 
 
 export type QueryMythicPlusSpecStatsArgs = {
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryRosterArgs = {
+  region: Scalars['String']['input'];
+  slug: Scalars['String']['input'];
+};
+
+
+export type QueryRosterCharactersArgs = {
+  characters: Array<RosterCharacterInput>;
+  difficulty?: InputMaybe<Difficulty>;
+  region: Scalars['String']['input'];
   zoneId?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -337,6 +377,46 @@ export enum RoleType {
   Healer = 'Healer',
   Tank = 'Tank'
 }
+
+/**
+ * A saved Roster Check share link. The creator can edit it in place with the
+ * editSecret; anyone else forks it into a new slug.
+ */
+export type Roster = {
+  __typename?: 'Roster';
+  characters: Array<RosterCharacterKey>;
+  /**
+   * Only present in the createRoster response - the caller stores it client-side
+   * to edit the roster later. Never returned by Query.roster.
+   */
+  editSecret?: Maybe<Scalars['String']['output']>;
+  region: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+};
+
+export type RosterCharacterInput = {
+  name: Scalars['String']['input'];
+  realm: Scalars['String']['input'];
+};
+
+export type RosterCharacterKey = {
+  __typename?: 'RosterCharacterKey';
+  name: Scalars['String']['output'];
+  realm: Scalars['String']['output'];
+};
+
+/**
+ * One character in a roster lookup. notFound is expected user input (typo'd
+ * name/realm), never an error; character is null in that case.
+ */
+export type RosterEntry = {
+  __typename?: 'RosterEntry';
+  character?: Maybe<Character>;
+  name: Scalars['String']['output'];
+  notFound: Scalars['Boolean']['output'];
+  realm: Scalars['String']['output'];
+  role?: Maybe<SpecRole>;
+};
 
 export type SearchResult = {
   __typename?: 'SearchResult';
@@ -540,6 +620,42 @@ export type MythicPlusSpecStatsQueryVariables = Exact<{
 
 
 export type MythicPlusSpecStatsQuery = { __typename?: 'Query', mythicPlusSpecStats?: { __typename?: 'MythicPlusSpecStats', zoneId: number, refreshedAt: string, keyFloor: number, keyLevels: Array<number>, totalParses: number, minParsesToRank: number, minParsesToRankHero: number, sampleDepth: number, minKeyLevel: number, dungeons: Array<{ __typename?: 'MythicPlusDungeon', encounterId: number, name: string }>, specs: Array<{ __typename?: 'SpecStat', classSlug: string, specSlug: string, className: string, specName: string, role: SpecRole, metric: string, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, maxReportUrl?: string | null, dungeons: Array<{ __typename?: 'SpecDungeonStat', encounterId: number, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, maxReportUrl?: string | null }>, heroTalents: Array<{ __typename?: 'SpecHeroTalentStat', name: string, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, maxReportUrl?: string | null, dungeons: Array<{ __typename?: 'SpecDungeonStat', encounterId: number, parses: number, median: number, p95: number, max: number, medianKey: number, maxKey?: number | null, maxReportUrl?: string | null }> }> }> } | null };
+
+export type CreateRosterMutationVariables = Exact<{
+  region: Scalars['String']['input'];
+  characters: Array<RosterCharacterInput> | RosterCharacterInput;
+}>;
+
+
+export type CreateRosterMutation = { __typename?: 'Mutation', createRoster: { __typename?: 'Roster', slug: string, region: string, editSecret?: string | null, characters: Array<{ __typename?: 'RosterCharacterKey', name: string, realm: string }> } };
+
+export type UpdateRosterMutationVariables = Exact<{
+  region: Scalars['String']['input'];
+  slug: Scalars['String']['input'];
+  editSecret: Scalars['String']['input'];
+  characters: Array<RosterCharacterInput> | RosterCharacterInput;
+}>;
+
+
+export type UpdateRosterMutation = { __typename?: 'Mutation', updateRoster: { __typename?: 'Roster', slug: string, region: string, characters: Array<{ __typename?: 'RosterCharacterKey', name: string, realm: string }> } };
+
+export type RosterQueryVariables = Exact<{
+  region: Scalars['String']['input'];
+  slug: Scalars['String']['input'];
+}>;
+
+
+export type RosterQuery = { __typename?: 'Query', roster?: { __typename?: 'Roster', slug: string, region: string, characters: Array<{ __typename?: 'RosterCharacterKey', name: string, realm: string }> } | null };
+
+export type RosterCharactersQueryVariables = Exact<{
+  region: Scalars['String']['input'];
+  characters: Array<RosterCharacterInput> | RosterCharacterInput;
+  difficulty?: InputMaybe<Difficulty>;
+  zoneId?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type RosterCharactersQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, role?: SpecRole | null, character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, activeSpec?: string | null, level?: number | null, equippedItemLevel?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string } | null, raiderIo?: { __typename?: 'RaiderIo', currentSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null } | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, normal_bosses_killed?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null }> | null } | null, raidLogs?: { __typename?: 'RaidLogs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null } | null } | null }> };
 
 export type SiteStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -897,6 +1013,95 @@ export const MythicPlusSpecStatsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MythicPlusSpecStatsQuery, MythicPlusSpecStatsQueryVariables>;
+export const CreateRosterDocument = new TypedDocumentString(`
+    mutation CreateRoster($region: String!, $characters: [RosterCharacterInput!]!) {
+  createRoster(region: $region, characters: $characters) {
+    slug
+    region
+    characters {
+      name
+      realm
+    }
+    editSecret
+  }
+}
+    `) as unknown as TypedDocumentString<CreateRosterMutation, CreateRosterMutationVariables>;
+export const UpdateRosterDocument = new TypedDocumentString(`
+    mutation UpdateRoster($region: String!, $slug: String!, $editSecret: String!, $characters: [RosterCharacterInput!]!) {
+  updateRoster(
+    region: $region
+    slug: $slug
+    editSecret: $editSecret
+    characters: $characters
+  ) {
+    slug
+    region
+    characters {
+      name
+      realm
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateRosterMutation, UpdateRosterMutationVariables>;
+export const RosterDocument = new TypedDocumentString(`
+    query Roster($region: String!, $slug: String!) {
+  roster(region: $region, slug: $slug) {
+    slug
+    region
+    characters {
+      name
+      realm
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<RosterQuery, RosterQueryVariables>;
+export const RosterCharactersDocument = new TypedDocumentString(`
+    query RosterCharacters($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty, $zoneId: Int) {
+  rosterCharacters(
+    region: $region
+    characters: $characters
+    difficulty: $difficulty
+    zoneId: $zoneId
+  ) {
+    name
+    realm
+    notFound
+    role
+    character {
+      name
+      realm
+      region
+      class
+      activeSpec
+      level
+      equippedItemLevel
+      avatarUrl
+      guild {
+        name
+      }
+      raiderIo {
+        currentSeason {
+          all {
+            score
+            color
+          }
+        }
+        raidProgression {
+          raid
+          total_bosses
+          normal_bosses_killed
+          heroic_bosses_killed
+          mythic_bosses_killed
+        }
+      }
+      raidLogs {
+        bestPerformanceAverage
+        medianPerformanceAverage
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<RosterCharactersQuery, RosterCharactersQueryVariables>;
 export const SiteStatsDocument = new TypedDocumentString(`
     query SiteStats {
   siteStats {

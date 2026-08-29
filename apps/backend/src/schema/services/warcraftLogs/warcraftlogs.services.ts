@@ -62,6 +62,11 @@ export class WarcraftLogsService {
   private static partitionCache = new Map<number, { partitions: ZonePartitionInfo[]; cachedAt: number }>();
   private static readonly PARTITION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+  /** Whether the rate-limit circuit breaker is open (bulk callers skip WCL entirely). */
+  static isCircuitOpen(): boolean {
+    return this.client.isCircuitOpen();
+  }
+
   /** Remaining rate-limit budget, so a crawl can yield to live lookups. */
   static async getRateLimit(): Promise<{ limitPerHour: number; pointsSpentThisHour: number } | null> {
     try {

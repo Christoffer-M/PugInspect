@@ -13,7 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MythicPlusRouteImport } from './routes/mythic-plus'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as RosterIndexRouteImport } from './routes/roster.index'
 import { Route as RegionRealmNameRouteImport } from './routes/$region.$realm.$name'
+import { Route as RosterRegionSlugRouteImport } from './routes/roster.$region.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,9 +37,19 @@ const StatsRoute = StatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RosterIndexRoute = RosterIndexRouteImport.update({
+  id: '/roster/',
+  path: '/roster/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegionRealmNameRoute = RegionRealmNameRouteImport.update({
   id: '/$region/$realm/$name',
   path: '/$region/$realm/$name',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RosterRegionSlugRoute = RosterRegionSlugRouteImport.update({
+  id: '/roster/$region/$slug',
+  path: '/roster/$region/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -46,14 +58,18 @@ export interface FileRoutesByFullPath {
   '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
+  '/roster/': typeof RosterIndexRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
+  '/roster/$region/$slug': typeof RosterRegionSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
+  '/roster': typeof RosterIndexRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
+  '/roster/$region/$slug': typeof RosterRegionSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,7 +77,9 @@ export interface FileRoutesById {
   '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
+  '/roster/': typeof RosterIndexRoute
   '/$region/$realm/$name': typeof RegionRealmNameRoute
+  '/roster/$region/$slug': typeof RosterRegionSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -70,21 +88,27 @@ export interface FileRouteTypes {
     | '/mythic-plus'
     | '/privacy-policy'
     | '/stats'
+    | '/roster/'
     | '/$region/$realm/$name'
+    | '/roster/$region/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/mythic-plus'
     | '/privacy-policy'
     | '/stats'
+    | '/roster'
     | '/$region/$realm/$name'
+    | '/roster/$region/$slug'
   id:
     | '__root__'
     | '/'
     | '/mythic-plus'
     | '/privacy-policy'
     | '/stats'
+    | '/roster/'
     | '/$region/$realm/$name'
+    | '/roster/$region/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -92,7 +116,9 @@ export interface RootRouteChildren {
   MythicPlusRoute: typeof MythicPlusRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   StatsRoute: typeof StatsRoute
+  RosterIndexRoute: typeof RosterIndexRoute
   RegionRealmNameRoute: typeof RegionRealmNameRoute
+  RosterRegionSlugRoute: typeof RosterRegionSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -125,11 +151,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/roster/': {
+      id: '/roster/'
+      path: '/roster'
+      fullPath: '/roster/'
+      preLoaderRoute: typeof RosterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$region/$realm/$name': {
       id: '/$region/$realm/$name'
       path: '/$region/$realm/$name'
       fullPath: '/$region/$realm/$name'
       preLoaderRoute: typeof RegionRealmNameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roster/$region/$slug': {
+      id: '/roster/$region/$slug'
+      path: '/roster/$region/$slug'
+      fullPath: '/roster/$region/$slug'
+      preLoaderRoute: typeof RosterRegionSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -140,7 +180,9 @@ const rootRouteChildren: RootRouteChildren = {
   MythicPlusRoute: MythicPlusRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   StatsRoute: StatsRoute,
+  RosterIndexRoute: RosterIndexRoute,
   RegionRealmNameRoute: RegionRealmNameRoute,
+  RosterRegionSlugRoute: RosterRegionSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

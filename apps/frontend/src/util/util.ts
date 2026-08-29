@@ -22,6 +22,9 @@ export function parseCharacterUrl(
   if (!match) return null;
   const [, region, rawRealm, name] = match;
   if (!region || !rawRealm || !name) return null;
+  // Only real regions - a pasted puginspect.com/roster/{region}/{slug} link
+  // would otherwise parse as a character on region "roster".
+  if (!/^(us|eu|kr|tw|cn)$/i.test(region)) return null;
 
   return {
     region: region.toUpperCase(),

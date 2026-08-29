@@ -29,3 +29,14 @@
 .dash {
   color: var(--mantine-color-dark-3);
 }
+
+.grow {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.grow .bar {
+  width: auto;
+  flex: 1;
+}

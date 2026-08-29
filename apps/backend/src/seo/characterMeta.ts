@@ -1,5 +1,9 @@
 import { config } from "../config/index.js";
-import { getCharacterMetaSnapshot, type CharacterMetaSnapshot } from "../db/persistence.js";
+import {
+  getCharacterMetaSnapshot,
+  getRosterBySlug,
+  type CharacterMetaSnapshot,
+} from "../db/persistence.js";
 import { normalizeName, normalizeRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
@@ -148,5 +152,47 @@ export async function renderCharacterPageHtml(
   const html = await getIndexHtml();
   if (!html) return fallbackShell(metaBlock);
 
+  return html.replace(SEO_BLOCK, metaBlock);
+}
+
+/**
+ * Meta for a shared Roster Check link (/roster/{region}/{slug}) - the core
+ * loop is pasting these into Discord, so unfurlers need real tags, not the
+ * homepage defaults. Returns null for an invalid region or unknown slug.
+ */
+export async function renderRosterPageHtml(region: string, slug: string): Promise<string | null> {
+  const regionLc = region.trim().toLowerCase();
+  if (!VALID_REGIONS.has(regionLc)) return null;
+  if (!/^[a-z0-9]{1,16}$/.test(slug)) return null;
+
+  let roster;
+  try {
+    roster = await getRosterBySlug(regionLc, slug);
+  } catch (err) {
+    logger.error("Roster meta lookup failed", { region: regionLc, slug, error: String(err) });
+    return null;
+  }
+  if (!roster) return null;
+
+  const count = roster.characters.length;
+  const title = `Roster Check (${count} character${count === 1 ? "" : "s"}) | PugInspect`;
+  const description = `A shared ${regionLc.toUpperCase()} raid roster - item level, Raider.IO score, raid progress and log percentiles for all ${count} characters at a glance.`;
+  const canonical = `${config.publicOrigin}/roster/${regionLc}/${slug}`;
+
+  const metaBlock = [
+    `<title>${escapeHtml(title)}</title>`,
+    `<meta name="description" content="${escapeHtml(description)}" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:title" content="${escapeHtml(title)}" />`,
+    `<meta property="og:description" content="${escapeHtml(description)}" />`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}" />`,
+    `<meta name="twitter:card" content="summary" />`,
+    `<meta name="twitter:title" content="${escapeHtml(title)}" />`,
+    `<meta name="twitter:description" content="${escapeHtml(description)}" />`,
+    `<link rel="canonical" href="${escapeHtml(canonical)}" />`,
+  ].join("\n  ");
+
+  const html = await getIndexHtml();
+  if (!html) return fallbackShell(metaBlock);
   return html.replace(SEO_BLOCK, metaBlock);
 }
