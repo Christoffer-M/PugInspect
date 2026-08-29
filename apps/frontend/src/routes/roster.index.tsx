@@ -115,6 +115,9 @@ const RosterPaste: React.FC = () => {
                   {getRaidDisplayName(DEFAULT_RAID)}
                 </Text>
               </Group>
+              <Text size="15px" fw={500} c="bright" maw={720} mt={2}>
+                Is this pug going to clear it, or waste your evening?
+              </Text>
               <Text size="13px" c="dimmed" maw={720}>
                 Paste a roster export from the{" "}
                 <Anchor size="13px" href={ADDON_URL} target="_blank" rel="noopener noreferrer">
@@ -155,7 +158,8 @@ const RosterPaste: React.FC = () => {
                       <Text component="span" c="bright" fw={600}>
                         {characters.length}
                       </Text>{" "}
-                      characters detected · region {decoded!.region.toUpperCase()}
+                      character{characters.length === 1 ? "" : "s"} detected · region{" "}
+                      {decoded!.region.toUpperCase()}
                       {(decoded?.characters.length ?? 0) > MAX_CHARACTERS &&
                         ` · first ${MAX_CHARACTERS} kept`}
                     </Text>
@@ -216,7 +220,8 @@ const RosterPaste: React.FC = () => {
                     loading={createRoster.isPending}
                     onClick={inspect}
                   >
-                    Inspect {characters.length > 0 ? characters.length : ""} characters
+                    Inspect{characters.length > 0 ? ` ${characters.length}` : ""} character
+                    {characters.length === 1 ? "" : "s"}
                   </Button>
                   <Text size="11.5px" c="dimmed" lh={1.5}>
                     Lookups are cached, so a re-check of the same roster is fast. A typo'd name
