@@ -66,7 +66,7 @@ export class AchievementsService {
     if (!VALID_REGIONS.has(region.toLowerCase())) return [];
 
     try {
-      const token = await BlizzardService.getToken(region);
+      const token = await BlizzardService.getToken();
       const url = `https://${region}.api.blizzard.com/profile/wow/character/${realm}/${name}/achievements?namespace=profile-${region}&locale=en_US`;
 
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });

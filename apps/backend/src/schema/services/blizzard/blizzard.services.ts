@@ -19,8 +19,12 @@ const logger = createLogger({ service: "Blizzard" });
 const itemIconCache = new Map<number, string>();
 
 export class BlizzardService {
-  private static readonly tokens = new OAuthTokenManager(async (region) => {
-    logger.info("Fetching new Blizzard OAuth token", { region });
+  // One global token host for every non-CN region. The per-region hosts still
+  // exist but tw.battle.net 302-redirects to apac.battle.net, and fetch drops the
+  // POST body across the redirect — the token request then fails with 403 and TW
+  // breaks. Don't reintroduce `https://${region}.battle.net/oauth/token`.
+  private static readonly tokens = new OAuthTokenManager(async () => {
+    logger.info("Fetching new Blizzard OAuth token");
 
     const body = new URLSearchParams({
       grant_type: "client_credentials",
@@ -28,24 +32,24 @@ export class BlizzardService {
       client_secret: config.blizzardClientSecret,
     });
 
-    const res = await fetch(`https://${region}.battle.net/oauth/token`, {
+    const res = await fetch("https://oauth.battle.net/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     });
 
     if (!res.ok) {
-      logger.error("Blizzard token request failed", { region, status: res.status, statusText: res.statusText });
+      logger.error("Blizzard token request failed", { status: res.status, statusText: res.statusText });
       throw new Error(`Failed to fetch Blizzard token: ${res.status} ${res.statusText}`);
     }
 
-    logger.info("Blizzard OAuth token acquired", { region });
+    logger.info("Blizzard OAuth token acquired");
     return res.json() as Promise<{ access_token: string; expires_in: number }>;
   });
 
   /** Exposed so sibling services (e.g. AchievementsService) can reuse the same token manager. */
-  static async getToken(region: string): Promise<string> {
-    return this.tokens.getToken(region);
+  static async getToken(): Promise<string> {
+    return this.tokens.getToken();
   }
 
   static async getCharacterProfile(
@@ -75,7 +79,7 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
-    const token = await this.tokens.getToken(region);
+    const token = await this.tokens.getToken();
     const base = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}`;
     const ns = `namespace=profile-${region}&locale=en_US`;
 
@@ -163,7 +167,7 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
-    const token = await this.tokens.getToken(region);
+    const token = await this.tokens.getToken();
     const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}/equipment?namespace=profile-${region}&locale=en_US`;
 
     logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });

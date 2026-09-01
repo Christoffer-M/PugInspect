@@ -44,7 +44,7 @@ export const CLASS_FILE_NAMES: Record<string, string> = {
 };
 
 const PREFIX = "!PI1!";
-const REGIONS = new Set(["us", "eu", "kr", "tw", "cn"]);
+const REGIONS = new Set(["us", "eu", "kr", "tw"]);
 // LibDeflate's EncodeForPrint alphabet, in value order 0–63.
 const ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789()";
 const ROLES: Record<string, RosterImportCharacter["role"]> = { T: "TANK", H: "HEALER", D: "DPS" };

@@ -15,8 +15,11 @@ import {
 } from "../../util/util";
 import { useCharacterSearchQuery } from "../../queries/character-search";
 
-export const regions = ["EU", "US", "KR", "TW", "CN", "OCE", "SA", "RU"];
-const disabledRegions = ["OCE", "SA", "RU"]; // Regions that are currently disabled due to raider.io API limitations
+// The only four regions every upstream serves. OCE, SA and RU are not Blizzard
+// API regions at all — those realms sit under us (Frostmourne, Barthilas,
+// Ragnaros) and eu (Howling Fjord, Gordunni). CN is a separate Blizzard China
+// API we have no credentials for. None of them ever worked; don't add them back.
+export const regions = ["EU", "US", "KR", "TW"];
 
 const CharacterSearchInput: React.FC = () => {
   const params = useParams({
@@ -41,9 +44,7 @@ const CharacterSearchInput: React.FC = () => {
   const { data: searchResults = [], isLoading } = useCharacterSearchQuery(
     debouncedSearch,
     region,
-    !!errorText ||
-      searchTerm === `${initialName}-${initialRealm}` ||
-      disabledRegions.includes(region),
+    !!errorText || searchTerm === `${initialName}-${initialRealm}`,
   );
 
   const handleCharacterUrl = (url: string) => {
