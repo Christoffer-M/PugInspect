@@ -122,9 +122,9 @@ mod tests {
     fn event_json_shapes() {
         let s = serde_json::to_string(&SyncEvent::Status { status: "lost" }).unwrap();
         assert_eq!(s, r#"{"kind":"status","status":"lost"}"#);
-        let f = pixel::parse("1\t7\tEU\tRavencrest\t12\t2516\tGo go\t1\nPuggy-Draenor:MAGE:D:640:2500:9").unwrap();
+        let f = pixel::parse("1\t7\tEU\tRavencrest\t12\t2516\tGo go\t1\tH\nPuggy-Draenor:MAGE:D:640:2500:9").unwrap();
         let d = serde_json::to_string(&SyncEvent::Data(f)).unwrap();
         println!("{d}");
-        assert_eq!(d, r#"{"kind":"data","hb":7,"region":"EU","realm":"Ravencrest","sessionId":12,"activityId":2516,"title":"Go go","total":1,"applicants":[{"name":"Puggy","realm":"Draenor","class":"MAGE","role":"D","ilvl":640,"rio":2500,"group":9}]}"#);
+        assert_eq!(d, r#"{"kind":"data","hb":7,"region":"EU","realm":"Ravencrest","sessionId":12,"activityId":2516,"title":"Go go","total":1,"difficulty":"H","applicants":[{"name":"Puggy","realm":"Draenor","class":"MAGE","role":"D","ilvl":640,"rio":2500,"group":9}]}"#);
     }
 }

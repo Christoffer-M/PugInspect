@@ -1,4 +1,5 @@
 import { Group, Stack } from "@mantine/core";
+import { RAID_DIFFICULTY_COLORS } from "@repo/ui";
 import type { Lookup, Session } from "../state";
 import { keyOf } from "../state";
 import { ApplicantRow } from "./ApplicantRow";
@@ -6,6 +7,13 @@ import app from "../App.module.css";
 import classes from "./Applicants.module.css";
 
 const NEW_BADGE_MS = 8000;
+
+const DIFF_LABEL: Record<string, { text: string; color: string }> = {
+  N: { text: "Normal", color: RAID_DIFFICULTY_COLORS.normal },
+  H: { text: "Heroic", color: RAID_DIFFICULTY_COLORS.heroic },
+  M: { text: "Mythic", color: RAID_DIFFICULTY_COLORS.mythic },
+  "+": { text: "Mythic+", color: RAID_DIFFICULTY_COLORS.mythic },
+};
 
 const clock = (t: number) =>
   new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -32,8 +40,8 @@ export function Applicants({
           <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
             <span className={classes.title}>{session.title || "Group finder listing"}</span>
             <Group gap={8}>
-              <span className={app.label} style={{ color: "var(--mantine-color-accent-3)" }}>
-                {session.region}
+              <span className={app.label} style={{ color: DIFF_LABEL[session.difficulty]?.color ?? "var(--mantine-color-accent-3)" }}>
+                {DIFF_LABEL[session.difficulty]?.text ?? session.region}
               </span>
               <span className={app.mono}>· session started {clock(session.startedAt)}</span>
             </Group>
@@ -71,6 +79,7 @@ export function Applicants({
                 <ApplicantRow
                   key={key}
                   region={session.region}
+                  difficulty={session.difficulty}
                   applicant={a}
                   lookup={lookups[key]}
                   isNew={now - (seenAt[key] ?? 0) < NEW_BADGE_MS}

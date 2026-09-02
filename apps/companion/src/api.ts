@@ -26,8 +26,8 @@ export type RosterEntry = {
 };
 
 const ROSTER_CHARACTERS = /* GraphQL */ `
-  query RosterCharacters($region: String!, $characters: [RosterCharacterInput!]!) {
-    rosterCharacters(region: $region, characters: $characters) {
+  query RosterCharacters($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty) {
+    rosterCharacters(region: $region, characters: $characters, difficulty: $difficulty) {
       name
       realm
       notFound
@@ -51,12 +51,13 @@ export const CHUNK_SIZE = 10;
 
 export async function lookupCharacters(
   region: string,
-  characters: { name: string; realm: string }[]
+  characters: { name: string; realm: string }[],
+  difficulty?: "Normal" | "Heroic" | "Mythic"
 ): Promise<RosterEntry[]> {
   const response = await fetch(GRAPHQL_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ query: ROSTER_CHARACTERS, variables: { region, characters } }),
+    body: JSON.stringify({ query: ROSTER_CHARACTERS, variables: { region, characters, difficulty } }),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const result: { data?: { rosterCharacters: RosterEntry[] }; errors?: { message: string }[] } =

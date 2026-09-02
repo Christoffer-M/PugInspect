@@ -96,7 +96,7 @@ window.fetch = async (input, init) => {
 };
 
 const frame = (over: Partial<Frame>): Frame => ({
-  hb: 1, region: "eu", realm: "Kazzak", sessionId: 1725300000, activityId: 1, title: "Manaforge Omega HC · fresh run", total: 7, applicants: APPLICANTS, ...over,
+  hb: 1, region: "eu", realm: "Kazzak", sessionId: 1725300000, activityId: 1, title: "Manaforge Omega HC · fresh run", total: 7, difficulty: "H", applicants: APPLICANTS, ...over,
 });
 const data = (over: Partial<Frame>) => emit("sync", { kind: "data", ...frame(over) });
 
@@ -107,7 +107,7 @@ setTimeout(() => {
       break;
     case "#new":
       data({});
-      setTimeout(() => data({ sessionId: 1725300999, title: "Ara-Kara +12 · need heals", total: 0, applicants: [] }), 1200);
+      setTimeout(() => data({ sessionId: 1725300999, title: "Ara-Kara +12 · need heals", total: 0, difficulty: "+", applicants: [] }), 1200);
       break;
     case "#lost":
       data({});

@@ -27,6 +27,8 @@ pub struct Frame {
     pub activity_id: u64,
     pub title: String,
     pub total: u32,
+    /// Raid difficulty letter: "N" | "H" | "M", "+" for Mythic+, "" unknown.
+    pub difficulty: String,
     pub applicants: Vec<Applicant>,
 }
 
@@ -98,7 +100,7 @@ fn decode_at(img: &RgbaImage, y0: u32) -> Result<String, DecodeErr> {
 pub fn parse(payload: &str) -> Option<Frame> {
     let mut lines = payload.split('\n');
     let h: Vec<&str> = lines.next()?.split('\t').collect();
-    if h.len() != 8 || h[0] != "1" {
+    if h.len() != 9 || h[0] != "1" {
         return None;
     }
     let realm = h[3].to_string();
@@ -128,6 +130,7 @@ pub fn parse(payload: &str) -> Option<Frame> {
         activity_id: h[5].parse().ok()?,
         title: h[6].into(),
         total: h[7].parse().ok()?,
+        difficulty: h[8].into(),
         applicants,
     })
 }
@@ -158,7 +161,7 @@ mod tests {
         img
     }
 
-    const PAYLOAD: &str = "1\t17\tEU\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\n\
+    const PAYLOAD: &str = "1\t17\tEU\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
         Puggy-Ravencrest:WARRIOR:T:635:2874:41\n\
         Healbot:PRIEST:H:628:2410:41\n\
         Zapzap-Tarren-Mill:MAGE:D:641:3102:42";
@@ -199,7 +202,7 @@ mod tests {
 
     #[test]
     fn twenty_applicants_fit() {
-        let mut p = "1\t99\tUS\tIllidan\t1\t2516\tWeekly +10s, chill run\t20".to_string();
+        let mut p = "1\t99\tUS\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
         for i in 0..20 {
             p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7");
         }
@@ -220,6 +223,6 @@ mod tests {
         assert_eq!((a[1].name.as_str(), a[1].realm.as_str(), a[1].role.as_str()), ("Healbot", "Ravencrest", "H"));
         assert_eq!((a[2].name.as_str(), a[2].realm.as_str()), ("Zapzap-Tarren", "Mill"));
         assert!(parse("2\tx").is_none());
-        assert!(parse("1\t1\tEU\tR\t1\t1\tt\t1\nbad line").is_none());
+        assert!(parse("1\t1\tEU\tR\t1\t1\tt\t1\tH\nbad line").is_none());
     }
 }

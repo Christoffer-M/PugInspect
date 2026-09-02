@@ -15,6 +15,8 @@ export type Frame = {
   activityId: number;
   title: string;
   total: number;
+  /** "N" | "H" | "M" raid difficulty, "+" for Mythic+, "" unknown. */
+  difficulty: string;
   applicants: Applicant[];
 };
 export type Link = "no_window" | "ok" | "lost" | "incompatible";
@@ -25,9 +27,14 @@ export type Session = {
   region: string;
   title: string;
   activityId: number;
+  difficulty: string;
   startedAt: number;
   applicants: Applicant[];
 };
+
+/** GraphQL Difficulty enum value for the session's raid difficulty, if it is a raid. */
+export const gqlDifficulty = (d: string): "Normal" | "Heroic" | "Mythic" | undefined =>
+  ({ N: "Normal", H: "Heroic", M: "Mythic" } as const)[d as "N" | "H" | "M"];
 export type Lookup = { state: "loading" | "done" | "error"; entry?: RosterEntry; error?: string };
 
 export const keyOf = (a: { name: string; realm: string }) => `${a.name.toLowerCase()}-${slugRealm(a.realm)}`;
@@ -58,13 +65,15 @@ export function useCompanion(events: Events) {
 
   const flushLookups = async () => {
     const { region, applicants } = pending.current;
+    const difficulty = gqlDifficulty(sessionRef.current?.difficulty ?? "");
     pending.current = { region, applicants: [] };
     for (let i = 0; i < applicants.length; i += CHUNK_SIZE) {
       const chunk = applicants.slice(i, i + CHUNK_SIZE);
       try {
         const entries = await lookupCharacters(
           region,
-          chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm) }))
+          chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm) })),
+          difficulty
         );
         setLookups((l) => {
           const next = { ...l };
@@ -94,7 +103,12 @@ export function useCompanion(events: Events) {
       // Same listing, new id: the addon was /reload-ed (its id is its load time).
       s = { ...s, id: f.sessionId };
     } else if (!s || s.id !== f.sessionId) {
-      s = { id: f.sessionId, region: f.region, title: f.title, activityId: f.activityId, startedAt: Date.now(), applicants: [] };
+      s = { id: f.sessionId, region: f.region, title: f.title, activityId: f.activityId, difficulty: f.difficulty, startedAt: Date.now(), applicants: [] };
+      // Lookups are difficulty-specific (logs, prog); a listing at another difficulty starts clean.
+      if (current && current.difficulty !== f.difficulty) {
+        lookupsRef.current = {};
+        setLookups({});
+      }
       seenRef.current = {};
       setSeenAt({});
       // A listing that was already up when the app started is not "new".
@@ -114,7 +128,7 @@ export function useCompanion(events: Events) {
       }
       eventsRef.current.onNewApplicants?.(fresh, s);
     }
-    setSession({ ...s, title: f.title, applicants: f.applicants });
+    setSession({ ...s, title: f.title, difficulty: f.difficulty, applicants: f.applicants });
   };
 
   useEffect(() => {
