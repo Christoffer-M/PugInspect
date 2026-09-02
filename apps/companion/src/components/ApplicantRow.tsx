@@ -49,6 +49,8 @@ export function ApplicantRow({
   const rio = c?.raiderIo?.currentSeason?.all;
   const prog = progOf(lookup?.entry);
   const ilvl = c?.equippedItemLevel ?? a.ilvl;
+  const loading = lookup?.state === "loading";
+  const skeleton = <span className={classes.skeletonBar} style={{ width: 28, height: 14, display: "inline-block" }} />;
 
   return (
     <a
@@ -61,8 +63,8 @@ export function ApplicantRow({
       href="#"
     >
       <span className={classes.role}>{a.role || "·"}</span>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div className={classes.ident}>
+        <div className={classes.nameLine}>
           <span className={classes.name}>{a.name}</span>
           {isNew && <span className={classes.tag}>new</span>}
           {notFound && <span className={`${classes.tag} ${classes.tagWarn}`}>not found</span>}
@@ -70,7 +72,6 @@ export function ApplicantRow({
         <span className={classes.sub}>
           {prettyRealm(a.realm)} · {c?.activeSpec ? `${c.activeSpec} ` : ""}
           {className}
-          {lookup?.state === "loading" && <span className={app.mono}> looking up…</span>}
           {lookup?.state === "error" && (
             <span className={app.mono} style={{ color: "#f4c15e" }} title={lookup.error}>
               {" "}lookup failed
@@ -82,17 +83,13 @@ export function ApplicantRow({
         {ilvl || "-"}
       </span>
       <span className={classes.value} style={{ color: rio?.color ?? (a.rio ? "var(--mantine-color-dark-0)" : DIM) }}>
-        {Math.round(rio?.score ?? a.rio) || "-"}
+        {loading && !rio && !a.rio ? skeleton : Math.round(rio?.score ?? a.rio) || "-"}
       </span>
       <span style={{ display: "flex", justifyContent: "center" }}>
-        {lookup?.state === "loading" ? (
-          <span className={classes.skeletonBar} style={{ width: 28, height: 14 }} />
-        ) : (
-          <ParsePill value={c?.raidLogs?.bestPerformanceAverage} compact />
-        )}
+        {loading ? skeleton : <ParsePill value={c?.raidLogs?.bestPerformanceAverage} compact />}
       </span>
       <span className={classes.prog} style={{ color: prog?.color ?? DIM }}>
-        {prog?.text ?? "-"}
+        {loading ? skeleton : (prog?.text ?? "-")}
       </span>
       <span className={classes.open}>↗</span>
     </a>
