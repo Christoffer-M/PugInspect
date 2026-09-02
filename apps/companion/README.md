@@ -25,7 +25,7 @@ Requirements: Windows, game in Windowed or Windowed (Fullscreen) mode. `/pi hud`
 pnpm --filter companion tauri dev      # native shell (needs Rust; cargo in ~/.cargo/bin)
 pnpm --filter companion dev            # browser only, Tauri mocked; #synced / #new / #lost in the URL pick a screen
 pnpm --filter companion check-types
-pnpm --filter companion test           # cargo test: decoder round-trip, CRC, parser, event shapes
+cargo test --manifest-path apps/companion/src-tauri/Cargo.toml   # decoder round-trip, CRC, parser, event shapes
 ```
 
 Backend: the app posts to `VITE_GRAPHQL_URL` (default `https://puginspect.com/graphql`). The
