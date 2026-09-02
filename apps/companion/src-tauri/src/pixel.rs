@@ -2,11 +2,21 @@
 use image::RgbaImage;
 use serde::Serialize;
 
+/// Strip protocol version this build understands; the addon writes its own as the
+/// first header field. Bump both together whenever the payload shape changes.
+pub const PROTOCOL: u32 = 2;
 pub const B: u32 = 4;
 pub const COLS: u32 = 250;
 pub const MAX_ROWS: u32 = 4;
 const MAGIC: [u8; 3] = [42, 0, 69];
 const MAX_LEN: usize = ((COLS * MAX_ROWS - 2) * 3) as usize;
+
+#[derive(Debug, PartialEq)]
+pub enum ParseErr {
+    /// Header carried another protocol version (the value found).
+    Version(u32),
+    Malformed,
+}
 
 #[derive(Debug, PartialEq)]
 pub enum DecodeErr {
@@ -101,12 +111,20 @@ fn decode_at(img: &RgbaImage, y0: u32) -> Result<String, DecodeErr> {
 
 /// Header: "1\t<hb>\t<region>\t<myRealm>\t<sessionId>\t<activityId>\t<title>\t<nTotal>"
 /// Lines:  "<Name-Realm>:<CLASSFILE>:<T|H|D|>:<ilvl>:<rio>"
-pub fn parse(payload: &str) -> Option<Frame> {
+pub fn parse(payload: &str) -> Result<Frame, ParseErr> {
     let mut lines = payload.split('\n');
-    let h: Vec<&str> = lines.next()?.split('\t').collect();
-    if h.len() != 9 || h[0] != "1" {
-        return None;
+    let h: Vec<&str> = lines.next().ok_or(ParseErr::Malformed)?.split('\t').collect();
+    let version: u32 = h.first().and_then(|v| v.parse().ok()).ok_or(ParseErr::Malformed)?;
+    if version != PROTOCOL {
+        return Err(ParseErr::Version(version));
     }
+    if h.len() != 9 {
+        return Err(ParseErr::Malformed);
+    }
+    parse_body(&h, lines).ok_or(ParseErr::Malformed)
+}
+
+fn parse_body<'a>(h: &[&str], lines: impl Iterator<Item = &'a str>) -> Option<Frame> {
     let realm = h[3].to_string();
     let applicants = lines
         .map(|l| {
@@ -167,7 +185,7 @@ mod tests {
         img
     }
 
-    const PAYLOAD: &str = "1\t17\tEU\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
+    const PAYLOAD: &str = "2\t17\tEU\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
         Puggy-Ravencrest:WARRIOR:T:635:2874:41:15:1\n\
         Healbot:PRIEST:H:628:2410:41:0:0\n\
         Zapzap-Tarren-Mill:MAGE:D:641:3102:42:11:0";
@@ -208,7 +226,7 @@ mod tests {
 
     #[test]
     fn twenty_applicants_fit() {
-        let mut p = "1\t99\tUS\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
+        let mut p = "2\t99\tUS\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
         for i in 0..20 {
             p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7:0:0");
         }
@@ -228,7 +246,9 @@ mod tests {
         assert_eq!((a[0].name.as_str(), a[0].realm.as_str(), a[0].ilvl, a[0].rio), ("Puggy", "Ravencrest", 635, 2874));
         assert_eq!((a[1].name.as_str(), a[1].realm.as_str(), a[1].role.as_str()), ("Healbot", "Ravencrest", "H"));
         assert_eq!((a[2].name.as_str(), a[2].realm.as_str()), ("Zapzap-Tarren", "Mill"));
-        assert!(parse("2\tx").is_none());
-        assert!(parse("1\t1\tEU\tR\t1\t1\tt\t1\tH\nbad line").is_none());
+        assert!(parse("2\tx").is_err());
+        assert_eq!(parse("2\t1\tEU\tR\t1\t1\tt\t1\tH\nbad line"), Err(ParseErr::Malformed));
+        assert_eq!(parse("1\t1\tEU\tR\t1\t1\tt\t1\tH"), Err(ParseErr::Version(1)));
+        assert_eq!(parse("3\t1\tx"), Err(ParseErr::Version(3)));
     }
 }

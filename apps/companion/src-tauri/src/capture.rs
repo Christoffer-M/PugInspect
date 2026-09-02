@@ -1,6 +1,6 @@
 //! Captures the WoW window a few times a second, decodes the pixel strip and
 //! pushes changes to the webview as `sync` events.
-use crate::pixel::{self, Frame};
+use crate::pixel::{self, Frame, ParseErr, PROTOCOL};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 use std::sync::Mutex;
@@ -86,13 +86,22 @@ fn run(app: AppHandle) {
             },
         };
         // ponytail: no crop — decode bounds-checks its own samples, so cropping is just a copy.
-        let payload = img.and_then(|i| pixel::decode(&i).ok());
-        let frame = payload.as_deref().and_then(pixel::parse);
-        if payload.is_some() && frame.is_none() {
-            // The strip is intact but the payload shape is not ours: addon/app version mismatch.
-            set_status(&mut status, &mut last, "incompatible");
-            fresh = Instant::now();
-        }
+        let parsed = img.and_then(|i| pixel::decode(&i).ok()).map(|p| pixel::parse(&p));
+        let frame = match parsed {
+            Some(Ok(frame)) => Some(frame),
+            Some(Err(e)) => {
+                // The strip is intact but not in our shape: say which side to update.
+                let s = match e {
+                    ParseErr::Version(v) if v < PROTOCOL => "addon_outdated",
+                    ParseErr::Version(_) => "app_outdated",
+                    ParseErr::Malformed => "incompatible",
+                };
+                set_status(&mut status, &mut last, s);
+                fresh = Instant::now();
+                None
+            }
+            None => None,
+        };
         if let Some(frame) = frame {
             if hb != Some(frame.hb) {
                 hb = Some(frame.hb);
@@ -122,7 +131,7 @@ mod tests {
     fn event_json_shapes() {
         let s = serde_json::to_string(&SyncEvent::Status { status: "lost" }).unwrap();
         assert_eq!(s, r#"{"kind":"status","status":"lost"}"#);
-        let f = pixel::parse("1\t7\tEU\tRavencrest\t12\t2516\tGo go\t1\tH\nPuggy-Draenor:MAGE:D:640:2500:9:14:1").unwrap();
+        let f = pixel::parse("2\t7\tEU\tRavencrest\t12\t2516\tGo go\t1\tH\nPuggy-Draenor:MAGE:D:640:2500:9:14:1").unwrap();
         let d = serde_json::to_string(&SyncEvent::Data(f)).unwrap();
         println!("{d}");
         assert_eq!(d, r#"{"kind":"data","hb":7,"region":"EU","realm":"Ravencrest","sessionId":12,"activityId":2516,"title":"Go go","total":1,"difficulty":"H","applicants":[{"name":"Puggy","realm":"Draenor","class":"MAGE","role":"D","ilvl":640,"rio":2500,"group":9,"bestLevel":14,"bestTimed":true}]}"#);

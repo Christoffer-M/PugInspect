@@ -133,6 +133,15 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
     devDependencies:
+      '@graphql-codegen/cli':
+        specifier: 6.0.0
+        version: 6.0.0(@parcel/watcher@2.6.0)(@types/node@25.3.0)(graphql@16.14.2)(supports-color@7.2.0)(typescript@5.9.3)
+      '@graphql-codegen/client-preset':
+        specifier: 5.0.1
+        version: 5.0.1(graphql@16.14.2)
+      '@graphql-typed-document-node/core':
+        specifier: ^3.2.0
+        version: 3.2.0(graphql@16.14.2)
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config

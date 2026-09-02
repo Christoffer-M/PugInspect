@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { slugRealm } from "@repo/ui";
 import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
 import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
+import { Difficulty } from "./graphql/graphql";
 
 /** Shapes emitted by src-tauri/src/capture.rs on the "sync" event. */
 /** `group` is the in-game applicant id: members of one group application share it. */
@@ -31,7 +32,7 @@ export type Frame = {
   difficulty: string;
   applicants: Applicant[];
 };
-export type Link = "no_window" | "ok" | "lost" | "incompatible";
+export type Link = "no_window" | "ok" | "lost" | "incompatible" | "addon_outdated" | "app_outdated";
 type SyncEvent = { kind: "status"; status: Link } | ({ kind: "data" } & Frame);
 
 export type Session = {
@@ -45,8 +46,8 @@ export type Session = {
 };
 
 /** GraphQL Difficulty enum value for the session's raid difficulty, if it is a raid. */
-export const gqlDifficulty = (d: string): "Normal" | "Heroic" | "Mythic" | undefined =>
-  ({ N: "Normal", H: "Heroic", M: "Mythic" } as const)[d as "N" | "H" | "M"];
+export const gqlDifficulty = (d: string): Difficulty | undefined =>
+  ({ N: Difficulty.Normal, H: Difficulty.Heroic, M: Difficulty.Mythic })[d as "N" | "H" | "M"];
 export type Lookup = { state: "loading" | "done" | "error"; entry?: RosterEntry; error?: string };
 
 export const keyOf = (a: { name: string; realm: string }) => `${a.name.toLowerCase()}-${slugRealm(a.realm)}`;

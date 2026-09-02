@@ -117,6 +117,9 @@ setTimeout(() => {
         applicants: APPLICANTS.map((a, i) => ({ ...a, bestLevel: [12, 11, 0, 14, 10, 9, 13][i]!, bestTimed: i % 2 === 0 })),
       });
       break;
+    case "#outdated":
+      emit("sync", { kind: "status", status: "addon_outdated" });
+      break;
     case "#lost":
       data({});
       setTimeout(() => emit("sync", { kind: "status", status: "lost" }), 1200);

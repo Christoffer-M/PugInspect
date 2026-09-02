@@ -83,6 +83,7 @@ export default function App() {
   // The addon only paints while a listing is up, so "no frames" is only a
   // problem while we believe a listing is active.
   const lost = session !== null && link !== "ok";
+  const mismatch = link === "incompatible" || link === "addon_outdated" || link === "app_outdated";
   const tone = lost ? "lost" : session ? "ok" : "accent";
 
   if (screen === "settings") {
@@ -135,7 +136,7 @@ export default function App() {
             }
           />
         ) : (
-          <StatusBar tone={link === "incompatible" ? "lost" : "idle"} label={link === "incompatible" ? "Version mismatch" : "Waiting to sync"} right={<span className={classes.mono}>idle {pad(Math.floor((now - startedAt) / 60000))}:{pad(Math.floor(((now - startedAt) / 1000) % 60))}</span>} />
+          <StatusBar tone={mismatch ? "lost" : "idle"} label={mismatch ? "Version mismatch" : "Waiting to sync"} right={<span className={classes.mono}>idle {pad(Math.floor((now - startedAt) / 60000))}:{pad(Math.floor(((now - startedAt) / 1000) % 60))}</span>} />
         )}
       </div>
     </>

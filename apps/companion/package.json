@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "check-types": "tsc --noEmit",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
     "@mantine/core": "^8.3.18",
@@ -23,6 +24,9 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "6.0.0",
+    "@graphql-codegen/client-preset": "5.0.1",
+    "@graphql-typed-document-node/core": "^3.2.0",
     "@repo/typescript-config": "workspace:*",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.2.18",
