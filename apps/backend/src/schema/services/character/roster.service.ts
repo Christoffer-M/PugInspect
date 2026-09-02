@@ -133,7 +133,13 @@ export async function getRosterProfiles(
     // per character so a breaker tripped mid-chunk stops the remaining calls.
     if (found && (options.raidLogsRequested || options.mythicPlusLogsRequested) && !WarcraftLogsService.isCircuitOpen()) {
       try {
-        const metric = options.mythicPlusLogsRequested
+        // One zone-scoped profile backs both raidLogs and mythicPlusLogs (same
+        // zoneRankings), so the metric can only suit one of them: a query asking
+        // for both gets the raid metric, since M+ parses without the points
+        // metrics are merely ranked differently, while raid parses under
+        // points_and_damage are meaningless.
+        const keysOnly = options.mythicPlusLogsRequested && !options.raidLogsRequested;
+        const metric = keysOnly
           ? role === "HEALER" ? "points_and_healing" : "points_and_damage"
           : role === "HEALER" ? "hps" : undefined;
         const wcl = await WarcraftLogsService.getCharacterProfile(

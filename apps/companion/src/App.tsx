@@ -11,7 +11,7 @@ import { Titlebar } from "./components/Titlebar";
 import { StatusBar } from "./components/StatusBar";
 import { Waiting } from "./components/Waiting";
 import { Applicants } from "./components/Applicants";
-import { NewListingToast, RetryButton, SyncLost } from "./components/Banners";
+import { NewListingToast, RetryButton, SyncLost, VersionMismatch } from "./components/Banners";
 import { Settings } from "./components/Settings";
 import classes from "./App.module.css";
 
@@ -80,11 +80,12 @@ export default function App() {
     };
   }, [settings.closeAction]);
 
-  // The addon only paints while a listing is up, so "no frames" is only a
-  // problem while we believe a listing is active.
-  const lost = session !== null && link !== "ok";
   const mismatch = link === "incompatible" || link === "addon_outdated" || link === "app_outdated";
-  const tone = lost ? "lost" : session ? "ok" : "accent";
+  // The addon only paints while a listing is up, so "no frames" is only a problem
+  // while we believe a listing is active — and a version mismatch is never "lost":
+  // its remedy is updating a component, not the /reload the lost banner suggests.
+  const lost = session !== null && link !== "ok" && !mismatch;
+  const tone = lost || mismatch ? "lost" : session ? "ok" : "accent";
 
   if (screen === "settings") {
     return (
@@ -93,7 +94,11 @@ export default function App() {
         <div className={classes.app}>
           <Titlebar tone={tone} onBack={() => setScreen("main")} />
           <Settings settings={settings} update={update} />
-          <StatusBar tone={lost ? "lost" : session ? "ok" : "idle"} label={lost ? "Sync lost" : session ? "Synced" : "Waiting to sync"} right={<span className={classes.mono}>app {version}</span>} />
+          <StatusBar
+            tone={lost || mismatch ? "lost" : session ? "ok" : "idle"}
+            label={mismatch ? "Version mismatch" : lost ? "Sync lost" : session ? "Synced" : "Waiting to sync"}
+            right={<span className={classes.mono}>app {version}</span>}
+          />
         </div>
       </>
     );
@@ -111,6 +116,7 @@ export default function App() {
       <div className={classes.app}>
         <Titlebar tone={tone} onSettings={() => setScreen("settings")} />
         {lost && <SyncLost />}
+        {mismatch && shown && <VersionMismatch link={link} />}
         {toastAt && now - toastAt < TOAST_MS && <NewListingToast onClose={() => setToastAt(null)} />}
         {shown ? (
           <Applicants session={shown} lookups={lookups} seenAt={seenAt} dimmed={lost} now={now} />
@@ -123,8 +129,8 @@ export default function App() {
           <StatusBar tone="lost" label="Sync lost" detail={lastFrameAt ? `${ago(now - lastFrameAt)} ago` : undefined} right={<RetryButton onClick={() => invoke("retry_sync")} />} />
         ) : shown ? (
           <StatusBar
-            tone="ok"
-            label="Synced"
+            tone={mismatch ? "lost" : "ok"}
+            label={mismatch ? "Version mismatch" : "Synced"}
             detail={failedDetail ?? (pendingLookups ? `${pendingLookups} pending ${pendingLookups === 1 ? "lookup" : "lookups"}` : toastAt ? `new session ${ago(now - toastAt)} ago` : undefined)}
             right={
               avgIlvl ? (

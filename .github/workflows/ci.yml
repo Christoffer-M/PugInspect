@@ -28,6 +28,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The generated GraphQL types are committed, so a schema change with no
+      # codegen rerun would leave the apps type-checking against a stale shape and
+      # only break at runtime. This job (not the companion installer workflow,
+      # whose path filter never sees a schema-only change) is the right gate.
+      - name: GraphQL codegen is up to date
+        run: |
+          pnpm --filter frontend codegen
+          pnpm --filter companion codegen
+          git diff --exit-code -- apps/frontend/src/graphql apps/companion/src/graphql
+
       - name: Type check
         run: npx turbo check-types
 

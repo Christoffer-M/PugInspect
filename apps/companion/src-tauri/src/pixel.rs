@@ -84,12 +84,22 @@ fn is_magic(px: [u8; 3]) -> bool {
 
 /// Finds the strip anywhere in the top `MAX_OFFSET` px of the left edge and decodes it.
 pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
-    // Scan 1 px at a time so the first hit is the block's top edge; centre sampling then
-    // lands inside every block. ~400 single-pixel reads per capture, negligible.
-    let y0 = (0..=MAX_OFFSET)
-        .find(|&y| block(img, y, 0).is_some_and(is_magic))
-        .ok_or(DecodeErr::NoMagic)?;
-    decode_at(img, y0)
+    // Every offset whose sample matches the magic colour is a candidate, and the
+    // first one that survives the CRC wins. Committing to the first match instead
+    // would let one dark-purple game pixel above a moved strip block decoding for
+    // as long as it is on screen; trying them all also means a candidate whose
+    // sample lands on a block's edge row simply loses to the next one.
+    let mut err = DecodeErr::NoMagic;
+    for y in 0..=MAX_OFFSET {
+        if !block(img, y, 0).is_some_and(is_magic) {
+            continue;
+        }
+        match decode_at(img, y) {
+            Ok(payload) => return Ok(payload),
+            Err(e) => err = e,
+        }
+    }
+    Err(err)
 }
 
 fn decode_at(img: &RgbaImage, y0: u32) -> Result<String, DecodeErr> {
@@ -201,10 +211,23 @@ mod tests {
     }
 
     #[test]
-    fn corrupted_byte_fails_crc() {
+    fn corrupted_block_fails_crc() {
+        // The whole block, not one pixel: scanning every candidate offset means a
+        // single bad pixel is recovered from by sampling a different row.
+        let mut img = encode(PAYLOAD.as_bytes());
+        for y in 0..B {
+            for x in 2 * B..3 * B {
+                img.put_pixel(x, y, Rgba([9, 9, 9, 255]));
+            }
+        }
+        assert_eq!(decode(&img), Err(DecodeErr::Crc));
+    }
+
+    #[test]
+    fn single_bad_pixel_is_recovered() {
         let mut img = encode(PAYLOAD.as_bytes());
         img.put_pixel(2 * B + B / 2, B / 2, Rgba([9, 9, 9, 255]));
-        assert_eq!(decode(&img), Err(DecodeErr::Crc));
+        assert_eq!(decode(&img).unwrap(), PAYLOAD);
     }
 
     #[test]
@@ -216,6 +239,16 @@ mod tests {
         let mut far = RgbaImage::from_pixel(strip.width(), strip.height() + 600, image::Rgba([9, 9, 9, 255]));
         image::imageops::replace(&mut far, &strip, 0, (MAX_OFFSET + B) as i64);
         assert_eq!(decode(&far), Err(DecodeErr::NoMagic));
+    }
+
+    #[test]
+    fn false_magic_above_the_strip_is_skipped() {
+        // A stray pixel the colour of the magic block, 40 px above the real strip.
+        let strip = encode(PAYLOAD.as_bytes());
+        let mut img = RgbaImage::from_pixel(strip.width(), strip.height() + 200, Rgba([9, 9, 9, 255]));
+        image::imageops::replace(&mut img, &strip, 0, 100);
+        img.put_pixel(B / 2, 60, Rgba([MAGIC[0], MAGIC[1], MAGIC[2], 255]));
+        assert_eq!(decode(&img).unwrap(), PAYLOAD);
     }
 
     #[test]

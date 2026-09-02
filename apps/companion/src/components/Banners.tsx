@@ -19,6 +19,27 @@ export function SyncLost() {
   );
 }
 
+/** Shown in place of the sync-lost banner: /reload cannot fix a protocol mismatch. */
+export function VersionMismatch({ link }: { link: "incompatible" | "addon_outdated" | "app_outdated" | string }) {
+  const hint =
+    link === "addon_outdated"
+      ? "Update the PugInspect addon, then /reload."
+      : link === "app_outdated"
+        ? "Install the latest companion from the download page."
+        : "Update the addon and the app to matching versions, then /reload.";
+  return (
+    <div className={classes.lost}>
+      <div className={classes.lostBar} />
+      <Stack gap={5}>
+        <Text size="12px" c="var(--pi-text-bright)">
+          Addon and app versions differ.
+        </Text>
+        <span className={classes.lostText}>{hint}</span>
+      </Stack>
+    </div>
+  );
+}
+
 export function NewListingToast({ onClose }: { onClose: () => void }) {
   return (
     <div className={classes.toast}>

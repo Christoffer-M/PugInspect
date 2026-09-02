@@ -7,8 +7,18 @@ export async function notify(title: string, body: string) {
 }
 
 // ponytail: a synthesized blip instead of shipping an audio asset.
+// One context for the app's lifetime: browsers cap concurrent AudioContexts, so
+// constructing one per blip eventually throws inside the frame handler.
+let ctx: AudioContext | undefined;
+
 export function ding() {
-  const ctx = new AudioContext();
+  try {
+    ctx ??= new AudioContext();
+    // Autoplay policy can leave it suspended until the window is interacted with.
+    if (ctx.state === "suspended") void ctx.resume();
+  } catch {
+    return; // no audio device: a missing blip must never break the applicant list
+  }
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.frequency.value = 880;

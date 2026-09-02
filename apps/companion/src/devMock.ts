@@ -120,6 +120,9 @@ setTimeout(() => {
     case "#outdated":
       emit("sync", { kind: "status", status: "addon_outdated" });
       break;
+    case "#overflow":
+      data({ total: 23 });
+      break;
     case "#lost":
       data({});
       setTimeout(() => emit("sync", { kind: "status", status: "lost" }), 1200);

@@ -32,6 +32,9 @@ export function Applicants({
   dimmed?: boolean;
   now: number;
 }) {
+  const shown = session.applicants.length;
+  const total = Math.max(session.total, shown);
+  const truncated = total > shown;
   return (
     <div className={`${app.body} ${dimmed ? classes.dimmed : ""}`}>
       <div className={classes.header}>
@@ -47,8 +50,12 @@ export function Applicants({
             </Group>
           </Stack>
           <Stack gap={1} align="flex-end" style={{ whiteSpace: "nowrap" }}>
-            <span className={classes.count}>{session.applicants.length}</span>
-            <span className={app.label}>{session.applicants.length === 1 ? "applicant" : "applicants"}</span>
+            <span className={classes.count}>{total}</span>
+            {/* The addon caps the strip at 20 lines, so say when rows are missing
+                rather than quietly reporting a smaller count than the game shows. */}
+            <span className={app.label}>
+              {truncated ? `showing ${shown}` : total === 1 ? "applicant" : "applicants"}
+            </span>
           </Stack>
         </Group>
       </div>

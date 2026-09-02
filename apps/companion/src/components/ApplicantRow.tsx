@@ -59,7 +59,8 @@ export function ApplicantRow({
   const ilvl = c?.equippedItemLevel ?? a.ilvl;
   const loading = lookup?.state === "loading";
   const isKeys = difficulty === "+";
-  const best = isKeys ? c?.mythicPlusLogs?.bestPerformanceAverage : c?.raidLogs?.bestPerformanceAverage;
+  // Already scoped to the listing (M+ parses for keys, raid parses otherwise).
+  const best = c?.logs;
   // M+ listings: the game's best run in the listed dungeon replaces raid progress.
   const bestRun = isKeys
     ? a.bestLevel > 0
