@@ -47,9 +47,12 @@ pub fn crc8(data: &[u8]) -> u8 {
     })
 }
 
-/// RGB at the centre of block `i`, or None if it falls outside the image.
-fn block(img: &RgbaImage, i: u32) -> Option<[u8; 3]> {
-    let (x, y) = ((i % COLS) * B + B / 2, (i / COLS) * B + B / 2);
+/// The addon may move the strip down (`/pi hud <px>`); scan this far for the magic block.
+pub const MAX_OFFSET: u32 = 400;
+
+/// RGB at the centre of block `i` of a strip whose top edge is at `y0`, or None if outside.
+fn block(img: &RgbaImage, y0: u32, i: u32) -> Option<[u8; 3]> {
+    let (x, y) = ((i % COLS) * B + B / 2, y0 + (i / COLS) * B + B / 2);
     if x >= img.width() || y >= img.height() {
         return None;
     }
@@ -57,19 +60,29 @@ fn block(img: &RgbaImage, i: u32) -> Option<[u8; 3]> {
     Some([p[0], p[1], p[2]])
 }
 
+fn is_magic(px: [u8; 3]) -> bool {
+    px.iter().zip(MAGIC).all(|(a, b)| a.abs_diff(b) <= 3)
+}
+
+/// Finds the strip anywhere in the top `MAX_OFFSET` px of the left edge and decodes it.
 pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
-    let magic = block(img, 0).ok_or(DecodeErr::NoMagic)?;
-    if magic.iter().zip(MAGIC).any(|(a, b)| a.abs_diff(b) > 3) {
-        return Err(DecodeErr::NoMagic);
-    }
-    let [hi, lo, crc] = block(img, 1).ok_or(DecodeErr::Truncated)?;
+    // Scan 1 px at a time so the first hit is the block's top edge; centre sampling then
+    // lands inside every block. ~400 single-pixel reads per capture, negligible.
+    let y0 = (0..=MAX_OFFSET)
+        .find(|&y| block(img, y, 0).is_some_and(is_magic))
+        .ok_or(DecodeErr::NoMagic)?;
+    decode_at(img, y0)
+}
+
+fn decode_at(img: &RgbaImage, y0: u32) -> Result<String, DecodeErr> {
+    let [hi, lo, crc] = block(img, y0, 1).ok_or(DecodeErr::Truncated)?;
     let len = (hi as usize) << 8 | lo as usize;
     if len > MAX_LEN {
         return Err(DecodeErr::TooLong);
     }
     let mut bytes = Vec::with_capacity(len + 3);
     for i in 2..2 + len.div_ceil(3) as u32 {
-        bytes.extend(block(img, i).ok_or(DecodeErr::Truncated)?);
+        bytes.extend(block(img, y0, i).ok_or(DecodeErr::Truncated)?);
     }
     bytes.truncate(len);
     if crc8(&bytes) != crc {
@@ -162,6 +175,17 @@ mod tests {
         let mut img = encode(PAYLOAD.as_bytes());
         img.put_pixel(2 * B + B / 2, B / 2, Rgba([9, 9, 9, 255]));
         assert_eq!(decode(&img), Err(DecodeErr::Crc));
+    }
+
+    #[test]
+    fn strip_moved_down_is_found() {
+        let strip = encode(b"1\t3\teu\tKazzak\t9\t1\tmoved\t0");
+        let mut big = RgbaImage::from_pixel(strip.width(), strip.height() + 300, image::Rgba([9, 9, 9, 255]));
+        image::imageops::replace(&mut big, &strip, 0, 120);
+        assert_eq!(decode(&big).unwrap(), "1\t3\teu\tKazzak\t9\t1\tmoved\t0");
+        let mut far = RgbaImage::from_pixel(strip.width(), strip.height() + 600, image::Rgba([9, 9, 9, 255]));
+        image::imageops::replace(&mut far, &strip, 0, (MAX_OFFSET + B) as i64);
+        assert_eq!(decode(&far), Err(DecodeErr::NoMagic));
     }
 
     #[test]
