@@ -49,13 +49,13 @@ const emit = (event: string, payload: unknown) =>
 };
 
 const APPLICANTS: Frame["applicants"] = [
-  { name: "Frostvyre", realm: "Kazzak", class: "MAGE", role: "D", ilvl: 302, rio: 0 },
-  { name: "Bearlyalive", realm: "Ravencrest", class: "DRUID", role: "T", ilvl: 299, rio: 2884 },
-  { name: "Lightwarden", realm: "Silvermoon", class: "PRIEST", role: "H", ilvl: 297, rio: 2705 },
-  { name: "Soulrend", realm: "Kazzak", class: "WARLOCK", role: "D", ilvl: 295, rio: 2611 },
-  { name: "Emberhoof", realm: "TarrenMill", class: "PALADIN", role: "D", ilvl: 293, rio: 2450 },
-  { name: "Quickshot", realm: "TwistingNether", class: "HUNTER", role: "D", ilvl: 288, rio: 2201 },
-  { name: "Bloodhilt", realm: "Draenor", class: "DEATHKNIGHT", role: "T", ilvl: 284, rio: 1840 },
+  { name: "Frostvyre", realm: "Kazzak", class: "MAGE", role: "D", ilvl: 302, rio: 0, group: 1 },
+  { name: "Bearlyalive", realm: "Ravencrest", class: "DRUID", role: "T", ilvl: 299, rio: 2884, group: 2 },
+  { name: "Lightwarden", realm: "Silvermoon", class: "PRIEST", role: "H", ilvl: 297, rio: 2705, group: 2 },
+  { name: "Soulrend", realm: "Kazzak", class: "WARLOCK", role: "D", ilvl: 295, rio: 2611, group: 2 },
+  { name: "Emberhoof", realm: "TarrenMill", class: "PALADIN", role: "D", ilvl: 293, rio: 2450, group: 3 },
+  { name: "Quickshot", realm: "TwistingNether", class: "HUNTER", role: "D", ilvl: 288, rio: 2201, group: 4 },
+  { name: "Bloodhilt", realm: "Draenor", class: "DEATHKNIGHT", role: "T", ilvl: 284, rio: 1840, group: 5 },
 ];
 
 const SPECS: Record<string, string> = { MAGE: "Fire", DRUID: "Guardian", PRIEST: "Holy", WARLOCK: "Destruction", PALADIN: "Retribution", HUNTER: "Beast Mastery", DEATHKNIGHT: "Blood" };

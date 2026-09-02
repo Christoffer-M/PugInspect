@@ -194,3 +194,11 @@
   border-color: rgba(255, 138, 61, 0.5);
   background: rgba(255, 138, 61, 0.14);
 }
+
+/* Group applications: a shared accent stripe down the rows' left edge and a tag. */
+.rowGroup {
+  box-shadow: inset 3px 0 0 rgba(63, 199, 235, 0.55);
+}
+.groupText {
+  color: #3fc7eb;
+}

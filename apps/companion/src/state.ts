@@ -4,7 +4,8 @@ import { slugRealm } from "@repo/ui";
 import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
 
 /** Shapes emitted by src-tauri/src/capture.rs on the "sync" event. */
-export type Applicant = { name: string; realm: string; class: string; role: "T" | "H" | "D" | ""; ilvl: number; rio: number };
+/** `group` is the in-game applicant id: members of one group application share it. */
+export type Applicant = { name: string; realm: string; class: string; role: "T" | "H" | "D" | ""; ilvl: number; rio: number; group: number };
 export type Frame = {
   hb: number;
   region: string;

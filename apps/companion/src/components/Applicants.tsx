@@ -62,8 +62,11 @@ export function Applicants({
             <span />
           </div>
           <div className={classes.list}>
-            {session.applicants.map((a) => {
+            {session.applicants.map((a, i, all) => {
               const key = keyOf(a);
+              const size = all.filter((x) => x.group === a.group).length;
+              // The game lists a group's members in sign-up order; the first is its leader.
+              const groupRole = size < 2 ? undefined : all.findIndex((x) => x.group === a.group) === i ? "leader" : "member";
               return (
                 <ApplicantRow
                   key={key}
@@ -71,6 +74,7 @@ export function Applicants({
                   applicant={a}
                   lookup={lookups[key]}
                   isNew={now - (seenAt[key] ?? 0) < NEW_BADGE_MS}
+                  group={groupRole && { role: groupRole, size }}
                 />
               );
             })}

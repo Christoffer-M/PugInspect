@@ -38,6 +38,8 @@ pub struct Applicant {
     pub role: String,
     pub ilvl: u32,
     pub rio: u32,
+    /// In-game applicant id; members of one group application share it, first = leader.
+    pub group: u64,
 }
 
 /// CRC-8/SMBUS: poly 0x07, init 0, no reflection, no xor-out.
@@ -103,7 +105,7 @@ pub fn parse(payload: &str) -> Option<Frame> {
     let applicants = lines
         .map(|l| {
             let f: Vec<&str> = l.split(':').collect();
-            if f.len() != 5 {
+            if f.len() != 6 {
                 return None;
             }
             let (name, r) = f[0].rsplit_once('-').unwrap_or((f[0], &realm));
@@ -114,6 +116,7 @@ pub fn parse(payload: &str) -> Option<Frame> {
                 role: f[2].into(),
                 ilvl: f[3].parse().ok()?,
                 rio: f[4].parse().ok()?,
+                group: f[5].parse().ok()?,
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -156,9 +159,9 @@ mod tests {
     }
 
     const PAYLOAD: &str = "1\t17\tEU\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\n\
-        Puggy-Ravencrest:WARRIOR:T:635:2874\n\
-        Healbot:PRIEST:H:628:2410\n\
-        Zapzap-Tarren-Mill:MAGE:D:641:3102";
+        Puggy-Ravencrest:WARRIOR:T:635:2874:41\n\
+        Healbot:PRIEST:H:628:2410:41\n\
+        Zapzap-Tarren-Mill:MAGE:D:641:3102:42";
 
     #[test]
     fn crc_check_value() {
@@ -198,7 +201,7 @@ mod tests {
     fn twenty_applicants_fit() {
         let mut p = "1\t99\tUS\tIllidan\t1\t2516\tWeekly +10s, chill run\t20".to_string();
         for i in 0..20 {
-            p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500");
+            p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7");
         }
         assert!(p.len() <= MAX_LEN);
         assert!(p.len() > (COLS * 3) as usize, "should spill onto row 2");

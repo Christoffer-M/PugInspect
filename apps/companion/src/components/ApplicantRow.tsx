@@ -35,11 +35,14 @@ export function ApplicantRow({
   applicant: a,
   lookup,
   isNew,
+  group,
 }: {
   region: string;
   applicant: Applicant;
   lookup?: Lookup;
   isNew: boolean;
+  /** Set when this applicant signed up as part of a group. */
+  group?: { role: "leader" | "member"; size: number };
 }) {
   const c = lookup?.entry?.character;
   const notFound = lookup?.entry?.notFound === true;
@@ -54,7 +57,7 @@ export function ApplicantRow({
 
   return (
     <a
-      className={`${classes.row} ${isNew ? classes.rowNew : ""} ${notFound ? classes.rowNotFound : ""}`}
+      className={`${classes.row} ${isNew ? classes.rowNew : ""} ${notFound ? classes.rowNotFound : ""} ${group ? classes.rowGroup : ""}`}
       style={{ "--class-color": color } as CSSProperties}
       onClick={(e) => {
         e.preventDefault();
@@ -70,6 +73,9 @@ export function ApplicantRow({
           {notFound && <span className={`${classes.tag} ${classes.tagWarn}`}>not found</span>}
         </div>
         <span className={classes.sub}>
+          {group && (
+            <span className={classes.groupText}>{group.role === "leader" ? `group of ${group.size}` : "↳ member"} · </span>
+          )}
           {prettyRealm(a.realm)} · {c?.activeSpec ? `${c.activeSpec} ` : ""}
           {className}
           {lookup?.state === "error" && (
