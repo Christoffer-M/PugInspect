@@ -124,14 +124,6 @@
   line-height: 1;
 }
 
-.prog {
-  font-family: var(--mantine-font-family-headings);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: right;
-  line-height: 1;
-}
-
 .open {
   justify-self: center;
   width: 20px;

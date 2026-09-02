@@ -88,7 +88,7 @@ export function ApplicantRow({
       <span className={classes.value} style={{ color: best != null ? getParseColor(best) : DIM }}>
         {loading ? skeleton : best != null ? Math.floor(best) : "-"}
       </span>
-      <span className={classes.prog} style={{ color: prog?.color ?? DIM }}>
+      <span className={classes.value} style={{ color: prog?.color ?? DIM }}>
         {loading ? skeleton : (prog?.text ?? "-")}
       </span>
       <span className={classes.open}>↗</span>
