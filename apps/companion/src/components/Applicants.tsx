@@ -57,7 +57,7 @@ export function Applicants({
             <span>Applicant</span>
             <span style={{ textAlign: "right" }}>ilvl</span>
             <span style={{ textAlign: "right" }}>rio</span>
-            <span style={{ textAlign: "center" }}>logs</span>
+            <span style={{ textAlign: "right" }}>logs</span>
             <span style={{ textAlign: "right" }}>prog</span>
             <span />
           </div>

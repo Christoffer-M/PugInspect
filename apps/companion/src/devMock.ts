@@ -2,6 +2,7 @@
 // without the native shell. Pick a scenario with the URL hash: #waiting (default),
 // #synced, #new, #lost. Never bundled: main.tsx imports it only in dev outside Tauri.
 import type { Frame } from "./state";
+import { DEFAULT_RAID } from "./generated/seasonConfig";
 
 type Cb = (e: { event: string; id: number; payload: unknown }) => void;
 const callbacks = new Map<number, Cb>();
@@ -83,7 +84,7 @@ window.fetch = async (input, init) => {
           equippedItemLevel: a.ilvl,
           raiderIo: {
             currentSeason: { all: { score: a.rio, color: ["#e6cc80", "#a335ee", "#a335ee", "#a335ee", "#0070dd", "#0070dd", "#1eff00"][i] } },
-            raidProgression: [{ raid: "manaforge-omega", total_bosses: 8, normal_bosses_killed: 8, heroic_bosses_killed: [8, 6, 8, 4, 6, 0, 0][i], mythic_bosses_killed: 0 }],
+            raidProgression: [{ raid: "some-world-boss", total_bosses: 1, normal_bosses_killed: 1, heroic_bosses_killed: 1, mythic_bosses_killed: 0 }, { raid: DEFAULT_RAID, total_bosses: 8, normal_bosses_killed: 8, heroic_bosses_killed: [8, 6, 8, 4, 6, 0, 0][i], mythic_bosses_killed: 0 }],
           },
           raidLogs: { bestPerformanceAverage: [96, 78, 61, 44, 33, 19, 8][i], medianPerformanceAverage: 50 },
         },

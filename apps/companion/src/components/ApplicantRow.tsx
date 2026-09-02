@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { CLASS_FILE_NAMES, ParsePill, RAID_DIFFICULTY_COLORS, getClassColor, slugRealm } from "@repo/ui";
+import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
+import { DEFAULT_RAID } from "../generated/seasonConfig";
 import type { RosterEntry } from "../api";
 import type { Applicant, Lookup } from "../state";
 import app from "../App.module.css";
@@ -15,11 +16,9 @@ const prettyRealm = (realm: string) =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
-/** Highest difficulty with a kill on the character's current raid. */
+/** Highest difficulty with a kill on the season's raid (same DEFAULT_RAID the web app uses). */
 function progOf(entry?: RosterEntry): { text: string; color: string } | null {
-  // ponytail: raidProgression[0] is the current tier as raider.io orders it;
-  // the web app matches DEFAULT_RAID from the generated season config instead.
-  const p = entry?.character?.raiderIo?.raidProgression?.[0];
+  const p = entry?.character?.raiderIo?.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
   if (!p || p.total_bosses == null) return null;
   const tiers = [
     ["M", p.mythic_bosses_killed, RAID_DIFFICULTY_COLORS.mythic],
@@ -50,7 +49,8 @@ export function ApplicantRow({
   const prog = progOf(lookup?.entry);
   const ilvl = c?.equippedItemLevel ?? a.ilvl;
   const loading = lookup?.state === "loading";
-  const skeleton = <span className={classes.skeletonBar} style={{ width: 28, height: 14, display: "inline-block" }} />;
+  const best = c?.raidLogs?.bestPerformanceAverage;
+  const skeleton = <span className={classes.skeletonBar} />;
 
   return (
     <a
@@ -85,8 +85,8 @@ export function ApplicantRow({
       <span className={classes.value} style={{ color: rio?.color ?? (a.rio ? "var(--mantine-color-dark-0)" : DIM) }}>
         {loading && !rio && !a.rio ? skeleton : Math.round(rio?.score ?? a.rio) || "-"}
       </span>
-      <span style={{ display: "flex", justifyContent: "center" }}>
-        {loading ? skeleton : <ParsePill value={c?.raidLogs?.bestPerformanceAverage} compact />}
+      <span className={classes.value} style={{ color: best != null ? getParseColor(best) : DIM }}>
+        {loading ? skeleton : best != null ? Math.floor(best) : "-"}
       </span>
       <span className={classes.prog} style={{ color: prog?.color ?? DIM }}>
         {loading ? skeleton : (prog?.text ?? "-")}
