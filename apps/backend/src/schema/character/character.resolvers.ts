@@ -199,12 +199,16 @@ export default {
       // for - an identity-only query must not trigger 10 RIO + WCL lookups.
       const raiderIoRequested = isRosterCharacterFieldRequested(info, "raiderIo");
       const raidLogsRequested = isRosterCharacterFieldRequested(info, "raidLogs");
+      // M+ parses come from the same zone-scoped WCL profile; the caller picks
+      // the zone via zoneId (the companion passes the season's M+ zone).
+      const mythicPlusLogsRequested = isRosterCharacterFieldRequested(info, "mythicPlusLogs");
       // No recordSearchEvent / alt enrichment here: a roster view isn't a
       // "search", and 30 background achievement fetches per view is real load.
       const bundles = await getRosterProfiles(args, {
         cacheOnly: context?.isBot === true,
         raiderIoRequested,
         raidLogsRequested,
+        mythicPlusLogsRequested,
       });
       return bundles.map(({ name, realm, role, profiles }) => {
         const notFound = !profiles.blizzardProfile && !profiles.rioProfile;
@@ -219,7 +223,7 @@ export default {
             : buildCharacter({ name, realm, region: args.region }, profiles, {
                 raiderIo: raiderIoRequested,
                 raidLogs: raidLogsRequested,
-                mythicPlusLogs: false,
+                mythicPlusLogs: mythicPlusLogsRequested,
                 gear: false,
               }),
         };

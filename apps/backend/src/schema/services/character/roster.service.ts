@@ -68,7 +68,13 @@ export async function getRosterProfiles(
     difficulty?: Difficulty | null;
     zoneId?: number | null;
   },
-  options: { cacheOnly: boolean; raiderIoRequested: boolean; raidLogsRequested: boolean }
+  options: {
+    cacheOnly: boolean;
+    raiderIoRequested: boolean;
+    raidLogsRequested: boolean;
+    /** Rank on WCL's Mythic+ "points" metrics (what the character page shows) instead of dps/hps. */
+    mythicPlusLogsRequested?: boolean;
+  }
 ): Promise<RosterProfileBundle[]> {
   if (args.characters.length === 0 || args.characters.length > ROSTER_CHUNK_LIMIT) {
     throw new GraphQLError(`characters must contain 1–${ROSTER_CHUNK_LIMIT} entries`, {
@@ -125,10 +131,13 @@ export async function getRosterProfiles(
     // the profile so healers can be ranked on healing. Omitting the metric
     // makes WCL rank everyone on damage, healers included. Circuit checked
     // per character so a breaker tripped mid-chunk stops the remaining calls.
-    if (found && options.raidLogsRequested && !WarcraftLogsService.isCircuitOpen()) {
+    if (found && (options.raidLogsRequested || options.mythicPlusLogsRequested) && !WarcraftLogsService.isCircuitOpen()) {
       try {
+        const metric = options.mythicPlusLogsRequested
+          ? role === "HEALER" ? "points_and_healing" : "points_and_damage"
+          : role === "HEALER" ? "hps" : undefined;
         const wcl = await WarcraftLogsService.getCharacterProfile(
-          { ...charArgs, metric: role === "HEALER" ? "hps" : undefined },
+          { ...charArgs, metric },
           false,
           options.cacheOnly
         );
