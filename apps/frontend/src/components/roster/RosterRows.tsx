@@ -4,7 +4,7 @@ import { IconX } from "@tabler/icons-react";
 import { Difficulty } from "../../graphql/graphql";
 import type { RosterEntry } from "../../queries/roster";
 import { SpecImage } from "../ui/SpecImage";
-import { ParsePill } from "../ui/ParsePill";
+import { ParsePill } from "@repo/ui";
 import { getClassColor, normalizeRealm, upperCaseFirstLetter } from "../../util/util";
 import { RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import { CLASS_FILE_NAMES } from "../../util/rosterImport";

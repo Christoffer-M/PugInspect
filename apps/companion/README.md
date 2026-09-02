@@ -1,7 +1,39 @@
-# Tauri + React + Typescript
+# PugInspect Companion
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Desktop app (Tauri 2 + React) that shows Group Finder applicants the moment they apply and
+enriches each one with raider.io, Warcraft Logs and raid progress from the PugInspect backend.
 
-## Recommended IDE Setup
+## How it works
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+WoW addons cannot write files or use the network, so the addon
+([puginspect-addon](../../../puginspect-addon)) paints the applicant list as a strip of
+4×4-pixel colour blocks in the top-left of the game window while you have a listing up.
+This app captures the WoW window (window capture, not the whole screen) four times a
+second, keeps only the top edge, decodes it and throws the image away. Nothing is stored or
+uploaded; only the applicant names go to the PugInspect GraphQL API.
+
+- `src-tauri/src/pixel.rs` — decoder + payload parser (wire format documented at the top of `Pixel.lua` in the addon)
+- `src-tauri/src/capture.rs` — capture thread, emits the `sync` event (`{kind:"status"}` / `{kind:"data"}`)
+- `src/state.ts` — session / applicant / lookup state on top of that event
+- `src/components/*` — the five screens; theme and primitives come from `@repo/ui`, shared with the web app
+
+Requirements: Windows, game in Windowed or Windowed (Fullscreen) mode. `/pi hud` in-game hides the strip.
+
+## Develop
+
+```bash
+pnpm --filter companion tauri dev      # native shell (needs Rust; cargo in ~/.cargo/bin)
+pnpm --filter companion dev            # browser only, Tauri mocked; #synced / #new / #lost in the URL pick a screen
+pnpm --filter companion check-types
+pnpm --filter companion test           # cargo test: decoder round-trip, CRC, parser, event shapes
+```
+
+Backend: the app posts to `VITE_GRAPHQL_URL` (default `https://puginspect.com/graphql`). The
+backend's `ALLOWED_ORIGINS` must include `http://tauri.localhost` (Windows), `tauri://localhost`
+(macOS) and `http://localhost:1420` for dev.
+
+## Build
+
+```bash
+pnpm --filter companion tauri build    # NSIS installer under src-tauri/target/release/bundle
+```

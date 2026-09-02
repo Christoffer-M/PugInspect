@@ -19,11 +19,9 @@ import {
 } from "../../data/mythicPlusSeasons";
 import { getRaidExpansion } from "../../data/raidZones";
 import { SpecImage } from "../ui/SpecImage";
-import { SkeletonTableRows } from "../ui/SkeletonTableRows";
 import { PartitionSelector } from "./PartitionSelector";
 import { PerformanceSummary } from "./PerformanceSummary";
-import { ParsePill } from "../ui/ParsePill";
-import { SectionTitle } from "../ui/SectionTitle";
+import { ParsePill, SectionTitle, SkeletonTableRows } from "@repo/ui";
 
 const MP_METRICS = [
   { label: "DPS", value: Metric.PointsAndDamage },

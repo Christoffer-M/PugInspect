@@ -4,21 +4,44 @@
     {
       "name": "frontend",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "frontend", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "frontend",
+        "dev"
+      ],
       "port": 3000
     },
     {
       "name": "backend",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "backend", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "backend",
+        "dev"
+      ],
       "port": 4000
     },
     {
       "name": "frontend-alt",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "frontend", "exec", "vite"],
+      "runtimeArgs": [
+        "--filter",
+        "frontend",
+        "exec",
+        "vite"
+      ],
       "port": 3020,
       "autoPort": true
+    },
+    {
+      "name": "companion",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "companion",
+        "dev"
+      ],
+      "port": 1420
     }
   ]
 }

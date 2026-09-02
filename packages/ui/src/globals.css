@@ -1,0 +1,10 @@
+:root {
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html,
+body {
+  background: #060b16;
+  margin: 0;
+  padding: 0;
+}

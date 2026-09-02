@@ -1,0 +1,15 @@
+.bar {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-top: 1px solid var(--pi-border);
+  background: rgba(8, 14, 28, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+
+.ok { color: #7fe0a3; }
+.lost { color: #f4c15e; }
+.idle { color: var(--mantine-color-dark-2); }
