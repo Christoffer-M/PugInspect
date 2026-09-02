@@ -207,7 +207,8 @@ export default {
       const bundles = await getRosterProfiles(args, {
         cacheOnly: context?.isBot === true,
         raiderIoRequested,
-        raidLogsRequested: raidLogsRequested || mythicPlusLogsRequested,
+        raidLogsRequested,
+        mythicPlusLogsRequested,
       });
       return bundles.map(({ name, realm, role, profiles }) => {
         const notFound = !profiles.blizzardProfile && !profiles.rioProfile;
