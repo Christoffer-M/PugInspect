@@ -100,6 +100,8 @@ export default function App() {
 
   const shown = viewing ?? session;
   const pendingLookups = shown ? shown.applicants.filter((a) => lookups[keyOf(a)]?.state === "loading").length : 0;
+  const failed = shown ? shown.applicants.map((a) => lookups[keyOf(a)]).filter((l) => l?.state === "error") : [];
+  const failedDetail = failed.length ? `${failed.length} lookup${failed.length === 1 ? "" : "s"} failed: ${failed[0]!.error ?? "unknown error"}` : undefined;
   const avgIlvl = shown && shown.applicants.length ? Math.round(shown.applicants.reduce((s, a) => s + (lookups[keyOf(a)]?.entry?.character?.equippedItemLevel ?? a.ilvl), 0) / shown.applicants.length) : 0;
 
   return (
@@ -123,7 +125,7 @@ export default function App() {
           <StatusBar
             tone="ok"
             label={viewing ? "Previous session" : "Synced"}
-            detail={viewing ? undefined : pendingLookups ? `${pendingLookups} pending ${pendingLookups === 1 ? "lookup" : "lookups"}` : toastAt ? `new session ${ago(now - toastAt)} ago` : undefined}
+            detail={viewing ? undefined : failedDetail ?? (pendingLookups ? `${pendingLookups} pending ${pendingLookups === 1 ? "lookup" : "lookups"}` : toastAt ? `new session ${ago(now - toastAt)} ago` : undefined)}
             right={
               viewing ? (
                 <RetryButton onClick={() => setViewing(null)} />

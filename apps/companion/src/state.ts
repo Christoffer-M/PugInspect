@@ -26,7 +26,7 @@ export type Session = {
   startedAt: number;
   applicants: Applicant[];
 };
-export type Lookup = { state: "loading" | "done" | "error"; entry?: RosterEntry };
+export type Lookup = { state: "loading" | "done" | "error"; entry?: RosterEntry; error?: string };
 
 export const keyOf = (a: { name: string; realm: string }) => `${a.name.toLowerCase()}-${slugRealm(a.realm)}`;
 
@@ -86,10 +86,11 @@ export function useCompanion(events: Events) {
           for (const e of entries) next[keyOf(e)] = { state: "done", entry: e };
           return next;
         });
-      } catch {
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e);
         setLookups((l) => {
           const next = { ...l };
-          for (const a of chunk) next[keyOf(a)] = { state: "error" };
+          for (const a of chunk) next[keyOf(a)] = { state: "error", error };
           return next;
         });
       }

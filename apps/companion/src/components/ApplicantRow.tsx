@@ -71,6 +71,11 @@ export function ApplicantRow({
           {prettyRealm(a.realm)} · {c?.activeSpec ? `${c.activeSpec} ` : ""}
           {className}
           {lookup?.state === "loading" && <span className={app.mono}> looking up…</span>}
+          {lookup?.state === "error" && (
+            <span className={app.mono} style={{ color: "#f4c15e" }} title={lookup.error}>
+              {" "}lookup failed
+            </span>
+          )}
         </span>
       </div>
       <span className={classes.value} style={{ color: ilvl ? "var(--pi-text-bright)" : DIM }}>
