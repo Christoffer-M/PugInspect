@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { slugRealm } from "@repo/ui";
 import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
@@ -138,13 +139,22 @@ export function useCompanion(events: Events) {
   };
 
   useEffect(() => {
-    const unlisten = listen<SyncEvent>("sync", ({ payload }) => {
+    const handle = (payload: SyncEvent) => {
       if (payload.kind === "status") setLink(payload.status);
       else {
         setLink("ok");
         onFrame(payload);
       }
-    });
+    };
+    const unlisten = listen<SyncEvent>("sync", (e) => handle(e.payload));
+    // The capture thread starts before this webview mounts; pick up whatever it
+    // already emitted so an already-listed group shows immediately.
+    unlisten.then(() =>
+      invoke<{ status: Link | ""; frame: Frame | null }>("sync_snapshot").then((snap) => {
+        if (snap.frame) handle({ kind: "data", ...snap.frame });
+        else if (snap.status) handle({ kind: "status", status: snap.status });
+      })
+    );
     return () => {
       unlisten.then((fn) => fn());
     };

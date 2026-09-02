@@ -3,6 +3,7 @@
 use crate::pixel::{self, Frame};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
+use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
@@ -14,6 +15,15 @@ const LOST_AFTER: Duration = Duration::from_secs(5);
 /// Set by the `retry_sync` command to force an immediate window re-scan.
 pub struct Rescan(pub AtomicBool);
 
+/// Latest status and frame, so a webview that loads after the first events were
+/// emitted can catch up via the `sync_snapshot` command.
+#[derive(Serialize, Clone, Default)]
+pub struct Snapshot {
+    pub status: &'static str,
+    pub frame: Option<Frame>,
+}
+pub struct Latest(pub Mutex<Snapshot>);
+
 #[derive(Serialize, Clone)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SyncEvent {
@@ -23,6 +33,7 @@ pub enum SyncEvent {
 
 pub fn spawn(app: AppHandle) {
     app.manage(Rescan(AtomicBool::new(false)));
+    app.manage(Latest(Mutex::new(Snapshot::default())));
     thread::spawn(move || run(app));
 }
 
@@ -42,6 +53,8 @@ fn run(app: AppHandle) {
         if *status != new {
             *status = new;
             *last = None;
+            let latest = app.state::<Latest>();
+            *latest.0.lock().unwrap() = Snapshot { status: new, frame: None };
             let _ = app.emit("sync", SyncEvent::Status { status: new });
         }
     };
@@ -80,6 +93,7 @@ fn run(app: AppHandle) {
                 set_status(&mut status, &mut last, "ok");
             }
             if last.as_ref().is_none_or(|l| Frame { hb: l.hb, ..frame.clone() } != *l) {
+                app.state::<Latest>().0.lock().unwrap().frame = Some(frame.clone());
                 let _ = app.emit("sync", SyncEvent::Data(frame.clone()));
                 last = Some(frame);
             }

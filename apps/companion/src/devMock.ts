@@ -33,6 +33,8 @@ const emit = (event: string, payload: unknown) =>
       case "plugin:event|unlisten":
         listeners.get(args.event!)?.delete(args.eventId!);
         return;
+      case "sync_snapshot":
+        return { status: "", frame: null };
       case "plugin:app|version":
         return "0.1.0-dev";
       case "plugin:opener|open_url":
