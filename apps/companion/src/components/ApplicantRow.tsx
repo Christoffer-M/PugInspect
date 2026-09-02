@@ -57,7 +57,7 @@ export function ApplicantRow({
 
   return (
     <a
-      className={`${classes.row} ${isNew ? classes.rowNew : ""} ${notFound ? classes.rowNotFound : ""} ${group ? classes.rowGroup : ""}`}
+      className={`${classes.row} ${isNew ? classes.rowNew : ""} ${notFound ? classes.rowNotFound : ""} ${group ? classes.rowGroup : ""} ${group?.role === "member" ? classes.rowMember : ""}`}
       style={{ "--class-color": color } as CSSProperties}
       onClick={(e) => {
         e.preventDefault();
@@ -74,7 +74,7 @@ export function ApplicantRow({
         </div>
         <span className={classes.sub}>
           {group && (
-            <span className={classes.groupText}>{group.role === "leader" ? `group of ${group.size}` : "↳ member"} · </span>
+            <span className={classes.groupText}>{group.role === "leader" ? `group of ${group.size}` : "member"} · </span>
           )}
           {prettyRealm(a.realm)} · {c?.activeSpec ? `${c.activeSpec} ` : ""}
           {className}
