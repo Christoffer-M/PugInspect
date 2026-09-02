@@ -8,6 +8,7 @@ const ADDON_URL = "https://www.curseforge.com/wow/addons/puginspect";
 
 export function Waiting({ link }: { link: Link }) {
   const noGame = link === "no_window";
+  const mismatch = link === "incompatible";
   return (
     <div className={classes.center}>
       <div className={classes.beacon}>
@@ -17,11 +18,15 @@ export function Waiting({ link }: { link: Link }) {
           <div className={classes.coreDot} />
         </div>
       </div>
-      <div className={classes.title}>{noGame ? "Waiting for World of Warcraft" : "Listening for the addon"}</div>
+      <div className={classes.title}>
+        {noGame ? "Waiting for World of Warcraft" : mismatch ? "Addon and app versions differ" : "Listening for the addon"}
+      </div>
       <div className={classes.hint}>
         {noGame
           ? "Start the game in Windowed or Windowed (Fullscreen) mode. The companion reads the top edge of the game window - nothing is stored or uploaded."
-          : "List a group in-game - the addon connects automatically and applicants start appearing here."}
+          : mismatch
+            ? "The strip is being read but its format is not what this app expects. Update the PugInspect addon and this app to matching versions, then /reload."
+            : "List a group in-game - the addon connects automatically and applicants start appearing here."}
       </div>
       <Paper withBorder p="12px 14px" className={classes.card}>
         <Stack gap={8}>

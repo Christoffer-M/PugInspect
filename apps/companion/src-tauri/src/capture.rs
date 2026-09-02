@@ -86,7 +86,14 @@ fn run(app: AppHandle) {
             },
         };
         // ponytail: no crop — decode bounds-checks its own samples, so cropping is just a copy.
-        if let Some(frame) = img.and_then(|i| pixel::decode(&i).ok()).and_then(|p| pixel::parse(&p)) {
+        let payload = img.and_then(|i| pixel::decode(&i).ok());
+        let frame = payload.as_deref().and_then(pixel::parse);
+        if payload.is_some() && frame.is_none() {
+            // The strip is intact but the payload shape is not ours: addon/app version mismatch.
+            set_status(&mut status, &mut last, "incompatible");
+            fresh = Instant::now();
+        }
+        if let Some(frame) = frame {
             if hb != Some(frame.hb) {
                 hb = Some(frame.hb);
                 fresh = Instant::now();

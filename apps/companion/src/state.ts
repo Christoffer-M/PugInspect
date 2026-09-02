@@ -17,7 +17,7 @@ export type Frame = {
   total: number;
   applicants: Applicant[];
 };
-export type Link = "no_window" | "ok" | "lost";
+export type Link = "no_window" | "ok" | "lost" | "incompatible";
 type SyncEvent = { kind: "status"; status: Link } | ({ kind: "data" } & Frame);
 
 export type Session = {
