@@ -17,7 +17,8 @@ uploaded; only the applicant names go to the PugInspect GraphQL API.
 - `src/state.ts` — session / applicant / lookup state on top of that event
 - `src/components/*` — the five screens; theme and primitives come from `@repo/ui`, shared with the web app
 
-Requirements: Windows, game in Windowed or Windowed (Fullscreen) mode. `/pi hud` in-game hides the strip.
+Requirements: Windows, game in Windowed or Windowed (Fullscreen) mode. The strip is off by
+default; `/pi hud` in-game enables it (saved per account).
 
 ## Develop
 

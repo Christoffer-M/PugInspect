@@ -26,7 +26,7 @@ export function Waiting({ link }: { link: Link }) {
           ? "Start the game in Windowed or Windowed (Fullscreen) mode. The companion reads the top edge of the game window - nothing is stored or uploaded."
           : mismatch
             ? "The strip is being read but its format is not what this app expects. Update the PugInspect addon and this app to matching versions, then /reload."
-            : "List a group in-game - the addon connects automatically and applicants start appearing here."}
+            : "Type /pi hud in-game once to enable the addon's strip, then list a group - applicants start appearing here."}
       </div>
       <Paper withBorder p="12px 14px" className={classes.card}>
         <Stack gap={8}>
