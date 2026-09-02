@@ -28,9 +28,9 @@ pnpm --filter companion check-types
 cargo test --manifest-path apps/companion/src-tauri/Cargo.toml   # decoder round-trip, CRC, parser, event shapes
 ```
 
-Backend: the app posts to `VITE_GRAPHQL_URL` (default `https://puginspect.com/graphql`) through
-Tauri's native HTTP plugin, so the backend's CORS allow-list does not apply. Allowed hosts are
-scoped in `src-tauri/capabilities/default.json`.
+Backend: the app posts to `VITE_GRAPHQL_URL` (default `https://puginspect.com/graphql`). The
+backend's `ALLOWED_ORIGINS` must include `http://tauri.localhost` (Windows), `tauri://localhost`
+(macOS) and `http://localhost:1420` for dev.
 
 ## Build
 

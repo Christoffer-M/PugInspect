@@ -1,11 +1,5 @@
 // Copy of apps/frontend/src/api/graphqlClient.ts + the RosterCharacters query.
 // Copied, not shared: sharing would drag the frontend's codegen output along.
-import { fetch as nativeFetch } from "@tauri-apps/plugin-http";
-
-// Native (Rust) fetch: a desktop app is not a browser origin, so the backend's
-// CORS allow-list does not apply. The browser dev mock keeps window.fetch.
-const doFetch = "__PI_MOCK__" in window ? window.fetch : nativeFetch;
-
 const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL ?? "https://puginspect.com/graphql";
 
 export type RosterEntry = {
@@ -59,7 +53,7 @@ export async function lookupCharacters(
   region: string,
   characters: { name: string; realm: string }[]
 ): Promise<RosterEntry[]> {
-  const response = await doFetch(GRAPHQL_URL, {
+  const response = await fetch(GRAPHQL_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ query: ROSTER_CHARACTERS, variables: { region, characters } }),
