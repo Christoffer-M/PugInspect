@@ -4,14 +4,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
 import { disable, enable } from "@tauri-apps/plugin-autostart";
 import { pageClasses } from "@repo/ui";
-import { keyOf, useCompanion, type Session } from "./state";
+import { keyOf, useCompanion } from "./state";
 import { useSettings } from "./settings";
 import { ding, notify } from "./notify";
 import { Titlebar } from "./components/Titlebar";
 import { StatusBar } from "./components/StatusBar";
 import { Waiting } from "./components/Waiting";
 import { Applicants } from "./components/Applicants";
-import { History, NewListingToast, RetryButton, SyncLost } from "./components/Banners";
+import { NewListingToast, RetryButton, SyncLost } from "./components/Banners";
 import { Settings } from "./components/Settings";
 import classes from "./App.module.css";
 
@@ -27,15 +27,13 @@ export default function App() {
   const [settings, update] = useSettings();
   const [screen, setScreen] = useState<"main" | "settings">("main");
   const [toastAt, setToastAt] = useState<number | null>(null);
-  const [viewing, setViewing] = useState<Session | null>(null);
   const [now, setNow] = useState(Date.now);
   const [version, setVersion] = useState("");
   const [startedAt] = useState(Date.now);
 
-  const { link, session, history, lookups, seenAt, lastFrameAt } = useCompanion({
+  const { link, session, lookups, seenAt, lastFrameAt } = useCompanion({
     onNewListing: (s) => {
       setToastAt(Date.now());
-      setViewing(null);
       if (settings.notifyListing) notify("New group finder listing", s.title || "Started a new session");
       if (settings.sound) ding();
     },
@@ -100,7 +98,7 @@ export default function App() {
     );
   }
 
-  const shown = viewing ?? session;
+  const shown = session;
   const pendingLookups = shown ? shown.applicants.filter((a) => lookups[keyOf(a)]?.state === "loading").length : 0;
   const failed = shown ? shown.applicants.map((a) => lookups[keyOf(a)]).filter((l) => l?.state === "error") : [];
   const failedDetail = failed.length ? `${failed.length} lookup${failed.length === 1 ? "" : "s"} failed: ${failed[0]!.error ?? "unknown error"}` : undefined;
@@ -118,7 +116,6 @@ export default function App() {
         ) : (
           <div className={classes.body}>
             <Waiting link={link} />
-            <History sessions={history} onOpen={setViewing} />
           </div>
         )}
         {lost ? (
@@ -126,12 +123,10 @@ export default function App() {
         ) : shown ? (
           <StatusBar
             tone="ok"
-            label={viewing ? "Previous session" : "Synced"}
-            detail={viewing ? undefined : failedDetail ?? (pendingLookups ? `${pendingLookups} pending ${pendingLookups === 1 ? "lookup" : "lookups"}` : toastAt ? `new session ${ago(now - toastAt)} ago` : undefined)}
+            label="Synced"
+            detail={failedDetail ?? (pendingLookups ? `${pendingLookups} pending ${pendingLookups === 1 ? "lookup" : "lookups"}` : toastAt ? `new session ${ago(now - toastAt)} ago` : undefined)}
             right={
-              viewing ? (
-                <RetryButton onClick={() => setViewing(null)} />
-              ) : avgIlvl ? (
+              avgIlvl ? (
                 <span>
                   <span className={classes.label}>avg ilvl </span>
                   <span style={{ fontFamily: "var(--mantine-font-family-headings)", fontWeight: 700, fontSize: 12.5, color: "var(--pi-text-bright)" }}>{avgIlvl}</span>

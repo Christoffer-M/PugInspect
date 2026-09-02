@@ -1,6 +1,5 @@
-import { ActionIcon, Button, Group, Stack, Text } from "@mantine/core";
+import { ActionIcon, Button, Stack, Text } from "@mantine/core";
 import { IconX } from "@tabler/icons-react";
-import type { Session } from "../state";
 import app from "../App.module.css";
 import classes from "./Banners.module.css";
 
@@ -29,37 +28,12 @@ export function NewListingToast({ onClose }: { onClose: () => void }) {
           New group finder listing
         </span>
         <span className={classes.toastTitle}>Started a new session</span>
-        <span className={classes.toastSub}>Previous applicants moved to history.</span>
+        <span className={classes.toastSub}>Applicants from the old listing were cleared.</span>
       </Stack>
       <ActionIcon variant="subtle" color="gray" size="xs" onClick={onClose} aria-label="Dismiss">
         <IconX size={12} />
       </ActionIcon>
     </div>
-  );
-}
-
-export function History({ sessions, onOpen }: { sessions: Session[]; onOpen: (s: Session) => void }) {
-  const last = sessions[0];
-  if (!last) return null;
-  return (
-    <Stack gap={7} className={classes.history}>
-      <span className={app.label} style={{ color: "var(--mantine-color-dark-3)" }}>
-        Previous session
-      </span>
-      <div className={classes.chip} onClick={() => onOpen(last)}>
-        <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
-          <Text size="11.5px" truncate>
-            {last.title || "Group finder listing"}
-          </Text>
-          <span className={classes.pill}>
-            {last.applicants.length} {last.applicants.length === 1 ? "applicant" : "applicants"}
-          </span>
-        </Group>
-        <Text size="11px" c="dark.2">
-          ›
-        </Text>
-      </div>
-    </Stack>
   );
 }
 

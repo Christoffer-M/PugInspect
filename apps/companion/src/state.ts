@@ -32,15 +32,6 @@ export type Lookup = { state: "loading" | "done" | "error"; entry?: RosterEntry;
 
 export const keyOf = (a: { name: string; realm: string }) => `${a.name.toLowerCase()}-${slugRealm(a.realm)}`;
 
-const HISTORY_KEY = "pi-history";
-const loadHistory = (): Session[] => {
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-};
-
 export type Events = {
   onNewListing?: (session: Session) => void;
   onNewApplicants?: (applicants: Applicant[], session: Session) => void;
@@ -49,7 +40,6 @@ export type Events = {
 export function useCompanion(events: Events) {
   const [link, setLink] = useState<Link>("no_window");
   const [session, setSession] = useState<Session | null>(null);
-  const [history, setHistory] = useState<Session[]>(loadHistory);
   const [lookups, setLookups] = useState<Record<string, Lookup>>({});
   /** When each applicant key was first seen; drives the "new" badge. */
   const [seenAt, setSeenAt] = useState<Record<string, number>>({});
@@ -65,13 +55,6 @@ export function useCompanion(events: Events) {
   const seenRef = useRef<Record<string, number>>({});
   const pending = useRef<{ region: string; applicants: Applicant[] }>({ region: "", applicants: [] });
   const debounce = useRef<number | undefined>(undefined);
-
-  const archive = (s: Session) =>
-    setHistory((h) => {
-      const next = [s, ...h.filter((x) => x.id !== s.id)].slice(0, 5);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-      return next;
-    });
 
   const flushLookups = async () => {
     const { region, applicants } = pending.current;
@@ -103,10 +86,7 @@ export function useCompanion(events: Events) {
     setLastFrameAt(Date.now());
     const current = sessionRef.current;
     if (f.sessionId === 0) {
-      if (current) {
-        archive(current);
-        setSession(null);
-      }
+      if (current) setSession(null);
       return;
     }
     let s = current;
@@ -114,7 +94,6 @@ export function useCompanion(events: Events) {
       // Same listing, new id: the addon was /reload-ed (its id is its load time).
       s = { ...s, id: f.sessionId };
     } else if (!s || s.id !== f.sessionId) {
-      if (current) archive(current);
       s = { id: f.sessionId, region: f.region, title: f.title, activityId: f.activityId, startedAt: Date.now(), applicants: [] };
       seenRef.current = {};
       setSeenAt({});
@@ -168,5 +147,5 @@ export function useCompanion(events: Events) {
     debounce.current = window.setTimeout(flushLookups, 0);
   };
 
-  return { link, session, history, lookups, seenAt, lastFrameAt, retry };
+  return { link, session, lookups, seenAt, lastFrameAt, retry };
 }
