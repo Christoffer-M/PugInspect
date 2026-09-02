@@ -61,6 +61,7 @@ const SPECS: Record<string, string> = { MAGE: "Fire", DRUID: "Guardian", PRIEST:
 const CLASS: Record<string, string> = { MAGE: "Mage", DRUID: "Druid", PRIEST: "Priest", WARLOCK: "Warlock", PALADIN: "Paladin", HUNTER: "Hunter", DEATHKNIGHT: "Death Knight" };
 
 // Fake the backend lookup: two applicants stay "looking up…" forever, like the design.
+(window as unknown as { __PI_MOCK__: boolean }).__PI_MOCK__ = true;
 const realFetch = window.fetch;
 window.fetch = async (input, init) => {
   const body = typeof init?.body === "string" ? init.body : "";
