@@ -66,7 +66,7 @@ export function Applicants({
             <span style={{ textAlign: "right" }}>ilvl</span>
             <span style={{ textAlign: "right" }}>rio</span>
             <span style={{ textAlign: "right" }}>logs</span>
-            <span style={{ textAlign: "right" }}>prog</span>
+            <span style={{ textAlign: "right" }}>{session.difficulty === "+" ? "best" : "prog"}</span>
             <span />
           </div>
           <div className={classes.list}>

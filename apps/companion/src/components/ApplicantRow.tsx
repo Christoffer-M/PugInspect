@@ -58,7 +58,14 @@ export function ApplicantRow({
   const prog = progOf(lookup?.entry, difficulty);
   const ilvl = c?.equippedItemLevel ?? a.ilvl;
   const loading = lookup?.state === "loading";
-  const best = c?.raidLogs?.bestPerformanceAverage;
+  const isKeys = difficulty === "+";
+  const best = isKeys ? c?.mythicPlusLogs?.bestPerformanceAverage : c?.raidLogs?.bestPerformanceAverage;
+  // M+ listings: the game's best run in the listed dungeon replaces raid progress.
+  const bestRun = isKeys
+    ? a.bestLevel > 0
+      ? { text: `+${a.bestLevel} ${a.bestTimed ? "✓" : "✗"}`, color: a.bestTimed ? "#7fe0a3" : "#f4c15e" }
+      : { text: "-", color: DIM }
+    : null;
   const skeleton = <span className={classes.skeletonBar} />;
 
   return (
@@ -100,9 +107,15 @@ export function ApplicantRow({
       <span className={classes.value} style={{ color: best != null ? getParseColor(best) : DIM }}>
         {loading ? skeleton : best != null ? Math.floor(best) : "-"}
       </span>
-      <span className={classes.value} style={{ color: prog?.color ?? DIM }}>
-        {loading ? skeleton : (prog?.text ?? "-")}
-      </span>
+      {bestRun ? (
+        <span className={classes.value} style={{ color: bestRun.color }}>
+          {bestRun.text}
+        </span>
+      ) : (
+        <span className={classes.value} style={{ color: prog?.color ?? DIM }}>
+          {loading ? skeleton : (prog?.text ?? "-")}
+        </span>
+      )}
       <span className={classes.open}>↗</span>
     </a>
   );

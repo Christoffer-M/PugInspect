@@ -33,6 +33,7 @@ pub struct Frame {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Applicant {
     pub name: String,
     pub realm: String,
@@ -42,6 +43,9 @@ pub struct Applicant {
     pub rio: u32,
     /// In-game applicant id; members of one group application share it, first = leader.
     pub group: u64,
+    /// Best key level in the listed dungeon (M+ listings only, else 0) and whether it was timed.
+    pub best_level: u32,
+    pub best_timed: bool,
 }
 
 /// CRC-8/SMBUS: poly 0x07, init 0, no reflection, no xor-out.
@@ -107,7 +111,7 @@ pub fn parse(payload: &str) -> Option<Frame> {
     let applicants = lines
         .map(|l| {
             let f: Vec<&str> = l.split(':').collect();
-            if f.len() != 6 {
+            if f.len() != 8 {
                 return None;
             }
             let (name, r) = f[0].rsplit_once('-').unwrap_or((f[0], &realm));
@@ -119,6 +123,8 @@ pub fn parse(payload: &str) -> Option<Frame> {
                 ilvl: f[3].parse().ok()?,
                 rio: f[4].parse().ok()?,
                 group: f[5].parse().ok()?,
+                best_level: f[6].parse().ok()?,
+                best_timed: f[7] == "1",
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -162,9 +168,9 @@ mod tests {
     }
 
     const PAYLOAD: &str = "1\t17\tEU\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
-        Puggy-Ravencrest:WARRIOR:T:635:2874:41\n\
-        Healbot:PRIEST:H:628:2410:41\n\
-        Zapzap-Tarren-Mill:MAGE:D:641:3102:42";
+        Puggy-Ravencrest:WARRIOR:T:635:2874:41:15:1\n\
+        Healbot:PRIEST:H:628:2410:41:0:0\n\
+        Zapzap-Tarren-Mill:MAGE:D:641:3102:42:11:0";
 
     #[test]
     fn crc_check_value() {
@@ -204,7 +210,7 @@ mod tests {
     fn twenty_applicants_fit() {
         let mut p = "1\t99\tUS\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
         for i in 0..20 {
-            p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7");
+            p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7:0:0");
         }
         assert!(p.len() <= MAX_LEN);
         assert!(p.len() > (COLS * 3) as usize, "should spill onto row 2");

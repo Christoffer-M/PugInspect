@@ -51,13 +51,13 @@ const emit = (event: string, payload: unknown) =>
 };
 
 const APPLICANTS: Frame["applicants"] = [
-  { name: "Frostvyre", realm: "Kazzak", class: "MAGE", role: "D", ilvl: 302, rio: 0, group: 1 },
-  { name: "Bearlyalive", realm: "Ravencrest", class: "DRUID", role: "T", ilvl: 299, rio: 2884, group: 2 },
-  { name: "Lightwarden", realm: "Silvermoon", class: "PRIEST", role: "H", ilvl: 297, rio: 2705, group: 2 },
-  { name: "Soulrend", realm: "Kazzak", class: "WARLOCK", role: "D", ilvl: 295, rio: 2611, group: 2 },
-  { name: "Emberhoof", realm: "TarrenMill", class: "PALADIN", role: "D", ilvl: 293, rio: 2450, group: 3 },
-  { name: "Quickshot", realm: "TwistingNether", class: "HUNTER", role: "D", ilvl: 288, rio: 2201, group: 4 },
-  { name: "Bloodhilt", realm: "Draenor", class: "DEATHKNIGHT", role: "T", ilvl: 284, rio: 1840, group: 5 },
+  { name: "Frostvyre", realm: "Kazzak", class: "MAGE", role: "D", ilvl: 302, rio: 0, group: 1, bestLevel: 0, bestTimed: false },
+  { name: "Bearlyalive", realm: "Ravencrest", class: "DRUID", role: "T", ilvl: 299, rio: 2884, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Lightwarden", realm: "Silvermoon", class: "PRIEST", role: "H", ilvl: 297, rio: 2705, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Soulrend", realm: "Kazzak", class: "WARLOCK", role: "D", ilvl: 295, rio: 2611, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Emberhoof", realm: "TarrenMill", class: "PALADIN", role: "D", ilvl: 293, rio: 2450, group: 3, bestLevel: 0, bestTimed: false },
+  { name: "Quickshot", realm: "TwistingNether", class: "HUNTER", role: "D", ilvl: 288, rio: 2201, group: 4, bestLevel: 0, bestTimed: false },
+  { name: "Bloodhilt", realm: "Draenor", class: "DEATHKNIGHT", role: "T", ilvl: 284, rio: 1840, group: 5, bestLevel: 0, bestTimed: false },
 ];
 
 const SPECS: Record<string, string> = { MAGE: "Fire", DRUID: "Guardian", PRIEST: "Holy", WARLOCK: "Destruction", PALADIN: "Retribution", HUNTER: "Beast Mastery", DEATHKNIGHT: "Blood" };
@@ -89,6 +89,7 @@ window.fetch = async (input, init) => {
             raidProgression: [{ raid: "some-world-boss", total_bosses: 1, normal_bosses_killed: 1, heroic_bosses_killed: 1, mythic_bosses_killed: 0 }, { raid: DEFAULT_RAID, total_bosses: 8, normal_bosses_killed: 8, heroic_bosses_killed: [8, 6, 8, 4, 6, 0, 0][i], mythic_bosses_killed: 0 }],
           },
           raidLogs: { bestPerformanceAverage: [96, 78, 61, 44, 33, 19, 8][i], medianPerformanceAverage: 50 },
+          mythicPlusLogs: { bestPerformanceAverage: [88, 70, 55, 40, 30, 15, 5][i] },
         },
       };
     });
@@ -108,6 +109,13 @@ setTimeout(() => {
     case "#new":
       data({});
       setTimeout(() => data({ sessionId: 1725300999, title: "Ara-Kara +12 · need heals", total: 0, difficulty: "+", applicants: [] }), 1200);
+      break;
+    case "#keys":
+      data({
+        title: "Ara-Kara, City of Echoes (Mythic Keystone)",
+        difficulty: "+",
+        applicants: APPLICANTS.map((a, i) => ({ ...a, bestLevel: [12, 11, 0, 14, 10, 9, 13][i]!, bestTimed: i % 2 === 0 })),
+      });
       break;
     case "#lost":
       data({});

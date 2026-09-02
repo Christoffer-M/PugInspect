@@ -22,12 +22,13 @@ export type RosterEntry = {
       }[] | null;
     } | null;
     raidLogs: { bestPerformanceAverage: number | null; medianPerformanceAverage: number | null } | null;
+    mythicPlusLogs: { bestPerformanceAverage: number | null } | null;
   } | null;
 };
 
 const ROSTER_CHARACTERS = /* GraphQL */ `
-  query RosterCharacters($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty) {
-    rosterCharacters(region: $region, characters: $characters, difficulty: $difficulty) {
+  query RosterCharacters($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty, $zoneId: Int) {
+    rosterCharacters(region: $region, characters: $characters, difficulty: $difficulty, zoneId: $zoneId) {
       name
       realm
       notFound
@@ -41,6 +42,7 @@ const ROSTER_CHARACTERS = /* GraphQL */ `
           raidProgression { raid total_bosses normal_bosses_killed heroic_bosses_killed mythic_bosses_killed }
         }
         raidLogs { bestPerformanceAverage medianPerformanceAverage }
+        mythicPlusLogs { bestPerformanceAverage }
       }
     }
   }
@@ -49,15 +51,17 @@ const ROSTER_CHARACTERS = /* GraphQL */ `
 /** Backend caps a request at 10 characters (ROSTER_CHUNK_LIMIT). */
 export const CHUNK_SIZE = 10;
 
+/** Raid listings pass a difficulty; M+ listings pass the season's WCL zone so
+ *  the same call yields M+ parses instead of raid parses. */
 export async function lookupCharacters(
   region: string,
   characters: { name: string; realm: string }[],
-  difficulty?: "Normal" | "Heroic" | "Mythic"
+  scope: { difficulty?: "Normal" | "Heroic" | "Mythic"; zoneId?: number }
 ): Promise<RosterEntry[]> {
   const response = await fetch(GRAPHQL_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ query: ROSTER_CHARACTERS, variables: { region, characters, difficulty } }),
+    body: JSON.stringify({ query: ROSTER_CHARACTERS, variables: { region, characters, ...scope } }),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const result: { data?: { rosterCharacters: RosterEntry[] }; errors?: { message: string }[] } =

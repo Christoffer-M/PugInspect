@@ -358,6 +358,8 @@ export const HERO_TALENTS_BY_SPEC: Record<string, string[]> = ${stringify(
   // Companion-only: it needs just the raid slug to pick the right progression row.
   const companion = `${header}
 export const DEFAULT_RAID = ${stringify(defaultRaid)};
+/** WCL zone of the current Mythic+ season, for M+ parse lookups. */
+export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(currentSeason.zoneId)};
 `;
 
   const companionPath = resolve(root, "apps/companion/src/generated/seasonConfig.ts");

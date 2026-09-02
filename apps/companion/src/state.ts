@@ -3,10 +3,22 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { slugRealm } from "@repo/ui";
 import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
+import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
 
 /** Shapes emitted by src-tauri/src/capture.rs on the "sync" event. */
 /** `group` is the in-game applicant id: members of one group application share it. */
-export type Applicant = { name: string; realm: string; class: string; role: "T" | "H" | "D" | ""; ilvl: number; rio: number; group: number };
+export type Applicant = {
+  name: string;
+  realm: string;
+  class: string;
+  role: "T" | "H" | "D" | "";
+  ilvl: number;
+  rio: number;
+  group: number;
+  /** Best key level in the listed dungeon (M+ listings only, else 0) and whether it was timed. */
+  bestLevel: number;
+  bestTimed: boolean;
+};
 export type Frame = {
   hb: number;
   region: string;
@@ -65,6 +77,7 @@ export function useCompanion(events: Events) {
 
   const flushLookups = async () => {
     const { region, applicants } = pending.current;
+    const isKeys = sessionRef.current?.difficulty === "+";
     const difficulty = gqlDifficulty(sessionRef.current?.difficulty ?? "");
     pending.current = { region, applicants: [] };
     for (let i = 0; i < applicants.length; i += CHUNK_SIZE) {
@@ -73,7 +86,7 @@ export function useCompanion(events: Events) {
         const entries = await lookupCharacters(
           region,
           chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm) })),
-          difficulty
+          isKeys ? { zoneId: MYTHIC_PLUS_ZONE_ID } : { difficulty }
         );
         setLookups((l) => {
           const next = { ...l };
