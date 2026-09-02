@@ -69,11 +69,13 @@ export default function App() {
 
   useEffect(() => {
     const win = getCurrentWindow();
+    // Always preventDefault: with a JS handler registered, Tauri expects JS to
+    // finish the close itself (via destroy(), which needs a permission we don't
+    // grant). Hide or exit explicitly instead.
     const unlisten = win.onCloseRequested((e) => {
-      if (settings.closeAction === "hide") {
-        e.preventDefault();
-        win.hide();
-      }
+      e.preventDefault();
+      if (settings.closeAction === "hide") win.hide();
+      else invoke("quit");
     });
     return () => {
       unlisten.then((fn) => fn());
@@ -138,7 +140,7 @@ export default function App() {
             }
           />
         ) : (
-          <StatusBar tone="idle" label="Waiting to sync" right={<span className={classes.mono}>idle {pad(Math.floor((now - startedAt) / 60000))}:{pad(Math.floor(((now - startedAt) / 1000) % 60))}</span>} />
+          <StatusBar tone={link === "incompatible" ? "lost" : "idle"} label={link === "incompatible" ? "Version mismatch" : "Waiting to sync"} right={<span className={classes.mono}>idle {pad(Math.floor((now - startedAt) / 60000))}:{pad(Math.floor(((now - startedAt) / 1000) % 60))}</span>} />
         )}
       </div>
     </>

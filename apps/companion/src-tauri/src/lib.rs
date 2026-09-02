@@ -19,6 +19,11 @@ fn retry_sync(rescan: tauri::State<capture::Rescan>) {
     rescan.0.store(true, Relaxed);
 }
 
+#[tauri::command]
+fn quit(app: AppHandle) {
+    app.exit(0);
+}
+
 /// Current status + frame, for a webview that mounted after the events were emitted.
 #[tauri::command]
 fn sync_snapshot(latest: tauri::State<capture::Latest>) -> capture::Snapshot {
@@ -31,7 +36,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
-        .invoke_handler(tauri::generate_handler![retry_sync, sync_snapshot])
+        .invoke_handler(tauri::generate_handler![retry_sync, sync_snapshot, quit])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
