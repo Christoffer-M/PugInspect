@@ -16,11 +16,9 @@ import { CharacterQueryParams } from "../../routes/$region.$realm.$name";
 import { CharacterRaidLogs } from "../../queries/character-raid-logs";
 import { useZonePartitions } from "../../queries/zone-partitions";
 import { SpecImage } from "../ui/SpecImage";
-import { SkeletonTableRows } from "../ui/SkeletonTableRows";
 import { PartitionSelector } from "./PartitionSelector";
 import { PerformanceSummary } from "./PerformanceSummary";
-import { ParsePill } from "../ui/ParsePill";
-import { SectionTitle } from "../ui/SectionTitle";
+import { ParsePill, SectionTitle, SkeletonTableRows } from "@repo/ui";
 
 const DIFFICULTY_ORDER = ["LFR", "Normal", "Heroic", "Mythic"];
 // WCL character-page difficulty ids

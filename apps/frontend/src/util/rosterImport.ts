@@ -1,4 +1,6 @@
-import { normalizeRealm } from "./util";
+import { slugRealm } from "@repo/ui";
+
+export { CLASS_FILE_NAMES } from "@repo/ui";
 
 /**
  * Decoder for PugInspect addon roster export strings:
@@ -23,24 +25,6 @@ export type RosterImportCharacter = {
 export type RosterImport = {
   region: string;
   characters: RosterImportCharacter[];
-};
-
-/** SEASON-CONFIG: Blizzard class file name → display name, for class colors/icons
- * on pending cards. Extend when an expansion adds a class. */
-export const CLASS_FILE_NAMES: Record<string, string> = {
-  DEATHKNIGHT: "Death Knight",
-  DEMONHUNTER: "Demon Hunter",
-  DRUID: "Druid",
-  EVOKER: "Evoker",
-  HUNTER: "Hunter",
-  MAGE: "Mage",
-  MONK: "Monk",
-  PALADIN: "Paladin",
-  PRIEST: "Priest",
-  ROGUE: "Rogue",
-  SHAMAN: "Shaman",
-  WARLOCK: "Warlock",
-  WARRIOR: "Warrior",
 };
 
 const PREFIX = "!PI1!";
@@ -68,50 +52,6 @@ function decodeForPrint(encoded: string): Uint8Array | null {
   return Uint8Array.from(out);
 }
 
-/**
- * SEASON-CONFIG: realms whose API slug can't be derived from the Blizzard-
- * normalized name by the case-boundary heuristic below. Two families:
- * Russian realms have transliterated slugs ("РевущийФьорд" → "howling-fjord"),
- * and apostrophe realms whose stripped apostrophe left a case boundary
- * ("MalGanis" → "malganis", NOT "mal-ganis"). Keyed by the lowercased realm
- * with all separators stripped, which covers every normalization variant the
- * client can send. Extend when Blizzard opens such a realm.
- */
-const SPECIAL_REALM_SLUGS: Record<string, string> = {
-  // Apostrophe realms with a capital after the apostrophe (US/OCE/EU)
-  ahnqiraj: "ahnqiraj",
-  alakir: "alakir",
-  amanthul: "amanthul",
-  dathremar: "dathremar",
-  drekthar: "drekthar",
-  jubeithos: "jubeithos",
-  kelthuzad: "kelthuzad",
-  malganis: "malganis",
-  moknathal: "moknathal",
-  quelthalas: "quelthalas",
-  ungoro: "ungoro",
-  азурегос: "azuregos",
-  борейскаятундра: "borean-tundra",
-  вечнаяпесня: "eversong",
-  галакронд: "galakrond",
-  голдринн: "goldrinn",
-  гордунни: "gordunni",
-  гром: "grom",
-  дракономор: "fordragon",
-  корольлич: "lich-king",
-  пиратскаябухта: "booty-bay",
-  подземье: "deepholm",
-  разувий: "razuvious",
-  ревущийфьорд: "howling-fjord",
-  свежевательдуш: "soulflayer",
-  седогрив: "greymane",
-  стражсмерти: "deathguard",
-  термоштепсель: "thermaplugg",
-  ткачсмерти: "deathweaver",
-  черныйшрам: "blackscar",
-  ясеневыйлес: "ashenvale",
-};
-
 /** Split a "Name-Realm" string on the FIRST dash (realm slugs contain dashes)
  * and slug the realm, including the special-realm table - the single parsing
  * path for both the export-string decoder and manual entry. */
@@ -123,22 +63,6 @@ export function parseNameRealm(input: string): { name: string; realm: string } |
   const realm = slugRealm(trimmed.slice(dash + 1));
   if (!name || !realm) return null;
   return { name, realm };
-}
-
-/**
- * The addon sends Blizzard-normalized realms ("TarrenMill"); API slugs are
- * dashed ("tarren-mill"), so re-insert dashes at case/digit boundaries.
- * ponytail: heuristic - a space and an apostrophe both normalize to a case
- * boundary, so "MalGanis" wrongly becomes "mal-ganis" (slug is "malganis").
- * Fix with a realm table from Blizzard's realm index if it bites.
- */
-function slugRealm(realm: string): string {
-  const squashed = realm.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
-  const special = SPECIAL_REALM_SLUGS[squashed];
-  if (special) return special;
-  return normalizeRealm(
-    realm.replace(/(\p{Ll})(\p{Lu})/gu, "$1-$2").replace(/(\p{L})(\d)/gu, "$1-$2")
-  );
 }
 
 function parsePayload(payload: string): RosterImport | null {

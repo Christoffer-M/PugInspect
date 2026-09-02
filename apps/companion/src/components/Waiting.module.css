@@ -1,0 +1,69 @@
+.center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 34px;
+  text-align: center;
+}
+
+.beacon {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 26px;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(139, 127, 212, 0.5);
+  animation: pi-ring 2.8s ease-out infinite;
+}
+.ring2 { animation-delay: 1.4s; border-color: rgba(139, 127, 212, 0.4); }
+
+.core {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(61, 79, 110, 0.7);
+  background: rgba(20, 29, 50, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coreDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--mantine-color-accent-5);
+  animation: pi-pulse 2.2s ease-in-out infinite;
+}
+
+.title {
+  font-family: var(--mantine-font-family-headings);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--pi-text-bright);
+  margin-bottom: 10px;
+}
+
+.hint {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--mantine-color-dark-2);
+  max-width: 270px;
+  text-wrap: pretty;
+}
+
+.card {
+  margin-top: 26px;
+  width: 100%;
+  text-align: left;
+}

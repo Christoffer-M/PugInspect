@@ -4,17 +4,13 @@ import { IconChartBarOff, IconX } from "@tabler/icons-react";
 import { Difficulty } from "../../graphql/graphql";
 import type { RosterEntry } from "../../queries/roster";
 import { SpecImage } from "../ui/SpecImage";
-import { ParsePill } from "../ui/ParsePill";
+import { ParsePill, ROLE_COLORS } from "@repo/ui";
 import { getClassColor, normalizeRealm, upperCaseFirstLetter } from "../../util/util";
 import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import { CLASS_FILE_NAMES } from "../../util/rosterImport";
 import classes from "./Roster.module.css";
 
-export const ROLE_COLORS: Record<string, string> = {
-  TANK: "#3b82f6",
-  HEALER: "#22c55e",
-  DPS: "#f4a50e",
-};
+export { ROLE_COLORS };
 
 export const ROLE_TAGS: Record<string, string> = { TANK: "TANK", HEALER: "HEAL", DPS: "DPS" };
 

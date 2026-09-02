@@ -355,13 +355,23 @@ export const HERO_TALENTS_BY_SPEC: Record<string, string[]> = ${stringify(
   )};
 `;
 
+  // Companion-only: it needs just the raid slug to pick the right progression row.
+  const companion = `${header}
+export const DEFAULT_RAID = ${stringify(defaultRaid)};
+/** WCL zone of the current Mythic+ season, for M+ parse lookups. */
+export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(currentSeason.zoneId)};
+`;
+
+  const companionPath = resolve(root, "apps/companion/src/generated/seasonConfig.ts");
   const frontendPath = resolve(root, "apps/frontend/src/generated/seasonConfig.ts");
   const backendPath = resolve(root, "apps/backend/src/generated/seasonConfig.ts");
   const heroTalentsPath = resolve(root, "apps/backend/src/generated/heroTalents.ts");
+  writeFileSync(companionPath, companion);
   writeFileSync(frontendPath, frontend);
   writeFileSync(backendPath, backend);
   writeFileSync(heroTalentsPath, heroTalentsFile);
 
+  console.log(`Wrote ${companionPath}`);
   console.log(`Wrote ${frontendPath}`);
   console.log(`Wrote ${backendPath}`);
   console.log(

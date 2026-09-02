@@ -2,7 +2,7 @@ import { Grid, Paper, RingProgress, Select, Stack, Text } from "@mantine/core";
 import { RaidProgressionDetail } from "../../graphql/graphql";
 import { getRaidExpansion, RAIDS } from "../../data/raidZones";
 import { useMemo } from "react";
-import { SectionTitle } from "../ui/SectionTitle";
+import { SectionTitle } from "@repo/ui";
 import classes from "./RaidProgression.module.css";
 
 // Options come straight from the generated RAIDS map (release order, newest

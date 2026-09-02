@@ -24,7 +24,7 @@ import { RecentMythicPlusRunsTable } from "../components/mythic-plus/RecentMythi
 import { getZoneIdForRaid, DEFAULT_RAID, RAIDS } from "../data/raidZones";
 import { DEFAULT_MYTHIC_PLUS_SEASON, getMythicPlusZoneId, MYTHIC_PLUS_SEASONS } from "../data/mythicPlusSeasons";
 import { useSearchHistory } from "../hooks/useSearchHistory";
-import { ExternalLinkIcon } from "../components/ui/ExternalLinkIcon";
+import { ExternalLinkIcon } from "@repo/ui";
 import { normalizeRealm } from "../util/util";
 import RaiderIoIcon from "../assets/raiderio-icon.svg";
 import WarcraftLogsIcon from "../assets/warcraftlogs-icon.png";

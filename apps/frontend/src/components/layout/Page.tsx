@@ -2,7 +2,7 @@ import { AppShell, Typography } from "@mantine/core";
 import { useWindowEvent } from "@mantine/hooks";
 import Header from "./Header";
 import Footer from "./Footer";
-import classes from "./Page.module.css";
+import { pageClasses as classes } from "@repo/ui";
 import { useRef } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { normalizeRealm, parseCharacterUrl } from "../../util/util";

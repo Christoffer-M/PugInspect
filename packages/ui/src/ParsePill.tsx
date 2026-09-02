@@ -1,5 +1,5 @@
 import { Box, Text } from "@mantine/core";
-import { getParseColor } from "../../util/util";
+import { getParseColor } from "./colors";
 import classes from "./ParsePill.module.css";
 
 export const ParsePill: React.FC<{

@@ -2,11 +2,7 @@ import { EXPANSION_DISPLAY_NAMES, RAIDS } from "../generated/seasonConfig";
 
 export { DEFAULT_RAID, RAIDS } from "../generated/seasonConfig";
 
-export const RAID_DIFFICULTY_COLORS = {
-  normal: "#22c55e",
-  heroic: "#3b82f6",
-  mythic: "#f4a50e",
-} as const;
+export { RAID_DIFFICULTY_COLORS } from "@repo/ui";
 
 /** Returns the WarcraftLogs zone ID for a Raider.IO raid slug, or undefined if unknown. */
 export function getZoneIdForRaid(raidSlug: string): number | undefined {
