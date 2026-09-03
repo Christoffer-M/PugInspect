@@ -27,4 +27,8 @@ export const config = {
   frontendOrigin: process.env.FRONTEND_ORIGIN ?? "http://frontend",
   // Public-facing origin used for canonical/og:url links in injected meta tags.
   publicOrigin: process.env.PUBLIC_ORIGIN ?? "https://puginspect.com",
+  // Emergency kill switch: companion builds older than this version get a 403
+  // from /graphql (e.g. "0.2.0"; unset allows all). Builds that predate the
+  // version header count as 0.0.0, so any value blocks those too.
+  companionMinVersion: process.env.COMPANION_MIN_VERSION,
 };

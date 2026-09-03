@@ -18,6 +18,9 @@ import { renderSitemapXml } from "./seo/sitemap.js";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import type { SelectionSetNode, ValidationRule } from "graphql";
+import { createLogger } from "./schema/utils/logger.js";
+
+const graphqlLogger = createLogger({ service: "GraphQL" });
 
 // Simple query depth limit — no extra dependency needed
 function maxQueryDepth(maxDepth: number): ValidationRule {
@@ -138,13 +141,27 @@ function getClientIp(req: express.Request): string | undefined {
 
 // Crawlers execute the SPA and fire real GraphQL queries; resolvers use this
 // flag to serve them from the DB cache without spending upstream API quota.
-type GraphQLContext = BaseContext & { isBot: boolean };
+type GraphQLContext = BaseContext & { isBot: boolean; source: "companion" | "website" | "bot" };
 
 const server = new ApolloServer<GraphQLContext>({
   typeDefs: characterTypedefs,
   resolvers: characterResolvers,
   validationRules: [maxQueryDepth(8), maxFieldCount(120)],
   introspection: process.env.NODE_ENV !== "production",
+  plugins: [
+    {
+      // One line per operation, tagged with who sent it, so upstream API
+      // spend (WCL quota above all) can be attributed companion vs website.
+      async requestDidStart({ request, contextValue }) {
+        if (request.operationName !== "IntrospectionQuery") {
+          graphqlLogger.info("GraphQL request", {
+            operation: request.operationName ?? "anonymous",
+            source: contextValue.source,
+          });
+        }
+      },
+    },
+  ],
 });
 
 await server.start();
@@ -155,6 +172,36 @@ const corsOptions: cors.CorsOptions = {
 
 const graphqlRateLimiter = createRateLimiter(100, 60_000);
 
+/** True when semver-ish `a` is older than `b`; malformed parts count as 0. */
+function olderThan(a: string, b: string): boolean {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff < 0;
+  }
+  return false;
+}
+
+// Emergency kill switch for a misbehaving companion release: set
+// COMPANION_MIN_VERSION and restart, and older builds get a 403 instead of
+// spending upstream quota. The header is spoofable — this is incident
+// response for our own clients, not access control against attackers.
+const companionGate: express.RequestHandler = (req, res, next) => {
+  const min = config.companionMinVersion;
+  const client = req.headers["x-puginspect-client"];
+  if (min && typeof client === "string" && client.startsWith("companion")) {
+    const version = client.split("/")[1] || "0.0.0";
+    if (olderThan(version, min)) {
+      res.status(403).json({
+        errors: [{ message: "This companion version is no longer supported. Please update the app." }],
+      });
+      return;
+    }
+  }
+  next();
+};
+
 app.get("/", (_, res) => {
   res.redirect("/graphql");
 });
@@ -163,12 +210,19 @@ app.use(
   "/graphql",
   graphqlRateLimiter,
   cors<cors.CorsRequest>(corsOptions),
+  companionGate,
   express.json(),
   expressMiddleware(server, {
     // A missing user-agent means a scripted client — treat it as a bot too.
     context: async ({ req }) => {
       const userAgent = req.headers["user-agent"];
-      return { isBot: !userAgent || isbot(userAgent) };
+      const isBot = !userAgent || isbot(userAgent);
+      // The companion self-identifies via "companion/<version>"; the header is
+      // spoofable, which is fine — this drives log attribution, not access control.
+      const client = req.headers["x-puginspect-client"];
+      const source: GraphQLContext["source"] =
+        typeof client === "string" && client.startsWith("companion") ? "companion" : isBot ? "bot" : "website";
+      return { isBot, source };
     },
   })
 );
