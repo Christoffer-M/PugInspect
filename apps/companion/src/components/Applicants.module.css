@@ -162,7 +162,7 @@
 
 .empty {
   flex: 1;
-  margin: 14px 16px 0;
+  margin: 14px 16px;
   border-radius: 10px;
   border: 1px dashed rgba(61, 79, 110, 0.6);
   background: rgba(20, 29, 50, 0.35);
