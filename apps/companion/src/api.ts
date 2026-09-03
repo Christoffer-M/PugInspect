@@ -76,8 +76,9 @@ export async function lookupCharacters(
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      // Lets the backend attribute API spend to the companion in its logs.
-      "X-PugInspect-Client": "companion",
+      // Lets the backend attribute API spend to the companion in its logs and
+      // block outdated builds via COMPANION_MIN_VERSION.
+      "X-PugInspect-Client": `companion/${__APP_VERSION__}`,
     },
     body: JSON.stringify({ query: keys ? KEYS : RAID, variables: { region, characters, ...scope } }),
   });

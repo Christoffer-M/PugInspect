@@ -172,6 +172,36 @@ const corsOptions: cors.CorsOptions = {
 
 const graphqlRateLimiter = createRateLimiter(100, 60_000);
 
+/** True when semver-ish `a` is older than `b`; malformed parts count as 0. */
+function olderThan(a: string, b: string): boolean {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff < 0;
+  }
+  return false;
+}
+
+// Emergency kill switch for a misbehaving companion release: set
+// COMPANION_MIN_VERSION and restart, and older builds get a 403 instead of
+// spending upstream quota. The header is spoofable — this is incident
+// response for our own clients, not access control against attackers.
+const companionGate: express.RequestHandler = (req, res, next) => {
+  const min = config.companionMinVersion;
+  const client = req.headers["x-puginspect-client"];
+  if (min && typeof client === "string" && client.startsWith("companion")) {
+    const version = client.split("/")[1] || "0.0.0";
+    if (olderThan(version, min)) {
+      res.status(403).json({
+        errors: [{ message: "This companion version is no longer supported. Please update the app." }],
+      });
+      return;
+    }
+  }
+  next();
+};
+
 app.get("/", (_, res) => {
   res.redirect("/graphql");
 });
@@ -180,16 +210,18 @@ app.use(
   "/graphql",
   graphqlRateLimiter,
   cors<cors.CorsRequest>(corsOptions),
+  companionGate,
   express.json(),
   expressMiddleware(server, {
     // A missing user-agent means a scripted client — treat it as a bot too.
     context: async ({ req }) => {
       const userAgent = req.headers["user-agent"];
       const isBot = !userAgent || isbot(userAgent);
-      // The companion self-identifies via header; the header is spoofable,
-      // which is fine — this drives log attribution, not access control.
+      // The companion self-identifies via "companion/<version>"; the header is
+      // spoofable, which is fine — this drives log attribution, not access control.
+      const client = req.headers["x-puginspect-client"];
       const source: GraphQLContext["source"] =
-        req.headers["x-puginspect-client"] === "companion" ? "companion" : isBot ? "bot" : "website";
+        typeof client === "string" && client.startsWith("companion") ? "companion" : isBot ? "bot" : "website";
       return { isBot, source };
     },
   })
