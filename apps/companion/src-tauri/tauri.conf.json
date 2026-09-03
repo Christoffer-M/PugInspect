@@ -29,9 +29,16 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDREQjEyRTM2QjIxODM5QUQKUldTdE9SaXlOaTZ4VGRzbkt0bkt0Q096cnNMS0R0NDlXQUhaOEJNbGdsZWh3RTdGU3dMVGxUcysK",
+      "endpoints": ["https://github.com/Christoffer-M/PugInspect/releases/latest/download/latest.json"]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

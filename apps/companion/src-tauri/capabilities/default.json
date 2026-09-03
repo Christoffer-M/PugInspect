@@ -15,6 +15,7 @@
     "core:window:allow-toggle-maximize",
     "opener:default",
     "notification:default",
-    "autostart:default"
+    "autostart:default",
+    "updater:default"
   ]
 }

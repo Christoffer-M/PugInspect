@@ -58,6 +58,28 @@ export function NewListingToast({ onClose }: { onClose: () => void }) {
   );
 }
 
+export function UpdateBanner({ update, onClose }: { update: { version: string; installing: boolean; error: string | null; install: () => void }; onClose: () => void }) {
+  return (
+    <div className={classes.toast}>
+      <span className={app.accentBar} />
+      <Stack gap={5} style={{ flex: 1 }}>
+        <span className={app.label} style={{ color: "var(--mantine-color-accent-2)" }}>
+          Update available
+        </span>
+        <span className={classes.toastSub}>{update.error ? `Update failed: ${update.error}` : `Companion ${update.version} is out. Installing restarts the app.`}</span>
+        <div>
+          <Button size="compact-xs" variant="light" loading={update.installing} onClick={update.install}>
+            {update.error ? "Retry" : "Install & restart"}
+          </Button>
+        </div>
+      </Stack>
+      <ActionIcon variant="subtle" color="gray" size="xs" onClick={onClose} aria-label="Dismiss">
+        <IconX size={12} />
+      </ActionIcon>
+    </div>
+  );
+}
+
 export function RetryButton({ onClick }: { onClick: () => void }) {
   return (
     <Button size="compact-xs" variant="default" onClick={onClick}>

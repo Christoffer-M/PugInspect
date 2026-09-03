@@ -1,0 +1,46 @@
+name: Companion release
+
+# Tag `companion-vX.Y.Z` (matching the version in tauri.conf.json) to publish a
+# GitHub release with the NSIS installer, the signed updater artifact and the
+# latest.json manifest the in-app updater polls.
+#
+# Requires the repo secret TAURI_SIGNING_PRIVATE_KEY (contents of
+# ~/.tauri/puginspect-companion.key — the key has no password).
+on:
+  push:
+    tags:
+      - "companion-v*"
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/companion/src-tauri
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        with:
+          projectPath: apps/companion
+          tagName: ${{ github.ref_name }}
+          releaseName: "PugInspect Companion v__VERSION__"
+          releaseBody: "See the assets below to download and install this version."

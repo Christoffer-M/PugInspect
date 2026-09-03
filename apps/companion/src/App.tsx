@@ -11,7 +11,8 @@ import { Titlebar } from "./components/Titlebar";
 import { StatusBar } from "./components/StatusBar";
 import { Waiting } from "./components/Waiting";
 import { Applicants } from "./components/Applicants";
-import { NewListingToast, RetryButton, SyncLost, VersionMismatch } from "./components/Banners";
+import { NewListingToast, RetryButton, SyncLost, UpdateBanner, VersionMismatch } from "./components/Banners";
+import { useUpdate } from "./updates";
 import { Settings } from "./components/Settings";
 import classes from "./App.module.css";
 
@@ -30,6 +31,8 @@ export default function App() {
   const [now, setNow] = useState(Date.now);
   const [version, setVersion] = useState("");
   const [startedAt] = useState(Date.now);
+  const newRelease = useUpdate();
+  const [dismissedUpdate, setDismissedUpdate] = useState("");
 
   const { link, session, lookups, seenAt, lastFrameAt } = useCompanion({
     onNewListing: (s) => {
@@ -115,6 +118,7 @@ export default function App() {
       <div className={pageClasses.appBg} />
       <div className={classes.app}>
         <Titlebar tone={tone} onSettings={() => setScreen("settings")} />
+        {newRelease && newRelease.version !== dismissedUpdate && <UpdateBanner update={newRelease} onClose={() => setDismissedUpdate(newRelease.version)} />}
         {lost && <SyncLost />}
         {mismatch && shown && <VersionMismatch link={link} />}
         {toastAt && now - toastAt < TOAST_MS && <NewListingToast onClose={() => setToastAt(null)} />}
