@@ -1,0 +1,33 @@
+name: Companion promote
+
+# Publishing a companion-v* release (draft → Publish in the GitHub UI) promotes
+# its latest.json to the rolling `companion-latest` release — the stable URL
+# every installed companion polls. The indirection keeps the updater working
+# even if other artifacts (e.g. the addon) are ever released from this repo.
+on:
+  release:
+    types: [published]
+
+jobs:
+  promote:
+    if: startsWith(github.event.release.tag_name, 'companion-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Promote latest.json to companion-latest
+        run: |
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p latest.json
+          # The manifest was generated while the release was a draft, so its asset
+          # URLs contain an untagged-… path; point them at the published tag.
+          jq --arg base "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG" \
+            '.platforms |= with_entries(.value.url = $base + "/" + (.value.url | split("/") | last))' \
+            latest.json > promoted.json && mv promoted.json latest.json
+          gh release view companion-latest -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create companion-latest -R "$GITHUB_REPOSITORY" --prerelease \
+              --title "Companion updater manifest" \
+              --notes "Rolling release holding latest.json for the companion auto-updater. Do not delete."
+          gh release upload companion-latest latest.json -R "$GITHUB_REPOSITORY" --clobber

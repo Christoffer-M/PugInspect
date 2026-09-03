@@ -36,6 +36,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![retry_sync, sync_snapshot, quit])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;

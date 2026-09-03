@@ -11,7 +11,8 @@ import { Titlebar } from "./components/Titlebar";
 import { StatusBar } from "./components/StatusBar";
 import { Waiting } from "./components/Waiting";
 import { Applicants } from "./components/Applicants";
-import { NewListingToast, RetryButton, SyncLost, VersionMismatch } from "./components/Banners";
+import { NewListingToast, RetryButton, SyncLost, UpdateBanner, VersionMismatch } from "./components/Banners";
+import { useUpdate } from "./updates";
 import { Settings } from "./components/Settings";
 import classes from "./App.module.css";
 
@@ -30,6 +31,9 @@ export default function App() {
   const [now, setNow] = useState(Date.now);
   const [version, setVersion] = useState("");
   const [startedAt] = useState(Date.now);
+  const newRelease = useUpdate();
+  const [dismissedUpdate, setDismissedUpdate] = useState("");
+  const [notifiedUpdate, setNotifiedUpdate] = useState("");
 
   const { link, session, lookups, seenAt, lastFrameAt } = useCompanion({
     onNewListing: (s) => {
@@ -42,6 +46,19 @@ export default function App() {
         notify(fresh.length === 1 ? `${fresh[0]!.name} applied` : `${fresh.length} new applicants`, s.title);
       if (settings.sound) ding();
     },
+  });
+
+  // Update side effects: a system notification once per version (the window often
+  // lives hidden in the tray), and an unprompted install when the addon protocol
+  // already broke — the app can't function on the old version anyway. Guarded by
+  // state rather than deps: newRelease is a fresh object each render.
+  useEffect(() => {
+    if (!newRelease) return;
+    if (newRelease.version !== notifiedUpdate) {
+      setNotifiedUpdate(newRelease.version);
+      notify("Update available", `Companion ${newRelease.version} is ready to install.`);
+    }
+    if (link === "app_outdated" && !newRelease.installing && !newRelease.done && !newRelease.error) newRelease.install();
   });
 
   // 1 s tick for the relative timers and the "new" badge expiry.
@@ -115,8 +132,9 @@ export default function App() {
       <div className={pageClasses.appBg} />
       <div className={classes.app}>
         <Titlebar tone={tone} onSettings={() => setScreen("settings")} />
+        {newRelease && (newRelease.version !== dismissedUpdate || link === "app_outdated") && <UpdateBanner update={newRelease} onClose={() => setDismissedUpdate(newRelease.version)} />}
         {lost && <SyncLost />}
-        {mismatch && shown && <VersionMismatch link={link} />}
+        {mismatch && shown && <VersionMismatch link={link} hasUpdate={!!newRelease} />}
         {toastAt && now - toastAt < TOAST_MS && <NewListingToast onClose={() => setToastAt(null)} />}
         {shown ? (
           <Applicants session={shown} lookups={lookups} seenAt={seenAt} dimmed={lost} now={now} />

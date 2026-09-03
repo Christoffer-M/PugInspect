@@ -13,7 +13,7 @@ export function Waiting({ link }: { link: Link }) {
     link === "addon_outdated"
       ? "The PugInspect addon is older than this app. Update the addon, then /reload."
       : link === "app_outdated"
-        ? "This app is older than the PugInspect addon. Install the latest companion."
+        ? "This app is older than the PugInspect addon. Install the app update from the banner above."
         : "The strip is being read but its format is not what this app expects. Update the PugInspect addon and this app to matching versions, then /reload.";
   return (
     <div className={classes.center}>

@@ -25,7 +25,7 @@ default; `/pi hud` in-game enables it (saved per account).
 
 ```bash
 pnpm --filter companion tauri dev      # native shell (needs Rust; cargo in ~/.cargo/bin)
-pnpm --filter companion dev            # browser only, Tauri mocked; #synced / #new / #lost in the URL pick a screen
+pnpm --filter companion dev            # browser only, Tauri mocked; #synced / #new / #lost / #update / #update-fail in the URL pick a screen
 pnpm --filter companion check-types
 pnpm --filter companion codegen        # regenerate src/graphql from packages/graphql-types after a schema change
 cargo test --manifest-path apps/companion/src-tauri/Cargo.toml   # decoder round-trip, CRC, parser, event shapes
@@ -38,5 +38,26 @@ backend's `ALLOWED_ORIGINS` must include `http://tauri.localhost` (Windows), `ta
 ## Build
 
 ```bash
-pnpm --filter companion tauri build    # NSIS installer under src-tauri/target/release/bundle
+pnpm --filter companion tauri build --no-sign   # NSIS installer under src-tauri/target/release/bundle
 ```
+
+`--no-sign` is required locally: the updater pubkey in `tauri.conf.json` makes the bundler
+demand `TAURI_SIGNING_PRIVATE_KEY` otherwise. Signed builds come from the release workflow.
+
+## Release
+
+1. Bump `version` in `package.json` (`tauri.conf.json` reads it from there) and push a
+   matching `companion-vX.Y.Z` tag. `companion-release.yml` builds, signs and creates a
+   **draft** release — the tag/version match is checked in CI.
+2. Smoke-test the installer from the draft's assets, then click **Publish** in the GitHub
+   UI. That fires `companion-promote.yml`, which copies `latest.json` to the rolling
+   `companion-latest` release — the stable URL installed apps poll (on launch and every
+   6 h). Nothing reaches users until this step.
+
+Signing uses the `TAURI_SIGNING_PRIVATE_KEY` repo secret (`~/.tauri/puginspect-companion.key`,
+backed up; the public key lives in `tauri.conf.json`). The `companion-latest` indirection
+means other artifacts (the addon, say) can be released from this repo without breaking the
+updater. Rollback is roll-forward: publish a new, higher version — deleting a release does
+not touch `companion-latest`, so clients keep seeing whatever was last promoted. Updates
+notify via the system tray; when the addon reports `app_outdated`, the app installs the
+pending update without asking.
