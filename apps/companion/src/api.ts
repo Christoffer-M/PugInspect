@@ -73,7 +73,12 @@ export async function lookupCharacters(
   const keys = "zoneId" in scope;
   const response = await fetch(GRAPHQL_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      // Lets the backend attribute API spend to the companion in its logs.
+      "X-PugInspect-Client": "companion",
+    },
     body: JSON.stringify({ query: keys ? KEYS : RAID, variables: { region, characters, ...scope } }),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);

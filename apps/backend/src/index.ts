@@ -18,6 +18,9 @@ import { renderSitemapXml } from "./seo/sitemap.js";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import type { SelectionSetNode, ValidationRule } from "graphql";
+import { createLogger } from "./schema/utils/logger.js";
+
+const graphqlLogger = createLogger({ service: "GraphQL" });
 
 // Simple query depth limit — no extra dependency needed
 function maxQueryDepth(maxDepth: number): ValidationRule {
@@ -138,13 +141,27 @@ function getClientIp(req: express.Request): string | undefined {
 
 // Crawlers execute the SPA and fire real GraphQL queries; resolvers use this
 // flag to serve them from the DB cache without spending upstream API quota.
-type GraphQLContext = BaseContext & { isBot: boolean };
+type GraphQLContext = BaseContext & { isBot: boolean; source: "companion" | "website" | "bot" };
 
 const server = new ApolloServer<GraphQLContext>({
   typeDefs: characterTypedefs,
   resolvers: characterResolvers,
   validationRules: [maxQueryDepth(8), maxFieldCount(120)],
   introspection: process.env.NODE_ENV !== "production",
+  plugins: [
+    {
+      // One line per operation, tagged with who sent it, so upstream API
+      // spend (WCL quota above all) can be attributed companion vs website.
+      async requestDidStart({ request, contextValue }) {
+        if (request.operationName !== "IntrospectionQuery") {
+          graphqlLogger.info("GraphQL request", {
+            operation: request.operationName ?? "anonymous",
+            source: contextValue.source,
+          });
+        }
+      },
+    },
+  ],
 });
 
 await server.start();
@@ -168,7 +185,12 @@ app.use(
     // A missing user-agent means a scripted client — treat it as a bot too.
     context: async ({ req }) => {
       const userAgent = req.headers["user-agent"];
-      return { isBot: !userAgent || isbot(userAgent) };
+      const isBot = !userAgent || isbot(userAgent);
+      // The companion self-identifies via header; the header is spoofable,
+      // which is fine — this drives log attribution, not access control.
+      const source: GraphQLContext["source"] =
+        req.headers["x-puginspect-client"] === "companion" ? "companion" : isBot ? "bot" : "website";
+      return { isBot, source };
     },
   })
 );
