@@ -118,9 +118,9 @@ export default function App() {
       <div className={pageClasses.appBg} />
       <div className={classes.app}>
         <Titlebar tone={tone} onSettings={() => setScreen("settings")} />
-        {newRelease && newRelease.version !== dismissedUpdate && <UpdateBanner update={newRelease} onClose={() => setDismissedUpdate(newRelease.version)} />}
+        {newRelease && (newRelease.version !== dismissedUpdate || link === "app_outdated") && <UpdateBanner update={newRelease} onClose={() => setDismissedUpdate(newRelease.version)} />}
         {lost && <SyncLost />}
-        {mismatch && shown && <VersionMismatch link={link} />}
+        {mismatch && shown && <VersionMismatch link={link} hasUpdate={!!newRelease} />}
         {toastAt && now - toastAt < TOAST_MS && <NewListingToast onClose={() => setToastAt(null)} />}
         {shown ? (
           <Applicants session={shown} lookups={lookups} seenAt={seenAt} dimmed={lost} now={now} />

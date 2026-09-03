@@ -32,7 +32,19 @@ jobs:
         with:
           workspaces: apps/companion/src-tauri
 
+      - name: Check tag matches app version
+        shell: bash
+        run: |
+          v=$(node -p "require('./apps/companion/src-tauri/tauri.conf.json').version")
+          if [ "companion-v$v" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match tauri.conf.json version $v — bump the version, delete the tag, re-tag."
+            exit 1
+          fi
+
       - run: pnpm install --frozen-lockfile
+
+      - name: Rust tests (decoder, parser, event shapes)
+        run: cargo test --manifest-path apps/companion/src-tauri/Cargo.toml
 
       - uses: tauri-apps/tauri-action@v0
         env:

@@ -5,6 +5,9 @@ name: Companion installer
 # ask for "More info → Run anyway" on first launch.
 on:
   push:
+    # Path filters are not evaluated for tag pushes, so without a branches
+    # filter every companion-v* release tag would run this job too.
+    branches: ["**"]
     paths:
       - "apps/companion/**"
       - "packages/ui/**"
@@ -40,7 +43,10 @@ jobs:
         run: cargo test --manifest-path apps/companion/src-tauri/Cargo.toml
 
       - name: Build installer
-        run: pnpm --filter companion tauri build
+        # --no-sign: with an updater pubkey configured, tauri build otherwise
+        # refuses to bundle without TAURI_SIGNING_PRIVATE_KEY. Signed updater
+        # artifacts come from companion-release.yml only.
+        run: pnpm --filter companion tauri build --no-sign
 
       - uses: actions/upload-artifact@v4
         with:

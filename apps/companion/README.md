@@ -25,7 +25,7 @@ default; `/pi hud` in-game enables it (saved per account).
 
 ```bash
 pnpm --filter companion tauri dev      # native shell (needs Rust; cargo in ~/.cargo/bin)
-pnpm --filter companion dev            # browser only, Tauri mocked; #synced / #new / #lost / #update in the URL pick a screen
+pnpm --filter companion dev            # browser only, Tauri mocked; #synced / #new / #lost / #update / #update-fail in the URL pick a screen
 pnpm --filter companion check-types
 pnpm --filter companion codegen        # regenerate src/graphql from packages/graphql-types after a schema change
 cargo test --manifest-path apps/companion/src-tauri/Cargo.toml   # decoder round-trip, CRC, parser, event shapes
@@ -38,8 +38,11 @@ backend's `ALLOWED_ORIGINS` must include `http://tauri.localhost` (Windows), `ta
 ## Build
 
 ```bash
-pnpm --filter companion tauri build    # NSIS installer under src-tauri/target/release/bundle
+pnpm --filter companion tauri build --no-sign   # NSIS installer under src-tauri/target/release/bundle
 ```
+
+`--no-sign` is required locally: the updater pubkey in `tauri.conf.json` makes the bundler
+demand `TAURI_SIGNING_PRIVATE_KEY` otherwise. Signed builds come from the release workflow.
 
 ## Release
 

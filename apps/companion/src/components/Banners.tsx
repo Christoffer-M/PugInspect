@@ -1,5 +1,6 @@
 import { ActionIcon, Button, Stack, Text } from "@mantine/core";
 import { IconX } from "@tabler/icons-react";
+import type { UpdateState } from "../updates";
 import app from "../App.module.css";
 import classes from "./Banners.module.css";
 
@@ -20,12 +21,14 @@ export function SyncLost() {
 }
 
 /** Shown in place of the sync-lost banner: /reload cannot fix a protocol mismatch. */
-export function VersionMismatch({ link }: { link: "incompatible" | "addon_outdated" | "app_outdated" | string }) {
+export function VersionMismatch({ link, hasUpdate }: { link: "incompatible" | "addon_outdated" | "app_outdated" | string; hasUpdate?: boolean }) {
   const hint =
     link === "addon_outdated"
       ? "Update the PugInspect addon, then /reload."
       : link === "app_outdated"
-        ? "Install the latest companion from the download page."
+        ? hasUpdate
+          ? "Install the app update above."
+          : "An app update will be offered above when available."
         : "Update the addon and the app to matching versions, then /reload.";
   return (
     <div className={classes.lost}>
@@ -58,7 +61,7 @@ export function NewListingToast({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function UpdateBanner({ update, onClose }: { update: { version: string; installing: boolean; error: string | null; install: () => void }; onClose: () => void }) {
+export function UpdateBanner({ update, onClose }: { update: UpdateState; onClose: () => void }) {
   return (
     <div className={classes.toast}>
       <span className={app.accentBar} />
@@ -66,16 +69,22 @@ export function UpdateBanner({ update, onClose }: { update: { version: string; i
         <span className={app.label} style={{ color: "var(--mantine-color-accent-2)" }}>
           Update available
         </span>
-        <span className={classes.toastSub}>{update.error ? `Update failed: ${update.error}` : `Companion ${update.version} is out. Installing restarts the app.`}</span>
-        <div>
-          <Button size="compact-xs" variant="light" loading={update.installing} onClick={update.install}>
-            {update.error ? "Retry" : "Install & restart"}
-          </Button>
-        </div>
+        <span className={classes.toastSub}>
+          {update.done ? "Update installed. Restart the app to finish." : update.error ? `Update failed: ${update.error}` : `Companion ${update.version} is out. Installing restarts the app.`}
+        </span>
+        {!update.done && (
+          <div>
+            <Button size="compact-xs" variant="light" loading={update.installing} onClick={update.install}>
+              {update.error ? "Retry" : "Install & restart"}
+            </Button>
+          </div>
+        )}
       </Stack>
-      <ActionIcon variant="subtle" color="gray" size="xs" onClick={onClose} aria-label="Dismiss">
-        <IconX size={12} />
-      </ActionIcon>
+      {!update.installing && (
+        <ActionIcon variant="subtle" color="gray" size="xs" onClick={onClose} aria-label="Dismiss">
+          <IconX size={12} />
+        </ActionIcon>
+      )}
     </div>
   );
 }

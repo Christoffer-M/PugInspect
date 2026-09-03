@@ -1,6 +1,6 @@
 // Browser-only stand-in for the Tauri runtime so `pnpm dev` can render every screen
 // without the native shell. Pick a scenario with the URL hash: #waiting (default),
-// #synced, #new, #lost, #update. Never bundled: main.tsx imports it only in dev outside Tauri.
+// #synced, #new, #lost, #update, #update-fail. Never bundled: main.tsx imports it only in dev outside Tauri.
 import type { Frame } from "./state";
 import { DEFAULT_RAID } from "./generated/seasonConfig";
 
@@ -41,9 +41,13 @@ const emit = (event: string, payload: unknown) =>
         window.open(args.url, "_blank");
         return;
       case "plugin:updater|check":
-        return location.hash === "#update" ? { rid: 1, currentVersion: "0.1.0-dev", version: "9.9.9" } : null;
+        return location.hash.startsWith("#update") ? { rid: 1, currentVersion: "0.1.0-dev", version: "9.9.9" } : null;
       case "plugin:updater|download_and_install":
-        return new Promise((r) => setTimeout(r, 2000));
+        return new Promise((resolve, reject) =>
+          setTimeout(location.hash === "#update-fail" ? () => reject("failed to download update: connection reset by peer (mock)") : resolve, 1500),
+        );
+      case "plugin:resources|close":
+        return;
       case "plugin:notification|is_permission_granted":
         return false;
       case "plugin:notification|request_permission":
@@ -126,6 +130,10 @@ setTimeout(() => {
       break;
     case "#overflow":
       data({ total: 23 });
+      break;
+    case "#update":
+    case "#update-fail":
+      data({});
       break;
     case "#lost":
       data({});
