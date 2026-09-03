@@ -46,11 +46,18 @@ demand `TAURI_SIGNING_PRIVATE_KEY` otherwise. Signed builds come from the releas
 
 ## Release
 
-Bump `version` in `src-tauri/tauri.conf.json`, then push a `companion-vX.Y.Z` tag. The
-`companion-release.yml` workflow builds, signs and publishes a GitHub release with the
-installer and `latest.json`; running apps poll that manifest (on launch and every 6 h) and
-offer a one-click install. Signing uses the `TAURI_SIGNING_PRIVATE_KEY` repo secret
-(`~/.tauri/puginspect-companion.key`; the public key lives in `tauri.conf.json`). The
-updater reads `releases/latest/download/latest.json`, so companion releases must stay the
-repo's "latest" release — if other things get released from this repo someday, pin the
-endpoint to per-tag URLs instead.
+1. Bump `version` in `package.json` (`tauri.conf.json` reads it from there) and push a
+   matching `companion-vX.Y.Z` tag. `companion-release.yml` builds, signs and creates a
+   **draft** release — the tag/version match is checked in CI.
+2. Smoke-test the installer from the draft's assets, then click **Publish** in the GitHub
+   UI. That fires `companion-promote.yml`, which copies `latest.json` to the rolling
+   `companion-latest` release — the stable URL installed apps poll (on launch and every
+   6 h). Nothing reaches users until this step.
+
+Signing uses the `TAURI_SIGNING_PRIVATE_KEY` repo secret (`~/.tauri/puginspect-companion.key`,
+backed up; the public key lives in `tauri.conf.json`). The `companion-latest` indirection
+means other artifacts (the addon, say) can be released from this repo without breaking the
+updater. Rollback is roll-forward: publish a new, higher version — deleting a release does
+not touch `companion-latest`, so clients keep seeing whatever was last promoted. Updates
+notify via the system tray; when the addon reports `app_outdated`, the app installs the
+pending update without asking.

@@ -33,6 +33,7 @@ export default function App() {
   const [startedAt] = useState(Date.now);
   const newRelease = useUpdate();
   const [dismissedUpdate, setDismissedUpdate] = useState("");
+  const [notifiedUpdate, setNotifiedUpdate] = useState("");
 
   const { link, session, lookups, seenAt, lastFrameAt } = useCompanion({
     onNewListing: (s) => {
@@ -45,6 +46,19 @@ export default function App() {
         notify(fresh.length === 1 ? `${fresh[0]!.name} applied` : `${fresh.length} new applicants`, s.title);
       if (settings.sound) ding();
     },
+  });
+
+  // Update side effects: a system notification once per version (the window often
+  // lives hidden in the tray), and an unprompted install when the addon protocol
+  // already broke — the app can't function on the old version anyway. Guarded by
+  // state rather than deps: newRelease is a fresh object each render.
+  useEffect(() => {
+    if (!newRelease) return;
+    if (newRelease.version !== notifiedUpdate) {
+      setNotifiedUpdate(newRelease.version);
+      notify("Update available", `Companion ${newRelease.version} is ready to install.`);
+    }
+    if (link === "app_outdated" && !newRelease.installing && !newRelease.done && !newRelease.error) newRelease.install();
   });
 
   // 1 s tick for the relative timers and the "new" badge expiry.

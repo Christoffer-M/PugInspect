@@ -1,8 +1,10 @@
 name: Companion release
 
-# Tag `companion-vX.Y.Z` (matching the version in tauri.conf.json) to publish a
-# GitHub release with the NSIS installer, the signed updater artifact and the
-# latest.json manifest the in-app updater polls.
+# Tag `companion-vX.Y.Z` (matching the version in apps/companion/package.json)
+# to build a DRAFT GitHub release with the NSIS installer, the signed updater
+# artifact and latest.json. Smoke-test the draft's installer, then click
+# Publish in the GitHub UI — that triggers companion-promote.yml, which copies
+# latest.json to the rolling `companion-latest` release that installed apps poll.
 #
 # Requires the repo secret TAURI_SIGNING_PRIVATE_KEY (contents of
 # ~/.tauri/puginspect-companion.key — the key has no password).
@@ -35,9 +37,9 @@ jobs:
       - name: Check tag matches app version
         shell: bash
         run: |
-          v=$(node -p "require('./apps/companion/src-tauri/tauri.conf.json').version")
+          v=$(node -p "require('./apps/companion/package.json').version")
           if [ "companion-v$v" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match tauri.conf.json version $v — bump the version, delete the tag, re-tag."
+            echo "Tag $GITHUB_REF_NAME does not match apps/companion/package.json version $v — bump the version, delete the tag, re-tag."
             exit 1
           fi
 
@@ -56,3 +58,4 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "PugInspect Companion v__VERSION__"
           releaseBody: "See the assets below to download and install this version."
+          releaseDraft: true
