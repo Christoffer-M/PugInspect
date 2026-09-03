@@ -234,6 +234,17 @@ export class WarcraftLogsService {
       rateLimitLimit: headers.get("x-ratelimit-limit"),
     };
 
+    // Every profile response carries rateLimitData; shout well before the
+    // quota is gone, since exhaustion trips the circuit breaker site-wide.
+    const rl = data?.rateLimitData;
+    if (rl?.limitPerHour && rl.pointsSpentThisHour != null && rl.pointsSpentThisHour / rl.limitPerHour > 0.8) {
+      logger.warn("WCL_QUOTA_HIGH", {
+        pointsSpentThisHour: rl.pointsSpentThisHour,
+        limitPerHour: rl.limitPerHour,
+        pointsResetIn: rl.pointsResetIn,
+      });
+    }
+
     if (!data?.characterData?.character) {
       logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: data?.rateLimitData, rateLimitHeaderInfo });
       return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
