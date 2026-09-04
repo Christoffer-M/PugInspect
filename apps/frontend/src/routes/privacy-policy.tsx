@@ -26,6 +26,16 @@ const PrivacyPolicy: React.FC = () => {
               <List.Item>IP address (processed in anonymized form)</List.Item>
             </List>
             <Text>No cookies are used for analytics purposes.</Text>
+            <Text>
+              The PugInspect Companion desktop application sends the same
+              statistics while it is running. It additionally reports the
+              version of the application, whether a group listing is for a raid
+              or for Mythic+, and how many characters were looked up. It never
+              reports character names, realms, or any other detail of your
+              group or its applicants. Turning off &ldquo;Send anonymous usage
+              statistics&rdquo; under Settings in the companion stops all
+              reporting.
+            </Text>
           </Stack>
 
           <Stack gap="xs">

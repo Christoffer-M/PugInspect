@@ -8,6 +8,7 @@ export type Settings = {
   notifyApplicant: boolean;
   notifyListing: boolean;
   sound: boolean;
+  analytics: boolean;
 };
 
 const KEY = "pi-settings";
@@ -19,6 +20,7 @@ const DEFAULTS: Settings = {
   notifyApplicant: true,
   notifyListing: true,
   sound: false,
+  analytics: true,
 };
 
 export function loadSettings(): Settings {
