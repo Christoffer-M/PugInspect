@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  dedupeInFlight,
   sanitizeMetric,
   normalizeRealm,
   normalizeName,
@@ -89,5 +90,31 @@ describe("toFixedNumber", () => {
 
   it("returns null for non-numbers", () => {
     expect(toFixedNumber(undefined)).toBeNull();
+  });
+});
+
+describe("dedupeInFlight", () => {
+  it("shares one fetch among concurrent callers, then clears the key", async () => {
+    const map = new Map<string, Promise<number>>();
+    let calls = 0;
+    let release!: (n: number) => void;
+    const fn = () => {
+      calls++;
+      return new Promise<number>((r) => (release = r));
+    };
+    const a = dedupeInFlight(map, "k", fn);
+    const b = dedupeInFlight(map, "k", fn);
+    release(42);
+    expect(await a).toBe(42);
+    expect(await b).toBe(42);
+    expect(calls).toBe(1);
+    // Settled → next call fetches again.
+    expect(map.size).toBe(0);
+  });
+
+  it("clears the key on rejection so the next call retries", async () => {
+    const map = new Map<string, Promise<number>>();
+    await expect(dedupeInFlight(map, "k", () => Promise.reject(new Error("boom")))).rejects.toThrow("boom");
+    expect(map.size).toBe(0);
   });
 });

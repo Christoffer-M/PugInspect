@@ -2,7 +2,7 @@ import { config } from "../../../config/index.js";
 import { RAID_PROGRESSION_FIELD } from "../../../generated/seasonConfig.js";
 import { fetcher, FetchError } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
-import { normalizeRealm, normalizeName } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm, normalizeName } from "../../utils/helpers.js";
 import { getCachedRioProfile, persistRioProfile } from "../../../db/persistence.js";
 import { GraphQLError } from "graphql";
 import {
@@ -111,10 +111,6 @@ export class RaiderIOService {
     cacheOnly = false
   ): Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }> {
     const { name, realm, region } = args;
-    const options: RequestInit = {
-      method: "GET",
-    };
-
     const normalizedRealm = normalizeRealm(realm);
     const normalizedName = normalizeName(name);
 
@@ -131,6 +127,31 @@ export class RaiderIOService {
     if (cacheOnly) {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
+
+    // Two companions watching the same listing fire identical lookups within
+    // milliseconds — share one upstream fetch instead of spending quota twice.
+    return dedupeInFlight(
+      this.profileInFlight,
+      `${region}:${normalizedRealm}:${normalizedName}`,
+      () => this.fetchProfile(region, normalizedRealm, normalizedName)
+    );
+  }
+
+  private static readonly profileInFlight = new Map<
+    string,
+    Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }>
+  >();
+
+  private static async fetchProfile(
+    region: string,
+    normalizedRealm: string,
+    normalizedName: string
+  ): Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }> {
+    // With in-flight dedup, a hung fetch would hang every joined caller and pin
+    // the map entry until restart — the timeout turns that into a bounded error.
+    const options: RequestInit = { method: "GET", signal: AbortSignal.timeout(10_000) };
+    const name = normalizedName;
+    const realm = normalizedRealm;
 
     logger.info("RaiderIO character profile request", { normalizedName, normalizedRealm, region });
 

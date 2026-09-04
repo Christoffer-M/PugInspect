@@ -1,7 +1,7 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
-import { normalizeRealm } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
 import { getCachedWclProfile, persistWclProfile } from "../../../db/persistence.js";
 import {
   CharacterProfileQuery,
@@ -175,19 +175,18 @@ export class WarcraftLogsService {
     }
 
     if (!bypassCache) {
-      const inFlight = this.profileFetchInFlight.get(cacheKey);
-      if (inFlight) {
-        logger.debug("WarcraftLogs profile fetch already in flight, awaiting", { name, realm, region });
-        return inFlight;
+      const cached = await this.checkCacheOrNull(args, normalizedRealm, partition);
+      if (cached) {
+        logger.debug("WarcraftLogs character profile cache hit", { name, realm: normalizedRealm, region });
+        return cached;
       }
-      const promise = this.acquireCharacterProfile(cacheKey, args, normalizedRealm, false, partition).finally(() => {
-        this.profileFetchInFlight.delete(cacheKey);
-      });
-      this.profileFetchInFlight.set(cacheKey, promise);
-      return promise;
     }
 
-    return this.acquireCharacterProfile(cacheKey, args, normalizedRealm, bypassCache, partition);
+    // Cache is checked above, outside the map — an in-flight entry is therefore
+    // always a real upstream fetch, so even bypassCache callers can join it.
+    return dedupeInFlight(this.profileFetchInFlight, cacheKey, () =>
+      this.acquireCharacterProfile(cacheKey, args, normalizedRealm, partition)
+    );
   }
 
   private static async checkCacheOrNull(
@@ -275,17 +274,8 @@ export class WarcraftLogsService {
     cacheKey: string,
     args: QueryCharacterArgs,
     normalizedRealm: string,
-    bypassCache = false,
     partition: number | undefined = undefined
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
-    if (!bypassCache) {
-      const cached = await this.checkCacheOrNull(args, normalizedRealm, partition);
-      if (cached) {
-        logger.debug("WarcraftLogs character profile cache hit", { name: args.name, realm: normalizedRealm, region: args.region });
-        return cached;
-      }
-    }
-
     if (this.client.isCircuitOpen()) {
       const retryAfterMs = this.client.circuitRetryAfterMs();
       logger.warn("WCL_CIRCUIT_OPEN", { cacheKey, retryAfterMs });

@@ -26,6 +26,21 @@ export function normalizeName(name: string): string {
   return name.trim().toLowerCase();
 }
 
+/** Coalesce concurrent identical upstream fetches: callers with the same key
+ *  share one promise (same pattern as WCL's profileFetchInFlight). Joining is
+ *  always safe — an in-flight entry is a real upstream fetch, never a cache hit. */
+export function dedupeInFlight<T>(
+  map: Map<string, Promise<T>>,
+  key: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  const existing = map.get(key);
+  if (existing) return existing;
+  const promise = fn().finally(() => map.delete(key));
+  map.set(key, promise);
+  return promise;
+}
+
 export const mapDifficultyIdToName = (
   difficulty?: number | InputMaybe<number>
 ): Difficulty | null => {

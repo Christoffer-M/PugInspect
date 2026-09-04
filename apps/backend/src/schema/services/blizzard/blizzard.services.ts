@@ -1,7 +1,7 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
-import { normalizeRealm } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
 import { getCachedBlizzardProfile, persistBlizzardProfile, getCachedEquipment, persistEquipment } from "../../../db/persistence.js";
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import type { BlizzardCharacterEquipment, BlizzardItemMedia } from "./model/CharacterEquipment.js";
@@ -17,6 +17,10 @@ const logger = createLogger({ service: "Blizzard" });
 // ponytail: in-memory cache re-warms after restart (≤16 parallel fetches per
 // character); move to a DB table if Blizzard rate limits ever complain.
 const itemIconCache = new Map<number, string>();
+
+// With in-flight dedup, a hung fetch would hang every joined caller and pin
+// the map entry until restart — the timeout turns that into a bounded error.
+const UPSTREAM_TIMEOUT_MS = 10_000;
 
 export class BlizzardService {
   // One global token host for every non-CN region. The per-region hosts still
@@ -79,6 +83,25 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
+    // Two companions watching the same listing fire identical lookups within
+    // milliseconds — share one upstream fetch instead of spending quota twice.
+    return dedupeInFlight(
+      this.profileInFlight,
+      `${region}:${normalizedRealm}:${name.toLowerCase()}`,
+      () => this.fetchProfile(args, normalizedRealm)
+    );
+  }
+
+  private static readonly profileInFlight = new Map<
+    string,
+    Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }>
+  >();
+
+  private static async fetchProfile(
+    args: QueryCharacterArgs,
+    normalizedRealm: string
+  ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }> {
+    const { name, region } = args;
     const token = await this.tokens.getToken();
     const base = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}`;
     const ns = `namespace=profile-${region}&locale=en_US`;
@@ -86,8 +109,8 @@ export class BlizzardService {
     logger.info("Blizzard character profile + media request", { name, realm: normalizedRealm, region });
 
     const [profileRes, mediaRes] = await Promise.allSettled([
-      fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
+      fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
     ]);
 
     try {
@@ -167,13 +190,30 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
+    return dedupeInFlight(
+      this.equipmentInFlight,
+      `${region}:${normalizedRealm}:${name.toLowerCase()}`,
+      () => this.fetchEquipment(args, normalizedRealm)
+    );
+  }
+
+  private static readonly equipmentInFlight = new Map<
+    string,
+    Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }>
+  >();
+
+  private static async fetchEquipment(
+    args: QueryCharacterArgs,
+    normalizedRealm: string
+  ): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }> {
+    const { name, region } = args;
     const token = await this.tokens.getToken();
     const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}/equipment?namespace=profile-${region}&locale=en_US`;
 
     logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });
 
     try {
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
       if (res.status === 404) {
         logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region });
         throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
@@ -214,6 +254,7 @@ export class BlizzardService {
         const href = it.media.key.href;
         const res = await fetch(`${href}${href.includes("?") ? "&" : "?"}locale=en_US`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`Item media request failed: ${res.status}`);
         const media = await res.json() as BlizzardItemMedia;
