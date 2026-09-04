@@ -4,6 +4,11 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.2.2
+
+- The update banner now shows what changed in the new version.
+- Anonymous usage reporting now goes to the shared Umami instance (still off by default).
+
 ## 0.2.1
 
 - Fixed the empty-state bottom margin.
