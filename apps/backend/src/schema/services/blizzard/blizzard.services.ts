@@ -18,6 +18,10 @@ const logger = createLogger({ service: "Blizzard" });
 // character); move to a DB table if Blizzard rate limits ever complain.
 const itemIconCache = new Map<number, string>();
 
+// With in-flight dedup, a hung fetch would hang every joined caller and pin
+// the map entry until restart — the timeout turns that into a bounded error.
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
 export class BlizzardService {
   // One global token host for every non-CN region. The per-region hosts still
   // exist but tw.battle.net 302-redirects to apac.battle.net, and fetch drops the
@@ -105,8 +109,8 @@ export class BlizzardService {
     logger.info("Blizzard character profile + media request", { name, realm: normalizedRealm, region });
 
     const [profileRes, mediaRes] = await Promise.allSettled([
-      fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
+      fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
     ]);
 
     try {
@@ -209,7 +213,7 @@ export class BlizzardService {
     logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });
 
     try {
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
       if (res.status === 404) {
         logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region });
         throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
@@ -250,6 +254,7 @@ export class BlizzardService {
         const href = it.media.key.href;
         const res = await fetch(`${href}${href.includes("?") ? "&" : "?"}locale=en_US`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`Item media request failed: ${res.status}`);
         const media = await res.json() as BlizzardItemMedia;

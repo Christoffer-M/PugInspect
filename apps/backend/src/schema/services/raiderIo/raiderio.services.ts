@@ -147,7 +147,9 @@ export class RaiderIOService {
     normalizedRealm: string,
     normalizedName: string
   ): Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }> {
-    const options: RequestInit = { method: "GET" };
+    // With in-flight dedup, a hung fetch would hang every joined caller and pin
+    // the map entry until restart — the timeout turns that into a bounded error.
+    const options: RequestInit = { method: "GET", signal: AbortSignal.timeout(10_000) };
     const name = normalizedName;
     const realm = normalizedRealm;
 
