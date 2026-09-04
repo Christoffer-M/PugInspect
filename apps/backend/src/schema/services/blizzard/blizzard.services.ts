@@ -1,7 +1,7 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
-import { normalizeRealm } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
 import { getCachedBlizzardProfile, persistBlizzardProfile, getCachedEquipment, persistEquipment } from "../../../db/persistence.js";
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import type { BlizzardCharacterEquipment, BlizzardItemMedia } from "./model/CharacterEquipment.js";
@@ -79,6 +79,25 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
+    // Two companions watching the same listing fire identical lookups within
+    // milliseconds — share one upstream fetch instead of spending quota twice.
+    return dedupeInFlight(
+      this.profileInFlight,
+      `${region}:${normalizedRealm}:${name.toLowerCase()}`,
+      () => this.fetchProfile(args, normalizedRealm)
+    );
+  }
+
+  private static readonly profileInFlight = new Map<
+    string,
+    Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }>
+  >();
+
+  private static async fetchProfile(
+    args: QueryCharacterArgs,
+    normalizedRealm: string
+  ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }> {
+    const { name, region } = args;
     const token = await this.tokens.getToken();
     const base = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}`;
     const ns = `namespace=profile-${region}&locale=en_US`;
@@ -167,6 +186,23 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
+    return dedupeInFlight(
+      this.equipmentInFlight,
+      `${region}:${normalizedRealm}:${name.toLowerCase()}`,
+      () => this.fetchEquipment(args, normalizedRealm)
+    );
+  }
+
+  private static readonly equipmentInFlight = new Map<
+    string,
+    Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }>
+  >();
+
+  private static async fetchEquipment(
+    args: QueryCharacterArgs,
+    normalizedRealm: string
+  ): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }> {
+    const { name, region } = args;
     const token = await this.tokens.getToken();
     const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}/equipment?namespace=profile-${region}&locale=en_US`;
 
