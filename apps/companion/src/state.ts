@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { slugRealm } from "@repo/ui";
 import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
+import { track } from "./analytics";
 import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
 import { Difficulty } from "./graphql/graphql";
 
@@ -96,6 +97,7 @@ export function useCompanion(events: Events) {
     const isKeys = sessionRef.current?.difficulty === "+";
     const difficulty = gqlDifficulty(sessionRef.current?.difficulty ?? "");
     pending.current = { region, applicants: [] };
+    if (applicants.length) track("lookup", { mode: isKeys ? "keys" : "raid", count: applicants.length });
     for (let i = 0; i < applicants.length; i += CHUNK_SIZE) {
       const chunk = applicants.slice(i, i + CHUNK_SIZE);
       try {

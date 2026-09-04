@@ -63,6 +63,13 @@ export function Settings({ settings, update }: { settings: S; update: (p: Partia
         <Toggle indent label="New listing detected" checked={settings.notifyListing} onChange={(v) => update({ notifyListing: v })} />
         <Toggle indent label="Play a sound" checked={settings.sound} onChange={(v) => update({ sound: v })} />
       </Section>
+      <Section title="Privacy">
+        <Toggle
+          label="Send anonymous usage statistics"
+          checked={settings.analytics}
+          onChange={(v) => update({ analytics: v })}
+        />
+      </Section>
     </div>
   );
 }
