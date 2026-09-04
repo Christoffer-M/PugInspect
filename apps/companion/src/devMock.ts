@@ -41,7 +41,7 @@ const emit = (event: string, payload: unknown) =>
         window.open(args.url, "_blank");
         return;
       case "plugin:updater|check":
-        return location.hash.startsWith("#update") ? { rid: 1, currentVersion: "0.1.0-dev", version: "9.9.9" } : null;
+        return location.hash.startsWith("#update") ? { rid: 1, currentVersion: "0.1.0-dev", version: "9.9.9", body: "- Applicant rows now show item level.\n- Fixed a crash when the group finder listing expired mid-sync." } : null;
       case "plugin:updater|download_and_install":
         return new Promise((resolve, reject) =>
           setTimeout(location.hash === "#update-fail" ? () => reject("failed to download update: connection reset by peer (mock)") : resolve, 1500),

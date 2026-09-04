@@ -31,3 +31,19 @@
 }
 .toastTitle { font-family: var(--mantine-font-family-headings); font-size: 14px; font-weight: 600; color: var(--pi-text-bright); }
 .toastSub { font-size: 11.5px; line-height: 1.5; color: var(--mantine-color-dark-2); }
+
+.notes summary {
+  font-size: 11.5px;
+  color: var(--mantine-color-accent-2);
+  cursor: pointer;
+  width: fit-content;
+}
+.notesBody {
+  margin-top: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-line;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--mantine-color-dark-2);
+}

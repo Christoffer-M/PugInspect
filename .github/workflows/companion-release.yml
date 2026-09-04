@@ -43,6 +43,15 @@ jobs:
             exit 1
           fi
 
+      - name: Release notes from CHANGELOG
+        id: notes
+        shell: bash
+        run: |
+          v=$(node -p "require('./apps/companion/package.json').version")
+          body=$(awk -v v="## $v" '$0==v{f=1;next} /^## /{f=0} f' apps/companion/CHANGELOG.md)
+          [ -n "$body" ] || body="See the assets below to download and install this version."
+          { echo "body<<CHANGELOG_EOF"; echo "$body"; echo "CHANGELOG_EOF"; } >> "$GITHUB_OUTPUT"
+
       - run: pnpm install --frozen-lockfile
 
       - name: Rust tests (decoder, parser, event shapes)
@@ -57,5 +66,5 @@ jobs:
           projectPath: apps/companion
           tagName: ${{ github.ref_name }}
           releaseName: "PugInspect Companion v__VERSION__"
-          releaseBody: "See the assets below to download and install this version."
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
