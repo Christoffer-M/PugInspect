@@ -6,12 +6,17 @@
 //! management (or any driver colour pass) hands the capture values a few counts off,
 //! worst in the darks, which broke both the magic block and every payload byte. Sixteen
 //! levels 17 apart survive a drift of +/-8, so the same block reads back the same nibble.
+//!
+//! Protocol 4 deflates the payload before encoding it (LibDeflate addon-side), and protocol 5
+//! carries only what the app cannot look up -- class, item level and score come from
+//! puginspect.com instead. At 12 bits per 4x4 block every byte saved is screen area: together
+//! these keep a full 20-applicant list on one 4px row of the strip instead of three.
 use image::RgbaImage;
 use serde::Serialize;
 
 /// Strip protocol version this build understands; the addon writes its own as the
 /// first header field. Bump both together whenever the payload shape changes.
-pub const PROTOCOL: u32 = 3;
+pub const PROTOCOL: u32 = 5;
 pub const B: u32 = 4;
 pub const COLS: u32 = 250;
 pub const MAX_ROWS: u32 = 4;
@@ -66,10 +71,7 @@ pub struct Frame {
 pub struct Applicant {
     pub name: String,
     pub realm: String,
-    pub class: String,
     pub role: String,
-    pub ilvl: u32,
-    pub rio: u32,
     /// In-game applicant id; members of one group application share it, first = leader.
     pub group: u64,
     /// Best key level in the listed dungeon (M+ listings only, else 0) and whether it was timed.
@@ -155,6 +157,13 @@ pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
     Err(err)
 }
 
+/// Raw deflate, as the addon's `LibDeflate:CompressDeflate` writes it. The limit is well above
+/// a full strip's worth of text: the payload is attacker-supplied in the sense that anything on
+/// screen can end up here, and a deflate bomb is 1 KB on the wire.
+fn inflate(bytes: &[u8]) -> Option<Vec<u8>> {
+    miniz_oxide::inflate::decompress_to_vec_with_limit(bytes, 16 * 1024).ok()
+}
+
 fn decode_at(img: &RgbaImage, x0: u32, y0: u32) -> Result<String, DecodeErr> {
     let n = nibbles(img, x0, y0, 1).ok_or(DecodeErr::Truncated)?;
     let len = (n[0] as usize) << 8 | (n[1] as usize) << 4 | n[2] as usize;
@@ -172,11 +181,14 @@ fn decode_at(img: &RgbaImage, x0: u32, y0: u32) -> Result<String, DecodeErr> {
     if crc8(&bytes) != crc {
         return Err(DecodeErr::Crc);
     }
+    // A protocol 3 addon paints plain text; pass it through so `parse` sees the version and the
+    // app says which side to update, instead of a bare decode error.
+    let bytes = inflate(&bytes).unwrap_or(bytes);
     String::from_utf8(bytes).map_err(|_| DecodeErr::Utf8)
 }
 
 /// Header: "1\t<hb>\t<region>\t<myRealm>\t<sessionId>\t<activityId>\t<title>\t<nTotal>"
-/// Lines:  "<Name-Realm>:<CLASSFILE>:<T|H|D|>:<ilvl>:<rio>"
+/// Lines:  "<Name-Realm>:<T|H|D|>:<applicantId>:<bestKeyLevel>:<0|1 timed>"
 pub fn parse(payload: &str) -> Result<Frame, ParseErr> {
     let mut lines = payload.split('\n');
     let h: Vec<&str> = lines.next().ok_or(ParseErr::Malformed)?.split('\t').collect();
@@ -195,20 +207,17 @@ fn parse_body<'a>(h: &[&str], lines: impl Iterator<Item = &'a str>) -> Option<Fr
     let applicants = lines
         .map(|l| {
             let f: Vec<&str> = l.split(':').collect();
-            if f.len() != 8 {
+            if f.len() != 5 {
                 return None;
             }
             let (name, r) = f[0].rsplit_once('-').unwrap_or((f[0], &realm));
             Some(Applicant {
                 name: name.into(),
                 realm: r.into(),
-                class: f[1].into(),
-                role: f[2].into(),
-                ilvl: f[3].parse().ok()?,
-                rio: f[4].parse().ok()?,
-                group: f[5].parse().ok()?,
-                best_level: f[6].parse().ok()?,
-                best_timed: f[7] == "1",
+                role: f[1].into(),
+                group: f[2].parse().ok()?,
+                best_level: f[3].parse().ok()?,
+                best_timed: f[4] == "1",
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -291,10 +300,14 @@ mod tests {
         img
     }
 
-    const PAYLOAD: &str = "3\t17\teu\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
-        Puggy-Ravencrest:WARRIOR:T:635:2874:41:15:1\n\
-        Healbot:PRIEST:H:628:2410:41:0:0\n\
-        Zapzap-Tarren-Mill:MAGE:D:641:3102:42:11:0";
+    fn deflate(s: &[u8]) -> Vec<u8> {
+        miniz_oxide::deflate::compress_to_vec(s, 1)
+    }
+
+    const PAYLOAD: &str = "5\t17\teu\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
+        Puggy-Ravencrest:T:41:15:1\n\
+        Healbot:H:41:0:0\n\
+        Zapzap-Tarren-Mill:D:42:11:0";
 
     #[test]
     fn crc_check_value() {
@@ -303,7 +316,33 @@ mod tests {
 
     #[test]
     fn round_trip() {
-        assert_eq!(decode(&encode(PAYLOAD.as_bytes())).unwrap(), PAYLOAD);
+        assert_eq!(decode(&encode(&deflate(PAYLOAD.as_bytes()))).unwrap(), PAYLOAD);
+    }
+
+    /// A real `LibDeflate:CompressDeflate(payload)` stream, straight out of the
+    /// addon's Lua. The golden vector for the compression half of the contract: if miniz_oxide
+    /// and LibDeflate ever stop agreeing, this is where it shows.
+    #[test]
+    fn libdeflate_stream_inflates() {
+        let z: &[u8] = b"\x33\xe5\x34\xe7\x4c\x2d\xe5\xf4\x4e\xac\xaa\x4a\xcc\xe6\x34\x34\
+              \x37\x80\x02\x4e\x43\x23\x63\x13\x4e\x5f\x6d\x05\x43\x23\x85\xec\
+              \xd4\x4a\x85\xf4\x7c\x4e\x63\x4e\x0f\x2e\xff\xa2\x94\xcc\xbc\x3c\
+              \xdd\x90\xc4\xa2\xa2\xd4\x3c\xdf\xcc\x9c\x1c\x2b\x0f\x2b\x43\x03\
+              \x2b\x20\xe4\x72\xca\xd7\x85\x98\x62\x15\x02\x15\x02\xfc\x36\x2e\
+              \x30";
+        let want = "5\t7\teu\tKazzak\t1700000000\t1234\tM+ 12 key go\t3\tH\n\
+            Ordinn-TarrenMill:H:10:0:0\n\
+            Bo-Kazzak:T:10:0:0";
+        assert_eq!(decode(&encode(&z)).unwrap(), want);
+    }
+
+    /// A protocol 3 addon still paints plain text, and it has to reach `parse` intact so the
+    /// app can tell the user to update the addon rather than showing a decode error.
+    #[test]
+    fn uncompressed_payload_still_decodes() {
+        let old = "3\t7\teu\tKazzak\t9\t1\tgo\t0\t+";
+        assert_eq!(decode(&encode(old.as_bytes())).unwrap(), old);
+        assert_eq!(parse(old), Err(ParseErr::Version(3)));
     }
 
     #[test]
@@ -431,13 +470,15 @@ mod tests {
 
     #[test]
     fn twenty_applicants_fit() {
-        let mut p = "3\t99\tus\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
+        let mut p = "5\t99\tus\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
         for i in 0..20 {
-            p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7:0:0");
+            p += &format!("\nApplicantname{i}-Somerealmname:D:7:0:0");
         }
         assert!(p.len() <= MAX_LEN);
-        assert!(p.len() * 2 > (COLS * 3) as usize, "should spill onto row 2");
-        assert_eq!(decode(&encode(p.as_bytes())).unwrap(), p);
+        // The whole point of protocols 4 and 5: a full list fits one 4px row of the strip.
+        let z = deflate(p.as_bytes());
+        assert!(z.len() * 2 <= (COLS * 3) as usize, "{}", z.len());
+        assert_eq!(decode(&encode(&z)).unwrap(), p);
     }
 
     #[test]
@@ -448,12 +489,13 @@ mod tests {
         assert_eq!(f.title, "+15 Ara-Kara go");
         let a = &f.applicants;
         assert_eq!(a.len(), 3);
-        assert_eq!((a[0].name.as_str(), a[0].realm.as_str(), a[0].ilvl, a[0].rio), ("Puggy", "Ravencrest", 635, 2874));
+        assert_eq!((a[0].name.as_str(), a[0].realm.as_str(), a[0].group), ("Puggy", "Ravencrest", 41));
+        assert_eq!((a[0].best_level, a[0].best_timed), (15, true));
         assert_eq!((a[1].name.as_str(), a[1].realm.as_str(), a[1].role.as_str()), ("Healbot", "Ravencrest", "H"));
         assert_eq!((a[2].name.as_str(), a[2].realm.as_str()), ("Zapzap-Tarren", "Mill"));
-        assert!(parse("3\tx").is_err());
-        assert_eq!(parse("3\t1\teu\tR\t1\t1\tt\t1\tH\nbad line"), Err(ParseErr::Malformed));
-        assert_eq!(parse("2\t1\teu\tR\t1\t1\tt\t1\tH"), Err(ParseErr::Version(2)));
-        assert_eq!(parse("4\t1\tx"), Err(ParseErr::Version(4)));
+        assert!(parse("5\tx").is_err());
+        assert_eq!(parse("5\t1\teu\tR\t1\t1\tt\t1\tH\nbad line"), Err(ParseErr::Malformed));
+        assert_eq!(parse("4\t1\teu\tR\t1\t1\tt\t1\tH"), Err(ParseErr::Version(4)));
+        assert_eq!(parse("6\t1\tx"), Err(ParseErr::Version(6)));
     }
 }

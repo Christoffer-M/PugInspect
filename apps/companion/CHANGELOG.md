@@ -7,8 +7,11 @@ the section for the tagged version into the GitHub release body, which lands in
 ## 0.3.0
 
 - Applicants now come through on machines where display colour management shifted the
-  captured colours enough to make the strip unreadable. **Requires the PugInspect addon
-  v1.2.0 or newer**; the app says so if the addon is older.
+  captured colours enough to make the strip unreadable.
+- The strip is compressed and carries far less data, so it stays a single 4px row even with a
+  full applicant list, where it used to be three. Item level, class and score now come from
+  puginspect.com rather than the strip, so they appear a moment after the applicant does.
+- **Requires the PugInspect addon v1.3.0 or newer**; the app says so if the addon is older.
 
 ## 0.2.3
 

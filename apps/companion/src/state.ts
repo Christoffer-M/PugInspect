@@ -9,13 +9,11 @@ import { Difficulty } from "./graphql/graphql";
 
 /** Shapes emitted by src-tauri/src/capture.rs on the "sync" event. */
 /** `group` is the in-game applicant id: members of one group application share it. */
+/** Only what the API cannot supply: class, item level and score come from the lookup. */
 export type Applicant = {
   name: string;
   realm: string;
-  class: string;
   role: "T" | "H" | "D" | "";
-  ilvl: number;
-  rio: number;
   group: number;
   /** Best key level in the listed dungeon (M+ listings only, else 0) and whether it was timed. */
   bestLevel: number;

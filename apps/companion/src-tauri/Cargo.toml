@@ -27,4 +27,5 @@ tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-autostart = "2"
 image = { version = "0.25", default-features = false, features = ["png"] }
+miniz_oxide = "0.9"
 

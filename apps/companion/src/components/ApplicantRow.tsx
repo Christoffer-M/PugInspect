@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
+import { RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
 import { DEFAULT_RAID } from "../generated/seasonConfig";
 import type { RosterEntry } from "../api";
 import type { Applicant, Lookup } from "../state";
@@ -52,11 +52,11 @@ export function ApplicantRow({
 }) {
   const c = lookup?.entry?.character;
   const notFound = lookup?.entry?.notFound === true;
-  const className = c?.class ?? CLASS_FILE_NAMES[a.class] ?? a.class;
+  const className = c?.class;
   const color = getClassColor(className);
   const rio = c?.raiderIo?.currentSeason?.all;
   const prog = progOf(lookup?.entry, difficulty);
-  const ilvl = c?.equippedItemLevel ?? a.ilvl;
+  const ilvl = c?.equippedItemLevel;
   const loading = lookup?.state === "loading";
   const isKeys = difficulty === "+";
   // Already scoped to the listing (M+ parses for keys, raid parses otherwise).
@@ -90,8 +90,8 @@ export function ApplicantRow({
           {group && (
             <span className={classes.groupText}>{group.role === "leader" ? `group of ${group.size}` : "member"} · </span>
           )}
-          {prettyRealm(a.realm)} · {c?.activeSpec ? `${c.activeSpec} ` : ""}
-          {className}
+          {prettyRealm(a.realm)}
+          {className && ` · ${c?.activeSpec ? `${c.activeSpec} ` : ""}${className}`}
           {lookup?.state === "error" && (
             <span className={app.mono} style={{ color: "#f4c15e" }} title={lookup.error}>
               {" "}lookup failed
@@ -100,10 +100,10 @@ export function ApplicantRow({
         </span>
       </div>
       <span className={classes.value} style={{ color: ilvl ? "var(--pi-text-bright)" : DIM }}>
-        {ilvl || "-"}
+        {loading ? skeleton : ilvl || "-"}
       </span>
-      <span className={classes.value} style={{ color: rio?.color ?? (a.rio ? "var(--mantine-color-dark-0)" : DIM) }}>
-        {loading && !rio && !a.rio ? skeleton : Math.round(rio?.score ?? a.rio) || "-"}
+      <span className={classes.value} style={{ color: rio?.color ?? DIM }}>
+        {loading ? skeleton : Math.round(rio?.score ?? 0) || "-"}
       </span>
       <span className={classes.value} style={{ color: best != null ? getParseColor(best) : DIM }}>
         {loading ? skeleton : best != null ? Math.floor(best) : "-"}
