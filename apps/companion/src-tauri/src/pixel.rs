@@ -1,15 +1,32 @@
 //! Decoder for the pixel strip the addon paints in the top-left of the WoW window.
+//!
+//! Each 4x4 block carries three nibbles, one per channel, painted at `level * STEP`.
+//! Protocol 2 packed a whole byte into each channel, which needs the captured colour to
+//! survive the compositor bit-exact -- it does not: a machine with display colour
+//! management (or any driver colour pass) hands the capture values a few counts off,
+//! worst in the darks, which broke both the magic block and every payload byte. Sixteen
+//! levels 17 apart survive a drift of +/-8, so the same block reads back the same nibble.
 use image::RgbaImage;
 use serde::Serialize;
 
 /// Strip protocol version this build understands; the addon writes its own as the
 /// first header field. Bump both together whenever the payload shape changes.
-pub const PROTOCOL: u32 = 2;
+pub const PROTOCOL: u32 = 3;
 pub const B: u32 = 4;
 pub const COLS: u32 = 250;
 pub const MAX_ROWS: u32 = 4;
-const MAGIC: [u8; 3] = [42, 0, 69];
-const MAX_LEN: usize = ((COLS * MAX_ROWS - 2) * 3) as usize;
+/// Channel value per nibble level: level 15 lands exactly on 255.
+const STEP: u32 = 17;
+/// Magic block, as nibble levels.
+const MAGIC: [u8; 3] = [10, 1, 13];
+/// Protocol 2's magic block, as a raw colour. Recognised only so an app meeting an old
+/// addon can say which side to update instead of looking dead. It does not collide with
+/// `MAGIC`: quantised it reads (2, 0, 4).
+const MAGIC_V2: [u8; 3] = [42, 0, 69];
+/// Magic, length (3 nibbles), CRC-8 (2 nibbles + pad).
+const HEADER_BLOCKS: u32 = 3;
+/// Two nibbles per byte, three per block.
+const MAX_LEN: usize = ((COLS * MAX_ROWS - HEADER_BLOCKS) * 3 / 2) as usize;
 
 #[derive(Debug, PartialEq)]
 pub enum ParseErr {
@@ -21,6 +38,8 @@ pub enum ParseErr {
 #[derive(Debug, PartialEq)]
 pub enum DecodeErr {
     NoMagic,
+    /// A protocol 2 strip is on screen; the addon needs updating.
+    LegacyAddon,
     TooLong,
     Crc,
     Utf8,
@@ -83,22 +102,44 @@ fn block(img: &RgbaImage, x0: u32, y0: u32, i: u32) -> Option<[u8; 3]> {
     Some([p[0], p[1], p[2]])
 }
 
-fn is_magic(px: [u8; 3]) -> bool {
-    px.iter().zip(MAGIC).all(|(a, b)| a.abs_diff(b) <= 3)
+/// Nearest nibble level for a captured channel value. The half-step of 8 is the whole
+/// point: it is the drift budget a colour-managed capture gets to spend.
+fn level(v: u8) -> u8 {
+    (((v as u32 + STEP / 2) / STEP).min(15)) as u8
+}
+
+/// Block `i` as its three nibble levels.
+fn nibbles(img: &RgbaImage, x0: u32, y0: u32, i: u32) -> Option<[u8; 3]> {
+    block(img, x0, y0, i).map(|p| [level(p[0]), level(p[1]), level(p[2])])
+}
+
+/// Whether block 0 at this origin is a protocol 2 magic block. Sampled twice across the
+/// block so a lone dark-purple game pixel does not read as an outdated addon, and loosely,
+/// because the colour drift that forced protocol 3 also moves this block.
+fn is_legacy(img: &RgbaImage, x0: u32, y0: u32) -> bool {
+    let near = |p: [u8; 3]| p.iter().zip(MAGIC_V2).all(|(a, b)| a.abs_diff(b) <= 8);
+    [1, 2].iter().all(|&dx| {
+        (x0 + dx < img.width() && y0 + B / 2 < img.height())
+            && near({
+                let p = img.get_pixel(x0 + dx, y0 + B / 2).0;
+                [p[0], p[1], p[2]]
+            })
+    })
 }
 
 /// Finds the strip near the top-left of the frame and decodes it.
 pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
-    // Every origin whose sample matches the magic colour is a candidate, and the
-    // first one that survives the CRC wins. Committing to the first match instead
-    // would let one dark-purple game pixel above a moved strip block decoding for
-    // as long as it is on screen; trying them all also means a candidate whose
-    // sample lands on a block's edge row simply loses to the next one.
+    // Every origin whose block 0 quantises to the magic levels is a candidate, and the
+    // first one that survives the CRC wins. Committing to the first match instead would
+    // let one game block the colour of the magic sit above a moved strip and block
+    // decoding for as long as it is on screen.
     // ponytail: brute force. ~13k single-pixel probes worst case, 4x a second.
     let mut err = DecodeErr::NoMagic;
+    let mut legacy = false;
     for y in 0..=MAX_OFFSET {
         for x in 0..=MAX_INSET {
-            if !block(img, x, y, 0).is_some_and(is_magic) {
+            if nibbles(img, x, y, 0) != Some(MAGIC) {
+                legacy = legacy || is_legacy(img, x, y);
                 continue;
             }
             match decode_at(img, x, y) {
@@ -107,20 +148,27 @@ pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
             }
         }
     }
+    // Only when nothing decoded: a live protocol 3 strip always wins over a stale match.
+    if err == DecodeErr::NoMagic && legacy {
+        return Err(DecodeErr::LegacyAddon);
+    }
     Err(err)
 }
 
 fn decode_at(img: &RgbaImage, x0: u32, y0: u32) -> Result<String, DecodeErr> {
-    let [hi, lo, crc] = block(img, x0, y0, 1).ok_or(DecodeErr::Truncated)?;
-    let len = (hi as usize) << 8 | lo as usize;
-    if len > MAX_LEN {
+    let n = nibbles(img, x0, y0, 1).ok_or(DecodeErr::Truncated)?;
+    let len = (n[0] as usize) << 8 | (n[1] as usize) << 4 | n[2] as usize;
+    if len == 0 || len > MAX_LEN {
         return Err(DecodeErr::TooLong);
     }
-    let mut bytes = Vec::with_capacity(len + 3);
-    for i in 2..2 + len.div_ceil(3) as u32 {
-        bytes.extend(block(img, x0, y0, i).ok_or(DecodeErr::Truncated)?);
+    let c = nibbles(img, x0, y0, 2).ok_or(DecodeErr::Truncated)?;
+    let crc = c[0] << 4 | c[1];
+    let mut ns = Vec::with_capacity(len * 2 + 2);
+    for i in HEADER_BLOCKS..HEADER_BLOCKS + (len * 2).div_ceil(3) as u32 {
+        ns.extend(nibbles(img, x0, y0, i).ok_or(DecodeErr::Truncated)?);
     }
-    bytes.truncate(len);
+    // `chunks_exact` drops the block's zero padding; `take` drops the odd trailing nibble.
+    let bytes: Vec<u8> = ns.chunks_exact(2).take(len).map(|p| p[0] << 4 | p[1]).collect();
     if crc8(&bytes) != crc {
         return Err(DecodeErr::Crc);
     }
@@ -182,12 +230,52 @@ mod tests {
     use super::*;
     use image::Rgba;
 
-    /// Mirrors the Lua encoder: fills each 4x4 block solid.
+    /// Mirrors the Lua encoder: three nibbles per block, each filling a solid 4x4 at
+    /// `level * STEP`.
     fn encode(payload: &[u8]) -> RgbaImage {
+        encode_shifted(payload, |v| v)
+    }
+
+    /// The same, with a colour-management style drift applied to every channel -- what a
+    /// capture on the machine that forced protocol 3 actually hands the decoder.
+    fn encode_shifted(payload: &[u8], shift: impl Fn(u8) -> u8) -> RgbaImage {
+        let len = payload.len();
+        let crc = crc8(payload);
+        let mut nibs: Vec<u8> = vec![
+            ((len >> 8) & 15) as u8,
+            ((len >> 4) & 15) as u8,
+            (len & 15) as u8,
+            crc >> 4,
+            crc & 15,
+            0,
+        ];
+        for b in payload {
+            nibs.push(b >> 4);
+            nibs.push(b & 15);
+        }
+        while nibs.len() % 3 != 0 {
+            nibs.push(0);
+        }
+        let mut img = RgbaImage::from_pixel(COLS * B, MAX_ROWS * B, Rgba([0, 0, 0, 255]));
+        let blocks = [MAGIC].into_iter().chain(nibs.chunks(3).map(|c| [c[0], c[1], c[2]]));
+        for (i, lv) in blocks.enumerate() {
+            let (x0, y0) = ((i as u32 % COLS) * B, (i as u32 / COLS) * B);
+            let [r, g, b] = lv.map(|l| shift((l as u32 * STEP) as u8));
+            for y in y0..y0 + B {
+                for x in x0..x0 + B {
+                    img.put_pixel(x, y, Rgba([r, g, b, 255]));
+                }
+            }
+        }
+        img
+    }
+
+    /// Protocol 2's encoder, kept only to prove an old strip is reported as such.
+    fn encode_v2(payload: &[u8]) -> RgbaImage {
         let mut img = RgbaImage::from_pixel(COLS * B, MAX_ROWS * B, Rgba([0, 0, 0, 255]));
         let len = payload.len() as u16;
         let header = [(len >> 8) as u8, (len & 255) as u8, crc8(payload)];
-        let blocks = [MAGIC, header].into_iter().chain(payload.chunks(3).map(|c| {
+        let blocks = [MAGIC_V2, header].into_iter().chain(payload.chunks(3).map(|c| {
             let mut b = [0u8; 3];
             b[..c.len()].copy_from_slice(c);
             b
@@ -203,7 +291,7 @@ mod tests {
         img
     }
 
-    const PAYLOAD: &str = "2\t17\tEU\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
+    const PAYLOAD: &str = "3\t17\teu\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
         Puggy-Ravencrest:WARRIOR:T:635:2874:41:15:1\n\
         Healbot:PRIEST:H:628:2410:41:0:0\n\
         Zapzap-Tarren-Mill:MAGE:D:641:3102:42:11:0";
@@ -240,10 +328,10 @@ mod tests {
 
     #[test]
     fn strip_moved_down_is_found() {
-        let strip = encode(b"1\t3\teu\tKazzak\t9\t1\tmoved\t0");
+        let strip = encode(b"3\t3\teu\tKazzak\t9\t1\tmoved\t0\t+");
         let mut big = RgbaImage::from_pixel(strip.width(), strip.height() + 300, image::Rgba([9, 9, 9, 255]));
         image::imageops::replace(&mut big, &strip, 0, 120);
-        assert_eq!(decode(&big).unwrap(), "1\t3\teu\tKazzak\t9\t1\tmoved\t0");
+        assert_eq!(decode(&big).unwrap(), "3\t3\teu\tKazzak\t9\t1\tmoved\t0\t+");
         let mut far = RgbaImage::from_pixel(strip.width(), strip.height() + 600, image::Rgba([9, 9, 9, 255]));
         image::imageops::replace(&mut far, &strip, 0, (MAX_OFFSET + B) as i64);
         assert_eq!(decode(&far), Err(DecodeErr::NoMagic));
@@ -275,6 +363,66 @@ mod tests {
         assert_eq!(decode(&img).unwrap(), PAYLOAD);
     }
 
+    /// The curve measured off the diagnostic capture that forced protocol 3: a
+    /// colour-managed compositor, worst in the darks, crossing zero around 117.
+    fn observed_drift(v: u8) -> u8 {
+        let d: i32 = match v {
+            0 => 0,
+            1..=20 => -5,
+            21..=42 => -4,
+            43..=66 => -3,
+            67..=90 => -2,
+            91..=116 => -1,
+            117..=140 => 0,
+            _ => 1,
+        };
+        (v as i32 + d).clamp(0, 255) as u8
+    }
+
+    #[test]
+    fn survives_colour_managed_capture() {
+        let img = encode_shifted(PAYLOAD.as_bytes(), observed_drift);
+        assert_eq!(decode(&img).unwrap(), PAYLOAD);
+    }
+
+    /// The whole point of 17 apart: anything inside the half-step still reads back.
+    #[test]
+    fn survives_the_full_drift_budget() {
+        for d in [-8i32, -5, -1, 1, 5, 8] {
+            let img = encode_shifted(PAYLOAD.as_bytes(), |v| (v as i32 + d).clamp(0, 255) as u8);
+            assert_eq!(decode(&img).unwrap(), PAYLOAD, "drift {d}");
+        }
+        // One step further and the level is genuinely ambiguous, so it must not decode.
+        let img = encode_shifted(PAYLOAD.as_bytes(), |v| (v as i32 + 9).clamp(0, 255) as u8);
+        assert_ne!(decode(&img).as_deref(), Ok(PAYLOAD));
+    }
+
+    #[test]
+    fn legacy_strip_reports_outdated_addon() {
+        let img = encode_v2(b"2\t1\teu\tKazzak\t9\t1\told\t0\t+");
+        assert_eq!(decode(&img), Err(DecodeErr::LegacyAddon));
+        // A live protocol 3 strip below an old one still wins.
+        let new = encode(PAYLOAD.as_bytes());
+        let mut both = RgbaImage::from_pixel(new.width(), new.height() + 100, Rgba([9, 9, 9, 255]));
+        image::imageops::replace(&mut both, &img, 0, 0);
+        image::imageops::replace(&mut both, &new, 0, 100);
+        assert_eq!(decode(&both).unwrap(), PAYLOAD);
+    }
+
+    /// Golden vector, asserted byte-for-byte in the addon's test_applicants.lua too. If this
+    /// line has to change, the wire format changed and the encoder in the other repo changes
+    /// with it. Encoded here from the same payload, then read back as levels off the image.
+    #[test]
+    fn wire_format_golden_vector() {
+        let img = encode(b"3\t7\teu\tKazzak\t9\t1\tgo\t0\t+");
+        let n = "a1d018450330937096575094b617a7a616b0939093109676f0930092b";
+        let got: String = (0..n.len() as u32 / 3)
+            .flat_map(|i| nibbles(&img, 0, 0, i).unwrap())
+            .map(|v| char::from_digit(v as u32, 16).unwrap())
+            .collect();
+        assert_eq!(got, n);
+    }
+
     #[test]
     fn missing_magic() {
         let img = RgbaImage::from_pixel(COLS * B, MAX_ROWS * B, Rgba([0, 0, 0, 255]));
@@ -283,19 +431,19 @@ mod tests {
 
     #[test]
     fn twenty_applicants_fit() {
-        let mut p = "2\t99\tUS\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
+        let mut p = "3\t99\tus\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
         for i in 0..20 {
             p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7:0:0");
         }
         assert!(p.len() <= MAX_LEN);
-        assert!(p.len() > (COLS * 3) as usize, "should spill onto row 2");
+        assert!(p.len() * 2 > (COLS * 3) as usize, "should spill onto row 2");
         assert_eq!(decode(&encode(p.as_bytes())).unwrap(), p);
     }
 
     #[test]
     fn parse_frame() {
         let f = parse(PAYLOAD).unwrap();
-        assert_eq!((f.hb, f.region.as_str(), f.realm.as_str()), (17, "EU", "Ravencrest"));
+        assert_eq!((f.hb, f.region.as_str(), f.realm.as_str()), (17, "eu", "Ravencrest"));
         assert_eq!((f.session_id, f.activity_id, f.total), (1234, 2516, 3));
         assert_eq!(f.title, "+15 Ara-Kara go");
         let a = &f.applicants;
@@ -303,9 +451,9 @@ mod tests {
         assert_eq!((a[0].name.as_str(), a[0].realm.as_str(), a[0].ilvl, a[0].rio), ("Puggy", "Ravencrest", 635, 2874));
         assert_eq!((a[1].name.as_str(), a[1].realm.as_str(), a[1].role.as_str()), ("Healbot", "Ravencrest", "H"));
         assert_eq!((a[2].name.as_str(), a[2].realm.as_str()), ("Zapzap-Tarren", "Mill"));
-        assert!(parse("2\tx").is_err());
-        assert_eq!(parse("2\t1\tEU\tR\t1\t1\tt\t1\tH\nbad line"), Err(ParseErr::Malformed));
-        assert_eq!(parse("1\t1\tEU\tR\t1\t1\tt\t1\tH"), Err(ParseErr::Version(1)));
-        assert_eq!(parse("3\t1\tx"), Err(ParseErr::Version(3)));
+        assert!(parse("3\tx").is_err());
+        assert_eq!(parse("3\t1\teu\tR\t1\t1\tt\t1\tH\nbad line"), Err(ParseErr::Malformed));
+        assert_eq!(parse("2\t1\teu\tR\t1\t1\tt\t1\tH"), Err(ParseErr::Version(2)));
+        assert_eq!(parse("4\t1\tx"), Err(ParseErr::Version(4)));
     }
 }
