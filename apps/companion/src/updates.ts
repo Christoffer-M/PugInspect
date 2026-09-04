@@ -5,6 +5,7 @@ const CHECK_MS = 6 * 60 * 60 * 1000; // app runs for whole play sessions
 
 export type UpdateState = {
   version: string;
+  notes: string;
   installing: boolean;
   done: boolean;
   error: string | null;
@@ -47,6 +48,7 @@ export function useUpdate(): UpdateState | null {
   if (!update) return null;
   return {
     version: update.version,
+    notes: update.body?.trim() ?? "",
     installing: phase === "installing",
     done: phase === "done",
     error: typeof phase === "object" ? phase.error : null,

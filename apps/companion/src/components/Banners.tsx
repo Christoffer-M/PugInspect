@@ -72,6 +72,13 @@ export function UpdateBanner({ update, onClose }: { update: UpdateState; onClose
         <span className={classes.toastSub}>
           {update.done ? "Update installed. Restart the app to finish." : update.error ? `Update failed: ${update.error}` : `Companion ${update.version} is out. Installing restarts the app.`}
         </span>
+        {!update.done && !update.error && update.notes && (
+          <details className={classes.notes}>
+            <summary>What's new</summary>
+            {/* ponytail: the notes are plain markdown bullets, rendered as text — add a parser only if they grow past that */}
+            <div className={classes.notesBody}>{update.notes}</div>
+          </details>
+        )}
         {!update.done && (
           <div>
             <Button size="compact-xs" variant="light" loading={update.installing} onClick={update.install}>
