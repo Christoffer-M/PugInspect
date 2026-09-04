@@ -40,10 +40,14 @@ export class WclGraphQLClient {
     const body = JSON.stringify({ query, variables });
     const start = Date.now();
 
+    // A hung fetch would hang every caller joined on the in-flight dedup map
+    // and pin its entry until restart. 15s (not the 10s used for Blizzard/RIO)
+    // because this client also serves the spec-meta crawl's heavier rankings queries.
     const res = await fetch(WCL_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body,
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (res.status === 429) {
