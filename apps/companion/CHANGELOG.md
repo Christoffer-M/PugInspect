@@ -4,6 +4,12 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.3.0
+
+- Applicants now come through on machines where display colour management shifted the
+  captured colours enough to make the strip unreadable. **Requires the PugInspect addon
+  v1.2.0 or newer**; the app says so if the addon is older.
+
 ## 0.2.3
 
 - Fixed applicants never appearing when the game runs in plain Windowed mode.

@@ -7,7 +7,9 @@ enriches each one with raider.io, Warcraft Logs and raid progress from the PugIn
 
 WoW addons cannot write files or use the network, so the addon
 ([puginspect-addon](../../../puginspect-addon)) paints the applicant list as a strip of
-4×4-pixel colour blocks in the top-left of the game window while you have a listing up.
+4×4-pixel colour blocks in the top-left of the game window while you have a listing up. Each
+block carries three nibbles, one per channel, at 17 apart — coarse on purpose, so a machine
+whose compositor colour-manages the frame still reads back the same values.
 This app captures the WoW window (window capture, not the whole screen) four times a
 second, keeps only the top edge, decodes it and throws the image away. Nothing is stored or
 uploaded; only the applicant names go to the PugInspect GraphQL API.
