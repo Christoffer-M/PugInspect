@@ -41,6 +41,31 @@ fn find_wow() -> Option<Window> {
     Window::all().ok()?.into_iter().find(|w| w.title().is_ok_and(|t| t == "World of Warcraft"))
 }
 
+/// Saves the region the decoder looks at to the desktop and reports what it found there,
+/// so a user whose strip will not decode can send back something we can actually read.
+/// Cropped on purpose: the strip region is all we need and it shows almost nothing of the game.
+pub fn diagnose(app: &AppHandle) -> Result<String, String> {
+    let w = find_wow().ok_or("No window titled \"World of Warcraft\" is open.")?;
+    let img = w.capture_image().map_err(|e| format!("Capture failed: {e}"))?;
+    let (iw, ih) = (img.width(), img.height());
+    let crop = image::imageops::crop_imm(
+        &img,
+        0,
+        0,
+        (pixel::COLS * pixel::B + pixel::MAX_INSET).min(iw),
+        (pixel::MAX_OFFSET + pixel::MAX_ROWS * pixel::B).min(ih),
+    )
+    .to_image();
+    let found = match pixel::decode(&img) {
+        Ok(payload) => format!("strip decoded ({} bytes)", payload.len()),
+        Err(e) => format!("{e:?}"),
+    };
+    let dir = app.path().desktop_dir().map_err(|e| e.to_string())?;
+    let path = dir.join("puginspect-diagnostic.png");
+    crop.save(&path).map_err(|e| format!("Could not save {}: {e}", path.display()))?;
+    Ok(format!("Window {iw}x{ih}, {found}. Saved {}", path.display()))
+}
+
 fn run(app: AppHandle) {
     let mut win: Option<Window> = None;
     let mut scanned = Instant::now() - RESCAN;

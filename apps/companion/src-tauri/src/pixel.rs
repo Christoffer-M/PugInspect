@@ -67,10 +67,15 @@ pub fn crc8(data: &[u8]) -> u8 {
 
 /// The addon may move the strip down (`/pi hud <px>`); scan this far for the magic block.
 pub const MAX_OFFSET: u32 = 400;
+/// A window-capture frame starts at the window rect, not the client area, so in plain
+/// Windowed mode the strip sits a border's width in from the left (the title bar is just
+/// another vertical offset). 32 covers that border up to 200% display scaling.
+pub const MAX_INSET: u32 = 32;
 
-/// RGB at the centre of block `i` of a strip whose top edge is at `y0`, or None if outside.
-fn block(img: &RgbaImage, y0: u32, i: u32) -> Option<[u8; 3]> {
-    let (x, y) = ((i % COLS) * B + B / 2, y0 + (i / COLS) * B + B / 2);
+/// RGB at the centre of block `i` of a strip whose top-left corner is at `(x0, y0)`,
+/// or None if outside.
+fn block(img: &RgbaImage, x0: u32, y0: u32, i: u32) -> Option<[u8; 3]> {
+    let (x, y) = (x0 + (i % COLS) * B + B / 2, y0 + (i / COLS) * B + B / 2);
     if x >= img.width() || y >= img.height() {
         return None;
     }
@@ -82,35 +87,38 @@ fn is_magic(px: [u8; 3]) -> bool {
     px.iter().zip(MAGIC).all(|(a, b)| a.abs_diff(b) <= 3)
 }
 
-/// Finds the strip anywhere in the top `MAX_OFFSET` px of the left edge and decodes it.
+/// Finds the strip near the top-left of the frame and decodes it.
 pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
-    // Every offset whose sample matches the magic colour is a candidate, and the
+    // Every origin whose sample matches the magic colour is a candidate, and the
     // first one that survives the CRC wins. Committing to the first match instead
     // would let one dark-purple game pixel above a moved strip block decoding for
     // as long as it is on screen; trying them all also means a candidate whose
     // sample lands on a block's edge row simply loses to the next one.
+    // ponytail: brute force. ~13k single-pixel probes worst case, 4x a second.
     let mut err = DecodeErr::NoMagic;
     for y in 0..=MAX_OFFSET {
-        if !block(img, y, 0).is_some_and(is_magic) {
-            continue;
-        }
-        match decode_at(img, y) {
-            Ok(payload) => return Ok(payload),
-            Err(e) => err = e,
+        for x in 0..=MAX_INSET {
+            if !block(img, x, y, 0).is_some_and(is_magic) {
+                continue;
+            }
+            match decode_at(img, x, y) {
+                Ok(payload) => return Ok(payload),
+                Err(e) => err = e,
+            }
         }
     }
     Err(err)
 }
 
-fn decode_at(img: &RgbaImage, y0: u32) -> Result<String, DecodeErr> {
-    let [hi, lo, crc] = block(img, y0, 1).ok_or(DecodeErr::Truncated)?;
+fn decode_at(img: &RgbaImage, x0: u32, y0: u32) -> Result<String, DecodeErr> {
+    let [hi, lo, crc] = block(img, x0, y0, 1).ok_or(DecodeErr::Truncated)?;
     let len = (hi as usize) << 8 | lo as usize;
     if len > MAX_LEN {
         return Err(DecodeErr::TooLong);
     }
     let mut bytes = Vec::with_capacity(len + 3);
     for i in 2..2 + len.div_ceil(3) as u32 {
-        bytes.extend(block(img, y0, i).ok_or(DecodeErr::Truncated)?);
+        bytes.extend(block(img, x0, y0, i).ok_or(DecodeErr::Truncated)?);
     }
     bytes.truncate(len);
     if crc8(&bytes) != crc {
@@ -238,6 +246,22 @@ mod tests {
         assert_eq!(decode(&big).unwrap(), "1\t3\teu\tKazzak\t9\t1\tmoved\t0");
         let mut far = RgbaImage::from_pixel(strip.width(), strip.height() + 600, image::Rgba([9, 9, 9, 255]));
         image::imageops::replace(&mut far, &strip, 0, (MAX_OFFSET + B) as i64);
+        assert_eq!(decode(&far), Err(DecodeErr::NoMagic));
+    }
+
+    /// Plain Windowed mode: the capture starts at the window rect, so the client area
+    /// (and the strip) sits in from the left border and below the title bar.
+    #[test]
+    fn strip_inset_by_window_border_is_found() {
+        let strip = encode(PAYLOAD.as_bytes());
+        for (dx, dy) in [(1, 32), (8, 31), (MAX_INSET, 0)] {
+            let mut win = RgbaImage::from_pixel(strip.width() + dx, strip.height() + dy, Rgba([9, 9, 9, 255]));
+            image::imageops::replace(&mut win, &strip, dx as i64, dy as i64);
+            assert_eq!(decode(&win).unwrap(), PAYLOAD, "inset ({dx}, {dy})");
+        }
+        // Past the inset budget it is not found, as before.
+        let mut far = RgbaImage::from_pixel(strip.width() + 64, strip.height(), Rgba([9, 9, 9, 255]));
+        image::imageops::replace(&mut far, &strip, (MAX_INSET + B) as i64, 0);
         assert_eq!(decode(&far), Err(DecodeErr::NoMagic));
     }
 

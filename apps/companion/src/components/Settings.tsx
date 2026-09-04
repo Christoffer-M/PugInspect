@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import { Group, SegmentedControl, Switch } from "@mantine/core";
+import { useState, type ReactNode } from "react";
+import { Button, Group, SegmentedControl, Switch, Text } from "@mantine/core";
+import { invoke } from "@tauri-apps/api/core";
 import type { Settings as S } from "../settings";
 import app from "../App.module.css";
 import classes from "./Settings.module.css";
@@ -35,6 +36,35 @@ function Toggle({
   );
 }
 
+/// Writes the strip region to the desktop so a user whose applicants never appear can send
+/// back an image of what the app actually sees.
+function Diagnostic() {
+  const [result, setResult] = useState<string>();
+  return (
+    <div className={classes.rowItem} style={{ alignItems: "flex-start", flexDirection: "column", gap: 8 }}>
+      <Group justify="space-between" w="100%" wrap="nowrap">
+        <span>Applicants not showing up? Save a capture of the strip area.</span>
+        <Button
+          size="compact-xs"
+          variant="light"
+          onClick={() =>
+            invoke<string>("diagnose")
+              .then(setResult)
+              .catch((e) => setResult(String(e)))
+          }
+        >
+          Save
+        </Button>
+      </Group>
+      {result && (
+        <Text ff="var(--mono)" size="10px" c="dimmed" style={{ wordBreak: "break-all" }}>
+          {result}
+        </Text>
+      )}
+    </div>
+  );
+}
+
 export function Settings({ settings, update }: { settings: S; update: (p: Partial<S>) => void }) {
   return (
     <div className={classes.scroll}>
@@ -62,6 +92,9 @@ export function Settings({ settings, update }: { settings: S; update: (p: Partia
         <Toggle indent label="New applicant" checked={settings.notifyApplicant} onChange={(v) => update({ notifyApplicant: v })} />
         <Toggle indent label="New listing detected" checked={settings.notifyListing} onChange={(v) => update({ notifyListing: v })} />
         <Toggle indent label="Play a sound" checked={settings.sound} onChange={(v) => update({ sound: v })} />
+      </Section>
+      <Section title="Troubleshooting">
+        <Diagnostic />
       </Section>
       <Section title="Privacy">
         <Toggle

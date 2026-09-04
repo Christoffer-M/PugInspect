@@ -24,6 +24,12 @@ fn quit(app: AppHandle) {
     app.exit(0);
 }
 
+/// Writes a cropped capture of the strip region to the desktop and says what decoded there.
+#[tauri::command]
+fn diagnose(app: AppHandle) -> Result<String, String> {
+    capture::diagnose(&app)
+}
+
 /// Current status + frame, for a webview that mounted after the events were emitted.
 #[tauri::command]
 fn sync_snapshot(latest: tauri::State<capture::Latest>) -> capture::Snapshot {
@@ -37,7 +43,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![retry_sync, sync_snapshot, quit])
+        .invoke_handler(tauri::generate_handler![retry_sync, sync_snapshot, quit, diagnose])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
