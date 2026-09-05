@@ -5,6 +5,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { disable, enable } from "@tauri-apps/plugin-autostart";
 import { pageClasses } from "@repo/ui";
 import { keyOf, useCompanion } from "./state";
+import { reportState } from "./analytics";
 import { useSettings } from "./settings";
 import { ding, notify } from "./notify";
 import { Titlebar } from "./components/Titlebar";
@@ -96,6 +97,18 @@ export default function App() {
       unlisten.then((fn) => fn());
     };
   }, [settings.closeAction]);
+
+  // Feed the telemetry beat: it fires on a half-hour timer of its own, so it
+  // reads whatever the last render left here rather than sending per change.
+  useEffect(() => {
+    reportState({
+      link,
+      listing: session ? (session.difficulty === "+" ? "keys" : session.difficulty ? `raid:${session.difficulty}` : "") : "",
+      region: session?.region ?? null,
+      applicants: session?.applicants.length ?? 0,
+      total: session?.total ?? 0,
+    });
+  }, [link, session]);
 
   const mismatch = link === "incompatible" || link === "addon_outdated" || link === "app_outdated";
   // The addon only paints while a listing is up, so "no frames" is only a problem

@@ -27,14 +27,44 @@ const PrivacyPolicy: React.FC = () => {
             </List>
             <Text>No cookies are used for analytics purposes.</Text>
             <Text>
-              The PugInspect Companion desktop application sends the same
-              statistics while it is running. It additionally reports the
-              version of the application, whether a group listing is for a raid
-              or for Mythic+, and how many characters were looked up. It never
-              reports character names, realms, or any other detail of your
-              group or its applicants. Turning off &ldquo;Send anonymous usage
-              statistics&rdquo; under Settings in the companion stops all
-              reporting.
+              The PugInspect Companion desktop application reports separately,
+              to our own servers rather than to Umami, roughly every half hour
+              while it is running. Each report contains:
+            </Text>
+            <List>
+              <List.Item>
+                An installation identifier: a random value generated once by the
+                app and stored on your computer. It is not derived from your
+                hardware, your account, or anything about you &mdash; it exists
+                only so that repeat reports from one installation can be counted
+                as one installation rather than many.
+              </List.Item>
+              <List.Item>The version of the application</List.Item>
+              <List.Item>
+                Whether the app is currently able to read the game window, so we
+                can tell how often setup fails
+              </List.Item>
+              <List.Item>
+                Whether a group listing is for a raid or for Mythic+, its
+                difficulty, its region, and how many applicants it has
+              </List.Item>
+              <List.Item>
+                How many characters were looked up, and how many of those
+                lookups failed
+              </List.Item>
+              <List.Item>Which of the app&rsquo;s own settings are enabled</List.Item>
+              <List.Item>
+                The country your connection comes from. Your IP address is used
+                to determine this and is then discarded &mdash; it is never
+                stored.
+              </List.Item>
+            </List>
+            <Text>
+              It never reports character names, realms, the title of your
+              listing, or the identity of any applicant. Turning off
+              &ldquo;Send anonymous usage statistics&rdquo; under Settings in
+              the companion stops all reporting, including the installation
+              identifier.
             </Text>
           </Stack>
 
@@ -50,16 +80,21 @@ const PrivacyPolicy: React.FC = () => {
           <Stack gap="xs">
             <Title order={2}>Data Sharing</Title>
             <Text>
-              Analytics data is processed by Umami Cloud on our behalf. We do
-              not sell or share data with third parties.
+              Website analytics data is processed by Umami Cloud on our
+              behalf. Companion application data is processed on our own
+              servers and is not shared with any third party. We do not sell
+              data.
             </Text>
           </Stack>
 
           <Stack gap="xs">
             <Title order={2}>Data Retention</Title>
             <Text>
-              Analytics data is retained only as long as necessary for
-              statistical analysis.
+              Website analytics data is retained only as long as necessary for
+              statistical analysis. Individual companion reports are deleted
+              after 90 days; the installation identifier and the dates it was
+              first and last seen are kept for as long as we measure how many
+              people use the app.
             </Text>
           </Stack>
 

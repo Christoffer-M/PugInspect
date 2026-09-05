@@ -9,6 +9,7 @@ import characterResolvers from "./schema/character/character.resolvers.js";
 import { config } from "./config/index.js";
 import { initDb } from "./db/index.js";
 import { runMigrations } from "./db/migrate.js";
+import { parseBeat, pruneCompanionBeats, recordCompanionBeat } from "./db/companion.js";
 import express from "express";
 import cors from "cors";
 import { isbot } from "isbot";
@@ -315,6 +316,34 @@ app.post(
   }
 );
 
+// Companion telemetry — one beat per running install every half hour. Umami
+// cannot answer "how many installs are there" (its visitor hash is IP + UA
+// under a daily-rotating salt, and two Tauri webviews on Windows are
+// indistinguishable), so the companion mints its own random install id and
+// reports here instead. Same text/plain trick as /api/send: this is a
+// cross-origin POST from tauri.localhost and application/json would trigger a
+// preflight that fails, so the body arrives as a CORS-safelisted simple request.
+const beatRateLimiter = createRateLimiter(60, 60_000);
+
+app.post(
+  "/api/companion/beat",
+  beatRateLimiter,
+  express.json({ type: "*/*", limit: "4kb" }),
+  async (req, res) => {
+    const beat = parseBeat(req.body);
+    if (!beat) {
+      res.status(400).end();
+      return;
+    }
+    // Country only, never the address itself: Cloudflare has already resolved
+    // it at the edge, so no geo database and no IP ever reaches the table.
+    const cc = req.headers["cf-ipcountry"];
+    const country = typeof cc === "string" && /^[A-Z]{2}$/.test(cc) ? cc : null;
+    await recordCompanionBeat(beat, country);
+    res.status(204).end();
+  }
+);
+
 // Sitemap with character pages from the DB — nginx proxies /sitemap.xml here.
 // The renderer caches for an hour, so the rate limit only guards cache misses.
 const sitemapRateLimiter = createRateLimiter(30, 60_000);
@@ -378,6 +407,10 @@ app.get("/card/:region/:realm/:name", cardRateLimiter, async (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=900");
   res.end(png);
 });
+
+// Beats are only kept for 90 days; install rows live forever.
+pruneCompanionBeats();
+setInterval(pruneCompanionBeats, 24 * 60 * 60 * 1000);
 
 app.listen({ port: config.port });
 
