@@ -3149,6 +3149,12 @@ type ReportFight {
   """
   completeRaid: Boolean!
 
+  """The enemy forces count reached by the end of a keystone dungeon."""
+  countReached: Int
+
+  """The enemy forces count required to complete a keystone dungeon."""
+  countRequired: Int
+
   """
   The difficulty setting for the raid, dungeon, or arena. Null for trash.
   """
@@ -3280,6 +3286,9 @@ type ReportFight {
 
   """The name of the fight."""
   name: String!
+
+  """A mapping from NPC ids to enemy forces count provided on kill."""
+  npcCountMap: JSON
 
   """
   Some boss fights may be converted to trash fights (encounterID = 0). When this occurs, `originalEncounterID` contains the original ID of the encounter.
