@@ -125,7 +125,9 @@ export default function App() {
   const pendingLookups = shown ? shown.applicants.filter((a) => lookups[keyOf(a)]?.state === "loading").length : 0;
   const failed = shown ? shown.applicants.map((a) => lookups[keyOf(a)]).filter((l) => l?.state === "error") : [];
   const failedDetail = failed.length ? `${failed.length} lookup${failed.length === 1 ? "" : "s"} failed: ${failed[0]!.error ?? "unknown error"}` : undefined;
-  const avgIlvl = shown && shown.applicants.length ? Math.round(shown.applicants.reduce((s, a) => s + (lookups[keyOf(a)]?.entry?.character?.equippedItemLevel ?? a.ilvl), 0) / shown.applicants.length) : 0;
+  // Same resolution as the row: the strip's live value, the lookup only when the game had none.
+  const ilvls = (shown?.applicants ?? []).map((a) => a.ilvl || lookups[keyOf(a)]?.entry?.character?.equippedItemLevel || 0).filter(Boolean);
+  const avgIlvl = ilvls.length ? Math.round(ilvls.reduce((s, n) => s + n, 0) / ilvls.length) : 0;
 
   return (
     <>

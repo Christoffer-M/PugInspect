@@ -6,12 +6,22 @@
 //! management (or any driver colour pass) hands the capture values a few counts off,
 //! worst in the darks, which broke both the magic block and every payload byte. Sixteen
 //! levels 17 apart survive a drift of +/-8, so the same block reads back the same nibble.
+//!
+//! Protocol 5 carries only what the app cannot look up (score comes from puginspect.com), and
+//! deflates the applicant block. At 12 bits per 4x4 block every byte saved is screen area: a
+//! full 20-applicant list is two 4px rows of strip instead of three.
+//!
+//! The header LINE is left as plain text and only the block after it is compressed, then
+//! printable-encoded so the whole payload stays ASCII. That is what lets an app too old to
+//! understand the body still read the protocol number off the front and update itself, rather
+//! than reporting the addon as silent -- `parse` checks the version before it touches the body,
+//! so a payload from another protocol is never decoded, only identified.
 use image::RgbaImage;
 use serde::Serialize;
 
 /// Strip protocol version this build understands; the addon writes its own as the
 /// first header field. Bump both together whenever the payload shape changes.
-pub const PROTOCOL: u32 = 3;
+pub const PROTOCOL: u32 = 5;
 pub const B: u32 = 4;
 pub const COLS: u32 = 250;
 pub const MAX_ROWS: u32 = 4;
@@ -66,10 +76,13 @@ pub struct Frame {
 pub struct Applicant {
     pub name: String,
     pub realm: String,
-    pub class: String,
     pub role: String,
+    /// Blizzard's classID (1-13), 0 when the game did not report one.
+    pub class_id: u32,
+    /// Equipped item level as the GAME reports it -- live, where the API's is a cached
+    /// snapshot. 0 when the applicant's info had not loaded in time; the app falls back
+    /// to the lookup then.
     pub ilvl: u32,
-    pub rio: u32,
     /// In-game applicant id; members of one group application share it, first = leader.
     pub group: u64,
     /// Best key level in the listed dungeon (M+ listings only, else 0) and whether it was timed.
@@ -155,6 +168,26 @@ pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
     Err(err)
 }
 
+/// LibDeflate's `EncodeForPrint` alphabet: base64 over characters that survive a WoW edit box.
+const ALPHABET: &[u8; 64] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789()";
+
+/// Undo `LibDeflate:EncodeForPrint` then `CompressDeflate`. The inflate limit is well above a
+/// full strip's worth of text: anything on screen can end up here, and a deflate bomb is 1 KB
+/// on the wire.
+fn decode_block(s: &str) -> Option<String> {
+    let mut bytes = Vec::with_capacity(s.len() * 3 / 4 + 3);
+    for chunk in s.as_bytes().chunks(4) {
+        // 4 characters carry 3 bytes; a trailing 2 or 3 encode 1 or 2, as LibDeflate writes them.
+        let mut acc = 0u32;
+        for (i, c) in chunk.iter().enumerate() {
+            acc |= (ALPHABET.iter().position(|a| a == c)? as u32) << (6 * i);
+        }
+        bytes.extend(&acc.to_le_bytes()[..chunk.len() - 1]);
+    }
+    let out = miniz_oxide::inflate::decompress_to_vec_with_limit(&bytes, 16 * 1024).ok()?;
+    String::from_utf8(out).ok()
+}
+
 fn decode_at(img: &RgbaImage, x0: u32, y0: u32) -> Result<String, DecodeErr> {
     let n = nibbles(img, x0, y0, 1).ok_or(DecodeErr::Truncated)?;
     let len = (n[0] as usize) << 8 | (n[1] as usize) << 4 | n[2] as usize;
@@ -175,19 +208,27 @@ fn decode_at(img: &RgbaImage, x0: u32, y0: u32) -> Result<String, DecodeErr> {
     String::from_utf8(bytes).map_err(|_| DecodeErr::Utf8)
 }
 
-/// Header: "1\t<hb>\t<region>\t<myRealm>\t<sessionId>\t<activityId>\t<title>\t<nTotal>"
-/// Lines:  "<Name-Realm>:<CLASSFILE>:<T|H|D|>:<ilvl>:<rio>"
+/// Header: "5\t<hb>\t<region>\t<myRealm>\t<sessionId>\t<activityId>\t<title>\t<nTotal>\t<diff>"
+/// Body:   printable-encoded deflate of "<Name-Realm>:<T|H|D|>:<classId>:<ilvl>:<applicantId>:
+///         <bestKeyLevel>:<0|1 timed>" lines. Absent when there are no applicants.
 pub fn parse(payload: &str) -> Result<Frame, ParseErr> {
-    let mut lines = payload.split('\n');
-    let h: Vec<&str> = lines.next().ok_or(ParseErr::Malformed)?.split('\t').collect();
+    let (head, body) = payload.split_once('\n').unwrap_or((payload, ""));
+    let h: Vec<&str> = head.split('\t').collect();
     let version: u32 = h.first().and_then(|v| v.parse().ok()).ok_or(ParseErr::Malformed)?;
+    // Before the body, deliberately: another protocol's block means nothing to us, but its
+    // header still names the version, which is how the app knows which side is behind.
     if version != PROTOCOL {
         return Err(ParseErr::Version(version));
     }
     if h.len() != 9 {
         return Err(ParseErr::Malformed);
     }
-    parse_body(&h, lines).ok_or(ParseErr::Malformed)
+    let lines = if body.is_empty() {
+        String::new()
+    } else {
+        decode_block(body).ok_or(ParseErr::Malformed)?
+    };
+    parse_body(&h, lines.split('\n').filter(|l| !l.is_empty())).ok_or(ParseErr::Malformed)
 }
 
 fn parse_body<'a>(h: &[&str], lines: impl Iterator<Item = &'a str>) -> Option<Frame> {
@@ -195,20 +236,19 @@ fn parse_body<'a>(h: &[&str], lines: impl Iterator<Item = &'a str>) -> Option<Fr
     let applicants = lines
         .map(|l| {
             let f: Vec<&str> = l.split(':').collect();
-            if f.len() != 8 {
+            if f.len() != 7 {
                 return None;
             }
             let (name, r) = f[0].rsplit_once('-').unwrap_or((f[0], &realm));
             Some(Applicant {
                 name: name.into(),
                 realm: r.into(),
-                class: f[1].into(),
-                role: f[2].into(),
+                role: f[1].into(),
+                class_id: f[2].parse().ok()?,
                 ilvl: f[3].parse().ok()?,
-                rio: f[4].parse().ok()?,
-                group: f[5].parse().ok()?,
-                best_level: f[6].parse().ok()?,
-                best_timed: f[7] == "1",
+                group: f[4].parse().ok()?,
+                best_level: f[5].parse().ok()?,
+                best_timed: f[6] == "1",
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -223,6 +263,26 @@ fn parse_body<'a>(h: &[&str], lines: impl Iterator<Item = &'a str>) -> Option<Fr
         difficulty: h[8].into(),
         applicants,
     })
+}
+
+#[cfg(test)]
+/// Mirrors PugInspectPixel.Send: header line as-is, applicant block deflated and
+/// printable-encoded. `decode_block` is written against exactly this.
+pub(crate) fn wire(payload: &str) -> String {
+    let Some((head, body)) = payload.split_once('\n') else { return payload.into() };
+    let z = miniz_oxide::deflate::compress_to_vec(body.as_bytes(), 6);
+    let mut out = String::from(head);
+    out.push('\n');
+    for c in z.chunks(3) {
+        let mut acc = 0u32;
+        for (i, b) in c.iter().enumerate() {
+            acc |= (*b as u32) << (8 * i);
+        }
+        for i in 0..c.len() + 1 {
+            out.push(ALPHABET[(acc >> (6 * i)) as usize & 63] as char);
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -291,10 +351,10 @@ mod tests {
         img
     }
 
-    const PAYLOAD: &str = "3\t17\teu\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
-        Puggy-Ravencrest:WARRIOR:T:635:2874:41:15:1\n\
-        Healbot:PRIEST:H:628:2410:41:0:0\n\
-        Zapzap-Tarren-Mill:MAGE:D:641:3102:42:11:0";
+    const PAYLOAD: &str = "5\t17\teu\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
+        Puggy-Ravencrest:T:1:635:41:15:1\n\
+        Healbot:H:5:628:41:0:0\n\
+        Zapzap-Tarren-Mill:D:8:641:42:11:0";
 
     #[test]
     fn crc_check_value() {
@@ -303,14 +363,54 @@ mod tests {
 
     #[test]
     fn round_trip() {
-        assert_eq!(decode(&encode(PAYLOAD.as_bytes())).unwrap(), PAYLOAD);
+        let strip = decode(&encode(wire(PAYLOAD).as_bytes())).unwrap();
+        assert_eq!(strip, wire(PAYLOAD));
+        assert_eq!(parse(&strip).unwrap().applicants.len(), 3);
+    }
+
+    /// A listing with nobody in it has no body at all, so there is nothing to decode.
+    #[test]
+    fn empty_applicant_list() {
+        let head = "5\t3\teu\tKazzak\t9\t1\tquiet\t0\t+";
+        let f = parse(&decode(&encode(wire(head).as_bytes())).unwrap()).unwrap();
+        assert!(f.applicants.is_empty());
+    }
+
+    /// A real strip as the addon paints it, straight out of LibDeflate in the other repo:
+    /// plain header line, then `EncodeForPrint(CompressDeflate(body))`. The golden vector for
+    /// the encoding half of the contract -- if LibDeflate and this decoder ever stop agreeing,
+    /// this is where it shows.
+    #[test]
+    fn decodes_a_real_addon_strip() {
+        let painted = "5\t7\teu\tKazzak\t1700000000\t1234\tM+ 12 key go\t3\tH\n\
+            Z)IsjZ8Yt3qsSOIsnpFZmNCSYdRm3ktSWsRm0aRac5YP8117eRQQeZ2QqSYqGsyauja8";
+        assert!(painted.is_ascii(), "the strip must stay readable to any app version");
+        let f = parse(&decode(&encode(painted.as_bytes())).unwrap()).unwrap();
+        assert_eq!(f.title, "M+ 12 key go");
+        let a = &f.applicants;
+        assert_eq!(a.len(), 2);
+        assert_eq!((a[0].name.as_str(), a[0].realm.as_str(), a[0].role.as_str()), ("Ordinn", "TarrenMill", "H"));
+        assert_eq!((a[0].class_id, a[0].ilvl, a[0].group), (7, 489, 10));
+        assert_eq!((a[1].name.as_str(), a[1].realm.as_str(), a[1].class_id, a[1].ilvl), ("Bo", "Kazzak", 1, 480));
+    }
+
+    /// A protocol 3 addon paints plain text end to end, body included. Nothing here can read
+    /// its applicants, but the version has to survive so the app can say which side is behind --
+    /// which is why `parse` never touches a body from a protocol it does not speak.
+    #[test]
+    fn other_protocol_is_identified_not_decoded() {
+        let old = "3\t7\teu\tKazzak\t9\t1\tgo\t1\t+\nPuggy-Kazzak:MAGE:D:640:2500:9:0:0";
+        assert_eq!(decode(&encode(old.as_bytes())).unwrap(), old);
+        assert_eq!(parse(old), Err(ParseErr::Version(3)));
+        // And the same in the other direction: a future protocol names itself too.
+        assert_eq!(parse("9\t7\tsomething we have never seen"), Err(ParseErr::Version(9)));
     }
 
     #[test]
     fn corrupted_block_fails_crc() {
         // The whole block, not one pixel: scanning every candidate offset means a
         // single bad pixel is recovered from by sampling a different row.
-        let mut img = encode(PAYLOAD.as_bytes());
+        let mut img = encode(wire(PAYLOAD).as_bytes());
         for y in 0..B {
             for x in 2 * B..3 * B {
                 img.put_pixel(x, y, Rgba([9, 9, 9, 255]));
@@ -321,9 +421,9 @@ mod tests {
 
     #[test]
     fn single_bad_pixel_is_recovered() {
-        let mut img = encode(PAYLOAD.as_bytes());
+        let mut img = encode(wire(PAYLOAD).as_bytes());
         img.put_pixel(2 * B + B / 2, B / 2, Rgba([9, 9, 9, 255]));
-        assert_eq!(decode(&img).unwrap(), PAYLOAD);
+        assert_eq!(decode(&img).unwrap(), wire(PAYLOAD));
     }
 
     #[test]
@@ -341,11 +441,11 @@ mod tests {
     /// (and the strip) sits in from the left border and below the title bar.
     #[test]
     fn strip_inset_by_window_border_is_found() {
-        let strip = encode(PAYLOAD.as_bytes());
+        let strip = encode(wire(PAYLOAD).as_bytes());
         for (dx, dy) in [(1, 32), (8, 31), (MAX_INSET, 0)] {
             let mut win = RgbaImage::from_pixel(strip.width() + dx, strip.height() + dy, Rgba([9, 9, 9, 255]));
             image::imageops::replace(&mut win, &strip, dx as i64, dy as i64);
-            assert_eq!(decode(&win).unwrap(), PAYLOAD, "inset ({dx}, {dy})");
+            assert_eq!(decode(&win).unwrap(), wire(PAYLOAD), "inset ({dx}, {dy})");
         }
         // Past the inset budget it is not found, as before.
         let mut far = RgbaImage::from_pixel(strip.width() + 64, strip.height(), Rgba([9, 9, 9, 255]));
@@ -356,11 +456,11 @@ mod tests {
     #[test]
     fn false_magic_above_the_strip_is_skipped() {
         // A stray pixel the colour of the magic block, 40 px above the real strip.
-        let strip = encode(PAYLOAD.as_bytes());
+        let strip = encode(wire(PAYLOAD).as_bytes());
         let mut img = RgbaImage::from_pixel(strip.width(), strip.height() + 200, Rgba([9, 9, 9, 255]));
         image::imageops::replace(&mut img, &strip, 0, 100);
         img.put_pixel(B / 2, 60, Rgba([MAGIC[0], MAGIC[1], MAGIC[2], 255]));
-        assert_eq!(decode(&img).unwrap(), PAYLOAD);
+        assert_eq!(decode(&img).unwrap(), wire(PAYLOAD));
     }
 
     /// The curve measured off the diagnostic capture that forced protocol 3: a
@@ -381,20 +481,20 @@ mod tests {
 
     #[test]
     fn survives_colour_managed_capture() {
-        let img = encode_shifted(PAYLOAD.as_bytes(), observed_drift);
-        assert_eq!(decode(&img).unwrap(), PAYLOAD);
+        let img = encode_shifted(wire(PAYLOAD).as_bytes(), observed_drift);
+        assert_eq!(decode(&img).unwrap(), wire(PAYLOAD));
     }
 
     /// The whole point of 17 apart: anything inside the half-step still reads back.
     #[test]
     fn survives_the_full_drift_budget() {
         for d in [-8i32, -5, -1, 1, 5, 8] {
-            let img = encode_shifted(PAYLOAD.as_bytes(), |v| (v as i32 + d).clamp(0, 255) as u8);
-            assert_eq!(decode(&img).unwrap(), PAYLOAD, "drift {d}");
+            let img = encode_shifted(wire(PAYLOAD).as_bytes(), |v| (v as i32 + d).clamp(0, 255) as u8);
+            assert_eq!(decode(&img).unwrap(), wire(PAYLOAD), "drift {d}");
         }
         // One step further and the level is genuinely ambiguous, so it must not decode.
-        let img = encode_shifted(PAYLOAD.as_bytes(), |v| (v as i32 + 9).clamp(0, 255) as u8);
-        assert_ne!(decode(&img).as_deref(), Ok(PAYLOAD));
+        let img = encode_shifted(wire(PAYLOAD).as_bytes(), |v| (v as i32 + 9).clamp(0, 255) as u8);
+        assert_ne!(decode(&img).as_deref(), Ok(wire(PAYLOAD).as_str()));
     }
 
     #[test]
@@ -402,11 +502,11 @@ mod tests {
         let img = encode_v2(b"2\t1\teu\tKazzak\t9\t1\told\t0\t+");
         assert_eq!(decode(&img), Err(DecodeErr::LegacyAddon));
         // A live protocol 3 strip below an old one still wins.
-        let new = encode(PAYLOAD.as_bytes());
+        let new = encode(wire(PAYLOAD).as_bytes());
         let mut both = RgbaImage::from_pixel(new.width(), new.height() + 100, Rgba([9, 9, 9, 255]));
         image::imageops::replace(&mut both, &img, 0, 0);
         image::imageops::replace(&mut both, &new, 0, 100);
-        assert_eq!(decode(&both).unwrap(), PAYLOAD);
+        assert_eq!(decode(&both).unwrap(), wire(PAYLOAD));
     }
 
     /// Golden vector, asserted byte-for-byte in the addon's test_applicants.lua too. If this
@@ -430,30 +530,44 @@ mod tests {
     }
 
     #[test]
-    fn twenty_applicants_fit() {
-        let mut p = "3\t99\tus\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
+    fn a_full_applicant_list_fits() {
+        let mut p = "5\t99\tus\tIllidan\t1\t2516\tWeekly +10s, chill run\t20\t+".to_string();
         for i in 0..20 {
-            p += &format!("\nApplicantname{i}-Somerealmname:DEATHKNIGHT:D:640:2500:7:0:0");
+            p += &format!("\nApplicantname{i}-Somerealmname:D:6:64{}:41:15:1", i % 10);
         }
-        assert!(p.len() <= MAX_LEN);
-        assert!(p.len() * 2 > (COLS * 3) as usize, "should spill onto row 2");
-        assert_eq!(decode(&encode(p.as_bytes())).unwrap(), p);
+        let w = wire(&p);
+        // Two 4px rows of strip, where protocol 3 painted three.
+        assert!(w.len() <= 2 * (COLS * 3 / 2) as usize, "{} bytes", w.len());
+        let f = parse(&decode(&encode(w.as_bytes())).unwrap()).unwrap();
+        assert_eq!(f.applicants.len(), 20);
+        assert_eq!((f.applicants[3].class_id, f.applicants[3].ilvl), (6, 643));
+    }
+
+    /// The addon trims to MAX_BYTES of UNCOMPRESSED payload (1000). Encoding expands
+    /// incompressible input by 4/3, so prove the worst case still fits the grid -- otherwise
+    /// raising that constant silently truncates the strip instead of failing a test.
+    #[test]
+    fn the_addons_budget_cannot_overflow_the_grid() {
+        let incompressible: String = (0..1000).map(|i| (b'a' + (i * 7 % 26) as u8) as char).collect();
+        let painted = wire(&format!("5\t1\teu\tR\t1\t1\tt\t1\t+\n{incompressible}"));
+        assert!(painted.len() <= MAX_LEN, "{} bytes vs {MAX_LEN}", painted.len());
     }
 
     #[test]
     fn parse_frame() {
-        let f = parse(PAYLOAD).unwrap();
+        let f = parse(&wire(PAYLOAD)).unwrap();
         assert_eq!((f.hb, f.region.as_str(), f.realm.as_str()), (17, "eu", "Ravencrest"));
         assert_eq!((f.session_id, f.activity_id, f.total), (1234, 2516, 3));
         assert_eq!(f.title, "+15 Ara-Kara go");
         let a = &f.applicants;
         assert_eq!(a.len(), 3);
-        assert_eq!((a[0].name.as_str(), a[0].realm.as_str(), a[0].ilvl, a[0].rio), ("Puggy", "Ravencrest", 635, 2874));
+        assert_eq!((a[0].name.as_str(), a[0].realm.as_str(), a[0].group), ("Puggy", "Ravencrest", 41));
+        assert_eq!((a[0].best_level, a[0].best_timed), (15, true));
         assert_eq!((a[1].name.as_str(), a[1].realm.as_str(), a[1].role.as_str()), ("Healbot", "Ravencrest", "H"));
         assert_eq!((a[2].name.as_str(), a[2].realm.as_str()), ("Zapzap-Tarren", "Mill"));
-        assert!(parse("3\tx").is_err());
-        assert_eq!(parse("3\t1\teu\tR\t1\t1\tt\t1\tH\nbad line"), Err(ParseErr::Malformed));
-        assert_eq!(parse("2\t1\teu\tR\t1\t1\tt\t1\tH"), Err(ParseErr::Version(2)));
-        assert_eq!(parse("4\t1\tx"), Err(ParseErr::Version(4)));
+        assert!(parse("5\tx").is_err());
+        assert_eq!(parse("5\t1\teu\tR\t1\t1\tt\t1\tH\nbad line"), Err(ParseErr::Malformed));
+        assert_eq!(parse("4\t1\teu\tR\t1\t1\tt\t1\tH"), Err(ParseErr::Version(4)));
+        assert_eq!(parse("6\t1\tx"), Err(ParseErr::Version(6)));
     }
 }

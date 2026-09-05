@@ -9,13 +9,22 @@ import { Difficulty } from "./graphql/graphql";
 
 /** Shapes emitted by src-tauri/src/capture.rs on the "sync" event. */
 /** `group` is the in-game applicant id: members of one group application share it. */
+/** Blizzard's classIDs, which is what the strip carries -- see CLASS_IDS in the addon's Core.lua. */
+export const CLASS_BY_ID: Record<number, string> = {
+  1: "WARRIOR", 2: "PALADIN", 3: "HUNTER", 4: "ROGUE", 5: "PRIEST", 6: "DEATHKNIGHT", 7: "SHAMAN",
+  8: "MAGE", 9: "WARLOCK", 10: "MONK", 11: "DRUID", 12: "DEMONHUNTER", 13: "EVOKER",
+};
+
+/** The strip carries what the game knows better than the API does; score comes from the lookup. */
 export type Applicant = {
   name: string;
   realm: string;
-  class: string;
   role: "T" | "H" | "D" | "";
+  /** Blizzard classID, 0 when the game did not report one. */
+  classId: number;
+  /** Equipped item level from the game -- live, where the API's is a cached snapshot. 0 when
+   *  the applicant's info had not loaded, in which case the lookup fills it in. */
   ilvl: number;
-  rio: number;
   group: number;
   /** Best key level in the listed dungeon (M+ listings only, else 0) and whether it was timed. */
   bestLevel: number;

@@ -59,14 +59,26 @@ const emit = (event: string, payload: unknown) =>
 };
 
 const APPLICANTS: Frame["applicants"] = [
-  { name: "Frostvyre", realm: "Kazzak", class: "MAGE", role: "D", ilvl: 302, rio: 0, group: 1, bestLevel: 0, bestTimed: false },
-  { name: "Bearlyalive", realm: "Ravencrest", class: "DRUID", role: "T", ilvl: 299, rio: 2884, group: 2, bestLevel: 0, bestTimed: false },
-  { name: "Lightwarden", realm: "Silvermoon", class: "PRIEST", role: "H", ilvl: 297, rio: 2705, group: 2, bestLevel: 0, bestTimed: false },
-  { name: "Soulrend", realm: "Kazzak", class: "WARLOCK", role: "D", ilvl: 295, rio: 2611, group: 2, bestLevel: 0, bestTimed: false },
-  { name: "Emberhoof", realm: "TarrenMill", class: "PALADIN", role: "D", ilvl: 293, rio: 2450, group: 3, bestLevel: 0, bestTimed: false },
-  { name: "Quickshot", realm: "TwistingNether", class: "HUNTER", role: "D", ilvl: 288, rio: 2201, group: 4, bestLevel: 0, bestTimed: false },
-  { name: "Bloodhilt", realm: "Draenor", class: "DEATHKNIGHT", role: "T", ilvl: 284, rio: 1840, group: 5, bestLevel: 0, bestTimed: false },
+  { name: "Frostvyre", realm: "Kazzak", role: "D", classId: 8, ilvl: 302, group: 1, bestLevel: 0, bestTimed: false },
+  { name: "Bearlyalive", realm: "Ravencrest", role: "T", classId: 11, ilvl: 299, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Lightwarden", realm: "Silvermoon", role: "H", classId: 5, ilvl: 297, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Soulrend", realm: "Kazzak", role: "D", classId: 9, ilvl: 295, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Emberhoof", realm: "TarrenMill", role: "D", classId: 2, ilvl: 293, group: 3, bestLevel: 0, bestTimed: false },
+  { name: "Quickshot", realm: "TwistingNether", role: "D", classId: 3, ilvl: 288, group: 4, bestLevel: 0, bestTimed: false },
+  { name: "Bloodhilt", realm: "Draenor", role: "T", classId: 6, ilvl: 284, group: 5, bestLevel: 0, bestTimed: false },
 ];
+
+/** What the backend adds on top of the strip. Item level is deliberately a point higher than
+ *  the strip's: in game the API lags a gear swap, and the row must keep showing the live one. */
+const CHARACTERS: Record<string, { class: string; ilvl: number; rio: number }> = {
+  Frostvyre: { class: "MAGE", ilvl: 303, rio: 0 },
+  Bearlyalive: { class: "DRUID", ilvl: 300, rio: 2884 },
+  Lightwarden: { class: "PRIEST", ilvl: 298, rio: 2705 },
+  Soulrend: { class: "WARLOCK", ilvl: 296, rio: 2611 },
+  Emberhoof: { class: "PALADIN", ilvl: 294, rio: 2450 },
+  Quickshot: { class: "HUNTER", ilvl: 289, rio: 2201 },
+  Bloodhilt: { class: "DEATHKNIGHT", ilvl: 285, rio: 1840 },
+};
 
 const SPECS: Record<string, string> = { MAGE: "Fire", DRUID: "Guardian", PRIEST: "Holy", WARLOCK: "Destruction", PALADIN: "Retribution", HUNTER: "Beast Mastery", DEATHKNIGHT: "Blood" };
 const CLASS: Record<string, string> = { MAGE: "Mage", DRUID: "Druid", PRIEST: "Priest", WARLOCK: "Warlock", PALADIN: "Paladin", HUNTER: "Hunter", DEATHKNIGHT: "Death Knight" };
@@ -83,17 +95,18 @@ window.fetch = async (input, init) => {
     .map((c) => {
       const a = APPLICANTS.find((x) => x.name.toLowerCase() === c.name.toLowerCase())!;
       const i = APPLICANTS.indexOf(a);
+      const ch = CHARACTERS[a.name]!;
       return {
         name: c.name,
         realm: c.realm,
         notFound: false,
         role: null,
         character: {
-          class: CLASS[a.class],
-          activeSpec: SPECS[a.class],
-          equippedItemLevel: a.ilvl,
+          class: CLASS[ch.class],
+          activeSpec: SPECS[ch.class],
+          equippedItemLevel: ch.ilvl,
           raiderIo: {
-            currentSeason: { all: { score: a.rio, color: ["#e6cc80", "#a335ee", "#a335ee", "#a335ee", "#0070dd", "#0070dd", "#1eff00"][i] } },
+            currentSeason: { all: { score: ch.rio, color: ["#e6cc80", "#a335ee", "#a335ee", "#a335ee", "#0070dd", "#0070dd", "#1eff00"][i] } },
             raidProgression: [{ raid: "some-world-boss", total_bosses: 1, normal_bosses_killed: 1, heroic_bosses_killed: 1, mythic_bosses_killed: 0 }, { raid: DEFAULT_RAID, total_bosses: 8, normal_bosses_killed: 8, heroic_bosses_killed: [8, 6, 8, 4, 6, 0, 0][i], mythic_bosses_killed: 0 }],
           },
           raidLogs: { bestPerformanceAverage: [96, 78, 61, 44, 33, 19, 8][i], medianPerformanceAverage: 50 },
