@@ -419,3 +419,78 @@ export const rosters = pgTable("rosters", {
 });
 
 export type RosterRow = typeof rosters.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// companion_installs / companion_beats
+// Desktop companion telemetry. Umami can't answer "how many installs do I
+// have" — its visitor hash is IP + user-agent salted with a daily-rotating
+// secret, and two Tauri webviews on Windows look identical — so the companion
+// mints its own random install id instead and reports here.
+//
+// Two tables because they age differently: installs is one small row per
+// install and is never pruned (install base, MAU, long-horizon retention),
+// beats are one row per half hour and get pruned, so the beat table stays
+// bounded while the install history survives.
+//
+// install_id is a random UUID with nothing derived from the machine or the
+// player. It is still a persistent identifier, so it is only sent while the
+// companion's "Send anonymous usage statistics" setting is on, and the privacy
+// policy names it. No IP is stored — only the country derived from it.
+// ---------------------------------------------------------------------------
+export const companionInstalls = pgTable(
+  "companion_installs",
+  {
+    installId: uuid("install_id").primaryKey(),
+    firstSeen: timestamp("first_seen", { withTimezone: true }).defaultNow().notNull(),
+    lastSeen: timestamp("last_seen", { withTimezone: true }).defaultNow().notNull(),
+    /** Latest values win, so this table alone answers "who is on what today". */
+    version: varchar("version", { length: 16 }).notNull(),
+    /** WoW region of the last listing seen, not the player's geography. */
+    region: varchar("region", { length: 8 }),
+    country: varchar("country", { length: 2 }),
+    /** Whether this install has ever decoded a frame — the activation flag. */
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
+  },
+  (t) => [index("companion_installs_last_seen_idx").on(t.lastSeen)]
+);
+
+export const companionBeats = pgTable(
+  "companion_beats",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    installId: uuid("install_id").notNull(),
+    at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
+    version: varchar("version", { length: 16 }).notNull(),
+    /** Capture link state at beat time: ok | no_window | lost | incompatible |
+     *  addon_outdated | app_outdated. The activation funnel lives in this column. */
+    link: varchar("link", { length: 16 }).notNull(),
+    /** "" when nothing is listed, else "raid:N" | "raid:H" | "raid:M" | "keys". */
+    listing: varchar("listing", { length: 8 }).notNull(),
+    region: varchar("region", { length: 8 }),
+    /** Applicants on the strip, and the in-game total, which can be higher
+     *  (the strip caps at 20) — the gap is how often that cap bites. */
+    applicants: integer("applicants").notNull(),
+    total: integer("total").notNull(),
+    /** Counters since the previous beat, not lifetime totals. */
+    lookups: integer("lookups").notNull(),
+    lookupErrors: integer("lookup_errors").notNull(),
+    notFound: integer("not_found").notNull(),
+    /** Auto-update installs that errored since the last beat. A silently failing
+     *  updater is what strands an install on an old build forever. */
+    updateFailures: integer("update_failures").notNull().default(0),
+    /** Version this install knows about but has not taken, null when current.
+     *  Paired with `version` it names the stranded installs outright: on 0.5.0,
+     *  aware of 0.5.2, still here. On Windows a successful update relaunches the
+     *  app, so success is never observable in a beat — only the failure to take one. */
+    updatePending: varchar("update_pending", { length: 16 }),
+    /** Settings snapshot: which features are actually load-bearing. */
+    settings: jsonb("settings").$type<Record<string, boolean | string>>().notNull(),
+  },
+  (t) => [
+    index("companion_beats_at_idx").on(t.at),
+    index("companion_beats_install_at_idx").on(t.installId, t.at),
+  ]
+);
+
+export type CompanionInstall = typeof companionInstalls.$inferSelect;
+export type CompanionBeat = typeof companionBeats.$inferSelect;

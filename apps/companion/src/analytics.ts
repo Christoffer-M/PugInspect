@@ -1,41 +1,86 @@
 import { loadSettings } from "./settings";
+import type { Link } from "./state";
 
-// Reuses the site's Umami instance through the backend's first-party /api/send
-// proxy (apps/backend/src/index.ts), which injects the real client IP for geo.
-// Its own website, so companion beats don't pollute puginspect.com's stats.
-const WEBSITE_ID = "780a798a-756e-4da3-ab1b-8e507a663870";
-const ENDPOINT = "https://puginspect.com/api/send";
+// Companion telemetry goes to PugInspect's own backend, not to Umami. Umami
+// identifies a visitor by hashing IP + user-agent under a daily-rotating salt,
+// which is right for the website and useless here: two Tauri webviews on
+// Windows look identical, and one install's IP changes overnight — so install
+// counts, retention and "how often is it used" are unanswerable there. This
+// sends a random install id instead, and the backend aggregates.
+const ENDPOINT = "https://puginspect.com/api/companion/beat";
 const BEAT_MS = 30 * 60 * 1000;
+const INSTALL_KEY = "pi-install-id";
 
-/** Sends one Umami event. Fire-and-forget: no X-Umami-Cache round-trip, no
- *  retry — a dropped event costs nothing and must never surface to the user.
+/** Random per-install id, minted once and kept in localStorage (which Tauri
+ *  persists in the app data dir). Nothing about it is derived from the machine
+ *  or the player — it exists only to tell two installs apart. */
+function installId(): string {
+  let id = localStorage.getItem(INSTALL_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(INSTALL_KEY, id);
+  }
+  return id;
+}
+
+/** What the app is doing right now; App.tsx keeps this current. */
+type Snapshot = {
+  link: Link;
+  listing: string;
+  region: string | null;
+  applicants: number;
+  total: number;
+  /** Version the updater has found and not installed yet, null when current. */
+  updatePending: string | null;
+};
+let snapshot: Snapshot = { link: "no_window", listing: "", region: null, applicants: 0, total: 0, updatePending: null };
+export function reportState(next: Snapshot): void {
+  snapshot = next;
+}
+
+/** Counted since the last beat, then reset — the beat carries deltas, not totals. */
+const counters = { lookups: 0, lookupErrors: 0, notFound: 0, updateFailures: 0 };
+export function count(key: keyof typeof counters, n = 1): void {
+  counters[key] += n;
+}
+
+/** Fire-and-forget, exactly like the Umami sender it replaces: no retry, and a
+ *  dropped beat must never surface to the user.
  *
  *  text/plain, not application/json: this is a cross-origin POST from the
- *  webview (tauri.localhost -> puginspect.com) and /api/send serves no CORS
- *  headers, so application/json would trigger a preflight that fails and drops
- *  every event. text/plain is CORS-safelisted, so the POST goes out as a simple
- *  request; the blocked response doesn't matter, nothing reads it. The backend
- *  parses with express.json({ type: "*\/*" }) and re-sends JSON upstream. */
-export function track(name: string, data?: Record<string, string | number>): void {
-  if (!import.meta.env.PROD || !loadSettings().analytics) return;
+ *  webview (tauri.localhost -> puginspect.com) and application/json would
+ *  trigger a preflight the endpoint doesn't answer, dropping every beat.
+ *  text/plain is CORS-safelisted, so it goes out as a simple request; the
+ *  blocked response doesn't matter, nothing reads it. The backend parses with
+ *  express.json({ type: "*\/*" }).
+ *
+ *  Deliberately no X-PugInspect-Client header, unlike api.ts: a custom header
+ *  is not CORS-safelisted and would force the same preflight this avoids. The
+ *  path identifies the companion on its own — nothing else calls it — which is
+ *  all the Cloudflare WAF rule needs. */
+function beat(): void {
+  const settings = loadSettings();
+  if (!import.meta.env.PROD || !settings.analytics) return;
+  const body = {
+    installId: installId(),
+    version: __APP_VERSION__,
+    ...snapshot,
+    ...counters,
+    settings: settings as unknown as Record<string, boolean | string>,
+  };
+  counters.lookups = 0;
+  counters.lookupErrors = 0;
+  counters.notFound = 0;
+  counters.updateFailures = 0;
   fetch(ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({
-      type: "event",
-      payload: {
-        website: WEBSITE_ID,
-        hostname: "companion.puginspect.com",
-        url: "/",
-        name,
-        data: { version: __APP_VERSION__, ...data },
-      },
-    }),
+    body: JSON.stringify(body),
   }).catch(() => {});
 }
 
-/** Reports this install as alive, every half hour, for as long as the app runs. */
+/** Reports this install as alive on launch, then every half hour it runs. */
 export function startHeartbeat(): void {
-  track("heartbeat");
-  setInterval(() => track("heartbeat"), BEAT_MS);
+  beat();
+  setInterval(beat, BEAT_MS);
 }

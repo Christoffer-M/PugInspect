@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { slugRealm } from "@repo/ui";
 import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
-import { track } from "./analytics";
+import { count } from "./analytics";
 import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
 import { Difficulty, SpecRole } from "./graphql/graphql";
 
@@ -114,7 +114,7 @@ export function useCompanion(events: Events) {
     const isKeys = sessionRef.current?.difficulty === "+";
     const difficulty = gqlDifficulty(sessionRef.current?.difficulty ?? "");
     pending.current = { region, applicants: [] };
-    if (applicants.length) track("lookup", { mode: isKeys ? "keys" : "raid", count: applicants.length });
+    if (applicants.length) count("lookups", applicants.length);
     for (let i = 0; i < applicants.length; i += CHUNK_SIZE) {
       const chunk = applicants.slice(i, i + CHUNK_SIZE);
       try {
@@ -126,6 +126,7 @@ export function useCompanion(events: Events) {
           chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm), role: SPEC_ROLE[a.role] })),
           isKeys ? { zoneId: MYTHIC_PLUS_ZONE_ID } : { difficulty }
         );
+        count("notFound", entries.filter((e) => e.notFound).length);
         setLookups((l) => {
           const next = { ...l };
           for (const e of entries) next[keyOf(e)] = { state: "done", entry: e };
@@ -133,6 +134,7 @@ export function useCompanion(events: Events) {
         });
       } catch (e) {
         const error = e instanceof Error ? e.message : String(e);
+        count("lookupErrors", chunk.length);
         setLookups((l) => {
           const next = { ...l };
           for (const a of chunk) next[keyOf(a)] = { state: "error", error, failedAt: Date.now() };

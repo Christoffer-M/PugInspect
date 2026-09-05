@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { check, type Update } from "@tauri-apps/plugin-updater";
+import { count } from "./analytics";
 
 const CHECK_MS = 6 * 60 * 60 * 1000; // app runs for whole play sessions
 
@@ -58,7 +59,12 @@ export function useUpdate(): UpdateState | null {
       // "done" is only reached where the promise resolves (dev mock, macOS).
       update.downloadAndInstall().then(
         () => setPhase("done"),
-        (e) => setPhase({ error: String(e) }),
+        (e) => {
+          // A failed install is invisible otherwise, and it is what strands an
+          // install on an old build; the beat carries the count out.
+          count("updateFailures");
+          setPhase({ error: String(e) });
+        },
       );
     },
   };
