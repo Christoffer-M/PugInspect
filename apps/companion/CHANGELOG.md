@@ -4,6 +4,14 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.6.0
+
+- Anonymous usage statistics now go to PugInspect's own servers instead of a third-party
+  analytics service, and include a randomly generated installation id so that repeat reports
+  from one installation count as one rather than many. Nothing about your characters, your
+  group or its applicants is reported. "Send anonymous usage statistics" under Settings still
+  turns all of it off, and the privacy policy on puginspect.com lists exactly what is sent.
+
 ## 0.5.1
 
 - Parses now match the role an applicant signed up as. A healer sitting in a damage spec --
