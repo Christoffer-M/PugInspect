@@ -59,24 +59,25 @@ const emit = (event: string, payload: unknown) =>
 };
 
 const APPLICANTS: Frame["applicants"] = [
-  { name: "Frostvyre", realm: "Kazzak", role: "D", group: 1, bestLevel: 0, bestTimed: false },
-  { name: "Bearlyalive", realm: "Ravencrest", role: "T", group: 2, bestLevel: 0, bestTimed: false },
-  { name: "Lightwarden", realm: "Silvermoon", role: "H", group: 2, bestLevel: 0, bestTimed: false },
-  { name: "Soulrend", realm: "Kazzak", role: "D", group: 2, bestLevel: 0, bestTimed: false },
-  { name: "Emberhoof", realm: "TarrenMill", role: "D", group: 3, bestLevel: 0, bestTimed: false },
-  { name: "Quickshot", realm: "TwistingNether", role: "D", group: 4, bestLevel: 0, bestTimed: false },
-  { name: "Bloodhilt", realm: "Draenor", role: "T", group: 5, bestLevel: 0, bestTimed: false },
+  { name: "Frostvyre", realm: "Kazzak", role: "D", classId: 8, ilvl: 302, group: 1, bestLevel: 0, bestTimed: false },
+  { name: "Bearlyalive", realm: "Ravencrest", role: "T", classId: 11, ilvl: 299, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Lightwarden", realm: "Silvermoon", role: "H", classId: 5, ilvl: 297, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Soulrend", realm: "Kazzak", role: "D", classId: 9, ilvl: 295, group: 2, bestLevel: 0, bestTimed: false },
+  { name: "Emberhoof", realm: "TarrenMill", role: "D", classId: 2, ilvl: 293, group: 3, bestLevel: 0, bestTimed: false },
+  { name: "Quickshot", realm: "TwistingNether", role: "D", classId: 3, ilvl: 288, group: 4, bestLevel: 0, bestTimed: false },
+  { name: "Bloodhilt", realm: "Draenor", role: "T", classId: 6, ilvl: 284, group: 5, bestLevel: 0, bestTimed: false },
 ];
 
-/** What the backend returns for them -- the strip itself no longer carries any of this. */
+/** What the backend adds on top of the strip. Item level is deliberately a point higher than
+ *  the strip's: in game the API lags a gear swap, and the row must keep showing the live one. */
 const CHARACTERS: Record<string, { class: string; ilvl: number; rio: number }> = {
-  Frostvyre: { class: "MAGE", ilvl: 302, rio: 0 },
-  Bearlyalive: { class: "DRUID", ilvl: 299, rio: 2884 },
-  Lightwarden: { class: "PRIEST", ilvl: 297, rio: 2705 },
-  Soulrend: { class: "WARLOCK", ilvl: 295, rio: 2611 },
-  Emberhoof: { class: "PALADIN", ilvl: 293, rio: 2450 },
-  Quickshot: { class: "HUNTER", ilvl: 288, rio: 2201 },
-  Bloodhilt: { class: "DEATHKNIGHT", ilvl: 284, rio: 1840 },
+  Frostvyre: { class: "MAGE", ilvl: 303, rio: 0 },
+  Bearlyalive: { class: "DRUID", ilvl: 300, rio: 2884 },
+  Lightwarden: { class: "PRIEST", ilvl: 298, rio: 2705 },
+  Soulrend: { class: "WARLOCK", ilvl: 296, rio: 2611 },
+  Emberhoof: { class: "PALADIN", ilvl: 294, rio: 2450 },
+  Quickshot: { class: "HUNTER", ilvl: 289, rio: 2201 },
+  Bloodhilt: { class: "DEATHKNIGHT", ilvl: 285, rio: 1840 },
 };
 
 const SPECS: Record<string, string> = { MAGE: "Fire", DRUID: "Guardian", PRIEST: "Holy", WARLOCK: "Destruction", PALADIN: "Retribution", HUNTER: "Beast Mastery", DEATHKNIGHT: "Blood" };

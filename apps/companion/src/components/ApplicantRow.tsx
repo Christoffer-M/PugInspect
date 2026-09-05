@@ -1,9 +1,9 @@
 import type { CSSProperties } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
+import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
 import { DEFAULT_RAID } from "../generated/seasonConfig";
 import type { RosterEntry } from "../api";
-import type { Applicant, Lookup } from "../state";
+import { CLASS_BY_ID, type Applicant, type Lookup } from "../state";
 import app from "../App.module.css";
 import classes from "./Applicants.module.css";
 
@@ -52,11 +52,13 @@ export function ApplicantRow({
 }) {
   const c = lookup?.entry?.character;
   const notFound = lookup?.entry?.notFound === true;
-  const className = c?.class;
+  const className = c?.class ?? CLASS_FILE_NAMES[CLASS_BY_ID[a.classId] ?? ""];
   const color = getClassColor(className);
   const rio = c?.raiderIo?.currentSeason?.all;
   const prog = progOf(lookup?.entry, difficulty);
-  const ilvl = c?.equippedItemLevel;
+  // The game is the authority here: its value is live where the API's comes from an hourly
+  // snapshot. The lookup only fills in when the game had nothing to report.
+  const ilvl = a.ilvl || c?.equippedItemLevel;
   const loading = lookup?.state === "loading";
   const isKeys = difficulty === "+";
   // Already scoped to the listing (M+ parses for keys, raid parses otherwise).
@@ -100,7 +102,7 @@ export function ApplicantRow({
         </span>
       </div>
       <span className={classes.value} style={{ color: ilvl ? "var(--pi-text-bright)" : DIM }}>
-        {loading ? skeleton : ilvl || "-"}
+        {ilvl || (loading ? skeleton : "-")}
       </span>
       <span className={classes.value} style={{ color: rio?.color ?? DIM }}>
         {loading ? skeleton : Math.round(rio?.score ?? 0) || "-"}
