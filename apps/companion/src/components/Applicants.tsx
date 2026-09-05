@@ -18,6 +18,9 @@ const DIFF_LABEL: Record<string, { text: string; color: string }> = {
 const clock = (t: number) =>
   new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+/** The addon's pixel strip carries at most this many applicants. */
+const STRIP_CAP = 20;
+
 export function Applicants({
   session,
   lookups,
@@ -50,11 +53,14 @@ export function Applicants({
             </Group>
           </Stack>
           <Stack gap={1} align="flex-end" style={{ whiteSpace: "nowrap" }}>
-            <span className={classes.count}>{total}</span>
-            {/* The addon caps the strip at 20 lines, so say when rows are missing
-                rather than quietly reporting a smaller count than the game shows. */}
+            {/* The addon caps the strip at STRIP_CAP lines, so show the count against
+                that cap and say how many the game has when rows are missing. */}
+            <span className={classes.count}>
+              {shown}
+              <span className={classes.countMax}>/{STRIP_CAP}</span>
+            </span>
             <span className={app.label}>
-              {truncated ? `showing ${shown}` : total === 1 ? "applicant" : "applicants"}
+              {truncated ? `of ${total} pending` : shown === 1 ? "applicant" : "applicants"}
             </span>
           </Stack>
         </Group>

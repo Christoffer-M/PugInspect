@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Text } from "@mantine/core";
+import { ActionIcon, Group } from "@mantine/core";
 import { IconArrowLeft, IconMinus, IconSettings, IconSquare, IconX } from "@tabler/icons-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import app from "../App.module.css";
@@ -25,11 +25,7 @@ export function Titlebar({ tone, onBack, onSettings }: Props) {
           <span className={`${app.dot} ${dot}`} style={{ animation: "none" }} />
         )}
         <span className={classes.brand}>{onBack ? "Settings" : "PugInspect"}</span>
-        {!onBack && (
-          <Text size="10.5px" c="dark.3">
-            Companion
-          </Text>
-        )}
+        {!onBack && <span className={classes.sub}>Companion</span>}
       </Group>
       <div className={classes.controls}>
         {onSettings && (

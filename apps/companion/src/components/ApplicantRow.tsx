@@ -1,5 +1,8 @@
 import type { CSSProperties } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import roleDps from "../assets/role-dps.png";
+import roleHealer from "../assets/role-healer.png";
+import roleTank from "../assets/role-tank.png";
 import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
 import { DEFAULT_RAID } from "../generated/seasonConfig";
 import type { RosterEntry } from "../api";
@@ -8,6 +11,20 @@ import app from "../App.module.css";
 import classes from "./Applicants.module.css";
 
 const DIM = "var(--mantine-color-dark-2)";
+
+/** The game's own Group Finder role icons. */
+const ROLE_ICONS = {
+  T: [roleTank, "Tank"],
+  H: [roleHealer, "Healer"],
+  D: [roleDps, "DPS"],
+} as const;
+
+function RoleBadge({ role }: { role: Applicant["role"] }) {
+  const hit = ROLE_ICONS[role as keyof typeof ROLE_ICONS];
+  if (!hit) return <span className={classes.role}>·</span>;
+  const [src, label] = hit;
+  return <img className={classes.role} src={src} alt={label} title={label} />;
+}
 
 /** "TarrenMill" → "Tarren Mill" via the slug; good enough for a subtitle. */
 const prettyRealm = (realm: string) =>
@@ -81,7 +98,7 @@ export function ApplicantRow({
       }}
       href="#"
     >
-      <span className={classes.role}>{a.role || "·"}</span>
+      <RoleBadge role={a.role} />
       <div className={classes.ident}>
         <div className={classes.nameLine}>
           <span className={classes.name}>{a.name}</span>
