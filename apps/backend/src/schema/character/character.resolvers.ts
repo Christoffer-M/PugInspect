@@ -5,6 +5,7 @@ import {
   QueryCharacterArgs,
   QueryCharacterSuggestionsArgs,
   QueryZonePartitionsArgs,
+  RosterCharacterInput,
 } from "@repo/graphql-types";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
@@ -185,7 +186,7 @@ export default {
       _: unknown,
       args: {
         region: string;
-        characters: { name: string; realm: string }[];
+        characters: RosterCharacterInput[];
         difficulty?: Difficulty | null;
         zoneId?: number | null;
       },

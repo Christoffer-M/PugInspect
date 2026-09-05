@@ -5,7 +5,7 @@ import { slugRealm } from "@repo/ui";
 import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
 import { track } from "./analytics";
 import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
-import { Difficulty } from "./graphql/graphql";
+import { Difficulty, SpecRole } from "./graphql/graphql";
 
 /** Shapes emitted by src-tauri/src/capture.rs on the "sync" event. */
 /** `group` is the in-game applicant id: members of one group application share it. */
@@ -30,6 +30,14 @@ export type Applicant = {
   bestLevel: number;
   bestTimed: boolean;
 };
+/** Strip role letter to the backend's SpecRole; "" (unknown) sends nothing. */
+const SPEC_ROLE: Record<Applicant["role"], SpecRole | undefined> = {
+  T: SpecRole.Tank,
+  H: SpecRole.Healer,
+  D: SpecRole.Dps,
+  "": undefined,
+};
+
 export type Frame = {
   hb: number;
   region: string;
@@ -112,7 +120,10 @@ export function useCompanion(events: Events) {
       try {
         const entries = await lookupCharacters(
           region,
-          chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm) })),
+          // Send the role the applicant signed up as: their active spec can say
+          // otherwise (a healer Evoker sitting in Devastation), and the backend
+          // picks the parse metric from this.
+          chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm), role: SPEC_ROLE[a.role] })),
           isKeys ? { zoneId: MYTHIC_PLUS_ZONE_ID } : { difficulty }
         );
         setLookups((l) => {
