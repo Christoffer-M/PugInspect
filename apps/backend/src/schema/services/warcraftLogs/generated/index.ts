@@ -2021,6 +2021,10 @@ export type ReportFight = {
   classicSeasonID?: Maybe<Scalars['Int']['output']>;
   /** Whether or not a fight represents an entire raid from start to finish, e.g., in Classic WoW a complete run of Blackwing Lair. */
   completeRaid: Scalars['Boolean']['output'];
+  /** The enemy forces count reached by the end of a keystone dungeon. */
+  countReached?: Maybe<Scalars['Int']['output']>;
+  /** The enemy forces count required to complete a keystone dungeon. */
+  countRequired?: Maybe<Scalars['Int']['output']>;
   /** The difficulty setting for the raid, dungeon, or arena. Null for trash. */
   difficulty?: Maybe<Scalars['Int']['output']>;
   /** For a dungeon, a list of pulls that occurred in the dungeon. Pulls have details such as the enemies involved in the pull and map info showing where the pull took place. */
@@ -2077,6 +2081,8 @@ export type ReportFight = {
   maps?: Maybe<Array<Maybe<ReportMap>>>;
   /** The name of the fight. */
   name: Scalars['String']['output'];
+  /** A mapping from NPC ids to enemy forces count provided on kill. */
+  npcCountMap?: Maybe<Scalars['JSON']['output']>;
   /** Some boss fights may be converted to trash fights (encounterID = 0). When this occurs, `originalEncounterID` contains the original ID of the encounter. */
   originalEncounterID?: Maybe<Scalars['Int']['output']>;
   /** List of observed phase transitions during the fight. */
