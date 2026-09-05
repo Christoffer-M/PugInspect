@@ -372,6 +372,35 @@ describe("Roster Check", () => {
     expect(wclCalls.find(([a]) => a.name === "pugsley")?.[0].metric).toBeUndefined();
   });
 
+  it("prefers the caller's role over the active spec when picking the metric", async () => {
+    // A healer Evoker sitting in Devastation: the spec says DPS, the applicant signed up as a healer.
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile: {
+        ...blizzardProfile,
+        character_class: { name: "Evoker" },
+        active_spec: { name: "Devastation" },
+      } as unknown as BlizzardCharacterProfile,
+      blizzardAvatarUrl: null,
+      rioProfile,
+      warcraftLogsProfile: undefined,
+      characterId: "char-uuid-1",
+      equipment: undefined,
+    });
+
+    const result = await execute(ROSTER_CHARACTERS_QUERY, {
+      region: "eu",
+      characters: [{ name: "Scaleheal", realm: "Kazzak", role: "HEALER" }],
+      difficulty: "Heroic",
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect((result.data!.rosterCharacters as Array<Record<string, unknown>>)[0]).toMatchObject({
+      role: "HEALER",
+    });
+    const wclCalls = vi.mocked(WarcraftLogsService.getCharacterProfile).mock.calls;
+    expect(wclCalls.find(([a]) => a.name === "scaleheal")?.[0].metric).toBe("hps");
+  });
+
   it("returns a 1:1 response, mapping duplicates to notFound placeholders", async () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile,

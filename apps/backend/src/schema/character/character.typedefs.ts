@@ -47,6 +47,13 @@ export const characterTypedefs = gql`
   input RosterCharacterInput {
     name: String!
     realm: String!
+    """
+    Role the character is being considered as - the Group Finder role an
+    applicant signed up with, which the spec does not always imply (a healer
+    Evoker in Devastation gear applies as a healer). Decides whether parses
+    are ranked on healing or damage; falls back to the active spec's role.
+    """
+    role: SpecRole
   }
 
   type RosterCharacterKey {

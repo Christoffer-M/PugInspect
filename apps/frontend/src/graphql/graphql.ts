@@ -397,6 +397,13 @@ export type Roster = {
 export type RosterCharacterInput = {
   name: Scalars['String']['input'];
   realm: Scalars['String']['input'];
+  /**
+   * Role the character is being considered as - the Group Finder role an
+   * applicant signed up with, which the spec does not always imply (a healer
+   * Evoker in Devastation gear applies as a healer). Decides whether parses
+   * are ranked on healing or damage; falls back to the active spec's role.
+   */
+  role?: InputMaybe<SpecRole>;
 };
 
 export type RosterCharacterKey = {

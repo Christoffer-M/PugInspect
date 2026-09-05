@@ -95,13 +95,14 @@ export async function getRosterProfiles(
     // upstream URLs or cache keys.
     const skip = !name || !realm || name.length > 50 || realm.length > 100 || seen.has(key);
     if (!skip) seen.add(key);
-    return { name, realm, skip };
+    return { name, realm, skip, role: c.role ?? null };
   });
 
   const lookupOne = async (c: {
     name: string;
     realm: string;
     skip: boolean;
+    role: SpecRole | null;
   }): Promise<RosterProfileBundle> => {
     if (c.skip) return { name: c.name, realm: c.realm, role: null, profiles: EMPTY_PROFILES };
     const charArgs = {
@@ -124,7 +125,9 @@ export async function getRosterProfiles(
       cacheOnly: options.cacheOnly,
     });
 
-    const role = roleForProfiles(profiles);
+    // The caller's role wins: the companion knows which role an applicant
+    // signed up as, which the active spec can contradict.
+    const role = c.role ?? roleForProfiles(profiles);
     const found = profiles.blizzardProfile || profiles.rioProfile;
 
     // Phase 2: WCL parses, only for characters that exist - sequenced after

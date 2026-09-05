@@ -1,7 +1,7 @@
 // Copy of apps/frontend/src/api/graphqlClient.ts, plus the roster query.
 // Copied, not shared: sharing would drag the frontend's codegen output along.
 import { graphql } from "./graphql";
-import type { Difficulty, RosterCharactersRaidQuery } from "./graphql/graphql";
+import type { Difficulty, RosterCharacterInput, RosterCharactersRaidQuery } from "./graphql/graphql";
 
 const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL ?? "https://puginspect.com/graphql";
 
@@ -67,7 +67,7 @@ export const CHUNK_SIZE = 10;
 /** Raid listings pass a difficulty; M+ listings pass the season's WCL zone. */
 export async function lookupCharacters(
   region: string,
-  characters: { name: string; realm: string }[],
+  characters: RosterCharacterInput[],
   scope: { difficulty?: Difficulty } | { zoneId?: number }
 ): Promise<RosterEntry[]> {
   const keys = "zoneId" in scope;
