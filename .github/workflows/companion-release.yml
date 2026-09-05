@@ -42,6 +42,14 @@ jobs:
             echo "Tag $GITHUB_REF_NAME does not match apps/companion/package.json version $v — bump the version, delete the tag, re-tag."
             exit 1
           fi
+          # Cargo.toml is not read for the app version, but a stale one shows up
+          # in the exe's file properties and in crash output. It drifted four
+          # releases before anyone noticed.
+          c=$(grep -m1 '^version = ' apps/companion/src-tauri/Cargo.toml | cut -d'"' -f2)
+          if [ "$c" != "$v" ]; then
+            echo "apps/companion/src-tauri/Cargo.toml says $c, package.json says $v — bump both."
+            exit 1
+          fi
 
       - name: Release notes from CHANGELOG
         id: notes

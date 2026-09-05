@@ -4,6 +4,12 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.5.0
+
+- Applicants now show the game's own role icons for tank, healer and damage.
+- Launching the app while it is already running brings the existing window to the front instead
+  of opening a second one.
+
 ## 0.4.0
 
 - The strip takes up much less of the screen: a full applicant list is two 4px rows instead of

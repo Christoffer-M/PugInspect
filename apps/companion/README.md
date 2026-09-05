@@ -48,8 +48,8 @@ demand `TAURI_SIGNING_PRIVATE_KEY` otherwise. Signed builds come from the releas
 
 ## Release
 
-1. Bump `version` in `package.json` (`tauri.conf.json` reads it from there) and push a
-   matching `companion-vX.Y.Z` tag. `companion-release.yml` builds, signs and creates a
+1. Bump `version` in `package.json` (`tauri.conf.json` reads it from there) and in
+   `src-tauri/Cargo.toml`, then push a matching `companion-vX.Y.Z` tag. `companion-release.yml` builds, signs and creates a
    **draft** release — the tag/version match is checked in CI.
 2. Smoke-test the installer from the draft's assets, then click **Publish** in the GitHub
    UI. That fires `companion-promote.yml`, which copies `latest.json` to the rolling
