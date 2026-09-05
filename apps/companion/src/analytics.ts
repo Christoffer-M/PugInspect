@@ -24,14 +24,22 @@ function installId(): string {
 }
 
 /** What the app is doing right now; App.tsx keeps this current. */
-type Snapshot = { link: Link; listing: string; region: string | null; applicants: number; total: number };
-let snapshot: Snapshot = { link: "no_window", listing: "", region: null, applicants: 0, total: 0 };
+type Snapshot = {
+  link: Link;
+  listing: string;
+  region: string | null;
+  applicants: number;
+  total: number;
+  /** Version the updater has found and not installed yet, null when current. */
+  updatePending: string | null;
+};
+let snapshot: Snapshot = { link: "no_window", listing: "", region: null, applicants: 0, total: 0, updatePending: null };
 export function reportState(next: Snapshot): void {
   snapshot = next;
 }
 
 /** Counted since the last beat, then reset — the beat carries deltas, not totals. */
-const counters = { lookups: 0, lookupErrors: 0, notFound: 0 };
+const counters = { lookups: 0, lookupErrors: 0, notFound: 0, updateFailures: 0 };
 export function count(key: keyof typeof counters, n = 1): void {
   counters[key] += n;
 }
@@ -44,7 +52,12 @@ export function count(key: keyof typeof counters, n = 1): void {
  *  trigger a preflight the endpoint doesn't answer, dropping every beat.
  *  text/plain is CORS-safelisted, so it goes out as a simple request; the
  *  blocked response doesn't matter, nothing reads it. The backend parses with
- *  express.json({ type: "*\/*" }). */
+ *  express.json({ type: "*\/*" }).
+ *
+ *  Deliberately no X-PugInspect-Client header, unlike api.ts: a custom header
+ *  is not CORS-safelisted and would force the same preflight this avoids. The
+ *  path identifies the companion on its own — nothing else calls it — which is
+ *  all the Cloudflare WAF rule needs. */
 function beat(): void {
   const settings = loadSettings();
   if (!import.meta.env.PROD || !settings.analytics) return;
@@ -58,6 +71,7 @@ function beat(): void {
   counters.lookups = 0;
   counters.lookupErrors = 0;
   counters.notFound = 0;
+  counters.updateFailures = 0;
   fetch(ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },

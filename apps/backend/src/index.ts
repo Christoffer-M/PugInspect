@@ -9,7 +9,7 @@ import characterResolvers from "./schema/character/character.resolvers.js";
 import { config } from "./config/index.js";
 import { initDb } from "./db/index.js";
 import { runMigrations } from "./db/migrate.js";
-import { parseBeat, pruneCompanionBeats, recordCompanionBeat } from "./db/companion.js";
+import { parseBeat, pruneCompanionTelemetry, recordCompanionBeat } from "./db/companion.js";
 import express from "express";
 import cors from "cors";
 import { isbot } from "isbot";
@@ -323,6 +323,11 @@ app.post(
 // reports here instead. Same text/plain trick as /api/send: this is a
 // cross-origin POST from tauri.localhost and application/json would trigger a
 // preflight that fails, so the body arrives as a CORS-safelisted simple request.
+// Deliberately not behind companionGate. COMPANION_MIN_VERSION exists to stop
+// old builds spending upstream API quota, and a beat spends none — it is one
+// bounded insert. Gating it would 403 exactly the stranded installs that
+// activated_at and update_pending exist to find, so the emergency lever for
+// this path is the Cloudflare WAF rule instead (docs/COMPANION_ABUSE_RUNBOOK.md).
 const beatRateLimiter = createRateLimiter(60, 60_000);
 
 app.post(
@@ -408,9 +413,9 @@ app.get("/card/:region/:realm/:name", cardRateLimiter, async (req, res) => {
   res.end(png);
 });
 
-// Beats are only kept for 90 days; install rows live forever.
-pruneCompanionBeats();
-setInterval(pruneCompanionBeats, 24 * 60 * 60 * 1000);
+// Beats are kept 90 days, install rows 24 months after they go quiet.
+pruneCompanionTelemetry();
+setInterval(pruneCompanionTelemetry, 24 * 60 * 60 * 1000);
 
 app.listen({ port: config.port });
 

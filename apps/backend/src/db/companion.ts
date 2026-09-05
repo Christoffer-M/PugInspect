@@ -5,8 +5,12 @@ import { createLogger } from "../schema/utils/logger.js";
 
 const logger = createLogger({ service: "CompanionTelemetry" });
 
-/** Beats older than this are dropped; companion_installs keeps the long history. */
+/** Beats older than this are dropped; the install row keeps the long history. */
 const RETAIN_DAYS = 90;
+/** Install rows untouched for this long are dropped too. Long enough that
+ *  year-over-year retention still works, short enough to be a real limit we
+ *  can state in the privacy policy rather than "indefinitely". */
+const INSTALL_RETAIN_DAYS = 730;
 
 const LINKS = ["ok", "no_window", "lost", "incompatible", "addon_outdated", "app_outdated"];
 const LISTINGS = ["", "raid:N", "raid:H", "raid:M", "keys"];
@@ -23,6 +27,8 @@ export type CompanionBeatInput = {
   lookups: number;
   lookupErrors: number;
   notFound: number;
+  updateFailures: number;
+  updatePending: string | null;
   settings: Record<string, boolean | string>;
 };
 
@@ -51,7 +57,14 @@ export function parseBeat(body: unknown): CompanionBeatInput | null {
   const lookups = int(b.lookups);
   const lookupErrors = int(b.lookupErrors);
   const notFound = int(b.notFound);
-  if (applicants === null || total === null || lookups === null || lookupErrors === null || notFound === null) return null;
+  const updateFailures = int(b.updateFailures);
+  if (applicants === null || total === null || lookups === null || lookupErrors === null || notFound === null || updateFailures === null)
+    return null;
+
+  // Absent or unparseable is "nothing pending", which is the common case and
+  // must not cost us the whole beat.
+  const updatePending =
+    typeof b.updatePending === "string" && /^\d{1,4}\.\d{1,4}\.\d{1,4}$/.test(b.updatePending) ? b.updatePending : null;
 
   // Settings is a snapshot of the companion's own toggles: a small flat object.
   // Bounded in both key count and value size so it can't be used as free storage.
@@ -66,7 +79,7 @@ export function parseBeat(body: unknown): CompanionBeatInput | null {
     else return null;
   }
 
-  return { installId: b.installId, version: b.version, link: b.link, listing: b.listing, region, applicants, total, lookups, lookupErrors, notFound, settings };
+  return { installId: b.installId, version: b.version, link: b.link, listing: b.listing, region, applicants, total, lookups, lookupErrors, notFound, updateFailures, updatePending, settings };
 }
 
 /** Fire-and-forget: upsert the install row, append the beat. Telemetry must
@@ -119,6 +132,8 @@ export async function recordCompanionBeat(beat: CompanionBeatInput, country: str
       lookups: beat.lookups,
       lookupErrors: beat.lookupErrors,
       notFound: beat.notFound,
+      updateFailures: beat.updateFailures,
+      updatePending: beat.updatePending,
       settings: beat.settings,
     });
   } catch (err) {
@@ -126,13 +141,22 @@ export async function recordCompanionBeat(beat: CompanionBeatInput, country: str
   }
 }
 
-/** Drops beats past the retention window. Install rows are kept forever. */
-export async function pruneCompanionBeats(): Promise<void> {
+/** Drops beats past the retention window, and install rows that have gone quiet
+ *  for good. Installs outlive their beats by design: the row is what counts an
+ *  install, the beats are what describe a session. */
+export async function pruneCompanionTelemetry(): Promise<void> {
   try {
     await getDb()
       .delete(companionBeats)
       .where(lt(companionBeats.at, new Date(Date.now() - RETAIN_DAYS * 86_400_000)));
   } catch (err) {
     logger.error("Prune failed (companion beats)", { error: String(err) });
+  }
+  try {
+    await getDb()
+      .delete(companionInstalls)
+      .where(lt(companionInstalls.lastSeen, new Date(Date.now() - INSTALL_RETAIN_DAYS * 86_400_000)));
+  } catch (err) {
+    logger.error("Prune failed (companion installs)", { error: String(err) });
   }
 }

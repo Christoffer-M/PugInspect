@@ -475,6 +475,14 @@ export const companionBeats = pgTable(
     lookups: integer("lookups").notNull(),
     lookupErrors: integer("lookup_errors").notNull(),
     notFound: integer("not_found").notNull(),
+    /** Auto-update installs that errored since the last beat. A silently failing
+     *  updater is what strands an install on an old build forever. */
+    updateFailures: integer("update_failures").notNull().default(0),
+    /** Version this install knows about but has not taken, null when current.
+     *  Paired with `version` it names the stranded installs outright: on 0.5.0,
+     *  aware of 0.5.2, still here. On Windows a successful update relaunches the
+     *  app, so success is never observable in a beat — only the failure to take one. */
+    updatePending: varchar("update_pending", { length: 16 }),
     /** Settings snapshot: which features are actually load-bearing. */
     settings: jsonb("settings").$type<Record<string, boolean | string>>().notNull(),
   },

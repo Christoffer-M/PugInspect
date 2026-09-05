@@ -4,15 +4,25 @@ The companion posts one beat every 30 minutes to `POST /api/companion/beat`
 while it runs, gated on the "Send anonymous usage statistics" setting. Two
 tables back it (`apps/backend/src/db/schema.ts`):
 
-- `companion_installs` — one row per install, upserted per beat, never pruned.
+- `companion_installs` — one row per install, upserted per beat, dropped 24
+  months after the install goes quiet.
 - `companion_beats` — one row per beat, pruned at 90 days.
+
+`./scripts/telemetry.sh [installs|versions|health|retention|usage]` runs the
+reports below against the running stack. Prod Postgres is not published off the
+compose network, so run it on the host. Keep the script and this file in step.
 
 Umami is still the website's analytics and is not involved here. It cannot
 count installs: its visitor id is a hash of IP + user-agent under a
 daily-rotating salt, and two Tauri webviews on Windows are indistinguishable.
 
-There is deliberately no dashboard yet — the queries below are it. Build a
-`/stats` panel when a curve is worth looking at.
+There is deliberately no dashboard yet — the script and the queries below are
+it. Build a `/stats` panel when a curve is worth looking at.
+
+The beat endpoint is deliberately not behind `COMPANION_MIN_VERSION`: it spends
+no upstream quota, and gating it would silence exactly the stranded installs
+this data exists to find. The emergency lever for it is the Cloudflare WAF rule
+in `COMPANION_ABUSE_RUNBOOK.md`, which matches the path alone.
 
 ## Install base
 
@@ -40,6 +50,17 @@ from companion_installs group by 1 order by 1 desc limit 30;
 -- Version adoption right now — how fast the auto-updater actually lands.
 select version, count(*) from companion_installs
 where last_seen > now() - interval '7 days' group by 1 order by 2 desc;
+```
+
+```sql
+-- Stranded installs: they know a newer build exists and still have not taken it.
+-- On Windows a successful update relaunches the app, so success never reaches a
+-- beat — update_pending and update_failures are the only view of the updater.
+select b.version, b.update_pending, count(distinct b.install_id) as installs,
+       sum(b.update_failures) as failed_attempts
+from companion_beats b
+where b.at > now() - interval '7 days' and b.update_pending is not null
+group by 1, 2 order by installs desc;
 ```
 
 Cross-check installs against downloads for the uninstall/opt-out gap:
@@ -125,6 +146,5 @@ privacy policy names it. Raw IP is resolved to a country at the edge by
 Cloudflare (`cf-ipcountry`) and discarded.
 
 Not yet instrumented, in rough order of value: pixel-decode CRC failure rate
-(`src-tauri/src/pixel.rs`, needs plumbing from Rust to the beat), updater
-outcomes (`src/updates.ts` currently swallows failures into `console.warn`),
-and clean-exit detection to tell crashes from quits.
+(`src-tauri/src/pixel.rs`, needs plumbing from Rust to the beat) and clean-exit
+detection to tell crashes from quits.

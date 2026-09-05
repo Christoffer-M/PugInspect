@@ -100,6 +100,8 @@ export default function App() {
 
   // Feed the telemetry beat: it fires on a half-hour timer of its own, so it
   // reads whatever the last render left here rather than sending per change.
+  // Keyed on the version string, not newRelease — that object is new every render.
+  const pendingVersion = newRelease?.version ?? null;
   useEffect(() => {
     reportState({
       link,
@@ -107,8 +109,9 @@ export default function App() {
       region: session?.region ?? null,
       applicants: session?.applicants.length ?? 0,
       total: session?.total ?? 0,
+      updatePending: pendingVersion,
     });
-  }, [link, session]);
+  }, [link, session, pendingVersion]);
 
   const mismatch = link === "incompatible" || link === "addon_outdated" || link === "app_outdated";
   // The addon only paints while a listing is up, so "no frames" is only a problem

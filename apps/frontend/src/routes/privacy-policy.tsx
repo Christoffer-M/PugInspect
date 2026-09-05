@@ -54,6 +54,11 @@ const PrivacyPolicy: React.FC = () => {
               </List.Item>
               <List.Item>Which of the app&rsquo;s own settings are enabled</List.Item>
               <List.Item>
+                Whether an application update is waiting to be installed, and
+                how many update attempts have failed, so we can tell when the
+                updater is leaving people stranded on an old version
+              </List.Item>
+              <List.Item>
                 The country your connection comes from. Your IP address is used
                 to determine this and is then discarded &mdash; it is never
                 stored.
@@ -92,9 +97,9 @@ const PrivacyPolicy: React.FC = () => {
             <Text>
               Website analytics data is retained only as long as necessary for
               statistical analysis. Individual companion reports are deleted
-              after 90 days; the installation identifier and the dates it was
-              first and last seen are kept for as long as we measure how many
-              people use the app.
+              after 90 days. The installation identifier and the dates it was
+              first and last seen are kept for 24 months after the last report,
+              so that year-on-year usage can be compared, and are then deleted.
             </Text>
           </Stack>
 

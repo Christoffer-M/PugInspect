@@ -32,12 +32,18 @@ Expression (recreate if missing; action **Block**, keep it disabled until
 needed):
 
 ```
-http.request.uri.path eq "/graphql" and starts_with(http.request.headers["x-puginspect-client"][0], "companion")
+http.request.uri.path eq "/api/companion/beat"
+or (http.request.uri.path eq "/graphql" and starts_with(http.request.headers["x-puginspect-client"][0], "companion"))
 ```
 
-Caveat: companion builds older than v0.2.0 (pre-header) don't match this
-rule. If old builds are the problem, use lever 2, or a temporary Cloudflare
-rate-limiting rule on `/graphql`.
+The telemetry path is matched on the path alone, with no client header: a
+custom header is not CORS-safelisted and would force a preflight the endpoint
+does not answer, dropping every beat (see PR #69). Nothing but the companion
+posts there, so the path is identification enough.
+
+Caveat: companion builds older than v0.2.0 (pre-header) don't match the
+`/graphql` clause. If old builds are the problem, use lever 2, or a temporary
+Cloudflare rate-limiting rule on `/graphql`.
 
 ### 2. `COMPANION_MIN_VERSION` — precise, needs a restart
 
@@ -54,6 +60,11 @@ user a bare "HTTP 403"; the in-app auto-updater carries them forward.
 
 Use this to cut off a specific bad release while newer builds keep working —
 set it to the version *after* the bad one. Unset it (and restart) to lift.
+
+This gate covers `/graphql` only, deliberately. `/api/companion/beat` spends no
+upstream quota — it is one bounded insert — and 403-ing it would silence
+exactly the stranded installs that `activated_at` and `update_pending` exist to
+find. Lever 1 is the emergency control for that path.
 
 ### 3. Always-on backstops — nothing to flip
 

@@ -12,6 +12,8 @@ const valid = {
   lookups: 14,
   lookupErrors: 0,
   notFound: 1,
+  updateFailures: 0,
+  updatePending: null,
   settings: { sound: false, closeAction: "hide" },
 };
 
@@ -27,6 +29,18 @@ describe("parseBeat", () => {
     expect(parseBeat({ ...valid, link: "no_window", listing: "", region: null })).not.toBeNull();
   });
 
+  it("keeps a pending update version", () => {
+    expect(parseBeat({ ...valid, updatePending: "0.6.0" })?.updatePending).toBe("0.6.0");
+  });
+
+  // Nothing pending is the common case, so a junk value must cost the field,
+  // never the beat -- otherwise a client bug here blinds every other metric.
+  it("drops an unparseable pending version rather than the whole beat", () => {
+    const beat = parseBeat({ ...valid, updatePending: "latest" });
+    expect(beat).not.toBeNull();
+    expect(beat!.updatePending).toBeNull();
+  });
+
   // The endpoint is public and unauthenticated, so every rejection below is the
   // difference between a bounded column and attacker-controlled storage.
   it.each([
@@ -39,6 +53,8 @@ describe("parseBeat", () => {
     ["a fractional counter", { ...valid, lookups: 1.5 }],
     ["an absurd counter", { ...valid, lookups: 10_000_000 }],
     ["a missing counter", { ...valid, notFound: undefined }],
+    ["a missing update counter", { ...valid, updateFailures: undefined }],
+    ["a negative update counter", { ...valid, updateFailures: -3 }],
     ["settings used as free storage", { ...valid, settings: { k: "x".repeat(64) } }],
     ["nested settings", { ...valid, settings: { nested: { a: 1 } } }],
     ["too many settings keys", { ...valid, settings: Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`k${i}`, true])) }],
