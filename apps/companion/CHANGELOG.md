@@ -4,6 +4,12 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.5.1
+
+- Parses now match the role an applicant signed up as. A healer sitting in a damage spec --
+  a Devastation-specced Evoker applying as a healer, say -- was showing damage parses; the
+  role from the Group Finder now decides which numbers are looked up.
+
 ## 0.5.0
 
 - Applicants now show the game's own role icons for tank, healer and damage.
