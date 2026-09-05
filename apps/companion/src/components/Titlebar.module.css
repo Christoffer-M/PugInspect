@@ -16,6 +16,14 @@
   font-weight: 600;
   color: var(--mantine-color-dark-0);
   letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* Same line-height as .brand so the two sit on one baseline, not centred boxes. */
+.sub {
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--mantine-color-dark-3);
 }
 
 .controls {
