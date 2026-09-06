@@ -5,4 +5,4 @@
 
 export const DEFAULT_RAID = "the-venomous-abyss";
 /** WCL zone of the current Mythic+ season, for M+ parse lookups. */
-export const MYTHIC_PLUS_ZONE_ID: number | undefined = 55;
+export const MYTHIC_PLUS_ZONE_ID: number | undefined = undefined;
