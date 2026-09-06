@@ -4,4 +4,32 @@
 User-agent: *
 Disallow: /*?
 
+# Answer engines are welcome: this is a public reference site with no login and
+# no user data, and being cited in an AI answer is the same win as ranking in a
+# search result. A named group replaces the * group outright for that agent, so
+# each one repeats the query-string rule instead of inheriting it.
+#
+# Robots-token-only agents (Google-Extended, Applebot-Extended) have no crawler
+# of their own — they gate whether an already-crawled page may be used for AI
+# training and grounding, so allowing them costs no extra crawl budget.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: meta-externalagent
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+User-agent: cohere-ai
+User-agent: YouBot
+Allow: /
+Disallow: /*?
+
+# Prose summary of the site for answer engines: https://puginspect.com/llms.txt
 Sitemap: https://puginspect.com/sitemap.xml
