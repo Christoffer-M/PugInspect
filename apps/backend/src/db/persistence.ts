@@ -157,54 +157,7 @@ export async function persistRioProfile(
   }
 }
 
-export type CharacterMetaSnapshot = {
-  name: string;
-  realm: string;
-  class: string | null;
-  specialization: string | null;
-  race: string | null;
-  itemLevel: number | null;
-  mythicPlusScore: number | null;
-};
-
-/**
- * Lightweight character lookup for SEO meta tags. Deliberately ignores
- * expiresAt — stale data is fine for a meta description, and bot crawls
- * must never trigger upstream API fetches.
- */
-export async function getCharacterMetaSnapshot(
-  key: CharacterKey
-): Promise<CharacterMetaSnapshot | null> {
-  try {
-    const rows = await getDb()
-      .select({
-        name: characters.name,
-        realm: characters.realm,
-        class: characters.class,
-        specialization: characters.specialization,
-        race: characters.race,
-        itemLevel: characters.itemLevel,
-        mythicPlusScore: characterRioSnapshots.mythicPlusScore,
-      })
-      .from(characters)
-      .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
-      .where(
-        and(
-          eq(characters.region, key.region),
-          eq(characters.realm, key.realm),
-          eq(characters.name, key.name)
-        )
-      )
-      .limit(1);
-
-    return rows[0] ?? null;
-  } catch (err) {
-    logger.error("DB read failed (meta snapshot)", { key, error: String(err) });
-    return null;
-  }
-}
-
-export type CharacterCardSnapshot = {
+export type CharacterSeoSnapshot = {
   name: string;
   realm: string;
   region: string;
@@ -220,13 +173,14 @@ export type CharacterCardSnapshot = {
 };
 
 /**
- * Everything needed to render the Discord og:image card. Like
- * getCharacterMetaSnapshot, deliberately ignores expiresAt — stale data is
- * fine for a card render, and card requests must never trigger upstream fetches.
+ * Everything the crawler-facing renderers need: the og:image card and the
+ * meta tags plus text summary injected into bot HTML. Deliberately ignores
+ * expiresAt — stale data is fine for either, and neither path may ever
+ * trigger an upstream fetch.
  */
-export async function getCharacterCardSnapshot(
+export async function getCharacterSeoSnapshot(
   key: CharacterKey
-): Promise<CharacterCardSnapshot | null> {
+): Promise<CharacterSeoSnapshot | null> {
   try {
     const rows = await getDb()
       .select({
@@ -262,7 +216,7 @@ export async function getCharacterCardSnapshot(
 
     return rows[0] ?? null;
   } catch (err) {
-    logger.error("DB read failed (card snapshot)", { key, error: String(err) });
+    logger.error("DB read failed (seo snapshot)", { key, error: String(err) });
     return null;
   }
 }

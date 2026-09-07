@@ -1,12 +1,14 @@
 import { config } from "../config/index.js";
 import {
-  getCharacterMetaSnapshot,
+  getCharacterSeoSnapshot,
   getRosterBySlug,
-  type CharacterMetaSnapshot,
+  type CharacterSeoSnapshot,
 } from "../db/persistence.js";
 import { normalizeName, normalizeRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
+import { currentRaidProgress } from "./raidProgress.js";
+import { DEFAULT_RAID } from "../generated/seasonConfig.js";
 
 const logger = createLogger({ service: "CharacterMeta" });
 
@@ -14,6 +16,7 @@ const MAX_NAME_LENGTH = 50;
 const MAX_REALM_LENGTH = 100;
 const TEMPLATE_TTL_MS = 5 * 60_000;
 const SEO_BLOCK = /<!--seo:start-->[\s\S]*?<!--seo:end-->/;
+const BODY_BLOCK = /<!--body:start-->[\s\S]*?<!--body:end-->/;
 
 const GENERIC_DESCRIPTION =
   "View gear, Raider.IO score, raid progression and Mythic+ runs.";
@@ -58,7 +61,7 @@ async function getIndexHtml(): Promise<string | null> {
 }
 
 function buildDescription(
-  snapshot: CharacterMetaSnapshot | null,
+  snapshot: CharacterSeoSnapshot | null,
   displayName: string,
   displayRealm: string,
   region: string
@@ -77,6 +80,75 @@ function buildDescription(
   return details
     ? `${identity} — ${details}. ${GENERIC_DESCRIPTION}`
     : `${identity}. ${GENERIC_DESCRIPTION}`;
+}
+
+/**
+ * The text a crawler actually reads. Answer engines (and any indexer that
+ * doesn't run JavaScript) get an empty <div id="app"> and nothing else, so
+ * the only facts they can quote about a character are the ones written here.
+ *
+ * This goes *inside* #app, and app.tsx calls createRoot on that container, so
+ * a JavaScript-capable client — Googlebot's renderer, or a real visitor whose
+ * user agent trips the nginx bot map — replaces all of it with the real page
+ * on mount. It is a strict subset of what the page shows, never content that
+ * exists only for crawlers.
+ *
+ * Returns null when the character isn't in the DB: with no snapshot there are
+ * no facts, and a page of hedged filler helps nobody.
+ */
+function buildBodySummary(
+  snapshot: CharacterSeoSnapshot | null,
+  displayName: string,
+  displayRealm: string,
+  region: string
+): string | null {
+  if (!snapshot) return null;
+
+  const identity = [snapshot.race, snapshot.specialization, snapshot.class].filter(Boolean).join(" ");
+  const progress = currentRaidProgress(snapshot.raidProgression);
+
+  const facts: [string, string][] = [];
+  if (snapshot.itemLevel != null) facts.push(["Item level", String(Math.round(snapshot.itemLevel))]);
+  if (snapshot.mythicPlusScore != null) {
+    facts.push(["Mythic+ score", String(Math.round(snapshot.mythicPlusScore))]);
+  }
+  if (snapshot.topKeyLevel != null) facts.push(["Best Mythic+ key", `+${snapshot.topKeyLevel}`]);
+  if (progress) {
+    facts.push([
+      "Raid progress",
+      `${progress.killed}/${progress.total} ${progress.difficulty} in ${titleCase(DEFAULT_RAID)}`,
+    ]);
+  }
+
+  const heading = `${displayName}-${displayRealm} (${region.toUpperCase()})`;
+  // "an Orc", "an Undead" — races beginning with a vowel are common enough
+  // that getting this wrong would show up in every quote of the sentence.
+  const article = /^[aeiou]/i.test(identity) ? "an" : "a";
+  const intro = identity
+    ? `${displayName} is ${article} ${identity} on ${displayRealm} (${region.toUpperCase()}).`
+    : `${displayName} plays on ${displayRealm} (${region.toUpperCase()}).`;
+
+  const factList = facts.length
+    ? `\n    <dl>\n${facts
+        .map(
+          ([label, value]) =>
+            `      <dt>${escapeHtml(label)}</dt>\n      <dd>${escapeHtml(value)}</dd>`
+        )
+        .join("\n")}\n    </dl>`
+    : "";
+
+  return `<div id="app">
+  <main>
+    <h1>${escapeHtml(heading)}</h1>
+    <p>${escapeHtml(intro)} This page combines gear and item level from the Blizzard
+    profile API, Mythic+ score and dungeon runs from Raider.IO, and raid parse
+    percentiles from Warcraft Logs.</p>${factList}
+    <p>Figures are a snapshot from the last time this character was looked up, not
+    live values.</p>
+    <p><a href="${config.publicOrigin}/">Inspect another character</a> ·
+    <a href="${config.publicOrigin}/mythic-plus">Mythic+ spec meta</a></p>
+  </main>
+</div>`;
 }
 
 function buildMetaBlock(
@@ -104,15 +176,15 @@ function buildMetaBlock(
 }
 
 /** Last-resort response when index.html has never been fetched successfully.
- * Bots only read the head, so a minimal shell is still a useful answer. */
-function fallbackShell(metaBlock: string): string {
+ * No bundle to load, so this is head plus whatever summary we have. */
+function fallbackShell(metaBlock: string, bodyBlock: string | null): string {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   ${metaBlock}
 </head>
-<body></body>
+<body>${bodyBlock ?? ""}</body>
 </html>`;
 }
 
@@ -134,7 +206,7 @@ export async function renderCharacterPageHtml(
   if (!nameLc || nameLc.length > MAX_NAME_LENGTH) return null;
   if (!realmSlug || realmSlug.length > MAX_REALM_LENGTH) return null;
 
-  const snapshot = await getCharacterMetaSnapshot({
+  const snapshot = await getCharacterSeoSnapshot({
     region: regionLc,
     realm: realmSlug,
     name: nameLc,
@@ -149,10 +221,13 @@ export async function renderCharacterPageHtml(
   const ogImage = `${config.publicOrigin}/card/${regionLc}/${encodeURIComponent(realmSlug)}/${encodeURIComponent(nameLc)}`;
 
   const metaBlock = buildMetaBlock(title, description, canonical, ogImage);
+  const bodyBlock = buildBodySummary(snapshot, displayName, displayRealm, regionLc);
   const html = await getIndexHtml();
-  if (!html) return fallbackShell(metaBlock);
+  if (!html) return fallbackShell(metaBlock, bodyBlock);
 
-  return html.replace(SEO_BLOCK, metaBlock);
+  const withMeta = html.replace(SEO_BLOCK, metaBlock);
+  // No snapshot means no facts to state — leave the empty shell in place.
+  return bodyBlock ? withMeta.replace(BODY_BLOCK, bodyBlock) : withMeta;
 }
 
 /**
@@ -193,6 +268,6 @@ export async function renderRosterPageHtml(region: string, slug: string): Promis
   ].join("\n  ");
 
   const html = await getIndexHtml();
-  if (!html) return fallbackShell(metaBlock);
+  if (!html) return fallbackShell(metaBlock, null);
   return html.replace(SEO_BLOCK, metaBlock);
 }

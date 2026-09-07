@@ -64,7 +64,11 @@ const queryClient = new QueryClient({
 
 // Render the app
 const rootElement = document.getElementById("app");
-if (rootElement && !rootElement.innerHTML) {
+// Deliberately not guarded on an empty container: crawler HTML ships a text
+// summary inside #app (see backend seo/characterMeta.ts), and a JS-capable
+// client that receives it must still mount. createRoot clears the container,
+// so the summary is replaced by the real page rather than duplicated.
+if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>

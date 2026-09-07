@@ -1,10 +1,10 @@
 import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
-import { getCharacterCardSnapshot, type CharacterCardSnapshot } from "../db/persistence.js";
+import { getCharacterSeoSnapshot, type CharacterSeoSnapshot } from "../db/persistence.js";
 import { normalizeName, normalizeRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
-import { DEFAULT_RAID } from "../generated/seasonConfig.js";
+import { currentRaidProgress } from "./raidProgress.js";
 
 const logger = createLogger({ service: "CharacterCard" });
 
@@ -91,16 +91,10 @@ function h(
   return { type, props: { ...props, children: child } };
 }
 
-/** Current-tier raid progression summary, e.g. "4/8 M".
- * Kept in sync with getRaidProgressSummary in frontend CharacterHeader.tsx. */
-function raidProgressSummary(snapshot: CharacterCardSnapshot): string {
-  const current = snapshot.raidProgression?.[DEFAULT_RAID];
-  if (!current) return "—";
-  const { total_bosses: total, mythic_bosses_killed: m, heroic_bosses_killed: heroic, normal_bosses_killed: n } = current;
-  if (m > 0) return `${m}/${total} M`;
-  if (heroic > 0) return `${heroic}/${total} H`;
-  if (n > 0) return `${n}/${total} N`;
-  return "—";
+/** Current-tier raid progression summary, e.g. "4/8 M". */
+function raidProgressSummary(snapshot: CharacterSeoSnapshot): string {
+  const progress = currentRaidProgress(snapshot.raidProgression);
+  return progress ? `${progress.killed}/${progress.total} ${progress.difficulty[0]}` : "—";
 }
 
 function statCard(label: string, value: string, valueColor: string, accent = false): Element {
@@ -150,7 +144,7 @@ function statCard(label: string, value: string, valueColor: string, accent = fal
   );
 }
 
-function buildCard(snapshot: CharacterCardSnapshot): Element {
+function buildCard(snapshot: CharacterSeoSnapshot): Element {
   const color = classColor(snapshot.class);
   const realmLine = `(${snapshot.region.toUpperCase()}) ${snapshot.realm}`;
   const traits = [snapshot.race, snapshot.specialization, snapshot.class].filter(Boolean).join(" ");
@@ -230,7 +224,7 @@ export async function renderCharacterCard(
   if (cached && Date.now() < cached.expiresAt) return cached.png;
 
   const [snapshot, fonts] = await Promise.all([
-    getCharacterCardSnapshot({ region: regionLc, realm: realmSlug, name: nameLc }),
+    getCharacterSeoSnapshot({ region: regionLc, realm: realmSlug, name: nameLc }),
     getFonts(),
   ]);
   if (!snapshot || !fonts.barlow || !fonts.barlowCondensed) {

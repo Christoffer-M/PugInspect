@@ -16,6 +16,7 @@ import { isbot } from "isbot";
 import { renderCharacterPageHtml, renderRosterPageHtml } from "./seo/characterMeta.js";
 import { renderCharacterCard } from "./seo/characterCard.js";
 import { renderSitemapXml } from "./seo/sitemap.js";
+import { renderLlmsTxt } from "./seo/llmsTxt.js";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import type { SelectionSetNode, ValidationRule } from "graphql";
@@ -357,6 +358,14 @@ app.get("/sitemap.xml", sitemapRateLimiter, async (_, res) => {
   const xml = await renderSitemapXml();
   res.setHeader("Cache-Control", "public, max-age=3600");
   res.type("application/xml").send(xml);
+});
+
+// llms.txt for answer engines — nginx proxies /llms.txt here. Rendered from
+// the season config at first call and then held, so no rate limit is needed
+// beyond nginx's own.
+app.get("/llms.txt", (_, res) => {
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.type("text/plain; charset=utf-8").send(renderLlmsTxt());
 });
 
 // Character page meta injection for crawlers/link unfurlers — nginx routes

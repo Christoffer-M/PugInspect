@@ -17,6 +17,7 @@ const STATIC_PAGES = [
   // the last successful crawl (see mythicPlusLastmod), so this date is only the
   // fallback for when the crawl has never run.
   { path: "/mythic-plus", lastmod: "2026-08-27", changefreq: "hourly", priority: "0.9" },
+  { path: "/roster", lastmod: "2026-09-06", changefreq: "monthly", priority: "0.8" },
   { path: "/privacy-policy", lastmod: "2026-06-11", changefreq: "yearly", priority: "0.3" },
 ];
 

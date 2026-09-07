@@ -13,6 +13,9 @@ Production site: [puginspect.com](https://puginspect.com/)
 - Potential alt detection based on Blizzard achievement timestamps.
 - PostgreSQL-backed caching for external API responses using Drizzle migrations.
 - Docker Compose setup for running Postgres, the backend, and the frontend together.
+- Crawler and answer-engine support: per-character meta tags injected server-side for
+  bots that don't run JavaScript, a database-backed `sitemap.xml`, and an `llms.txt`
+  site summary generated from the season config.
 
 ## Project Structure
 
