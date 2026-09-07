@@ -58,12 +58,7 @@
             "Warcraft Logs parse percentiles and DPS/HPS metrics",
             "Mythic+ spec meta rankings refreshed hourly",
             "Roster check: inspect a full raid roster on one screen"
-          ],
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          }
+          ]
         }
       ]
     }
@@ -71,10 +66,11 @@
 </head>
 
 <body>
-  <!-- body:start/end brackets the region the backend rewrites for crawlers
-       (see apps/backend/src/seo/characterMeta.ts). Bots that don't run
-       JavaScript get a text summary of the character here; everyone else
-       gets this empty container and the SPA mounts into it. -->
+  <!-- body:start/end (and seo:start/end above) bracket the regions rewritten
+       for crawlers that don't run JavaScript: at build time for the static
+       pages (scripts/prerender.mjs) and per request for character and roster
+       pages (apps/backend/src/seo/characterMeta.ts). React mounts into #app
+       and replaces whatever is here, so it never reaches a real visitor. -->
   <!--body:start--><div id="app"></div><!--body:end-->
   <script type="module" src="/src/app.tsx"></script>
 </body>

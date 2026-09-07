@@ -17,6 +17,11 @@ const MAX_REALM_LENGTH = 100;
 const TEMPLATE_TTL_MS = 5 * 60_000;
 const SEO_BLOCK = /<!--seo:start-->[\s\S]*?<!--seo:end-->/;
 const BODY_BLOCK = /<!--body:start-->[\s\S]*?<!--body:end-->/;
+// The built index.html carries the prerendered homepage in its body block
+// (apps/frontend/scripts/prerender.mjs), so every injected page must replace
+// it — a page with no summary of its own has to fall back to the bare
+// container, not answer with "Welcome to PugInspect" as its <h1>.
+const EMPTY_APP = '<div id="app"></div>';
 
 const GENERIC_DESCRIPTION =
   "View gear, Raider.IO score, raid progression and Mythic+ runs.";
@@ -225,9 +230,8 @@ export async function renderCharacterPageHtml(
   const html = await getIndexHtml();
   if (!html) return fallbackShell(metaBlock, bodyBlock);
 
-  const withMeta = html.replace(SEO_BLOCK, metaBlock);
-  // No snapshot means no facts to state — leave the empty shell in place.
-  return bodyBlock ? withMeta.replace(BODY_BLOCK, bodyBlock) : withMeta;
+  // No snapshot means no facts to state, so the bare container goes back in.
+  return html.replace(SEO_BLOCK, metaBlock).replace(BODY_BLOCK, bodyBlock ?? EMPTY_APP);
 }
 
 /**
@@ -269,5 +273,5 @@ export async function renderRosterPageHtml(region: string, slug: string): Promis
 
   const html = await getIndexHtml();
   if (!html) return fallbackShell(metaBlock, null);
-  return html.replace(SEO_BLOCK, metaBlock);
+  return html.replace(SEO_BLOCK, metaBlock).replace(BODY_BLOCK, EMPTY_APP);
 }
