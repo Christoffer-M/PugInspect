@@ -253,9 +253,11 @@ const RosterPaste: React.FC = () => {
 };
 
 export const Route = createFileRoute("/roster/")({
+  // Title/description are also prerendered into this route's static HTML —
+  // keep in sync with apps/frontend/scripts/prerender.mjs.
   head: () => ({
     meta: [
-      { title: "Roster Check | PugInspect" },
+      { title: "Roster Check - Inspect a Full Raid Roster | PugInspect" },
       {
         name: "description",
         content:
