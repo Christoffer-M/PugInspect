@@ -16,8 +16,20 @@ Umami is still the website's analytics and is not involved here. It cannot
 count installs: its visitor id is a hash of IP + user-agent under a
 daily-rotating salt, and two Tauri webviews on Windows are indistinguishable.
 
-There is deliberately no dashboard yet — the script and the queries below are
-it. Build a `/stats` panel when a curve is worth looking at.
+`GET /companion-telemetry` renders every report below as one page
+(`apps/backend/src/companionTelemetry.ts`): server-rendered HTML behind HTTP
+Basic auth — any username, the password is `COMPANION_TELEMETRY_TOKEN`. Unset
+the variable and the route is never registered, so a deploy that forgets it
+404s rather than publishing install data.
+
+The whole 30-day window is pulled into memory and aggregated in JS. At this
+volume that is far less code than fifteen aggregate queries; push the grouping
+into SQL if beats ever pass ~100k rows in the window. Charts are Chart.js from
+cdnjs, pinned by SRI — the site-wide CSP has no CDN in `script-src`, so
+`nginx/docker.conf` gives that one path its own policy.
+
+The SQL below is still what each panel means, and `./scripts/telemetry.sh`
+still runs it without a browser.
 
 The beat endpoint is deliberately not behind `COMPANION_MIN_VERSION`: it spends
 no upstream quota, and gating it would silence exactly the stranded installs

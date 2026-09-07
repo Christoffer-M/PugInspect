@@ -31,4 +31,8 @@ export const config = {
   // from /graphql (e.g. "0.2.0"; unset allows all). Builds that predate the
   // version header count as 0.0.0, so any value blocks those too.
   companionMinVersion: process.env.COMPANION_MIN_VERSION,
+  // Password for the internal /companion-telemetry view (HTTP Basic, any
+  // username). Unset means the route is never registered, so a deploy that
+  // forgets it 404s rather than publishing install data.
+  companionTelemetryToken: process.env.COMPANION_TELEMETRY_TOKEN,
 };
