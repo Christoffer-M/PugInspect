@@ -1,0 +1,29 @@
+{
+  "projectId": "0c0b86e0-3970-4c89-a770-7f446251864b",
+  "shape": "package",
+  "pkg": "@repo/ui",
+  "globalName": "PugInspectUI",
+  "extraEntries": [
+    "@mantine/core"
+  ],
+  "provider": {
+    "component": "MantineProvider",
+    "props": {
+      "theme": {
+        "$ref": "theme"
+      },
+      "defaultColorScheme": "dark"
+    }
+  },
+  "buildCmd": "cat apps/frontend/node_modules/@mantine/core/styles.layer.css packages/ui/src/globals.css | sed 's/^html,$//' > packages/ui/.ds-css-entry.css",
+  "cssEntry": ".ds-css-entry.css",
+  "extraFonts": [
+    ".ds-fonts/fonts.css"
+  ],
+  "overrides": {
+    "SkeletonTableRows": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
