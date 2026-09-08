@@ -4,6 +4,13 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.6.2
+
+- Corrects what the app reports in its anonymous usage statistics: waiting for the addon's
+  strip is no longer counted as a sync that broke mid-session, so the two are told apart.
+  Nothing you see in the app changes, and nothing new is reported -- "Send anonymous usage
+  statistics" under Settings still turns all of it off.
+
 ## 0.6.1
 
 - Applicant details now appear as soon as each source answers, instead of every column
