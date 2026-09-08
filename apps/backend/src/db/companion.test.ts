@@ -29,6 +29,10 @@ describe("parseBeat", () => {
     expect(parseBeat({ ...valid, link: "no_window", listing: "", region: null })).not.toBeNull();
   });
 
+  it("accepts the game-up-but-no-strip link state", () => {
+    expect(parseBeat({ ...valid, link: "no_hud" })?.link).toBe("no_hud");
+  });
+
   it("keeps a pending update version", () => {
     expect(parseBeat({ ...valid, updatePending: "0.6.0" })?.updatePending).toBe("0.6.0");
   });

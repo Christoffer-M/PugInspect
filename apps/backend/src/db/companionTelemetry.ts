@@ -24,7 +24,7 @@ export const STRIP_CAP = 20;
 /** Beats come every 30 minutes, so a longer silence than this ends a session. */
 const SESSION_GAP = 45 * 60_000;
 /** Fixed display order: healthy first, then the states worth acting on. */
-const LINK_ORDER = ["ok", "no_window", "addon_outdated", "incompatible", "lost", "app_outdated"] as const;
+const LINK_ORDER = ["ok", "no_window", "no_hud", "addon_outdated", "incompatible", "lost", "app_outdated"] as const;
 const SESSION_BUCKETS = ["30 min", "1 h", "1.5–2 h", "2 h +"] as const;
 
 type Install = Pick<
@@ -86,7 +86,8 @@ export function summarizeCompanionTelemetry(installs: Install[], beats: Beat[], 
     activeThisWeek: activated.filter((i) => i.lastSeen.getTime() >= weekAgo).length,
     never: installs.length - activated.length,
     // Of the ones that never activated, how many last reported the game simply
-    // not being there — the signature of a strip that was never turned on.
+    // not being there. The ones that got as far as opening it and still never
+    // synced show up as no_hud in the link mix.
     neverNoWindow: installs.filter((i) => i.activatedAt === null && lastBeat.get(i.installId)?.link === "no_window").length,
   };
 

@@ -13,7 +13,7 @@ const RETAIN_DAYS = 90;
  *  can state in the privacy policy rather than "indefinitely". */
 const INSTALL_RETAIN_DAYS = 730;
 
-const LINKS = ["ok", "no_window", "lost", "incompatible", "addon_outdated", "app_outdated"];
+const LINKS = ["ok", "no_window", "no_hud", "lost", "incompatible", "addon_outdated", "app_outdated"];
 const LISTINGS = ["", "raid:N", "raid:H", "raid:M", "keys"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

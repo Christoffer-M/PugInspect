@@ -50,7 +50,7 @@ export type Frame = {
   difficulty: string;
   applicants: Applicant[];
 };
-export type Link = "no_window" | "ok" | "lost" | "incompatible" | "addon_outdated" | "app_outdated";
+export type Link = "no_window" | "no_hud" | "ok" | "lost" | "incompatible" | "addon_outdated" | "app_outdated";
 type SyncEvent = { kind: "status"; status: Link } | ({ kind: "data" } & Frame);
 
 export type Session = {

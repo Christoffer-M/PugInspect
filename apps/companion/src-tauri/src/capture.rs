@@ -146,10 +146,13 @@ fn run(app: AppHandle) {
                 last = Some(frame);
             }
         }
-        // ponytail: until a frame arrives the status stays unchanged; "lost" also covers
-        // "window found but the addon never painted anything".
+        // "lost" is a link we had and no longer have, so it needs a frame to have
+        // arrived first. A window that has never painted is "no_hud": the addon is
+        // missing or its strip is off, which /pi hud fixes, not the /reload "lost"
+        // asks for -- and reporting those as lost put installs that never synced at
+        // all in the telemetry's mid-session-breakage bucket.
         if fresh.elapsed() > LOST_AFTER {
-            set_status(&mut status, &mut last, "lost");
+            set_status(&mut status, &mut last, if hb.is_some() { "lost" } else { "no_hud" });
         }
         thread::sleep(Duration::from_millis(250));
     }
