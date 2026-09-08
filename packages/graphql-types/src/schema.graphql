@@ -46,6 +46,120 @@ type ClassCount {
   count: Int!
 }
 
+type CompanionCap {
+  beats: Int!
+  installs: Int!
+  """Applicants the HUD strip stops at."""
+  limit: Int!
+  """Highest in-game total seen while the strip was capped."""
+  maxTotal: Int!
+}
+
+type CompanionCohort {
+  day1: Int!
+  day7: Int!
+  daysToWait: Int!
+  end: String!
+  """
+  True for the newest bucket, whose members are too young for a day-7 number.
+  """
+  pending: Boolean!
+  size: Int!
+  start: String!
+}
+
+type CompanionCountryCount {
+  count: Int!
+  country: String!
+}
+
+type CompanionDailyCount {
+  count: Int!
+  date: String!
+}
+
+type CompanionFunnel {
+  """Installs that have decoded at least one frame, ever."""
+  activated: Int!
+  activeThisWeek: Int!
+  installs: Int!
+  never: Int!
+  """Of the never-activated, how many last reported no_window."""
+  neverNoWindow: Int!
+}
+
+type CompanionInstallRow {
+  activatedAt: String
+  country: String
+  firstSeen: String!
+  """First four characters of the install UUID — enough to tell rows apart."""
+  installId: String!
+  lastSeen: String!
+  link: String
+  region: String
+  version: String!
+}
+
+type CompanionLinkStat {
+  beats: Int!
+  installs: Int!
+  link: String!
+}
+
+type CompanionLookups {
+  errors: Int!
+  notFound: Int!
+  total: Int!
+}
+
+type CompanionRegionCount {
+  count: Int!
+  region: String!
+}
+
+type CompanionSessionBucket {
+  bucket: String!
+  percent: Int!
+}
+
+type CompanionStranded {
+  failures: Int!
+  from: String!
+  installs: Int!
+  to: String!
+}
+
+type CompanionTelemetry {
+  beatsThisWeek: Int!
+  cap: CompanionCap!
+  cohorts: [CompanionCohort!]!
+  countries: [CompanionCountryCount!]!
+  funnel: CompanionFunnel!
+  """Cumulative install count, one point per day across the window."""
+  growth: [CompanionDailyCount!]!
+  installs: [CompanionInstallRow!]!
+  """Capture link states over the last 7 days, healthy first."""
+  links: [CompanionLinkStat!]!
+  lookups: CompanionLookups!
+  newThisWindow: Int!
+  """Newest last_seen across all installs, ISO. Null when there are none."""
+  newestReport: String
+  regions: [CompanionRegionCount!]!
+  """Beats per day over the last 14 days."""
+  runtime: [CompanionDailyCount!]!
+  runtimeBeats: Int!
+  sessions: [CompanionSessionBucket!]!
+  stranded: [CompanionStranded!]!
+  versions: [CompanionVersionCount!]!
+  """Length of the beat window every panel below is computed over."""
+  windowDays: Int!
+}
+
+type CompanionVersionCount {
+  count: Int!
+  version: String!
+}
+
 type DailySearchCount {
   count: Int!
   date: String!
@@ -209,6 +323,12 @@ type MythicPlusSpecStats {
 type Query {
   character(byBracket: Boolean, bypassCache: Boolean, difficulty: Difficulty, metric: Metric, name: String!, partition: Int, realm: String!, region: String!, role: RoleType, zoneId: Int): Character
   characterSuggestions(region: String!, searchString: String!): [SearchResult!]!
+  """
+  Internal companion telemetry. Requires COMPANION_TELEMETRY_TOKEN; with the
+  variable unset the field is always forbidden, so a deploy that forgets it
+  cannot publish install data.
+  """
+  companionTelemetry(token: String!): CompanionTelemetry!
   mythicPlusSpecStats(zoneId: Int): MythicPlusSpecStats
   roster(region: String!, slug: String!): Roster
   rosterCharacters(characters: [RosterCharacterInput!]!, difficulty: Difficulty, region: String!, zoneId: Int): [RosterEntry!]!

@@ -10,8 +10,6 @@ import { config } from "./config/index.js";
 import { initDb } from "./db/index.js";
 import { runMigrations } from "./db/migrate.js";
 import { parseBeat, pruneCompanionTelemetry, recordCompanionBeat } from "./db/companion.js";
-import { getCompanionTelemetry, renderCompanionTelemetryHtml } from "./companionTelemetry.js";
-import { timingSafeEqual } from "crypto";
 import express from "express";
 import cors from "cors";
 import { isbot } from "isbot";
@@ -351,29 +349,6 @@ app.post(
     res.status(204).end();
   }
 );
-
-// Internal telemetry view over the companion tables — nginx proxies
-// /companion-telemetry here. HTTP Basic so the browser handles the prompt and
-// the password never lands in a URL or an access log; any username works.
-if (config.companionTelemetryToken) {
-  const token = Buffer.from(config.companionTelemetryToken);
-  const telemetryRateLimiter = createRateLimiter(30, 60_000);
-
-  app.get("/companion-telemetry", telemetryRateLimiter, async (req, res) => {
-    const header = req.headers.authorization ?? "";
-    const supplied = Buffer.from(
-      header.startsWith("Basic ") ? (Buffer.from(header.slice(6), "base64").toString().split(":")[1] ?? "") : ""
-    );
-    if (supplied.length !== token.length || !timingSafeEqual(supplied, token)) {
-      res.setHeader("WWW-Authenticate", 'Basic realm="PugInspect telemetry", charset="UTF-8"');
-      res.status(401).type("text/plain").send("Unauthorized");
-      return;
-    }
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("X-Robots-Tag", "noindex, nofollow");
-    res.type("html").send(renderCompanionTelemetryHtml(await getCompanionTelemetry()));
-  });
-}
 
 // Sitemap with character pages from the DB — nginx proxies /sitemap.xml here.
 // The renderer caches for an hour, so the rate limit only guards cache misses.

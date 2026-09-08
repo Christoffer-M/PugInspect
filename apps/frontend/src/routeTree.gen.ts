@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CompanionTelemetryRouteImport } from './routes/companion-telemetry'
 import { Route as MythicPlusRouteImport } from './routes/mythic-plus'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as StatsRouteImport } from './routes/stats'
@@ -20,6 +21,11 @@ import { Route as RosterRegionSlugRouteImport } from './routes/roster.$region.$s
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompanionTelemetryRoute = CompanionTelemetryRouteImport.update({
+  id: '/companion-telemetry',
+  path: '/companion-telemetry',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MythicPlusRoute = MythicPlusRouteImport.update({
@@ -55,6 +61,7 @@ const RosterRegionSlugRoute = RosterRegionSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/companion-telemetry': typeof CompanionTelemetryRoute
   '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/companion-telemetry': typeof CompanionTelemetryRoute
   '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/companion-telemetry': typeof CompanionTelemetryRoute
   '/mythic-plus': typeof MythicPlusRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/stats': typeof StatsRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/companion-telemetry'
     | '/mythic-plus'
     | '/privacy-policy'
     | '/stats'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/companion-telemetry'
     | '/mythic-plus'
     | '/privacy-policy'
     | '/stats'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/companion-telemetry'
     | '/mythic-plus'
     | '/privacy-policy'
     | '/stats'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CompanionTelemetryRoute: typeof CompanionTelemetryRoute
   MythicPlusRoute: typeof MythicPlusRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   StatsRoute: typeof StatsRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/companion-telemetry': {
+      id: '/companion-telemetry'
+      path: '/companion-telemetry'
+      fullPath: '/companion-telemetry'
+      preLoaderRoute: typeof CompanionTelemetryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mythic-plus': {
@@ -177,6 +197,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CompanionTelemetryRoute: CompanionTelemetryRoute,
   MythicPlusRoute: MythicPlusRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   StatsRoute: StatsRoute,

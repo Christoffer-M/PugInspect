@@ -19,6 +19,7 @@ import {
 import { Page } from "../components/layout/Page";
 import { useSiteStats } from "../queries/site-stats";
 import { fillDays, getClassColor, normalizeRealm, timeAgo, upperCaseFirstLetter } from "../util/util";
+import { getRegionColor } from "@repo/ui";
 import classes from "./stats.module.css";
 
 const REGION_LABELS: Record<string, string> = {
@@ -29,14 +30,6 @@ const REGION_LABELS: Record<string, string> = {
   cn: "China (CN)",
 };
 
-const REGION_COLORS: Record<string, string> = {
-  eu: "#8b7cf6",
-  us: "#22d3ee",
-  kr: "#4ade80",
-  tw: "#fb923c",
-  cn: "#f472b6",
-};
-const REGION_FALLBACK_COLOR = "#8a96aa";
 
 const HeroCard: React.FC<{
   label: string;
@@ -213,7 +206,7 @@ const Stats: React.FC = () => {
             <Stack gap="md">
               {data?.regionBreakdown.map((r) => {
                 const pct = (r.count / totalRegionCount) * 100;
-                const color = REGION_COLORS[r.region] ?? REGION_FALLBACK_COLOR;
+                const color = getRegionColor(r.region);
                 return (
                   <div key={r.region}>
                     <Group justify="space-between" mb={6}>

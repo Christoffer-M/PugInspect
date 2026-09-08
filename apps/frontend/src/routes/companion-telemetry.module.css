@@ -1,0 +1,43 @@
+/* Proportion bar shared by the link-state, version, region and session rows.
+   Same idiom as the region bars on /stats. */
+.track {
+  height: 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 5px;
+}
+
+/* Three-part strip: healthy / not-found / errored, as one bar. */
+.split {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.metric {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.row {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* The newest cohort has no day-7 number yet — dashed to say "not a result". */
+.pendingCohort {
+  border: 1px dashed rgba(61, 79, 110, 0.8);
+  border-radius: 8px;
+}

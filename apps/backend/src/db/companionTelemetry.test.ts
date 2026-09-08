@@ -56,8 +56,8 @@ describe("summarizeCompanionTelemetry", () => {
       NOW
     );
     // Two sessions: one of three beats ("1.5–2 h"), one of a single beat.
-    expect(d.sessions.find((s) => s.bucket === "30 min")!.pct).toBe(50);
-    expect(d.sessions.find((s) => s.bucket === "1.5–2 h")!.pct).toBe(50);
+    expect(d.sessions.find((s) => s.bucket === "30 min")!.percent).toBe(50);
+    expect(d.sessions.find((s) => s.bucket === "1.5–2 h")!.percent).toBe(50);
   });
 
   it("measures day-7 retention only for cohorts old enough to have one", () => {
@@ -93,7 +93,7 @@ describe("summarizeCompanionTelemetry", () => {
       ],
       NOW
     );
-    expect(d.strandedTotal).toBe(2);
+    expect(d.stranded.reduce((n, g) => n + g.installs, 0)).toBe(2);
     expect(d.stranded).toEqual([{ from: "0.5.1", to: "0.6.0", installs: 2, failures: 3 }]);
     expect(d.versions).toEqual([
       { version: "0.6.0", count: 1 },
@@ -112,16 +112,16 @@ describe("summarizeCompanionTelemetry", () => {
       ],
       NOW
     );
-    expect(d.beats7).toBe(2);
-    expect(d.cap).toEqual({ beats: 1, installs: 1, pct: 50, maxTotal: 34 });
+    expect(d.beatsThisWeek).toBe(2);
+    expect(d.cap).toEqual({ limit: 20, beats: 1, installs: 1, maxTotal: 34 });
     expect(d.lookups).toEqual({ total: 200, notFound: 6, errors: 2 });
   });
 
   it("survives an empty database", () => {
     const d = summarizeCompanionTelemetry([], [], NOW);
-    expect(d.newestReport).toBe("never");
+    expect(d.newestReport).toBeNull();
     expect(d.funnel.installs).toBe(0);
-    expect(d.cap.pct).toBe(0);
+    expect(d.cap.beats).toBe(0);
     expect(d.growth).toHaveLength(31);
   });
 });
