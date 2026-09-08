@@ -4,6 +4,12 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.6.1
+
+- Applicant details now appear as soon as each source answers, instead of every column
+  waiting on the slowest one. A slow Raider.IO no longer holds up the item level, class or
+  parse columns, and each fills in on its own.
+
 ## 0.6.0
 
 - Anonymous usage statistics now go to PugInspect's own servers instead of a third-party
