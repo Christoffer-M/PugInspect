@@ -20,6 +20,12 @@ export const characterTypedefs = gql`
     ): [SearchResult!]!
     zonePartitions(zoneId: Int!): [ZonePartition!]!
     siteStats: SiteStats!
+    """
+    Internal companion telemetry. Requires COMPANION_TELEMETRY_TOKEN; with the
+    variable unset the field is always forbidden, so a deploy that forgets it
+    cannot publish install data.
+    """
+    companionTelemetry(token: String!): CompanionTelemetry!
     mythicPlusSpecStats(zoneId: Int): MythicPlusSpecStats
     roster(region: String!, slug: String!): Roster
     rosterCharacters(
@@ -191,6 +197,118 @@ export const characterTypedefs = gql`
     classDistribution: [ClassCount!]!
     recentSearches: [RecentSearch!]!
     trendingCharacters: [TrendingCharacter!]!
+  }
+
+  type CompanionTelemetry {
+    """Length of the beat window every panel below is computed over."""
+    windowDays: Int!
+    """Newest last_seen across all installs, ISO. Null when there are none."""
+    newestReport: String
+    funnel: CompanionFunnel!
+    """Capture link states over the last 7 days, healthy first."""
+    links: [CompanionLinkStat!]!
+    beatsThisWeek: Int!
+    """Cumulative install count, one point per day across the window."""
+    growth: [CompanionDailyCount!]!
+    newThisWindow: Int!
+    versions: [CompanionVersionCount!]!
+    stranded: [CompanionStranded!]!
+    cohorts: [CompanionCohort!]!
+    """Beats per day over the last 14 days."""
+    runtime: [CompanionDailyCount!]!
+    runtimeBeats: Int!
+    sessions: [CompanionSessionBucket!]!
+    lookups: CompanionLookups!
+    cap: CompanionCap!
+    installs: [CompanionInstallRow!]!
+    regions: [CompanionRegionCount!]!
+    countries: [CompanionCountryCount!]!
+  }
+
+  type CompanionFunnel {
+    installs: Int!
+    """Installs that have decoded at least one frame, ever."""
+    activated: Int!
+    activeThisWeek: Int!
+    never: Int!
+    """Of the never-activated, how many last reported no_window."""
+    neverNoWindow: Int!
+  }
+
+  type CompanionLinkStat {
+    link: String!
+    beats: Int!
+    installs: Int!
+  }
+
+  type CompanionDailyCount {
+    date: String!
+    count: Int!
+  }
+
+  type CompanionVersionCount {
+    version: String!
+    count: Int!
+  }
+
+  type CompanionStranded {
+    from: String!
+    to: String!
+    installs: Int!
+    failures: Int!
+  }
+
+  type CompanionCohort {
+    start: String!
+    end: String!
+    size: Int!
+    day1: Int!
+    day7: Int!
+    """True for the newest bucket, whose members are too young for a day-7 number."""
+    pending: Boolean!
+    daysToWait: Int!
+  }
+
+  type CompanionSessionBucket {
+    bucket: String!
+    percent: Int!
+  }
+
+  type CompanionLookups {
+    total: Int!
+    notFound: Int!
+    errors: Int!
+  }
+
+  type CompanionCap {
+    """Applicants the HUD strip stops at."""
+    limit: Int!
+    beats: Int!
+    installs: Int!
+    """Highest in-game total seen while the strip was capped."""
+    maxTotal: Int!
+  }
+
+  type CompanionInstallRow {
+    """First four characters of the install UUID — enough to tell rows apart."""
+    installId: String!
+    firstSeen: String!
+    lastSeen: String!
+    version: String!
+    region: String
+    country: String
+    activatedAt: String
+    link: String
+  }
+
+  type CompanionRegionCount {
+    region: String!
+    count: Int!
+  }
+
+  type CompanionCountryCount {
+    country: String!
+    count: Int!
   }
 
   type DailySearchCount {

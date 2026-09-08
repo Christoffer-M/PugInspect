@@ -3,6 +3,8 @@
 # canonical parameterless URL — don't let crawlers multiply crawl volume on them.
 User-agent: *
 Disallow: /*?
+# Internal, token-gated — nothing to index behind it.
+Disallow: /companion-telemetry
 
 # Answer engines are welcome: this is a public reference site with no login and
 # no user data, and being cited in an AI answer is the same win as ranking in a

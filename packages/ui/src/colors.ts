@@ -58,3 +58,18 @@ export const ROLE_COLORS: Record<string, string> = {
   HEALER: "#22c55e",
   DPS: "#f4a50e",
 };
+
+/** WoW region accent colours. Shared so the public stats page and the internal
+ *  telemetry view can't drift apart on what "eu" looks like. */
+export const REGION_COLORS: Record<string, string> = {
+  eu: "#8b7cf6",
+  us: "#22d3ee",
+  kr: "#4ade80",
+  tw: "#fb923c",
+  cn: "#f472b6",
+};
+
+export function getRegionColor(region?: string | null): string {
+  if (!region) return "#8a96aa";
+  return REGION_COLORS[region.toLowerCase()] ?? "#8a96aa";
+}

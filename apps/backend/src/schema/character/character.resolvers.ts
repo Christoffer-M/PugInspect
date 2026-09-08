@@ -24,6 +24,9 @@ import {
 } from "../services/raiderIo/raiderio.services.js";
 import { AchievementsService } from "../services/blizzard/achievements.service.js";
 import { getLinkedCharacters } from "../../db/persistence.js";
+import { getCompanionTelemetry, type CompanionTelemetry } from "../../db/companionTelemetry.js";
+import { config } from "../../config/index.js";
+import { timingSafeEqual } from "crypto";
 import {
   defaultZoneId,
   getMythicPlusSpecStats,
@@ -103,6 +106,7 @@ function validateRosterInput(args: {
 // the DB per request. Move to a shared cache layer if more queries need it.
 const specStatsCache = new Map<number, { data: MythicPlusSpecStatsDto | null; expiresAt: number }>();
 let statsCache: { data: SiteStats; expiresAt: number } | null = null;
+let telemetryCache: { data: CompanionTelemetry; expiresAt: number } | null = null;
 
 export default {
   Query: {
@@ -235,6 +239,24 @@ export default {
       if (statsCache && Date.now() < statsCache.expiresAt) return statsCache.data;
       const data = await getSiteStats();
       statsCache = { data, expiresAt: Date.now() + 60_000 };
+      return data;
+    },
+
+    companionTelemetry: async (_: unknown, args: { token: string }): Promise<CompanionTelemetry> => {
+      // Unset token means the field is permanently forbidden rather than open —
+      // a deploy that forgets the variable must not publish install data.
+      const expected = config.companionTelemetryToken;
+      const supplied = Buffer.from(args.token);
+      if (
+        !expected ||
+        supplied.length !== Buffer.byteLength(expected) ||
+        !timingSafeEqual(supplied, Buffer.from(expected))
+      ) {
+        throw new GraphQLError("Invalid telemetry token", { extensions: { code: "FORBIDDEN" } });
+      }
+      if (telemetryCache && Date.now() < telemetryCache.expiresAt) return telemetryCache.data;
+      const data = await getCompanionTelemetry();
+      telemetryCache = { data, expiresAt: Date.now() + 60_000 };
       return data;
     },
 

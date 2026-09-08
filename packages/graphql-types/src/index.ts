@@ -74,6 +74,131 @@ export type ClassCount = {
   count: Scalars['Int']['output'];
 };
 
+export type CompanionCap = {
+  __typename?: 'CompanionCap';
+  beats: Scalars['Int']['output'];
+  installs: Scalars['Int']['output'];
+  /** Applicants the HUD strip stops at. */
+  limit: Scalars['Int']['output'];
+  /** Highest in-game total seen while the strip was capped. */
+  maxTotal: Scalars['Int']['output'];
+};
+
+export type CompanionCohort = {
+  __typename?: 'CompanionCohort';
+  day1: Scalars['Int']['output'];
+  day7: Scalars['Int']['output'];
+  daysToWait: Scalars['Int']['output'];
+  end: Scalars['String']['output'];
+  /** True for the newest bucket, whose members are too young for a day-7 number. */
+  pending: Scalars['Boolean']['output'];
+  size: Scalars['Int']['output'];
+  start: Scalars['String']['output'];
+};
+
+export type CompanionCountryCount = {
+  __typename?: 'CompanionCountryCount';
+  count: Scalars['Int']['output'];
+  country: Scalars['String']['output'];
+};
+
+export type CompanionDailyCount = {
+  __typename?: 'CompanionDailyCount';
+  count: Scalars['Int']['output'];
+  date: Scalars['String']['output'];
+};
+
+export type CompanionFunnel = {
+  __typename?: 'CompanionFunnel';
+  /** Installs that have decoded at least one frame, ever. */
+  activated: Scalars['Int']['output'];
+  activeThisWeek: Scalars['Int']['output'];
+  installs: Scalars['Int']['output'];
+  never: Scalars['Int']['output'];
+  /** Of the never-activated, how many last reported no_window. */
+  neverNoWindow: Scalars['Int']['output'];
+};
+
+export type CompanionInstallRow = {
+  __typename?: 'CompanionInstallRow';
+  activatedAt?: Maybe<Scalars['String']['output']>;
+  country?: Maybe<Scalars['String']['output']>;
+  firstSeen: Scalars['String']['output'];
+  /** First four characters of the install UUID — enough to tell rows apart. */
+  installId: Scalars['String']['output'];
+  lastSeen: Scalars['String']['output'];
+  link?: Maybe<Scalars['String']['output']>;
+  region?: Maybe<Scalars['String']['output']>;
+  version: Scalars['String']['output'];
+};
+
+export type CompanionLinkStat = {
+  __typename?: 'CompanionLinkStat';
+  beats: Scalars['Int']['output'];
+  installs: Scalars['Int']['output'];
+  link: Scalars['String']['output'];
+};
+
+export type CompanionLookups = {
+  __typename?: 'CompanionLookups';
+  errors: Scalars['Int']['output'];
+  notFound: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type CompanionRegionCount = {
+  __typename?: 'CompanionRegionCount';
+  count: Scalars['Int']['output'];
+  region: Scalars['String']['output'];
+};
+
+export type CompanionSessionBucket = {
+  __typename?: 'CompanionSessionBucket';
+  bucket: Scalars['String']['output'];
+  percent: Scalars['Int']['output'];
+};
+
+export type CompanionStranded = {
+  __typename?: 'CompanionStranded';
+  failures: Scalars['Int']['output'];
+  from: Scalars['String']['output'];
+  installs: Scalars['Int']['output'];
+  to: Scalars['String']['output'];
+};
+
+export type CompanionTelemetry = {
+  __typename?: 'CompanionTelemetry';
+  beatsThisWeek: Scalars['Int']['output'];
+  cap: CompanionCap;
+  cohorts: Array<CompanionCohort>;
+  countries: Array<CompanionCountryCount>;
+  funnel: CompanionFunnel;
+  /** Cumulative install count, one point per day across the window. */
+  growth: Array<CompanionDailyCount>;
+  installs: Array<CompanionInstallRow>;
+  /** Capture link states over the last 7 days, healthy first. */
+  links: Array<CompanionLinkStat>;
+  lookups: CompanionLookups;
+  newThisWindow: Scalars['Int']['output'];
+  /** Newest last_seen across all installs, ISO. Null when there are none. */
+  newestReport?: Maybe<Scalars['String']['output']>;
+  regions: Array<CompanionRegionCount>;
+  /** Beats per day over the last 14 days. */
+  runtime: Array<CompanionDailyCount>;
+  runtimeBeats: Scalars['Int']['output'];
+  sessions: Array<CompanionSessionBucket>;
+  stranded: Array<CompanionStranded>;
+  versions: Array<CompanionVersionCount>;
+  /** Length of the beat window every panel below is computed over. */
+  windowDays: Scalars['Int']['output'];
+};
+
+export type CompanionVersionCount = {
+  __typename?: 'CompanionVersionCount';
+  count: Scalars['Int']['output'];
+  version: Scalars['String']['output'];
+};
+
 export type DailySearchCount = {
   __typename?: 'DailySearchCount';
   count: Scalars['Int']['output'];
@@ -260,6 +385,12 @@ export type Query = {
   __typename?: 'Query';
   character?: Maybe<Character>;
   characterSuggestions: Array<SearchResult>;
+  /**
+   * Internal companion telemetry. Requires COMPANION_TELEMETRY_TOKEN; with the
+   * variable unset the field is always forbidden, so a deploy that forgets it
+   * cannot publish install data.
+   */
+  companionTelemetry: CompanionTelemetry;
   mythicPlusSpecStats?: Maybe<MythicPlusSpecStats>;
   roster?: Maybe<Roster>;
   rosterCharacters: Array<RosterEntry>;
@@ -285,6 +416,11 @@ export type QueryCharacterArgs = {
 export type QueryCharacterSuggestionsArgs = {
   region: Scalars['String']['input'];
   searchString: Scalars['String']['input'];
+};
+
+
+export type QueryCompanionTelemetryArgs = {
+  token: Scalars['String']['input'];
 };
 
 

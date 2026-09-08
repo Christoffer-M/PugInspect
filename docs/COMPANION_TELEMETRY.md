@@ -16,8 +16,28 @@ Umami is still the website's analytics and is not involved here. It cannot
 count installs: its visitor id is a hash of IP + user-agent under a
 daily-rotating salt, and two Tauri webviews on Windows are indistinguishable.
 
-There is deliberately no dashboard yet — the script and the queries below are
-it. Build a `/stats` panel when a curve is worth looking at.
+`/companion-telemetry` in the app renders every report below as one page
+(`apps/frontend/src/routes/companion-telemetry.tsx`), fed by the token-gated
+`companionTelemetry` GraphQL field. The aggregation is
+`apps/backend/src/db/companionTelemetry.ts`.
+
+The token is `COMPANION_TELEMETRY_TOKEN`. With the variable unset the field is
+permanently forbidden rather than open, so a deploy that forgets it cannot
+publish install data. The page keeps the token in localStorage; "Lock" clears
+it. There is no identity behind it — anyone holding the token sees the same
+page, and nothing records who looked.
+
+The whole 30-day window is pulled into memory and aggregated in JS. At this
+volume that is far less code than fifteen aggregate queries; push the grouping
+into SQL if beats ever pass ~100k rows in the window.
+
+Charts are `@mantine/charts`. Use `LineChart`/`BarChart`, not `AreaChart` —
+Mantine wraps AreaChart's series in a Fragment for the gradient defs, and
+recharts 2 under React 19 does not find fragment-wrapped children, so the
+series silently never draws.
+
+The SQL below is still what each panel means, and `./scripts/telemetry.sh`
+still runs it without a browser.
 
 The beat endpoint is deliberately not behind `COMPANION_MIN_VERSION`: it spends
 no upstream quota, and gating it would silence exactly the stranded installs
