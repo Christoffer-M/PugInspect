@@ -83,8 +83,8 @@ const BarRow: React.FC<{
   percent: number;
   value: React.ReactNode;
   labelWidth?: number;
-}> = ({ label, color, percent, value, labelWidth = 108 }) => (
-  <Group gap="sm" wrap="nowrap">
+}> = ({ label, color, percent, value, labelWidth = 116 }) => (
+  <Group gap="md" wrap="nowrap">
     <Text
       size="xs"
       className={classes.mono}
@@ -103,8 +103,8 @@ const BarRow: React.FC<{
       className={classes.mono}
       c="dimmed"
       ta="right"
-      w={96}
-      style={{ flexShrink: 0 }}
+      w={116}
+      style={{ flexShrink: 0, whiteSpace: "nowrap" }}
     >
       {value}
     </Text>
@@ -408,14 +408,8 @@ const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
             </Table.Tbody>
           </Table>
           {newestCohort && (
-            <Group
-              className={classes.pendingCohort}
-              p="md"
-              gap="md"
-              wrap="nowrap"
-              align="center"
-            >
-              <Box style={{ flexShrink: 0 }}>
+            <Stack className={classes.pendingCohort} p="md" gap={6}>
+              <Group justify="space-between" gap="sm" wrap="nowrap">
                 <Text
                   size="sm"
                   className={classes.mono}
@@ -423,26 +417,26 @@ const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
                   style={{ whiteSpace: "nowrap" }}
                 >
                   {range(newestCohort.start, newestCohort.end)} ·{" "}
-                  {newestCohort.size}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  day 1:{" "}
+                  {newestCohort.size} · day 1:{" "}
                   {newestCohort.size
                     ? `${newestCohort.day1} of ${newestCohort.size}`
                     : "—"}
                 </Text>
-              </Box>
-              <Box>
-                <Text className={classes.mono} c="dimmed">
+                <Text
+                  size="sm"
+                  className={classes.mono}
+                  c={AMBER}
+                  style={{ whiteSpace: "nowrap" }}
+                >
                   day 7 — not yet
                 </Text>
-                <Text size="xs" c="dimmed">
-                  {newestCohort.size
-                    ? `the newest cohort needs ${newestCohort.daysToWait} more day${newestCohort.daysToWait === 1 ? "" : "s"} before this cell means anything`
-                    : "no installs joined this week"}
-                </Text>
-              </Box>
-            </Group>
+              </Group>
+              <Text size="xs" c="dimmed">
+                {newestCohort.size
+                  ? `The newest cohort needs ${newestCohort.daysToWait} more day${newestCohort.daysToWait === 1 ? "" : "s"} before this cell means anything.`
+                  : "No installs joined this week."}
+              </Text>
+            </Stack>
           )}
         </Panel>
 
@@ -463,7 +457,7 @@ const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
             }))}
             dataKey="date"
             series={[{ name: "beats", color: "accent.5" }]}
-            gridAxis="y"
+            gridAxis="x"
             tickLine="none"
             xAxisProps={{ interval: "preserveStartEnd", minTickGap: 24 }}
             yAxisProps={{ allowDecimals: false }}
@@ -777,7 +771,7 @@ const CompanionTelemetryPage: React.FC = () => {
                       : "—"}
                   </Text>
                 </Box>
-                <Button variant="subtle" size="xs" onClick={() => setToken("")}>
+                <Button variant="default" size="xs" onClick={() => setToken("")}>
                   Lock
                 </Button>
               </Group>

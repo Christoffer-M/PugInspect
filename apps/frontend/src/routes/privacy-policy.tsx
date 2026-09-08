@@ -17,7 +17,7 @@ const PrivacyPolicy: React.FC = () => {
               in order to improve the website.
             </Text>
             <Text>The data collected may include:</Text>
-            <List>
+            <List spacing="xs">
               <List.Item>Pages visited</List.Item>
               <List.Item>Browser and device type</List.Item>
               <List.Item>Referrer information</List.Item>
@@ -31,7 +31,7 @@ const PrivacyPolicy: React.FC = () => {
               to our own servers rather than to Umami, roughly every half hour
               while it is running. Each report contains:
             </Text>
-            <List>
+            <List spacing="xs">
               <List.Item>
                 An installation identifier: a random value generated once by the
                 app and stored on your computer. It is not derived from your

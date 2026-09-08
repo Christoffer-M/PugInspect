@@ -1,4 +1,4 @@
-import { AppShell, Typography } from "@mantine/core";
+import { AppShell } from "@mantine/core";
 import { useWindowEvent } from "@mantine/hooks";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -75,14 +75,15 @@ export const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <>
       <div className={classes.appBg} />
+      {/* No <Typography> wrapper: it styles bare h1-h6/p/ul/table for prose,
+          and every page here is built from Mantine components instead — the
+          prose margins only knocked Text out of line inside Group/Stack. */}
       <AppShell header={{ height: 60 }} className={classes.shell}>
-        <Typography>
-          <Header />
-          <AppShell.Main pb={"lg"}>
-            {children}
-            <Footer />
-          </AppShell.Main>
-        </Typography>
+        <Header />
+        <AppShell.Main pb={"lg"}>
+          {children}
+          <Footer />
+        </AppShell.Main>
       </AppShell>
     </>
   );
