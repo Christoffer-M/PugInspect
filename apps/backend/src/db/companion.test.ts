@@ -65,5 +65,12 @@ describe("parseBeat", () => {
 
   it("drops an unparseable region rather than the whole beat", () => {
     expect(parseBeat({ ...valid, region: "not-a-region" })?.region).toBeNull();
+    // Observed in the wild: a companion sent the country code "DK", which the
+    // old two-to-four-letter check stored as a WoW region.
+    expect(parseBeat({ ...valid, region: "DK" })?.region).toBeNull();
+    expect(parseBeat({ ...valid, region: "cn" })?.region).toBeNull();
+    for (const r of ["eu", "us", "kr", "tw"]) {
+      expect(parseBeat({ ...valid, region: r.toUpperCase() })?.region).toBe(r);
+    }
   });
 });

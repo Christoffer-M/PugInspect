@@ -2,6 +2,7 @@ import { lt, sql } from "drizzle-orm";
 import { getDb } from "./index.js";
 import { companionBeats, companionInstalls } from "./schema.js";
 import { createLogger } from "../schema/utils/logger.js";
+import { VALID_REGIONS } from "../schema/utils/regions.js";
 
 const logger = createLogger({ service: "CompanionTelemetry" });
 
@@ -49,8 +50,13 @@ export function parseBeat(body: unknown): CompanionBeatInput | null {
   if (typeof b.link !== "string" || !LINKS.includes(b.link)) return null;
   if (typeof b.listing !== "string" || !LISTINGS.includes(b.listing)) return null;
 
+  // Must be a WoW region, not merely two-to-four letters: the addon writes this
+  // header field verbatim and nothing between it and here checks it, so a client
+  // sending a country code ("DK") would otherwise be stored as a region. Anything
+  // unrecognised becomes null, which the upsert's coalesce treats as "no region
+  // in this beat" and keeps the last known good one.
   const region =
-    b.region == null ? null : typeof b.region === "string" && /^[A-Za-z]{2,4}$/.test(b.region) ? b.region.toLowerCase() : null;
+    typeof b.region === "string" && VALID_REGIONS.has(b.region.toLowerCase()) ? b.region.toLowerCase() : null;
 
   const applicants = int(b.applicants);
   const total = int(b.total);
