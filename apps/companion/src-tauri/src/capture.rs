@@ -146,9 +146,12 @@ fn run(app: AppHandle) {
                 last = Some(frame);
             }
         }
-        // ponytail: until a frame arrives the status stays unchanged; "lost" also covers
-        // "window found but the addon never painted anything".
-        if fresh.elapsed() > LOST_AFTER {
+        // ponytail: until a frame arrives the status stays unchanged. "lost" needs a
+        // frame to have arrived first -- a window we can see but that has never painted
+        // (login screen, addon off, a handle for a game that has since closed) is not a
+        // lost sync, and calling it one put "lost" in the telemetry for installs that
+        // never synced at all.
+        if hb.is_some() && fresh.elapsed() > LOST_AFTER {
             set_status(&mut status, &mut last, "lost");
         }
         thread::sleep(Duration::from_millis(250));
