@@ -461,8 +461,9 @@ export const companionBeats = pgTable(
     installId: uuid("install_id").notNull(),
     at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
     version: varchar("version", { length: 16 }).notNull(),
-    /** Capture link state at beat time: ok | no_window | lost | incompatible |
-     *  addon_outdated | app_outdated. The activation funnel lives in this column. */
+    /** Capture link state at beat time: ok | no_window | no_hud | lost |
+     *  incompatible | addon_outdated | app_outdated. The activation funnel lives
+     *  in this column. */
     link: varchar("link", { length: 16 }).notNull(),
     /** "" when nothing is listed, else "raid:N" | "raid:H" | "raid:M" | "keys". */
     listing: varchar("listing", { length: 8 }).notNull(),

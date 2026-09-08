@@ -32,11 +32,11 @@ const AMBER = "#f4a50e";
 const RED = "#f87171";
 const ACCENT = "#8b7fd4";
 
-/** no_window and lost are the game's fault; the rest are ours to ship a fix for. */
+/** no_window, no_hud and lost are the game's fault; the rest are ours to ship a fix for. */
 const linkColor = (link?: string | null) =>
   link === "ok"
     ? GREEN
-    : link === "no_window" || link === "lost"
+    : link === "no_window" || link === "no_hud" || link === "lost"
       ? AMBER
       : link
         ? RED
@@ -220,9 +220,11 @@ const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
                     <>
                       {" "}
                       {data.funnel.neverNoWindow} of them last reported{" "}
-                      <span className={classes.mono}>no_window</span>, which is
-                      the strip never being enabled with{" "}
-                      <span className={classes.mono}>/pi hud</span>.
+                      <span className={classes.mono}>no_window</span> — the game
+                      was not running at all. The ones that opened it and still
+                      never synced sit under{" "}
+                      <span className={classes.mono}>no_hud</span> in the link
+                      mix.
                     </>
                   )}
                 </Text>
@@ -244,6 +246,10 @@ const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
                 no_window
               </Text>{" "}
               is a game-not-running problem.{" "}
+              <Text span c={AMBER} inherit>
+                no_hud
+              </Text>{" "}
+              is the game running with no strip to read — /pi hud was never run.{" "}
               <Text span c={RED} inherit>
                 addon_outdated / incompatible
               </Text>{" "}

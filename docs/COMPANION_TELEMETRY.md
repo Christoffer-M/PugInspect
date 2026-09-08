@@ -130,7 +130,8 @@ from companion_installs i group by 1 order by 1 desc;
 ## Health
 
 ```sql
--- Where installs are stuck. no_window dominating means setup is failing.
+-- Where installs are stuck. no_hud dominating means setup is failing (the game is
+-- up, the strip is not); no_window just means the app runs with the game closed.
 select link, count(*), round(100.0 * count(*) / sum(count(*)) over (), 1) as pct
 from companion_beats where at > now() - interval '7 days' group by 1 order by 2 desc;
 ```
