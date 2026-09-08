@@ -5,8 +5,8 @@ import roleHealer from "../assets/role-healer.png";
 import roleTank from "../assets/role-tank.png";
 import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
 import { DEFAULT_RAID } from "../generated/seasonConfig";
-import type { RosterEntry } from "../api";
-import { CLASS_BY_ID, type Applicant, type Lookup } from "../state";
+import type { Part, RosterEntry } from "../api";
+import { CLASS_BY_ID, errorOf, type Applicant, type Lookup } from "../state";
 import app from "../App.module.css";
 import classes from "./Applicants.module.css";
 
@@ -76,7 +76,9 @@ export function ApplicantRow({
   // The game is the authority here: its value is live where the API's comes from an hourly
   // snapshot. The lookup only fills in when the game had nothing to report.
   const ilvl = a.ilvl || c?.equippedItemLevel;
-  const loading = lookup?.state === "loading";
+  // Per source: the three requests land independently, so each column stops
+  // showing a skeleton as soon as its own upstream answers.
+  const loading = (part: Part) => lookup?.parts[part]?.state === "loading";
   const isKeys = difficulty === "+";
   // Already scoped to the listing (M+ parses for keys, raid parses otherwise).
   const best = c?.logs;
@@ -86,6 +88,7 @@ export function ApplicantRow({
       ? { text: `+${a.bestLevel} ${a.bestTimed ? "✓" : "✗"}`, color: a.bestTimed ? "#7fe0a3" : "#f4c15e" }
       : { text: "-", color: DIM }
     : null;
+  const failure = errorOf(lookup);
   const skeleton = <span className={classes.skeletonBar} />;
 
   return (
@@ -111,21 +114,21 @@ export function ApplicantRow({
           )}
           {prettyRealm(a.realm)}
           {className && ` · ${c?.activeSpec ? `${c.activeSpec} ` : ""}${className}`}
-          {lookup?.state === "error" && (
-            <span className={app.mono} style={{ color: "#f4c15e" }} title={lookup.error}>
+          {failure && (
+            <span className={app.mono} style={{ color: "#f4c15e" }} title={failure}>
               {" "}lookup failed
             </span>
           )}
         </span>
       </div>
       <span className={classes.value} style={{ color: ilvl ? "var(--pi-text-bright)" : DIM }}>
-        {ilvl || (loading ? skeleton : "-")}
+        {ilvl || (loading("core") ? skeleton : "-")}
       </span>
       <span className={classes.value} style={{ color: rio?.color ?? DIM }}>
-        {loading ? skeleton : Math.round(rio?.score ?? 0) || "-"}
+        {loading("rio") ? skeleton : Math.round(rio?.score ?? 0) || "-"}
       </span>
       <span className={classes.value} style={{ color: best != null ? getParseColor(best) : DIM }}>
-        {loading ? skeleton : best != null ? Math.floor(best) : "-"}
+        {loading("logs") ? skeleton : best != null ? Math.floor(best) : "-"}
       </span>
       {bestRun ? (
         <span className={classes.value} style={{ color: bestRun.color }}>
@@ -133,7 +136,7 @@ export function ApplicantRow({
         </span>
       ) : (
         <span className={classes.value} style={{ color: prog?.color ?? DIM }}>
-          {loading ? skeleton : (prog?.text ?? "-")}
+          {loading("rio") ? skeleton : (prog?.text ?? "-")}
         </span>
       )}
       <span className={classes.open}>↗</span>

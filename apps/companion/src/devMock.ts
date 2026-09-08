@@ -89,7 +89,9 @@ window.fetch = async (input, init) => {
   const body = typeof init?.body === "string" ? init.body : "";
   if (!body.includes("RosterCharacters")) return realFetch(input, init);
   const { characters } = JSON.parse(body).variables as { characters: { name: string; realm: string }[] };
-  await new Promise((r) => setTimeout(r, 900));
+  // Deliberately lopsided: RaiderIO crawls so the dev app shows identity and
+  // parses filling in while the score column is still a skeleton.
+  await new Promise((r) => setTimeout(r, body.includes("RosterCharactersRio") ? 2500 : 900));
   const rosterCharacters = characters
     .filter((c) => !["frostvyre", "quickshot"].includes(c.name.toLowerCase()))
     .map((c) => {
