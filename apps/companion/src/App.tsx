@@ -4,7 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
 import { disable, enable } from "@tauri-apps/plugin-autostart";
 import { pageClasses } from "@repo/ui";
-import { keyOf, useCompanion } from "./state";
+import { errorOf, isLoading, keyOf, useCompanion } from "./state";
 import { reportState } from "./analytics";
 import { useSettings } from "./settings";
 import { ding, notify } from "./notify";
@@ -138,9 +138,9 @@ export default function App() {
   }
 
   const shown = session;
-  const pendingLookups = shown ? shown.applicants.filter((a) => lookups[keyOf(a)]?.state === "loading").length : 0;
-  const failed = shown ? shown.applicants.map((a) => lookups[keyOf(a)]).filter((l) => l?.state === "error") : [];
-  const failedDetail = failed.length ? `${failed.length} lookup${failed.length === 1 ? "" : "s"} failed: ${failed[0]!.error ?? "unknown error"}` : undefined;
+  const pendingLookups = shown ? shown.applicants.filter((a) => isLoading(lookups[keyOf(a)])).length : 0;
+  const failed = shown ? shown.applicants.map((a) => errorOf(lookups[keyOf(a)])).filter((e) => e !== undefined) : [];
+  const failedDetail = failed.length ? `${failed.length} lookup${failed.length === 1 ? "" : "s"} failed: ${failed[0] ?? "unknown error"}` : undefined;
   // Same resolution as the row: the strip's live value, the lookup only when the game had none.
   const ilvls = (shown?.applicants ?? []).map((a) => a.ilvl || lookups[keyOf(a)]?.entry?.character?.equippedItemLevel || 0).filter(Boolean);
   const avgIlvl = ilvls.length ? Math.round(ilvls.reduce((s, n) => s + n, 0) / ilvls.length) : 0;

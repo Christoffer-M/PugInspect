@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { slugRealm } from "@repo/ui";
-import { CHUNK_SIZE, lookupCharacters, type RosterEntry } from "./api";
+import { CHUNK_SIZE, PARTS, lookupCharacters, type Part, type RosterEntry } from "./api";
 import { count } from "./analytics";
 import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
 import { Difficulty, SpecRole } from "./graphql/graphql";
@@ -68,20 +68,35 @@ export type Session = {
 /** GraphQL Difficulty enum value for the session's raid difficulty, if it is a raid. */
 export const gqlDifficulty = (d: string): Difficulty | undefined =>
   ({ N: Difficulty.Normal, H: Difficulty.Heroic, M: Difficulty.Mythic })[d as "N" | "H" | "M"];
-export type Lookup = {
+type PartState = {
   state: "loading" | "done" | "error";
-  entry?: RosterEntry;
   error?: string;
   /** When an error was recorded, so the lookup can be retried automatically. */
   failedAt?: number;
 };
 
+/** Each upstream is fetched and tracked on its own, so a slow RaiderIO leaves the
+ *  identity fields and parses free to land; `entry` merges the parts as they do. */
+export type Lookup = {
+  parts: Partial<Record<Part, PartState>>;
+  entry?: RosterEntry;
+};
+
 /** How long a failed lookup sits before the next frame re-queues it. */
 const RETRY_AFTER_MS = 30_000;
 
-/** Queue a character when nothing is known yet, or the last attempt failed long enough ago. */
-const needsLookup = (l: Lookup | undefined) =>
-  l === undefined || (l.state === "error" && Date.now() - (l.failedAt ?? 0) > RETRY_AFTER_MS);
+/** Queue a part when nothing is known yet, or the last attempt failed long enough ago. */
+const needsPart = (l: Lookup | undefined, p: Part) => {
+  const s = l?.parts[p];
+  return s === undefined || (s.state === "error" && Date.now() - (s.failedAt ?? 0) > RETRY_AFTER_MS);
+};
+const needsLookup = (l: Lookup | undefined) => PARTS.some((p) => needsPart(l, p));
+
+/** Still waiting on at least one upstream. */
+export const isLoading = (l: Lookup | undefined) => PARTS.some((p) => l?.parts[p]?.state === "loading");
+/** First error across the upstreams, if any failed. */
+export const errorOf = (l: Lookup | undefined) =>
+  PARTS.map((p) => l?.parts[p]).find((s) => s?.state === "error")?.error;
 
 export const keyOf = (a: { name: string; realm: string }) => `${a.name.toLowerCase()}-${slugRealm(a.realm)}`;
 
@@ -106,30 +121,45 @@ export function useCompanion(events: Events) {
   const eventsRef = useRef(events);
   eventsRef.current = events;
   const seenRef = useRef<Record<string, number>>({});
-  const pending = useRef<{ region: string; applicants: Applicant[] }>({ region: "", applicants: [] });
+  const pending = useRef<{ region: string; parts: Record<Part, Applicant[]> }>({ region: "", parts: { core: [], rio: [], logs: [] } });
   const debounce = useRef<number | undefined>(undefined);
 
-  const flushLookups = async () => {
-    const { region, applicants } = pending.current;
-    const isKeys = sessionRef.current?.difficulty === "+";
-    const difficulty = gqlDifficulty(sessionRef.current?.difficulty ?? "");
-    pending.current = { region, applicants: [] };
-    if (applicants.length) count("lookups", applicants.length);
+  /** One part for one chunk; each part runs its own chunks so a slow upstream
+   *  only holds up its own column. */
+  const runPart = async (
+    part: Part,
+    region: string,
+    applicants: Applicant[],
+    scope: { difficulty?: Difficulty } | { zoneId?: number }
+  ) => {
     for (let i = 0; i < applicants.length; i += CHUNK_SIZE) {
       const chunk = applicants.slice(i, i + CHUNK_SIZE);
       try {
         const entries = await lookupCharacters(
+          part,
           region,
           // Send the role the applicant signed up as: their active spec can say
           // otherwise (a healer Evoker sitting in Devastation), and the backend
           // picks the parse metric from this.
           chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm), role: SPEC_ROLE[a.role] })),
-          isKeys ? { zoneId: MYTHIC_PLUS_ZONE_ID } : { difficulty }
+          scope
         );
-        count("notFound", entries.filter((e) => e.notFound).length);
+        if (part === "core") count("notFound", entries.filter((e) => e.notFound).length);
         setLookups((l) => {
           const next = { ...l };
-          for (const e of entries) next[keyOf(e)] = { state: "done", entry: e };
+          for (const e of entries) {
+            const prev = next[keyOf(e)];
+            next[keyOf(e)] = {
+              parts: { ...prev?.parts, [part]: { state: "done" } },
+              entry: {
+                ...prev?.entry,
+                ...e,
+                character: e.character
+                  ? { ...prev?.entry?.character, ...e.character }
+                  : (prev?.entry?.character ?? null),
+              },
+            };
+          }
           return next;
         });
       } catch (e) {
@@ -137,31 +167,54 @@ export function useCompanion(events: Events) {
         count("lookupErrors", chunk.length);
         setLookups((l) => {
           const next = { ...l };
-          for (const a of chunk) next[keyOf(a)] = { state: "error", error, failedAt: Date.now() };
+          for (const a of chunk) {
+            const prev = next[keyOf(a)];
+            next[keyOf(a)] = {
+              ...prev,
+              parts: { ...prev?.parts, [part]: { state: "error", error, failedAt: Date.now() } },
+            };
+          }
           return next;
         });
       }
     }
   };
 
+  const flushLookups = () => {
+    const { region, parts } = pending.current;
+    const isKeys = sessionRef.current?.difficulty === "+";
+    const difficulty = gqlDifficulty(sessionRef.current?.difficulty ?? "");
+    const scope = isKeys ? { zoneId: MYTHIC_PLUS_ZONE_ID } : { difficulty };
+    pending.current = { region, parts: { core: [], rio: [], logs: [] } };
+    const queued = new Set(PARTS.flatMap((p) => parts[p].map(keyOf)));
+    if (queued.size) count("lookups", queued.size);
+    for (const p of PARTS) void runPart(p, region, parts[p], scope);
+  };
+
   /** Mark as loading and queue, deduped by key: the backend answers a duplicate
    *  inside one chunk with a notFound placeholder, which would blank the row. */
   const queueLookups = (region: string, applicants: Applicant[]) => {
-    const queued = new Set(pending.current.applicants.map(keyOf));
-    const add: Applicant[] = [];
-    for (const a of applicants) {
-      const key = keyOf(a);
-      if (queued.has(key)) continue;
-      queued.add(key);
-      add.push(a);
+    const parts = { ...pending.current.parts };
+    const loading: Record<string, Lookup> = {};
+    for (const p of PARTS) {
+      const queued = new Set(parts[p].map(keyOf));
+      const add: Applicant[] = [];
+      for (const a of applicants) {
+        const key = keyOf(a);
+        if (queued.has(key) || !needsPart(lookupsRef.current[key], p)) continue;
+        queued.add(key);
+        add.push(a);
+        const prev = loading[key] ?? lookupsRef.current[key];
+        loading[key] = { ...prev, parts: { ...prev?.parts, [p]: { state: "loading" } } };
+      }
+      parts[p] = [...parts[p], ...add];
     }
-    if (!add.length) return;
-    const loading = Object.fromEntries(add.map((a) => [keyOf(a), { state: "loading" as const }]));
+    if (!Object.keys(loading).length) return;
     // Mirror into the ref as well as state: the next frame arrives in 250 ms and
     // must not re-queue these before React has re-rendered.
     lookupsRef.current = { ...lookupsRef.current, ...loading };
     setLookups((l) => ({ ...l, ...loading }));
-    pending.current = { region, applicants: [...pending.current.applicants, ...add] };
+    pending.current = { region, parts };
     window.clearTimeout(debounce.current);
     debounce.current = window.setTimeout(flushLookups, 300);
   };
@@ -192,8 +245,8 @@ export function useCompanion(events: Events) {
       if (current) eventsRef.current.onNewListing?.(s);
     }
     // A transient failure must not blank an applicant for the rest of the session:
-    // anything errored longer than the cooldown ago is queued again below.
-    const stale = f.applicants.filter((a) => lookupsRef.current[keyOf(a)]?.state === "error" && needsLookup(lookupsRef.current[keyOf(a)]));
+    // any part errored longer than the cooldown ago is queued again below.
+    const stale = f.applicants.filter((a) => needsLookup(lookupsRef.current[keyOf(a)]));
     if (stale.length) queueLookups(f.region, stale);
     const fresh = f.applicants.filter((a) => seenRef.current[keyOf(a)] === undefined);
     if (fresh.length) {
