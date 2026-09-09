@@ -1,7 +1,7 @@
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
-import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm, startTimer } from "../../utils/helpers.js";
 import { getCachedBlizzardProfile, persistBlizzardProfile, getCachedEquipment, persistEquipment } from "../../../db/persistence.js";
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import type { BlizzardCharacterEquipment, BlizzardItemMedia } from "./model/CharacterEquipment.js";
@@ -29,6 +29,7 @@ export class BlizzardService {
   // breaks. Don't reintroduce `https://${region}.battle.net/oauth/token`.
   private static readonly tokens = new OAuthTokenManager(async () => {
     logger.info("Fetching new Blizzard OAuth token");
+    const elapsed = startTimer();
 
     const body = new URLSearchParams({
       grant_type: "client_credentials",
@@ -43,11 +44,13 @@ export class BlizzardService {
     });
 
     if (!res.ok) {
-      logger.error("Blizzard token request failed", { status: res.status, statusText: res.statusText });
+      logger.error("Blizzard token request failed", { status: res.status, statusText: res.statusText, durationMs: elapsed() });
       throw new Error(`Failed to fetch Blizzard token: ${res.status} ${res.statusText}`);
     }
 
-    logger.info("Blizzard OAuth token acquired");
+    // A cold token adds its own latency to the first fetch behind it, so it is
+    // timed separately rather than being blamed on the profile call.
+    logger.info("Blizzard OAuth token acquired", { durationMs: elapsed() });
     return res.json() as Promise<{ access_token: string; expires_in: number }>;
   });
 
@@ -108,6 +111,7 @@ export class BlizzardService {
 
     logger.info("Blizzard character profile + media request", { name, realm: normalizedRealm, region });
 
+    const elapsed = startTimer();
     const [profileRes, mediaRes] = await Promise.allSettled([
       fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
       fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
@@ -118,7 +122,7 @@ export class BlizzardService {
 
       const res = profileRes.value;
       if (res.status === 404) {
-        logger.warn("Blizzard character not found", { name, realm: normalizedRealm, region });
+        logger.warn("Blizzard character not found", { name, realm: normalizedRealm, region, durationMs: elapsed() });
         throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
       }
       if (!res.ok) throw new Error(`Blizzard profile request failed: ${res.status} ${res.statusText}`);
@@ -135,7 +139,9 @@ export class BlizzardService {
         logger.warn("Blizzard character media fetch failed (non-fatal)", { name, realm: normalizedRealm, region });
       }
 
-      logger.info("Blizzard character profile fetched", { name, realm: normalizedRealm, region });
+      // Timed at the point both the profile and its media have settled - that
+      // pair is what the caller actually waits on.
+      logger.info("Blizzard character profile fetched", { name, realm: normalizedRealm, region, durationMs: elapsed() });
 
       const characterId = await persistBlizzardProfile(
         { region, realm: normalizedRealm, name },
@@ -155,6 +161,7 @@ export class BlizzardService {
         name,
         realm: normalizedRealm,
         region,
+        durationMs: elapsed(),
         error: error instanceof Error ? error.message : String(error),
       });
       throw new GraphQLError("Failed to fetch character profile from Blizzard", {
@@ -212,18 +219,32 @@ export class BlizzardService {
 
     logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });
 
+    const elapsed = startTimer();
     try {
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
       if (res.status === 404) {
-        logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region });
+        logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region, durationMs: elapsed() });
         throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
       }
       if (!res.ok) throw new Error(`Blizzard equipment request failed: ${res.status} ${res.statusText}`);
 
       const data = await res.json() as BlizzardCharacterEquipment;
       const fetchedAt = Math.floor(Date.now() / 1000);
+      const equipmentMs = elapsed();
 
-      await this.resolveItemIcons(data, token);
+      const iconsElapsed = startTimer();
+      const iconMisses = await this.resolveItemIcons(data, token);
+
+      // The icon fan-out is up to 16 further requests and is reported on its
+      // own: a slow gear panel is often the icons, not the equipment call.
+      logger.info("Blizzard equipment fetched", {
+        name,
+        realm: normalizedRealm,
+        region,
+        durationMs: equipmentMs,
+        iconDurationMs: iconsElapsed(),
+        iconMisses,
+      });
 
       // persistEquipment catches and logs its own failures — cache writes are non-fatal
       await persistEquipment({ region, realm: normalizedRealm, name }, data, fetchedAt);
@@ -236,6 +257,7 @@ export class BlizzardService {
         name,
         realm: normalizedRealm,
         region,
+        durationMs: elapsed(),
         error: error instanceof Error ? error.message : String(error),
       });
       throw new GraphQLError("Failed to fetch character equipment from Blizzard", {
@@ -244,8 +266,10 @@ export class BlizzardService {
     }
   }
 
-  /** Sets iconUrl on every equipped item, fetching item media only for cache misses. Per-item failures are non-fatal. */
-  private static async resolveItemIcons(data: BlizzardCharacterEquipment, token: string): Promise<void> {
+  /** Sets iconUrl on every equipped item, fetching item media only for cache
+   *  misses. Per-item failures are non-fatal. Returns how many items missed the
+   *  process cache, i.e. how many upstream requests this fan-out actually made. */
+  private static async resolveItemIcons(data: BlizzardCharacterEquipment, token: string): Promise<number> {
     const misses = data.equipped_items.filter((it) => !itemIconCache.has(it.item.id));
 
     await Promise.allSettled(
@@ -266,5 +290,7 @@ export class BlizzardService {
     for (const it of data.equipped_items) {
       it.iconUrl = itemIconCache.get(it.item.id) ?? null;
     }
+
+    return misses.length;
   }
 }

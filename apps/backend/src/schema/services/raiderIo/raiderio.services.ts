@@ -2,7 +2,7 @@ import { config } from "../../../config/index.js";
 import { RAID_PROGRESSION_FIELD } from "../../../generated/seasonConfig.js";
 import { fetcher, FetchError } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
-import { dedupeInFlight, normalizeRealm, normalizeName } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm, normalizeName, startTimer } from "../../utils/helpers.js";
 import { getCachedRioProfile, persistRioProfile } from "../../../db/persistence.js";
 import { GraphQLError } from "graphql";
 import {
@@ -75,6 +75,7 @@ export class RaiderIOService {
 
     const url = this.buildUrlWithQueries(`${baseApiUrl}/search`, query);
 
+    const elapsed = startTimer();
     try {
       const response = await fetcher<RaiderIoCharacterSearchApiResponse>(
         url,
@@ -84,7 +85,7 @@ export class RaiderIOService {
         (m) => m.type === "character"
       );
 
-      logger.info("RaiderIO character suggestions fetched", { searchString: args.searchString, region: args.region, count: filteredMatches.length });
+      logger.info("RaiderIO character suggestions fetched", { searchString: args.searchString, region: args.region, count: filteredMatches.length, durationMs: elapsed() });
       return filteredMatches.map((r) => ({
         name: r.name,
         realm: r.data.realm.name,
@@ -94,6 +95,7 @@ export class RaiderIOService {
       logger.error("RaiderIO character suggestions fetch failed", {
         searchString: args.searchString,
         region: args.region,
+        durationMs: elapsed(),
         error: error instanceof Error ? error.message : String(error),
       });
       throw new GraphQLError(
@@ -170,10 +172,11 @@ export class RaiderIOService {
       query
     );
 
+    const elapsed = startTimer();
     try {
       const response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
       const fetchedAt = Math.floor(Date.now() / 1000);
-      logger.info("RaiderIO character profile fetched", { name, realm, region });
+      logger.info("RaiderIO character profile fetched", { name, realm, region, durationMs: elapsed() });
       persistRioProfile({ region, realm: normalizedRealm, name: normalizedName }, response, fetchedAt).catch((err: unknown) => {
         logger.warn("Failed to persist RIO profile to DB cache", { name, realm, region, error: String(err) });
       });
@@ -187,7 +190,7 @@ export class RaiderIOService {
         (error.status === 404 ||
           (error.status === 400 && /could not find|failed to find/i.test(error.apiMessage)))
       ) {
-        logger.warn("RaiderIO character not found", { name, realm, region, apiMessage: error.apiMessage });
+        logger.warn("RaiderIO character not found", { name, realm, region, durationMs: elapsed(), apiMessage: error.apiMessage });
         throw new GraphQLError("Character not found on RaiderIO", {
           extensions: { code: "NOT_FOUND" },
         });
@@ -197,6 +200,7 @@ export class RaiderIOService {
         name,
         realm,
         region,
+        durationMs: elapsed(),
         error: error instanceof Error ? error.message : String(error),
       });
       throw new GraphQLError(
