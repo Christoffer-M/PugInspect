@@ -4,6 +4,7 @@ import { BlizzardService } from "../blizzard/blizzard.services.js";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
 import { createLogger } from "../../utils/logger.js";
+import { startTimer } from "../../utils/helpers.js";
 
 const logger = createLogger({ service: "CharacterProfile" });
 
@@ -34,20 +35,46 @@ export async function getCharacterProfiles(
   const { name, realm, region } = args;
   logger.debug("Character profile request", { name, realm, region, blizzardRequested, raidLogsRequested, mythicPlusLogsRequested, raiderIoRequested, gearRequested, bypassCache, cacheOnly });
 
+  // Per-upstream wall clock for one character. The upstreams run in parallel,
+  // so the total is roughly the slowest of them - which is exactly the question
+  // worth answering when a lookup feels slow. A few milliseconds here means the
+  // DB snapshot served it; hundreds means a real upstream round trip.
+  const durations: Record<string, number> = {};
+  const track = async <T>(upstream: string, work: Promise<T>): Promise<T> => {
+    const elapsed = startTimer();
+    try {
+      return await work;
+    } finally {
+      durations[upstream] = elapsed();
+    }
+  };
+
+  const total = startTimer();
+  // Each call is made before track() awaits it, so wrapping preserves the
+  // parallel fan-out - track only observes promises that are already running.
   const [blizzardResult, rioResult, logsResult, equipmentResult] = await Promise.allSettled([
     blizzardRequested
-      ? BlizzardService.getCharacterProfile(args, bypassCache, cacheOnly)
+      ? track("blizzardMs", BlizzardService.getCharacterProfile(args, bypassCache, cacheOnly))
       : Promise.resolve(null),
     raiderIoRequested
-      ? RaiderIOService.getCharacterProfile(args, bypassCache, cacheOnly)
+      ? track("raiderIoMs", RaiderIOService.getCharacterProfile(args, bypassCache, cacheOnly))
       : Promise.resolve(null),
     raidLogsRequested || mythicPlusLogsRequested
-      ? WarcraftLogsService.getCharacterProfile(args, bypassCache, cacheOnly)
+      ? track("warcraftLogsMs", WarcraftLogsService.getCharacterProfile(args, bypassCache, cacheOnly))
       : Promise.resolve(null),
     gearRequested
-      ? BlizzardService.getCharacterEquipment(args, bypassCache, cacheOnly)
+      ? track("gearMs", BlizzardService.getCharacterEquipment(args, bypassCache, cacheOnly))
       : Promise.resolve(null),
   ]);
+
+  logger.debug("Character profile upstreams settled", {
+    name,
+    realm,
+    region,
+    cacheOnly,
+    totalMs: total(),
+    ...durations,
+  });
 
   if (blizzardResult.status === "rejected") logRejection("Blizzard", blizzardResult.reason, { name, realm, region });
   if (rioResult.status === "rejected") logRejection("RaiderIO", rioResult.reason, { name, realm, region });

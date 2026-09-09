@@ -4,7 +4,7 @@ import { getCharacterProfiles } from "./characterProfile.service.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
 import { SPECS } from "../mythicPlusStats/specs.js";
 import type { BlizzardCharacterProfile } from "../blizzard/model/CharacterProfile.js";
-import { normalizeName, normalizeRealm } from "../../utils/helpers.js";
+import { normalizeName, normalizeRealm, startTimer } from "../../utils/helpers.js";
 import { createLogger } from "../../utils/logger.js";
 
 const logger = createLogger({ service: "Roster" });
@@ -45,6 +45,10 @@ export type RosterProfileBundle = {
   name: string;
   realm: string;
   role: SpecRole | null;
+  /** Wall clock for this character's identity/RIO lookup and its parses fetch,
+   *  aggregated into the per-chunk timing log below. */
+  phase1Ms: number;
+  phase2Ms: number;
   profiles: Awaited<ReturnType<typeof getCharacterProfiles>>;
 };
 
@@ -104,7 +108,10 @@ export async function getRosterProfiles(
     skip: boolean;
     role: SpecRole | null;
   }): Promise<RosterProfileBundle> => {
-    if (c.skip) return { name: c.name, realm: c.realm, role: null, profiles: EMPTY_PROFILES };
+    // A skipped entry never touches an upstream, so it contributes no timing.
+    if (c.skip) {
+      return { name: c.name, realm: c.realm, role: null, phase1Ms: 0, phase2Ms: 0, profiles: EMPTY_PROFILES };
+    }
     const charArgs = {
       name: c.name,
       realm: c.realm,
@@ -115,6 +122,7 @@ export async function getRosterProfiles(
     // Phase 1: identity (Blizzard, usually a 24h-cached DB hit) + RIO.
     // getCharacterProfiles allSettles its upstreams - a missing character
     // comes back as empty profiles, never a rejection.
+    const phase1 = startTimer();
     const profiles = await getCharacterProfiles(charArgs, {
       blizzardRequested: true,
       raiderIoRequested: options.raiderIoRequested,
@@ -124,6 +132,7 @@ export async function getRosterProfiles(
       bypassCache: false,
       cacheOnly: options.cacheOnly,
     });
+    const phase1Ms = phase1();
 
     // The caller's role wins: the companion knows which role an applicant
     // signed up as, which the active spec can contradict.
@@ -134,6 +143,7 @@ export async function getRosterProfiles(
     // the profile so healers can be ranked on healing. Omitting the metric
     // makes WCL rank everyone on damage, healers included. Circuit checked
     // per character so a breaker tripped mid-chunk stops the remaining calls.
+    const phase2 = startTimer();
     if (found && (options.raidLogsRequested || options.mythicPlusLogsRequested) && !WarcraftLogsService.isCircuitOpen()) {
       try {
         // One zone-scoped profile backs both raidLogs and mythicPlusLogs (same
@@ -157,13 +167,30 @@ export async function getRosterProfiles(
       }
     }
 
-    return { name: c.name, realm: c.realm, role, profiles };
+    return { name: c.name, realm: c.realm, role, phase1Ms, phase2Ms: phase2(), profiles };
   };
 
+  const total = startTimer();
   const results: RosterProfileBundle[] = [];
   for (let i = 0; i < chars.length; i += CONCURRENCY) {
     const batch = chars.slice(i, i + CONCURRENCY);
     results.push(...(await Promise.all(batch.map(lookupOne))));
   }
+
+  // One line per chunk request rather than per character, so this stays cheap
+  // enough to leave on. Phase 2 is sequenced after phase 1 per character, so a
+  // slow identity/RIO lookup shows up as phase2 starting late rather than as
+  // phase2 being slow - the split totals are what separate the two.
+  logger.info("Roster chunk resolved", {
+    region: args.region,
+    characters: chars.length,
+    raiderIoRequested: options.raiderIoRequested,
+    logsRequested: options.raidLogsRequested || options.mythicPlusLogsRequested,
+    cacheOnly: options.cacheOnly,
+    totalMs: total(),
+    maxPhase1Ms: Math.max(0, ...results.map((r) => r.phase1Ms)),
+    maxPhase2Ms: Math.max(0, ...results.map((r) => r.phase2Ms)),
+  });
+
   return results;
 }
