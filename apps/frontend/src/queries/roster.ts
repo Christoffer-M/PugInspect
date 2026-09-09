@@ -40,9 +40,11 @@ export type RosterEntry = Omit<CoreRow, "character"> & {
 
 export type RosterCharacterKey = { name: string; realm: string };
 
-/** Server-side per-request cap - a 30-man roster becomes 3 chunked requests,
- *  which keeps a paste + two difficulty toggles well under the backend's
- *  100 req/min per-IP limit. */
+/** Server-side per-request cap (ROSTER_CHUNK_LIMIT in roster.service.ts) - a
+ *  30-man roster becomes 3 chunks, and each chunk is fetched as 3 documents,
+ *  so a paste plus two difficulty toggles is ~16 requests against the backend's
+ *  200 req/min per-IP limit. Raising this would trade streaming granularity for
+ *  fewer requests; it must not exceed the server-side cap either way. */
 export const ROSTER_CHUNK_SIZE = 10;
 
 const createRosterMutation = graphql(`

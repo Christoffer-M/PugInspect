@@ -172,7 +172,13 @@ const corsOptions: cors.CorsOptions = {
   origin: config.allowedOrigins.length > 0 ? config.allowedOrigins : false,
 };
 
-const graphqlRateLimiter = createRateLimiter(100, 60_000);
+// The website and the companion share this bucket, and both fetch a roster
+// chunk as three documents (identity / RaiderIO / parses) so each upstream
+// lands independently. A 30-man roster load is therefore ~10 requests rather
+// than ~4; 200 keeps the same practical headroom the 100 was sized for at one
+// request per chunk. Expensive queries are held back by the depth and
+// field-count rules above - this counter is the flood guard.
+const graphqlRateLimiter = createRateLimiter(200, 60_000);
 
 /** True when semver-ish `a` is older than `b`; malformed parts count as 0. */
 function olderThan(a: string, b: string): boolean {
