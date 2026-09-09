@@ -454,6 +454,69 @@ describe("Roster Check", () => {
     expect(WarcraftLogsService.getCharacterProfile).not.toHaveBeenCalled();
   });
 
+  // The web roster page and the companion both split their lookup into
+  // core/rio/logs documents, because roster.service awaits RIO before it starts
+  // the WCL call. That only pays off while a parses-only selection leaves
+  // raiderIoRequested false - if it ever flips true, every parse queues behind
+  // RaiderIO again.
+  it("keeps the parts independent: a parses-only selection never requests RIO", async () => {
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile,
+      blizzardAvatarUrl: null,
+      rioProfile: undefined,
+      warcraftLogsProfile: undefined,
+      characterId: "char-uuid-1",
+      equipment: undefined,
+    });
+
+    const result = await execute(
+      `query RosterLogs($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty) {
+        rosterCharacters(region: $region, characters: $characters, difficulty: $difficulty) {
+          name
+          character { raidLogs { bestPerformanceAverage } }
+        }
+      }`,
+      { region: "eu", characters: [{ name: "Pugsley", realm: "Kazzak" }], difficulty: "Heroic" }
+    );
+
+    expect(result.errors).toBeUndefined();
+    // Phase 1 fetches identity only - roster.service always passes
+    // raidLogsRequested: false there and does WCL itself in phase 2.
+    expect(getCharacterProfiles).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ raiderIoRequested: false, blizzardRequested: true })
+    );
+    expect(WarcraftLogsService.getCharacterProfile).toHaveBeenCalled();
+  });
+
+  it("keeps the parts independent: a RIO-only selection never fetches parses", async () => {
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile,
+      blizzardAvatarUrl: null,
+      rioProfile,
+      warcraftLogsProfile: undefined,
+      characterId: "char-uuid-1",
+      equipment: undefined,
+    });
+
+    const result = await execute(
+      `query RosterRio($region: String!, $characters: [RosterCharacterInput!]!) {
+        rosterCharacters(region: $region, characters: $characters) {
+          name
+          character { raiderIo { currentSeason { all { score } } } }
+        }
+      }`,
+      { region: "eu", characters: [{ name: "Pugsley", realm: "Kazzak" }] }
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(getCharacterProfiles).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ raiderIoRequested: true })
+    );
+    expect(WarcraftLogsService.getCharacterProfile).not.toHaveBeenCalled();
+  });
+
   it("rejects chunks over the per-request cap", async () => {
     const result = await execute(ROSTER_CHARACTERS_QUERY, {
       region: "eu",

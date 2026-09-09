@@ -797,7 +797,23 @@ export type RosterQueryVariables = Exact<{
 
 export type RosterQuery = { __typename?: 'Query', roster?: { __typename?: 'Roster', slug: string, region: string, characters: Array<{ __typename?: 'RosterCharacterKey', name: string, realm: string }> } | null };
 
-export type RosterCharactersQueryVariables = Exact<{
+export type RosterCoreQueryVariables = Exact<{
+  region: Scalars['String']['input'];
+  characters: Array<RosterCharacterInput> | RosterCharacterInput;
+}>;
+
+
+export type RosterCoreQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, role?: SpecRole | null, character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, activeSpec?: string | null, level?: number | null, equippedItemLevel?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string } | null } | null }> };
+
+export type RosterRioQueryVariables = Exact<{
+  region: Scalars['String']['input'];
+  characters: Array<RosterCharacterInput> | RosterCharacterInput;
+}>;
+
+
+export type RosterRioQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, character?: { __typename?: 'Character', raiderIo?: { __typename?: 'RaiderIo', currentSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null } | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, normal_bosses_killed?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null }> | null } | null } | null }> };
+
+export type RosterLogsQueryVariables = Exact<{
   region: Scalars['String']['input'];
   characters: Array<RosterCharacterInput> | RosterCharacterInput;
   difficulty?: InputMaybe<Difficulty>;
@@ -805,7 +821,7 @@ export type RosterCharactersQueryVariables = Exact<{
 }>;
 
 
-export type RosterCharactersQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, role?: SpecRole | null, character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, activeSpec?: string | null, level?: number | null, equippedItemLevel?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string } | null, raiderIo?: { __typename?: 'RaiderIo', currentSeason?: { __typename?: 'SeasonScores', all?: { __typename?: 'Segment', score: number, color: string } | null } | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, total_bosses?: number | null, normal_bosses_killed?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null }> | null } | null, raidLogs?: { __typename?: 'RaidLogs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null } | null } | null }> };
+export type RosterLogsQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, character?: { __typename?: 'Character', raidLogs?: { __typename?: 'RaidLogs', bestPerformanceAverage?: number | null, medianPerformanceAverage?: number | null } | null } | null }> };
 
 export type SiteStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1288,14 +1304,9 @@ export const RosterDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<RosterQuery, RosterQueryVariables>;
-export const RosterCharactersDocument = new TypedDocumentString(`
-    query RosterCharacters($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty, $zoneId: Int) {
-  rosterCharacters(
-    region: $region
-    characters: $characters
-    difficulty: $difficulty
-    zoneId: $zoneId
-  ) {
+export const RosterCoreDocument = new TypedDocumentString(`
+    query RosterCore($region: String!, $characters: [RosterCharacterInput!]!) {
+  rosterCharacters(region: $region, characters: $characters) {
     name
     realm
     notFound
@@ -1312,6 +1323,17 @@ export const RosterCharactersDocument = new TypedDocumentString(`
       guild {
         name
       }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<RosterCoreQuery, RosterCoreQueryVariables>;
+export const RosterRioDocument = new TypedDocumentString(`
+    query RosterRio($region: String!, $characters: [RosterCharacterInput!]!) {
+  rosterCharacters(region: $region, characters: $characters) {
+    name
+    realm
+    notFound
+    character {
       raiderIo {
         currentSeason {
           all {
@@ -1327,6 +1349,22 @@ export const RosterCharactersDocument = new TypedDocumentString(`
           mythic_bosses_killed
         }
       }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<RosterRioQuery, RosterRioQueryVariables>;
+export const RosterLogsDocument = new TypedDocumentString(`
+    query RosterLogs($region: String!, $characters: [RosterCharacterInput!]!, $difficulty: Difficulty, $zoneId: Int) {
+  rosterCharacters(
+    region: $region
+    characters: $characters
+    difficulty: $difficulty
+    zoneId: $zoneId
+  ) {
+    name
+    realm
+    notFound
+    character {
       raidLogs {
         bestPerformanceAverage
         medianPerformanceAverage
@@ -1334,7 +1372,7 @@ export const RosterCharactersDocument = new TypedDocumentString(`
     }
   }
 }
-    `) as unknown as TypedDocumentString<RosterCharactersQuery, RosterCharactersQueryVariables>;
+    `) as unknown as TypedDocumentString<RosterLogsQuery, RosterLogsQueryVariables>;
 export const SiteStatsDocument = new TypedDocumentString(`
     query SiteStats {
   siteStats {

@@ -71,7 +71,11 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
     };
   }, [entries, difficulty]);
 
-  const loading = entries.length < totalCount;
+  // A member counts as fetched only once all three upstreams have answered for
+  // it - the identity lookup lands first, and calling that "done" would park
+  // the bar at 100% while scores and parses are still arriving.
+  const settled = entries.filter((e) => !e.pending.rio && !e.pending.logs).length;
+  const loading = settled < totalCount;
 
   return (
     <Paper withBorder radius="md" p={0}>
@@ -164,10 +168,10 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
       {loading && (
         <Group gap={10} px={16} pb={12} pt={0} wrap="nowrap">
           <Text size="12px" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-            Fetching {entries.length} / {totalCount} character{totalCount === 1 ? "" : "s"} -
+            Fetching {settled} / {totalCount} character{totalCount === 1 ? "" : "s"} -
             Blizzard, Raider.IO, Warcraft Logs
           </Text>
-          <Progress value={(entries.length / Math.max(totalCount, 1)) * 100} size={4} flex={1} />
+          <Progress value={(settled / Math.max(totalCount, 1)) * 100} size={4} flex={1} />
         </Group>
       )}
     </Paper>

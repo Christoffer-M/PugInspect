@@ -27,6 +27,7 @@ import {
   ROSTER_CHUNK_SIZE,
   useRoster,
   useRosterChunks,
+  useSeedRosterChunks,
   useUpdateRoster,
   type RosterCharacterKey,
   type RosterEntry,
@@ -165,6 +166,7 @@ const RosterResults: React.FC = () => {
     zoneId,
     enabled: characters.length > 0,
   });
+  const seedChunks = useSeedRosterChunks(region, difficulty);
 
   // Roster order is preserved end-to-end (stored normalized + deduped), so
   // entries map back to characters by position across the chunks. A chunk
@@ -212,31 +214,6 @@ const RosterResults: React.FC = () => {
   const notFoundCount = resolvedEntries.filter((e) => e.notFound).length;
   const failedChunks = chunkResults.filter((r) => r.isError);
 
-  /** Pre-fill the chunk cache for an edited character list from entries we
-   *  already have, so an edit re-renders in place instead of dropping every
-   *  card back to a skeleton (and refetching data that can't have changed).
-   *  Placeholder chunks are excluded: during a difficulty switch they still
-   *  hold the PREVIOUS difficulty's entries, and seeding those under the new
-   *  difficulty's keys would show wrong parses as fresh for 15 minutes. */
-  const seedChunkCache = (next: RosterCharacterKey[]) => {
-    const byKey = new Map<string, RosterEntry>();
-    chunkResults.forEach((result, chunk) => {
-      if (!result.data || result.isPlaceholderData) return;
-      result.data.forEach((entry, i) => {
-        const c = characters[chunk * ROSTER_CHUNK_SIZE + i];
-        if (c) byKey.set(`${c.name}:${c.realm}`, entry);
-      });
-    });
-    for (let i = 0; i < next.length; i += ROSTER_CHUNK_SIZE) {
-      const chunk = next.slice(i, i + ROSTER_CHUNK_SIZE);
-      const entries = chunk.map((c) => byKey.get(`${c.name}:${c.realm}`));
-      // Only seed fully-known chunks - an added member still needs a real fetch.
-      if (entries.every((e): e is RosterEntry => e !== undefined)) {
-        queryClient.setQueryData(queryKeys.rosterChunk(region, difficulty, chunk), entries);
-      }
-    }
-  };
-
   /** Rosters are read-only for everyone except the creator: edits require the
    *  slug's edit secret from localStorage. */
   const editRoster = (next: { name: string; realm: string }[]) => {
@@ -253,7 +230,7 @@ const RosterResults: React.FC = () => {
       { region, slug, editSecret: secret, characters: next },
       {
         onSuccess: (updated) => {
-          seedChunkCache(updated.characters);
+          seedChunks(characters, updated.characters);
           queryClient.setQueryData(queryKeys.roster(region, slug), updated);
         },
         // Mutations don't hit the global query-error toast, so surface
