@@ -75,6 +75,10 @@ export const RosterCard = React.memo(function RosterCard({
   const best = character?.raidLogs?.bestPerformanceAverage;
   const median = character?.raidLogs?.medianPerformanceAverage;
   const name = character?.name ?? upperCaseFirstLetter(hint.name);
+  // RIO and parses arrive after the identity lookup, so a found card renders
+  // with those cells still in flight - a dash there would read as "no score".
+  const rioPending = entry?.pending.rio === true;
+  const logsPending = entry?.pending.logs === true;
 
   const characterUrl = `/${region.toLowerCase()}/${normalizeRealm(character?.realm ?? hint.realm)}/${name.toLowerCase()}`;
 
@@ -179,27 +183,40 @@ export const RosterCard = React.memo(function RosterCard({
             </div>
             <div className={classes.statCell}>
               <span className={classes.statLabel}>RIO</span>
-              <span
-                className={classes.statValue}
-                style={{ color: character?.raiderIo?.currentSeason?.all?.color ?? "var(--mantine-color-dark-2)" }}
-              >
-                {character?.raiderIo?.currentSeason?.all?.score != null
-                  ? Math.round(character.raiderIo.currentSeason.all.score).toLocaleString()
-                  : "-"}
-              </span>
+              {rioPending ? (
+                <Skeleton h={14} w={44} mt={3} />
+              ) : (
+                <span
+                  className={classes.statValue}
+                  style={{ color: character?.raiderIo?.currentSeason?.all?.color ?? "var(--mantine-color-dark-2)" }}
+                >
+                  {character?.raiderIo?.currentSeason?.all?.score != null
+                    ? Math.round(character.raiderIo.currentSeason.all.score).toLocaleString()
+                    : "-"}
+                </span>
+              )}
             </div>
             <div className={classes.statCell}>
               <span className={classes.statLabel}>Prog</span>
-              <span
-                className={classes.statValue}
-                style={{ color: prog && prog.kills > 0 ? diff.color : "var(--mantine-color-dark-2)" }}
-              >
-                {prog ? `${prog.kills}/${prog.total} ${diff.letter}` : "-"}
-              </span>
+              {rioPending ? (
+                <Skeleton h={14} w={44} mt={3} />
+              ) : (
+                <span
+                  className={classes.statValue}
+                  style={{ color: prog && prog.kills > 0 ? diff.color : "var(--mantine-color-dark-2)" }}
+                >
+                  {prog ? `${prog.kills}/${prog.total} ${diff.letter}` : "-"}
+                </span>
+              )}
             </div>
           </div>
 
-          {best != null ? (
+          {logsPending ? (
+            <Stack gap={10} mt={10}>
+              <Skeleton h={6} radius="xl" />
+              <Skeleton h={6} w="78%" radius="xl" />
+            </Stack>
+          ) : best != null ? (
             <Stack gap={6} mt={10}>
               <Group gap={10} wrap="nowrap">
                 <span className={classes.statLabel} style={{ width: 44, flexShrink: 0 }}>
@@ -218,7 +235,9 @@ export const RosterCard = React.memo(function RosterCard({
             <div className={classes.noLogs} style={{ marginTop: 10 }}>
               <IconChartBarOff size={14} color="var(--mantine-color-dark-2)" />
               <Text size="12px" c="dimmed">
-                {prog && prog.kills > 0 ? `No logged ${diff.word} pulls` : `No ${diff.word} kills yet`}
+                {rioPending || (prog && prog.kills > 0)
+                  ? `No logged ${diff.word} pulls`
+                  : `No ${diff.word} kills yet`}
               </Text>
             </div>
           )}

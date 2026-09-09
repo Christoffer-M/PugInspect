@@ -45,10 +45,19 @@ export const queryKeys = {
     ];
   },
   roster: (region: string, slug: string) => ["roster", region.toLowerCase(), slug],
-  rosterChunk: (region: string, difficulty: string, chunk: { name: string; realm: string }[]) => [
+  /** One key per upstream part per chunk. `scope` is the difficulty for the
+   *  parses part and undefined for the others, so a difficulty toggle refetches
+   *  parses alone - identity and RIO progression are difficulty-agnostic. */
+  rosterChunk: (
+    part: "core" | "rio" | "logs",
+    region: string,
+    chunk: { name: string; realm: string }[],
+    scope?: string
+  ) => [
     "rosterChunk",
+    part,
     region.toLowerCase(),
-    difficulty,
+    scope ?? null,
     // Names are already normalized (they come from the server-stored roster)
     chunk.map((c) => `${c.name}-${c.realm}`).join(","),
   ],

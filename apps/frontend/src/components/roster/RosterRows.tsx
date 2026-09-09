@@ -64,6 +64,10 @@ const Row = React.memo(function Row({
   const realm = upperCaseFirstLetter(character?.realm ?? hint.realm);
   const rio = character?.raiderIo?.currentSeason?.all?.score;
   const best = character?.raidLogs?.bestPerformanceAverage;
+  // RIO and parses land after identity, so a resolved row can still be waiting
+  // on them - a dash there would read as "no score" / "no logs".
+  const rioPending = entry?.pending.rio === true;
+  const logsPending = entry?.pending.logs === true;
   // Cast keeps `href` typed; React drops it when it's undefined on a div.
   const Tag = (notFound ? "div" : "a") as "a";
 
@@ -107,26 +111,34 @@ const Row = React.memo(function Row({
       >
         {character?.equippedItemLevel ?? "-"}
       </span>
-      <span
-        className={classes.rowValue}
-        style={{ color: character?.raiderIo?.currentSeason?.all?.color ?? "var(--mantine-color-dark-2)" }}
-      >
-        {rio != null ? Math.round(rio).toLocaleString() : "-"}
-      </span>
-      <span
-        className={classes.rowValue}
-        style={{ color: prog && prog.kills > 0 ? DIFF_COLOR[difficulty] : "var(--mantine-color-dark-2)" }}
-      >
-        {prog ? `${prog.kills}/${prog.total} ${DIFF_LETTER[difficulty]}` : "-"}
-      </span>
+      {rioPending ? (
+        <Skeleton h={12} w={40} />
+      ) : (
+        <span
+          className={classes.rowValue}
+          style={{ color: character?.raiderIo?.currentSeason?.all?.color ?? "var(--mantine-color-dark-2)" }}
+        >
+          {rio != null ? Math.round(rio).toLocaleString() : "-"}
+        </span>
+      )}
+      {rioPending ? (
+        <Skeleton h={12} w={40} />
+      ) : (
+        <span
+          className={classes.rowValue}
+          style={{ color: prog && prog.kills > 0 ? DIFF_COLOR[difficulty] : "var(--mantine-color-dark-2)" }}
+        >
+          {prog ? `${prog.kills}/${prog.total} ${DIFF_LETTER[difficulty]}` : "-"}
+        </span>
+      )}
 
-      {best != null || !character ? (
+      {best != null || !character || logsPending ? (
         <span className={classes.rowParse}>
           <ParsePill value={best} />
         </span>
       ) : (
         <Text size="11.5px" c="dimmed">
-          {prog && prog.kills > 0 ? "no logs" : "no kills"}
+          {rioPending || (prog && prog.kills > 0) ? "no logs" : "no kills"}
         </Text>
       )}
       <span className={classes.rowParse}>
