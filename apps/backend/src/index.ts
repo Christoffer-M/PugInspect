@@ -154,9 +154,13 @@ const server = new ApolloServer<GraphQLContext>({
     {
       // One line per operation, tagged with who sent it, so upstream API
       // spend (WCL quota above all) can be attributed companion vs website.
+      // Bots are ~97% of that volume and never spend quota (they're served
+      // from the DB cache), so they log at debug — the human signal stays
+      // readable and the persisted log keeps months of history instead of days.
       async requestDidStart({ request, contextValue }) {
         if (request.operationName !== "IntrospectionQuery") {
-          graphqlLogger.info("GraphQL request", {
+          const level = contextValue.source === "bot" ? "debug" : "info";
+          graphqlLogger[level]("GraphQL request", {
             operation: request.operationName ?? "anonymous",
             source: contextValue.source,
           });

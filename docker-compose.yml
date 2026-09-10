@@ -40,6 +40,10 @@ services:
       DATABASE_URL: "postgresql://puginspect:${POSTGRES_PASSWORD:-localdev}@postgres:5432/puginspect"
       FRONTEND_ORIGIN: "http://frontend"
       PUBLIC_ORIGIN: "https://puginspect.com"
+      # Same JSON lines Dozzle shows, kept across container recreation.
+      LOG_FILE: "/logs/backend.jsonl"
+    volumes:
+      - backend_logs:/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,6 +84,7 @@ services:
 
 volumes:
   postgres_data:
+  backend_logs:
 
 networks:
   internal:
