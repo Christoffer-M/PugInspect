@@ -63,6 +63,23 @@ services:
     networks:
       - internal
 
+  # Dozzle reads per-container logs, which die with the container — so a deploy
+  # still wipes its history even though backend.jsonl survives. This tails the
+  # persisted file to stdout under its own container, which a backend rebuild
+  # doesn't recreate, so Dozzle keeps the history there instead.
+  # ponytail: history resets if this container itself restarts; backend.jsonl
+  # on the volume stays the source of truth either way.
+  backend-logs:
+    image: busybox:1.37
+    # -F retries, so it's fine that the file doesn't exist until the backend
+    # writes. Mounted read-only: this container must never create the file, or
+    # it lands root-owned and the backend's appends start failing silently.
+    command: ["tail", "-F", "/logs/backend.jsonl"]
+    logging: *logging
+    volumes:
+      - backend_logs:/logs:ro
+    restart: unless-stopped
+
   frontend:
     build:
       context: .
