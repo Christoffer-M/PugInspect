@@ -278,6 +278,18 @@ export class WarcraftLogsService {
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     if (this.client.isCircuitOpen()) {
       const retryAfterMs = this.client.circuitRetryAfterMs();
+      // The circuit stays open for minutes and applies site-wide, so this is
+      // the one failure that blanks parses on every character page at once.
+      // An expired snapshot is a far better answer than a rate-limit error.
+      const stale = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
+      if (stale) {
+        logger.warn("WCL_CIRCUIT_OPEN: serving stale snapshot", {
+          cacheKey,
+          retryAfterMs,
+          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
+        });
+        return stale;
+      }
       logger.warn("WCL_CIRCUIT_OPEN", { cacheKey, retryAfterMs });
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
@@ -292,6 +304,18 @@ export class WarcraftLogsService {
       return result;
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
+
+      const stale = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
+      if (stale) {
+        logger.warn("WarcraftLogs fetch failed, serving stale snapshot", {
+          name: args.name,
+          realm: normalizedRealm,
+          region: args.region,
+          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return stale;
+      }
 
       logger.error("WarcraftLogs character profile fetch failed", {
         name: args.name,

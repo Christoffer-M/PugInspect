@@ -151,7 +151,10 @@ export class RaiderIOService {
   ): Promise<{ data: RaiderIoCharacterApiResponse; fetchedAt: number }> {
     // With in-flight dedup, a hung fetch would hang every joined caller and pin
     // the map entry until restart — the timeout turns that into a bounded error.
-    const options: RequestInit = { method: "GET", signal: AbortSignal.timeout(10_000) };
+    // 15s, matching the WCL client: measured Sept 2026 RaiderIO's p90 was ~8.7s
+    // and its tail ran straight through the old 10s abort, timing out 31% of
+    // profile fetches. Blizzard and WCL answer in 250-450ms from the same box.
+    const options: RequestInit = { method: "GET", signal: AbortSignal.timeout(15_000) };
     const name = normalizedName;
     const realm = normalizedRealm;
 
@@ -194,6 +197,24 @@ export class RaiderIOService {
         throw new GraphQLError("Character not found on RaiderIO", {
           extensions: { code: "NOT_FOUND" },
         });
+      }
+
+      // RaiderIO is flaky enough that blanking the whole section on every
+      // blip is the worse answer: the score, raid progression and key levels
+      // all vanish for a character we looked up minutes ago. Serve the expired
+      // snapshot instead — the TTL is 15 minutes, so "stale" is the difference
+      // between one M+ run and none.
+      const stale = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName }, true);
+      if (stale) {
+        logger.warn("RaiderIO fetch failed, serving stale snapshot", {
+          name,
+          realm,
+          region,
+          durationMs: elapsed(),
+          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return stale;
       }
 
       logger.error("RaiderIO character profile fetch failed", {

@@ -105,19 +105,23 @@ export class BlizzardService {
     normalizedRealm: string
   ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }> {
     const { name, region } = args;
-    const token = await this.tokens.getToken();
-    const base = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}`;
-    const ns = `namespace=profile-${region}&locale=en_US`;
-
-    logger.info("Blizzard character profile + media request", { name, realm: normalizedRealm, region });
-
     const elapsed = startTimer();
-    const [profileRes, mediaRes] = await Promise.allSettled([
-      fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
-      fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
-    ]);
 
     try {
+      // The token fetch belongs inside the try: an oauth.battle.net outage
+      // takes down every lookup at once, which is exactly when the catch below
+      // has something better to offer than a raw rejection.
+      const token = await this.tokens.getToken();
+      const base = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}`;
+      const ns = `namespace=profile-${region}&locale=en_US`;
+
+      logger.info("Blizzard character profile + media request", { name, realm: normalizedRealm, region });
+
+      const [profileRes, mediaRes] = await Promise.allSettled([
+        fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
+        fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
+      ]);
+
       if (profileRes.status === "rejected") throw profileRes.reason;
 
       const res = profileRes.value;
@@ -156,6 +160,22 @@ export class BlizzardService {
       return { data, avatarUrl, fetchedAt, characterId };
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
+
+      // Blizzard supplies the identity fields — without it buildCharacter falls
+      // back to the raw URL params and the page loses class, spec and item
+      // level. The TTL is 24h, so a stale snapshot is almost always still true.
+      const stale = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name }, true);
+      if (stale) {
+        logger.warn("Blizzard fetch failed, serving stale snapshot", {
+          name,
+          realm: normalizedRealm,
+          region,
+          durationMs: elapsed(),
+          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return stale;
+      }
 
       logger.error("Blizzard character profile fetch failed", {
         name,
@@ -214,13 +234,16 @@ export class BlizzardService {
     normalizedRealm: string
   ): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }> {
     const { name, region } = args;
-    const token = await this.tokens.getToken();
-    const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}/equipment?namespace=profile-${region}&locale=en_US`;
-
-    logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });
-
     const elapsed = startTimer();
+
     try {
+      // Inside the try for the same reason as fetchProfile — a token failure
+      // must reach the stale fallback, not escape as a raw rejection.
+      const token = await this.tokens.getToken();
+      const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}/equipment?namespace=profile-${region}&locale=en_US`;
+
+      logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });
+
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
       if (res.status === 404) {
         logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region, durationMs: elapsed() });
@@ -252,6 +275,19 @@ export class BlizzardService {
       return { data, fetchedAt };
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
+
+      const stale = await getCachedEquipment({ region, realm: normalizedRealm, name }, true);
+      if (stale) {
+        logger.warn("Blizzard equipment fetch failed, serving stale snapshot", {
+          name,
+          realm: normalizedRealm,
+          region,
+          durationMs: elapsed(),
+          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return stale;
+      }
 
       logger.error("Blizzard equipment fetch failed", {
         name,
