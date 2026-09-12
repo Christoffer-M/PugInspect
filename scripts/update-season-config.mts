@@ -11,7 +11,7 @@
  * credentials), then review the diff. Hand-maintained inputs live in
  * scripts/season-config.mts. See docs/SEASONAL_UPDATES.md.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -102,6 +102,31 @@ async function fetchBlizzardItemSetIds(): Promise<number[]> {
 }
 
 /**
+ * Refuse to shrink the realm table by more than a fifth. Blizzard returning a
+ * short list is indistinguishable from realms closing, and the failure is
+ * total — an empty table sends every realm down the guessing fallback.
+ */
+function assertNoMassRealmLoss(path: string, next: Record<string, Record<string, string>>) {
+  let previous: Record<string, Record<string, string>>;
+  try {
+    const src = readFileSync(path, "utf8");
+    previous = JSON.parse(src.slice(src.indexOf("{"), src.lastIndexOf("}") + 1));
+  } catch {
+    return; // No committed table yet (or it is unparseable) — nothing to compare.
+  }
+  for (const [region, table] of Object.entries(previous)) {
+    const before = Object.keys(table).length;
+    const after = Object.keys(next[region] ?? {}).length;
+    if (before > 0 && after < before * 0.8)
+      throw new Error(
+        `Realm table for ${region} fell from ${before} to ${after} keys (>20% loss). ` +
+          `Blizzard's realm index is probably incomplete — refusing to write a gutted table. ` +
+          `Re-run; if the drop is real, delete ${path} to accept it.`
+      );
+  }
+}
+
+/**
  * Realm name → API slug, for every region we serve and every locale Blizzard
  * publishes the name in.
  *
@@ -115,9 +140,10 @@ async function fetchBlizzardItemSetIds(): Promise<number[]> {
  * locale, so one request per region covers all of them.
  *
  * Keyed by region because names are NOT unique across them: "Spirestone" is a
- * US/TW realm and also the en_US name of EU's "colinas-pardas", and 大漩涡 is
- * EU "the-maelstrom" and US "maelstrom". A region-less table silently hands
- * those players another region's slug.
+ * US/TW realm and also the ru_RU name of EU's "colinas-pardas" (a Russian
+ * client there really sends it), and 大漩涡 is EU "the-maelstrom" and US
+ * "maelstrom". A region-less table silently hands those players another
+ * region's slug.
  */
 async function fetchRealmSlugs(): Promise<Record<string, Record<string, string>>> {
   const access_token = await blizzardToken();
@@ -444,8 +470,14 @@ export const REALM_SLUGS: Record<string, Record<string, string>> = ${stringify(r
 `;
 
   const realmSlugsPath = resolve(root, "packages/ui/src/generated/realmSlugs.ts");
+  // A truncated realm index would silently gut the table — every realm breaks
+  // at once, and the diff reads as an ordinary deletion in an automated PR.
+  // There is no hand-maintained table underneath this any more, so fail loudly.
+  assertNoMassRealmLoss(realmSlugsPath, realmSlugs);
   mkdirSync(dirname(realmSlugsPath), { recursive: true });
   writeFileSync(realmSlugsPath, realmSlugsFile);
+  writeFileSync(resolve(root, "apps/backend/src/generated/realmSlugs.ts"), realmSlugsFile);
+  console.log(`Wrote ${resolve(root, "apps/backend/src/generated/realmSlugs.ts")}`);
   console.log(
     `Wrote ${realmSlugsPath} (${Object.entries(realmSlugs)
       .map(([r, t]) => `${r}: ${Object.keys(t).length}`)

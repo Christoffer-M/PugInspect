@@ -16,7 +16,7 @@ describe("slugRealm", () => {
   });
 
   it("resolves a name that means different realms in different regions", () => {
-    // Spirestone is a realm of its own in US/TW and the en_US name of EU's
+    // Spirestone is a realm of its own in US/TW and the ru_RU name of EU's
     // Colinas Pardas; without the region one of them gets the other's slug.
     expect(slugRealm("Spirestone", "us")).toBe("spirestone");
     expect(slugRealm("Spirestone", "eu")).toBe("colinas-pardas");

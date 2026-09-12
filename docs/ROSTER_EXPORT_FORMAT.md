@@ -49,12 +49,23 @@ unknown region or zero valid records is rejected the same way.
 Blizzard-normalized realm names (`TarrenMill`, `DerRatvonDalaran`, `РевущийФьорд`) are the
 name in the PLAYER's locale with separators stripped, so they are looked up in
 `REALM_SLUGS` — generated from Blizzard's realm index for every region and locale by
-`pnpm season:update`, and refreshed daily by the season-config workflow. `slugRealm` takes
-the region alongside the name because names are not unique across regions: `Spirestone` is
-a US and TW realm and also the en_US name of EU's `colinas-pardas`.
+`pnpm season:update`, and refreshed daily by the season-config workflow.
 
-A realm missing from the table (opened since the last regeneration) falls back to the old
-heuristic — dashes at case/digit boundaries, `TarrenMill` → `tarren-mill`. That guess is
-wrong for any realm containing a lowercase word, because there is no case boundary before
-it: `DerRatvonDalaran` → `der-ratvon-dalaran`, which Blizzard 404s. Run `pnpm season:update`
-rather than hand-patching when one surfaces.
+Lookups take the **region** as well as the name, because names are not unique across
+regions: `Spirestone` is a US and TW realm and also the ru_RU name of EU's
+`colinas-pardas`, so a Russian-client player on Colinas Pardas genuinely sends
+`Spirestone`. Both mappings are real and only the region separates them.
+
+**The backend is authoritative.** `resolveRealm` runs at every entry point — the character
+and roster resolvers, and the `/meta` and `/card` routes — so whatever a client sends is
+canonical before it reaches an upstream, the `characters` table, or the sitemap. Clients
+slug too (`slugRealm` in `@repo/ui`), but only to build links and labels; a stale client
+table can no longer write a bad realm. See #94 for removing the client copy entirely.
+
+A realm missing from the table (opened since the last regeneration) is **not rejected** —
+it falls through to `normalizeRealm`, because the table is only as fresh as the last deploy
+and a new realm is exactly when someone is looking up a real character. Such realms are
+left out of the sitemap, since we can't vouch for the URL. Client-side, the fallback is the
+old case-boundary heuristic, which is wrong for any realm containing a lowercase word —
+`DerRatvonDalaran` → `der-ratvon-dalaran` — so run `pnpm season:update` rather than
+hand-patching when one surfaces.

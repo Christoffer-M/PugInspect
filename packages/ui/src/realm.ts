@@ -38,8 +38,9 @@ export const CLASS_FILE_NAMES: Record<string, string> = {
  * are dashed ("tarren-mill"), so look the name up in Blizzard's own realm index.
  *
  * `region` is required because realm names are not unique across regions:
- * "Spirestone" is a US and TW realm and also EU "colinas-pardas" under its
- * en_US name. Pass the region the character is on, not the viewer's.
+ * "Spirestone" is a US and TW realm and also the ru_RU name of EU's
+ * "colinas-pardas" — a Russian-client player there really does send it. Pass
+ * the region the character is on, not the viewer's.
  *
  * The fallback re-inserts dashes at case/digit boundaries, which is only ever a
  * guess: a lowercase word has no boundary before it, so "DerRatvonDalaran"
