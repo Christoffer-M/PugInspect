@@ -55,12 +55,12 @@ function decodeForPrint(encoded: string): Uint8Array | null {
 /** Split a "Name-Realm" string on the FIRST dash (realm slugs contain dashes)
  * and slug the realm, including the special-realm table - the single parsing
  * path for both the export-string decoder and manual entry. */
-export function parseNameRealm(input: string): { name: string; realm: string } | null {
+export function parseNameRealm(input: string, region: string): { name: string; realm: string } | null {
   const trimmed = input.trim();
   const dash = trimmed.indexOf("-");
   if (dash <= 0) return null;
   const name = trimmed.slice(0, dash).trim();
-  const realm = slugRealm(trimmed.slice(dash + 1));
+  const realm = slugRealm(trimmed.slice(dash + 1), region);
   if (!name || !realm) return null;
   return { name, realm };
 }
@@ -74,7 +74,7 @@ function parsePayload(payload: string): RosterImport | null {
   for (const record of records) {
     if (!record) continue;
     const [nameRealm = "", classFile, role] = record.split(":");
-    const parsed = parseNameRealm(nameRealm);
+    const parsed = parseNameRealm(nameRealm, region);
     if (!parsed) continue;
     const { name, realm } = parsed;
     const key = `${name.toLowerCase()}:${realm}`;

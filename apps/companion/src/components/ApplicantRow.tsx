@@ -27,8 +27,8 @@ function RoleBadge({ role }: { role: Applicant["role"] }) {
 }
 
 /** "TarrenMill" → "Tarren Mill" via the slug; good enough for a subtitle. */
-const prettyRealm = (realm: string) =>
-  slugRealm(realm)
+const prettyRealm = (realm: string, region: string) =>
+  slugRealm(realm, region)
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
@@ -97,7 +97,7 @@ export function ApplicantRow({
       style={{ "--class-color": color } as CSSProperties}
       onClick={(e) => {
         e.preventDefault();
-        if (!notFound) openUrl(`https://puginspect.com/${region}/${slugRealm(a.realm)}/${a.name.toLowerCase()}`);
+        if (!notFound) openUrl(`https://puginspect.com/${region}/${slugRealm(a.realm, region)}/${a.name.toLowerCase()}`);
       }}
       href="#"
     >
@@ -112,7 +112,7 @@ export function ApplicantRow({
           {group && (
             <span className={classes.groupText}>{group.role === "leader" ? `group of ${group.size}` : "member"} · </span>
           )}
-          {prettyRealm(a.realm)}
+          {prettyRealm(a.realm, region)}
           {className && ` · ${c?.activeSpec ? `${c.activeSpec} ` : ""}${className}`}
           {failure && (
             <span className={app.mono} style={{ color: "#f4c15e" }} title={failure}>

@@ -44,12 +44,28 @@ There is no checksum: truncated or altered strings fail 6-bit decoding or DEFLAT
 which the web side surfaces as "not a valid export string". A string that decodes but has an
 unknown region or zero valid records is rejected the same way.
 
-## Known limitation
+## Realm slugs
 
-Blizzard-normalized realm names are re-slugged heuristically (case/digit boundaries → dashes):
-`TarrenMill` → `tarren-mill`, `Area52` → `area-52`. Realms the heuristic can't derive are
-special-cased in a lookup table (`SPECIAL_REALM_SLUGS`): all 20 Russian realms, whose API
-slugs are transliterated (`РевущийФьорд` → `howling-fjord`), and apostrophe realms whose
-stripped apostrophe left a case boundary (`MalGanis` → `malganis`, `KelThuzad` →
-`kelthuzad`). A realm missing from the table comes back "not found" - extend the table
-(or replace it with Blizzard's realm index API) when one surfaces.
+Blizzard-normalized realm names (`TarrenMill`, `DerRatvonDalaran`, `РевущийФьорд`) are the
+name in the PLAYER's locale with separators stripped, so they are looked up in
+`REALM_SLUGS` — generated from Blizzard's realm index for every region and locale by
+`pnpm season:update`, and refreshed daily by the season-config workflow.
+
+Lookups take the **region** as well as the name, because names are not unique across
+regions: `Spirestone` is a US and TW realm and also the ru_RU name of EU's
+`colinas-pardas`, so a Russian-client player on Colinas Pardas genuinely sends
+`Spirestone`. Both mappings are real and only the region separates them.
+
+**The backend is authoritative.** `resolveRealm` runs at every entry point — the character
+and roster resolvers, and the `/meta` and `/card` routes — so whatever a client sends is
+canonical before it reaches an upstream, the `characters` table, or the sitemap. Clients
+slug too (`slugRealm` in `@repo/ui`), but only to build links and labels; a stale client
+table can no longer write a bad realm. See #94 for removing the client copy entirely.
+
+A realm missing from the table (opened since the last regeneration) is **not rejected** —
+it falls through to `normalizeRealm`, because the table is only as fresh as the last deploy
+and a new realm is exactly when someone is looking up a real character. Such realms are
+left out of the sitemap, since we can't vouch for the URL. Client-side, the fallback is the
+old case-boundary heuristic, which is wrong for any realm containing a lowercase word —
+`DerRatvonDalaran` → `der-ratvon-dalaran` — so run `pnpm season:update` rather than
+hand-patching when one surfaces.

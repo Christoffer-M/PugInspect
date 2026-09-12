@@ -5,12 +5,13 @@
  *   - WarcraftLogs zones     → WCL zone IDs (matched by name)
  *   - Blizzard item-set index → new tier-set id blocks (contiguous runs of 13)
  *   - Raidbots talent trees  → hero talent subtree ids (heroTalents.ts)
+ *   - Blizzard realm index   → realm name → slug, all regions/locales (realmSlugs.ts)
  *
  * Run with `pnpm season:update` (needs apps/backend/.env for WCL + Blizzard
  * credentials), then review the diff. Hand-maintained inputs live in
  * scripts/season-config.mts. See docs/SEASONAL_UPDATES.md.
  */
-import { writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -20,6 +21,12 @@ import {
   RAID_DISPLAY_OVERRIDES,
   TIER_SEED,
 } from "./season-config.mts";
+
+// Shared with the runtime so the lookup keys can never drift from the table's.
+import { squashRealm } from "../packages/ui/src/realmKey.ts";
+
+/** Regions we serve — same set as the backend's VALID_REGIONS. */
+const REGIONS = ["eu", "us", "kr", "tw"] as const;
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 try {
@@ -63,25 +70,117 @@ async function fetchWclZones() {
   return data.data.worldData.zones as { id: number; name: string; expansion: { name: string } }[];
 }
 
+/** oauth.battle.net is global — per-region hosts drop the POST body on a 302. */
+let blizzardTokenPromise: Promise<string> | undefined;
+function blizzardToken(): Promise<string> {
+  blizzardTokenPromise ??= (async () => {
+    const auth = Buffer.from(
+      `${requireEnv("BLIZZARD_CLIENT_ID")}:${requireEnv("BLIZZARD_CLIENT_SECRET")}`
+    ).toString("base64");
+    const tokenRes = await fetch("https://oauth.battle.net/token", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    });
+    if (!tokenRes.ok) throw new Error(`Blizzard token: ${tokenRes.status}`);
+    const { access_token } = await tokenRes.json();
+    return access_token as string;
+  })();
+  return blizzardTokenPromise;
+}
+
 async function fetchBlizzardItemSetIds(): Promise<number[]> {
-  const auth = Buffer.from(
-    `${requireEnv("BLIZZARD_CLIENT_ID")}:${requireEnv("BLIZZARD_CLIENT_SECRET")}`
-  ).toString("base64");
-  const tokenRes = await fetch("https://oauth.battle.net/token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  if (!tokenRes.ok) throw new Error(`Blizzard token: ${tokenRes.status}`);
-  const { access_token } = await tokenRes.json();
+  const access_token = await blizzardToken();
   const index = await getJson(
     "https://eu.api.blizzard.com/data/wow/item-set/index?namespace=static-eu&locale=en_US",
     { Authorization: `Bearer ${access_token}` }
   );
   return (index.item_sets as { id: number }[]).map((s) => s.id).sort((a, b) => a - b);
+}
+
+/**
+ * Refuse to shrink the realm table by more than a fifth. Blizzard returning a
+ * short list is indistinguishable from realms closing, and the failure is
+ * total — an empty table sends every realm down the guessing fallback.
+ */
+function assertNoMassRealmLoss(path: string, next: Record<string, Record<string, string>>) {
+  let previous: Record<string, Record<string, string>>;
+  try {
+    const src = readFileSync(path, "utf8");
+    previous = JSON.parse(src.slice(src.indexOf("{"), src.lastIndexOf("}") + 1));
+  } catch {
+    return; // No committed table yet (or it is unparseable) — nothing to compare.
+  }
+  for (const [region, table] of Object.entries(previous)) {
+    const before = Object.keys(table).length;
+    const after = Object.keys(next[region] ?? {}).length;
+    if (before > 0 && after < before * 0.8)
+      throw new Error(
+        `Realm table for ${region} fell from ${before} to ${after} keys (>20% loss). ` +
+          `Blizzard's realm index is probably incomplete — refusing to write a gutted table. ` +
+          `Re-run; if the drop is real, delete ${path} to accept it.`
+      );
+  }
+}
+
+/**
+ * Realm name → API slug, for every region we serve and every locale Blizzard
+ * publishes the name in.
+ *
+ * The addon sends the realm as WoW's client-side normalized form — the name in
+ * the PLAYER's locale with spaces and punctuation stripped ("DerRatvonDalaran",
+ * "РевущийФьорд"). Deriving the slug from that by re-inserting dashes at case
+ * boundaries is guesswork that breaks on any lowercase word ("von", "of",
+ * "des"), so we look the name up instead. Keys are squashed the same way the
+ * client normalizes, which collapses every spacing/punctuation variant onto one
+ * entry; omitting `locale` makes Blizzard return `name` as a map of every
+ * locale, so one request per region covers all of them.
+ *
+ * Keyed by region because names are NOT unique across them: "Spirestone" is a
+ * US/TW realm and also the ru_RU name of EU's "colinas-pardas" (a Russian
+ * client there really sends it), and 大漩涡 is EU "the-maelstrom" and US
+ * "maelstrom". A region-less table silently hands those players another
+ * region's slug.
+ */
+async function fetchRealmSlugs(): Promise<Record<string, Record<string, string>>> {
+  const access_token = await blizzardToken();
+  const byRegion: Record<string, Record<string, string>> = {};
+
+  for (const region of REGIONS) {
+    const index = await getJson(
+      `https://${region}.api.blizzard.com/data/wow/realm/index?namespace=dynamic-${region}`,
+      { Authorization: `Bearer ${access_token}` }
+    );
+    const realms = index.realms as { name: string | Record<string, string>; slug: string }[];
+    if (!realms?.length) {
+      warnings.push(`Blizzard realm index for ${region} returned no realms — slugs may be stale`);
+      continue;
+    }
+    const table: Record<string, string> = {};
+    for (const realm of realms) {
+      const names = typeof realm.name === "string" ? [realm.name] : Object.values(realm.name ?? {});
+      // The slug itself is a valid input too: the website's roster paste and
+      // our own URLs already carry the dashed form.
+      for (const variant of [...names, realm.slug]) {
+        const key = squashRealm(variant);
+        if (!key) continue;
+        if (table[key] && table[key] !== realm.slug) {
+          warnings.push(
+            `Realm name "${variant}" is both "${table[key]}" and "${realm.slug}" in ${region} — kept "${table[key]}"`
+          );
+          continue;
+        }
+        table[key] = realm.slug;
+      }
+    }
+    byRegion[region] = Object.fromEntries(
+      Object.entries(table).sort(([a], [b]) => (a < b ? -1 : 1))
+    );
+  }
+  return byRegion;
 }
 
 /**
@@ -161,11 +260,12 @@ const started = (r: { starts: { us: string } }) => Date.parse(r.starts.us) <= no
 
 async function main() {
   const current = EXPANSIONS[0]!;
-  const [mplus, wclZones, itemSetIds, heroTalents, ...raidData] = await Promise.all([
+  const [mplus, wclZones, itemSetIds, heroTalents, realmSlugs, ...raidData] = await Promise.all([
     getJson(`https://raider.io/api/v1/mythic-plus/static-data?expansion_id=${current.rioId}`),
     fetchWclZones(),
     fetchBlizzardItemSetIds(),
     fetchHeroTalents(),
+    fetchRealmSlugs(),
     ...EXPANSIONS.map((e) =>
       getJson(`https://raider.io/api/v1/raiding/static-data?expansion_id=${e.rioId}`)
     ),
@@ -377,6 +477,28 @@ export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(
   )};
 `;
 
+  const realmSlugsFile = `${header}
+// Realm name → API slug, every region and locale. Clients send the realm in the
+// player's own locale with separators stripped, so keys are squashed the same
+// way; see slugRealm in ../realm.ts.
+export const REALM_SLUGS: Record<string, Record<string, string>> = ${stringify(realmSlugs)};
+`;
+
+  const realmSlugsPath = resolve(root, "packages/ui/src/generated/realmSlugs.ts");
+  // A truncated realm index would silently gut the table — every realm breaks
+  // at once, and the diff reads as an ordinary deletion in an automated PR.
+  // There is no hand-maintained table underneath this any more, so fail loudly.
+  assertNoMassRealmLoss(realmSlugsPath, realmSlugs);
+  mkdirSync(dirname(realmSlugsPath), { recursive: true });
+  writeFileSync(realmSlugsPath, realmSlugsFile);
+  writeFileSync(resolve(root, "apps/backend/src/generated/realmSlugs.ts"), realmSlugsFile);
+  console.log(`Wrote ${resolve(root, "apps/backend/src/generated/realmSlugs.ts")}`);
+  console.log(
+    `Wrote ${realmSlugsPath} (${Object.entries(realmSlugs)
+      .map(([r, t]) => `${r}: ${Object.keys(t).length}`)
+      .join(", ")} name variants)`
+  );
+
   const companionPath = resolve(root, "apps/companion/src/generated/seasonConfig.ts");
   const frontendPath = resolve(root, "apps/frontend/src/generated/seasonConfig.ts");
   const backendPath = resolve(root, "apps/backend/src/generated/seasonConfig.ts");
@@ -395,7 +517,7 @@ export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(
   console.log(
     `Current: ${currentSeason.slug} (default raid: ${defaultRaid}, ${dungeons.length} dungeons, ${tierRanges.length} tier ranges)`
   );
-  for (const w of warnings) console.warn(`WARNING: ${w}`);
+  for (const w of new Set(warnings)) console.warn(`WARNING: ${w}`);
   console.log(
     "\nReview with `git diff`. At an expansion boundary also update EXPANSIONS,\nMAX_LEVEL and ENCHANTABLE_SLOTS in scripts/season-config.mts."
   );
