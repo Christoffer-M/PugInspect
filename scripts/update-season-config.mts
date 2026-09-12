@@ -177,7 +177,12 @@ async function main() {
   seasons.sort((a, b) => Date.parse(a.starts.us) - Date.parse(b.starts.us));
 
   // Latest season first — the UI dropdown renders in insertion order
-  const mythicPlusSeasons: Record<string, object> = {};
+  // Typed, not `object`: reading .zoneId off the season objects is the whole
+  // point, and `object` let MYTHIC_PLUS_ZONE_ID read it off the wrong one.
+  const mythicPlusSeasons: Record<
+    string,
+    { zoneId?: number; displayName: string; expansion: number }
+  > = {};
   for (const s of [...seasons].reverse()) {
     const num = Number(/(\d+)$/.exec(s.slug)?.[1]);
     if (!num) throw new Error(`Cannot parse season number from slug "${s.slug}"`);
@@ -188,6 +193,12 @@ async function main() {
     };
   }
   const currentSeason = seasons[seasons.length - 1]!;
+  // The companion falls back to no M+ parses without this, silently — the last
+  // time it went undefined it sat in an unmerged PR for two days.
+  if (mythicPlusSeasons[currentSeason.slug]?.zoneId === undefined)
+    warnings.push(
+      `No WCL zone for the current M+ season (${currentSeason.slug}) — the companion's M+ parse lookups will be disabled`
+    );
   const dungeons = (currentSeason.dungeons as any[]).map((d) => ({
     id: d.id,
     challenge_mode_id: d.challenge_mode_id,
@@ -359,7 +370,11 @@ export const HERO_TALENTS_BY_SPEC: Record<string, string[]> = ${stringify(
   const companion = `${header}
 export const DEFAULT_RAID = ${stringify(defaultRaid)};
 /** WCL zone of the current Mythic+ season, for M+ parse lookups. */
-export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(currentSeason.zoneId)};
+export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(
+    // currentSeason is Raider.IO's raw season object and has no zoneId — the
+    // WCL match lands in mythicPlusSeasons, keyed by slug.
+    mythicPlusSeasons[currentSeason.slug]?.zoneId
+  )};
 `;
 
   const companionPath = resolve(root, "apps/companion/src/generated/seasonConfig.ts");
