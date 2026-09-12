@@ -44,12 +44,17 @@ There is no checksum: truncated or altered strings fail 6-bit decoding or DEFLAT
 which the web side surfaces as "not a valid export string". A string that decodes but has an
 unknown region or zero valid records is rejected the same way.
 
-## Known limitation
+## Realm slugs
 
-Blizzard-normalized realm names are re-slugged heuristically (case/digit boundaries → dashes):
-`TarrenMill` → `tarren-mill`, `Area52` → `area-52`. Realms the heuristic can't derive are
-special-cased in a lookup table (`SPECIAL_REALM_SLUGS`): all 20 Russian realms, whose API
-slugs are transliterated (`РевущийФьорд` → `howling-fjord`), and apostrophe realms whose
-stripped apostrophe left a case boundary (`MalGanis` → `malganis`, `KelThuzad` →
-`kelthuzad`). A realm missing from the table comes back "not found" - extend the table
-(or replace it with Blizzard's realm index API) when one surfaces.
+Blizzard-normalized realm names (`TarrenMill`, `DerRatvonDalaran`, `РевущийФьорд`) are the
+name in the PLAYER's locale with separators stripped, so they are looked up in
+`REALM_SLUGS` — generated from Blizzard's realm index for every region and locale by
+`pnpm season:update`, and refreshed daily by the season-config workflow. `slugRealm` takes
+the region alongside the name because names are not unique across regions: `Spirestone` is
+a US and TW realm and also the en_US name of EU's `colinas-pardas`.
+
+A realm missing from the table (opened since the last regeneration) falls back to the old
+heuristic — dashes at case/digit boundaries, `TarrenMill` → `tarren-mill`. That guess is
+wrong for any realm containing a lowercase word, because there is no case boundary before
+it: `DerRatvonDalaran` → `der-ratvon-dalaran`, which Blizzard 404s. Run `pnpm season:update`
+rather than hand-patching when one surfaces.
