@@ -2,7 +2,9 @@ import { config } from "../../../config/index.js";
 import { RAID_PROGRESSION_FIELD } from "../../../generated/seasonConfig.js";
 import { fetcher, FetchError } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
-import { dedupeInFlight, normalizeRealm, normalizeName, startTimer } from "../../utils/helpers.js";
+import { trace } from "@opentelemetry/api";
+import { dedupeInFlight, normalizeRealm, normalizeName } from "../../utils/helpers.js";
+import { markCache, markStale } from "../../utils/spans.js";
 import { getCachedRioProfile, persistRioProfile } from "../../../db/persistence.js";
 import { GraphQLError } from "graphql";
 import {
@@ -71,11 +73,8 @@ export class RaiderIOService {
       region: args.region,
     };
 
-    logger.debug("RaiderIO character suggestions request", { searchString: args.searchString, region: args.region });
-
     const url = this.buildUrlWithQueries(`${baseApiUrl}/search`, query);
 
-    const elapsed = startTimer();
     try {
       const response = await fetcher<RaiderIoCharacterSearchApiResponse>(
         url,
@@ -91,12 +90,7 @@ export class RaiderIOService {
         region: r.data.region.short_name,
       }));
     } catch (error) {
-      logger.error("RaiderIO character suggestions fetch failed", {
-        searchString: args.searchString,
-        region: args.region,
-        durationMs: elapsed(),
-        error: error instanceof Error ? error.message : String(error),
-      });
+      trace.getActiveSpan()?.recordException(error as Error);
       throw new GraphQLError(
         "Failed to fetch character suggestions from RaiderIO",
         {
@@ -118,10 +112,11 @@ export class RaiderIOService {
     if (!bypassCache || cacheOnly) {
       const cached = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName }, cacheOnly);
       if (cached) {
-        logger.debug("RaiderIO character profile cache hit", { name, realm, region });
+        markCache("raiderio", "hit");
         return cached;
       }
     }
+    markCache("raiderio", "miss");
 
     // Crawler traffic is served from cache only (stale allowed above) and must
     // never spend upstream API quota.
@@ -172,7 +167,6 @@ export class RaiderIOService {
       query
     );
 
-    const elapsed = startTimer();
     try {
       const response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
       const fetchedAt = Math.floor(Date.now() / 1000);
@@ -189,7 +183,6 @@ export class RaiderIOService {
         (error.status === 404 ||
           (error.status === 400 && /could not find|failed to find/i.test(error.apiMessage)))
       ) {
-        logger.warn("RaiderIO character not found", { name, realm, region, durationMs: elapsed(), apiMessage: error.apiMessage });
         throw new GraphQLError("Character not found on RaiderIO", {
           extensions: { code: "NOT_FOUND" },
         });
@@ -200,26 +193,13 @@ export class RaiderIOService {
       // all vanish for a character we looked up minutes ago. Serve the expired
       // snapshot instead — the TTL is 15 minutes, so "stale" is the difference
       // between one M+ run and none.
+      trace.getActiveSpan()?.recordException(error as Error);
       const stale = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName }, true);
       if (stale) {
-        logger.warn("RaiderIO fetch failed, serving stale snapshot", {
-          name,
-          realm,
-          region,
-          durationMs: elapsed(),
-          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        markStale("raiderio", stale.fetchedAt);
         return stale;
       }
 
-      logger.error("RaiderIO character profile fetch failed", {
-        name,
-        realm,
-        region,
-        durationMs: elapsed(),
-        error: error instanceof Error ? error.message : String(error),
-      });
       throw new GraphQLError(
         "Failed to fetch character profile from RaiderIO",
         {

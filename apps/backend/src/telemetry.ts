@@ -58,9 +58,11 @@ if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
   const sdk = new NodeSDK({
     serviceName: process.env.OTEL_SERVICE_NAME ?? "puginspect-backend",
     sampler: serverRootsOnly,
-    // Traces only — the SDK otherwise defaults metrics and logs to OTLP too.
+    // No metrics. Logs are left to the SDK's env default (OTLP, same endpoint
+    // and headers as traces) and bypass the sampler above, so the crawl, boot
+    // and bot requests still reach Honeycomb as logs even though they have no
+    // trace.
     metricReaders: [],
-    logRecordProcessors: [],
     instrumentations: [
       new HttpInstrumentation({
         // Bots are ~97% of GraphQL traffic and served from the DB cache; the
@@ -93,6 +95,6 @@ if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
 
   sdk.start();
   // ponytail: no SIGTERM flush, so a deploy drops the last few seconds of
-  // spans (the batch processor exports every 5s). Add sdk.shutdown() on
-  // SIGTERM if that gap ever matters.
+  // spans and logs (both batch processors export every few seconds). Add
+  // sdk.shutdown() on SIGTERM if that gap ever matters.
 }

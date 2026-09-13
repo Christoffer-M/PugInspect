@@ -3,6 +3,7 @@ import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
+import { markCache, markStale } from "../../utils/spans.js";
 import { getCachedWclProfile, persistWclProfile } from "../../../db/persistence.js";
 import {
   CharacterProfileQuery,
@@ -125,7 +126,7 @@ export class WarcraftLogsService {
     }
 
     if (this.client.isCircuitOpen()) {
-      logger.warn("WCL_CIRCUIT_OPEN: skipping partition fetch", { zoneId, retryAfterMs: this.client.circuitRetryAfterMs() });
+      trace.getActiveSpan()?.setAttribute("app.wcl.circuit_open", true);
       return [];
     }
 
@@ -168,25 +169,24 @@ export class WarcraftLogsService {
     // never spend upstream API quota.
     if (cacheOnly) {
       const cached = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
-      if (cached) {
-        logger.debug("WarcraftLogs character profile cache hit (crawler)", { name, realm: normalizedRealm, region });
-        return cached;
-      }
+      markCache("wcl", cached ? "hit" : "miss");
+      if (cached) return cached;
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
     if (!bypassCache) {
       const cached = await this.checkCacheOrNull(args, normalizedRealm, partition);
       if (cached) {
-        logger.debug("WarcraftLogs character profile cache hit", { name, realm: normalizedRealm, region });
+        markCache("wcl", "hit");
         return cached;
       }
     }
+    markCache("wcl", "miss");
 
     // Cache is checked above, outside the map — an in-flight entry is therefore
     // always a real upstream fetch, so even bypassCache callers can join it.
     return dedupeInFlight(this.profileFetchInFlight, cacheKey, () =>
-      this.acquireCharacterProfile(cacheKey, args, normalizedRealm, partition)
+      this.acquireCharacterProfile(args, normalizedRealm, partition)
     );
   }
 
@@ -210,8 +210,7 @@ export class WarcraftLogsService {
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
 
-    const start = Date.now();
-    const { data, headers } = await this.client.query<CharacterProfileQuery>(
+    const { data } = await this.client.query<CharacterProfileQuery>(
       CHARACTER_PROFILE.loc?.source.body ?? "",
       {
         name,
@@ -226,20 +225,14 @@ export class WarcraftLogsService {
       } satisfies CharacterProfileQueryVariables
     );
 
-    const durationMs = Date.now() - start;
-    const rateLimitHeaderInfo = {
-      rateLimitRemaining: headers.get("x-ratelimit-remaining"),
-      rateLimitLimit: headers.get("x-ratelimit-limit"),
-    };
-
     // Every profile response carries rateLimitData; shout well before the
     // quota is gone, since exhaustion trips the circuit breaker site-wide.
     const rl = data?.rateLimitData;
     if (rl) {
       trace.getActiveSpan()?.setAttributes({
-        "wcl.rate_limit.points_spent": rl.pointsSpentThisHour,
-        "wcl.rate_limit.limit_per_hour": rl.limitPerHour,
-        "wcl.rate_limit.reset_in_s": rl.pointsResetIn,
+        "app.wcl.rate_limit.points_spent": rl.pointsSpentThisHour,
+        "app.wcl.rate_limit.limit_per_hour": rl.limitPerHour,
+        "app.wcl.rate_limit.reset_in_s": rl.pointsResetIn,
       });
     }
     if (rl?.limitPerHour && rl.pointsSpentThisHour != null && rl.pointsSpentThisHour / rl.limitPerHour > 0.8) {
@@ -251,7 +244,6 @@ export class WarcraftLogsService {
     }
 
     if (!data?.characterData?.character) {
-      logger.warn("WarcraftLogs character not found", { name, realm: normalizedRealm, region, durationMs, rateLimit: data?.rateLimitData, rateLimitHeaderInfo });
       return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
     }
 
@@ -276,7 +268,6 @@ export class WarcraftLogsService {
   }
 
   private static async acquireCharacterProfile(
-    cacheKey: string,
     args: QueryCharacterArgs,
     normalizedRealm: string,
     partition: number | undefined = undefined
@@ -286,16 +277,12 @@ export class WarcraftLogsService {
       // The circuit stays open for minutes and applies site-wide, so this is
       // the one failure that blanks parses on every character page at once.
       // An expired snapshot is a far better answer than a rate-limit error.
+      trace.getActiveSpan()?.setAttribute("app.wcl.circuit_open", true);
       const stale = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
       if (stale) {
-        logger.warn("WCL_CIRCUIT_OPEN: serving stale snapshot", {
-          cacheKey,
-          retryAfterMs,
-          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
-        });
+        markStale("wcl", stale.fetchedAt);
         return stale;
       }
-      logger.warn("WCL_CIRCUIT_OPEN", { cacheKey, retryAfterMs });
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
       });
@@ -309,25 +296,14 @@ export class WarcraftLogsService {
       return result;
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
+      trace.getActiveSpan()?.recordException(error as Error);
 
       const stale = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
       if (stale) {
-        logger.warn("WarcraftLogs fetch failed, serving stale snapshot", {
-          name: args.name,
-          realm: normalizedRealm,
-          region: args.region,
-          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        markStale("wcl", stale.fetchedAt);
         return stale;
       }
 
-      logger.error("WarcraftLogs character profile fetch failed", {
-        name: args.name,
-        realm: normalizedRealm,
-        region: args.region,
-        error: error instanceof Error ? error.message : String(error),
-      });
       throw new GraphQLError("Failed to fetch character profile from Warcraft Logs", {
         extensions: { code: "INTERNAL_SERVER_ERROR" },
       });

@@ -1,6 +1,9 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema.js";
+import { createLogger } from "../schema/utils/logger.js";
+
+const logger = createLogger({ service: "DB" });
 
 let _pool: Pool | null = null;
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
@@ -18,7 +21,7 @@ export function initDb(databaseUrl: string): void {
   });
 
   _pool.on("error", (err) => {
-    console.error("[db] Unexpected pool error:", err.message);
+    logger.error("Unexpected pool error", { error: err.message });
   });
 
   _db = drizzle({ client: _pool, schema });

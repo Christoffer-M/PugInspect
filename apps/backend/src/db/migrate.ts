@@ -3,6 +3,9 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { createLogger } from "../schema/utils/logger.js";
+
+const logger = createLogger({ service: "DB" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,9 +23,9 @@ export async function runMigrations(databaseUrl: string): Promise<void> {
   const migrationsFolder = resolve(__dirname, "../../drizzle");
 
   try {
-    console.log("[db] Running migrations from", migrationsFolder);
+    logger.info("Running migrations", { migrationsFolder });
     await migrate(db, { migrationsFolder });
-    console.log("[db] Migrations complete");
+    logger.info("Migrations complete");
   } finally {
     await pool.end();
   }
@@ -40,12 +43,12 @@ if (process.argv[1] === __filename) {
 
   const url = process.env.DATABASE_URL;
   if (!url) {
-    console.error("[db] DATABASE_URL is not set");
+    logger.error("DATABASE_URL is not set");
     process.exit(1);
   }
 
   await runMigrations(url).catch((err: unknown) => {
-    console.error("[db] Migration failed:", err);
+    logger.error("Migration failed", { error: String(err) });
     process.exit(1);
   });
 }

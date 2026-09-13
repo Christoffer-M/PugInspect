@@ -2,7 +2,8 @@ import { trace } from "@opentelemetry/api";
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
-import { dedupeInFlight, normalizeRealm, startTimer } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
+import { markCache, markStale, withSpan } from "../../utils/spans.js";
 import { getCachedBlizzardProfile, persistBlizzardProfile, getCachedEquipment, persistEquipment } from "../../../db/persistence.js";
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import type { BlizzardCharacterEquipment, BlizzardItemMedia } from "./model/CharacterEquipment.js";
@@ -30,7 +31,6 @@ export class BlizzardService {
   // breaks. Don't reintroduce `https://${region}.battle.net/oauth/token`.
   private static readonly tokens = new OAuthTokenManager(async () => {
     logger.info("Fetching new Blizzard OAuth token");
-    const elapsed = startTimer();
 
     const body = new URLSearchParams({
       grant_type: "client_credentials",
@@ -45,13 +45,11 @@ export class BlizzardService {
     });
 
     if (!res.ok) {
-      logger.error("Blizzard token request failed", { status: res.status, statusText: res.statusText, durationMs: elapsed() });
+      logger.error("Blizzard token request failed", { status: res.status, statusText: res.statusText });
       throw new Error(`Failed to fetch Blizzard token: ${res.status} ${res.statusText}`);
     }
 
-    // A cold token adds its own latency to the first fetch behind it, so it is
-    // timed separately rather than being blamed on the profile call.
-    logger.info("Blizzard OAuth token acquired", { durationMs: elapsed() });
+    logger.info("Blizzard OAuth token acquired");
     return res.json() as Promise<{ access_token: string; expires_in: number }>;
   });
 
@@ -76,10 +74,11 @@ export class BlizzardService {
     if (!bypassCache || cacheOnly) {
       const cached = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name }, cacheOnly);
       if (cached) {
-        logger.debug("Blizzard character profile cache hit", { name, realm: normalizedRealm, region });
+        markCache("blizzard_profile", "hit");
         return cached; // already includes characterId
       }
     }
+    markCache("blizzard_profile", "miss");
 
     // Crawler traffic is served from cache only (stale allowed above) and must
     // never spend upstream API quota.
@@ -106,7 +105,6 @@ export class BlizzardService {
     normalizedRealm: string
   ): Promise<{ data: BlizzardCharacterProfile; avatarUrl: string | null; fetchedAt: number; characterId: string | null }> {
     const { name, region } = args;
-    const elapsed = startTimer();
 
     try {
       // The token fetch belongs inside the try: an oauth.battle.net outage
@@ -125,7 +123,6 @@ export class BlizzardService {
 
       const res = profileRes.value;
       if (res.status === 404) {
-        logger.warn("Blizzard character not found", { name, realm: normalizedRealm, region, durationMs: elapsed() });
         throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
       }
       if (!res.ok) throw new Error(`Blizzard profile request failed: ${res.status} ${res.statusText}`);
@@ -155,30 +152,17 @@ export class BlizzardService {
       return { data, avatarUrl, fetchedAt, characterId };
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
+      trace.getActiveSpan()?.recordException(error as Error);
 
       // Blizzard supplies the identity fields — without it buildCharacter falls
       // back to the raw URL params and the page loses class, spec and item
       // level. The TTL is 24h, so a stale snapshot is almost always still true.
       const stale = await getCachedBlizzardProfile({ region, realm: normalizedRealm, name }, true);
       if (stale) {
-        logger.warn("Blizzard fetch failed, serving stale snapshot", {
-          name,
-          realm: normalizedRealm,
-          region,
-          durationMs: elapsed(),
-          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        markStale("blizzard_profile", stale.fetchedAt);
         return stale;
       }
 
-      logger.error("Blizzard character profile fetch failed", {
-        name,
-        realm: normalizedRealm,
-        region,
-        durationMs: elapsed(),
-        error: error instanceof Error ? error.message : String(error),
-      });
       throw new GraphQLError("Failed to fetch character profile from Blizzard", {
         extensions: { code: "INTERNAL_SERVER_ERROR" },
       });
@@ -201,10 +185,11 @@ export class BlizzardService {
     if (!bypassCache || cacheOnly) {
       const cached = await getCachedEquipment({ region, realm: normalizedRealm, name }, cacheOnly);
       if (cached) {
-        logger.debug("Blizzard equipment cache hit", { name, realm: normalizedRealm, region });
+        markCache("blizzard_equipment", "hit");
         return cached;
       }
     }
+    markCache("blizzard_equipment", "miss");
 
     // Crawler traffic is served from cache only (stale allowed above) and must
     // never spend upstream API quota.
@@ -229,7 +214,6 @@ export class BlizzardService {
     normalizedRealm: string
   ): Promise<{ data: BlizzardCharacterEquipment; fetchedAt: number }> {
     const { name, region } = args;
-    const elapsed = startTimer();
 
     try {
       // Inside the try for the same reason as fetchProfile — a token failure
@@ -239,7 +223,6 @@ export class BlizzardService {
 
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
       if (res.status === 404) {
-        logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region, durationMs: elapsed() });
         throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
       }
       if (!res.ok) throw new Error(`Blizzard equipment request failed: ${res.status} ${res.statusText}`);
@@ -247,14 +230,12 @@ export class BlizzardService {
       const data = await res.json() as BlizzardCharacterEquipment;
       const fetchedAt = Math.floor(Date.now() / 1000);
 
-      const iconsElapsed = startTimer();
-      const iconMisses = await this.resolveItemIcons(data, token);
-
-      // The icon fan-out is up to 16 further requests; misses above zero on
-      // most requests mean the in-process icon cache is cold or churning.
-      trace.getActiveSpan()?.setAttributes({
-        "blizzard.icon_duration_ms": iconsElapsed(),
-        "blizzard.icon_misses": iconMisses,
+      // The icon fan-out is up to 16 further requests, so it gets its own span:
+      // a slow gear panel is often the icons, not the equipment call. Misses
+      // above zero on most requests mean the in-process icon cache is churning.
+      await withSpan("blizzard.item_icons", {}, async () => {
+        const iconMisses = await this.resolveItemIcons(data, token);
+        trace.getActiveSpan()?.setAttribute("app.blizzard.icon_misses", iconMisses);
       });
 
       // persistEquipment catches and logs its own failures — cache writes are non-fatal
@@ -263,27 +244,14 @@ export class BlizzardService {
       return { data, fetchedAt };
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
+      trace.getActiveSpan()?.recordException(error as Error);
 
       const stale = await getCachedEquipment({ region, realm: normalizedRealm, name }, true);
       if (stale) {
-        logger.warn("Blizzard equipment fetch failed, serving stale snapshot", {
-          name,
-          realm: normalizedRealm,
-          region,
-          durationMs: elapsed(),
-          staleBySeconds: Math.floor(Date.now() / 1000) - stale.fetchedAt,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        markStale("blizzard_equipment", stale.fetchedAt);
         return stale;
       }
 
-      logger.error("Blizzard equipment fetch failed", {
-        name,
-        realm: normalizedRealm,
-        region,
-        durationMs: elapsed(),
-        error: error instanceof Error ? error.message : String(error),
-      });
       throw new GraphQLError("Failed to fetch character equipment from Blizzard", {
         extensions: { code: "INTERNAL_SERVER_ERROR" },
       });

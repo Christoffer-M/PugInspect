@@ -76,15 +76,6 @@ export function dedupeInFlight<T>(
   return promise;
 }
 
-/** Start a wall-clock timer; call the result for elapsed milliseconds.
- *  Upstream log lines carry this as `durationMs`, so latency per service can be
- *  read straight off the logs (filter for durationMs, group by service) instead
- *  of being guessed at. */
-export function startTimer(): () => number {
-  const start = Date.now();
-  return () => Date.now() - start;
-}
-
 export const mapDifficultyIdToName = (
   difficulty?: number | InputMaybe<number>
 ): Difficulty | null => {
