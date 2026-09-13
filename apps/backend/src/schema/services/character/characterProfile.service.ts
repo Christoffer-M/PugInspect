@@ -1,5 +1,6 @@
 import { QueryCharacterArgs } from "@repo/graphql-types";
 import { GraphQLError } from "graphql";
+import { trace } from "@opentelemetry/api";
 import { BlizzardService } from "../blizzard/blizzard.services.js";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
@@ -8,10 +9,26 @@ import { startTimer } from "../../utils/helpers.js";
 
 const logger = createLogger({ service: "CharacterProfile" });
 
+type CharacterCtx = { name: string; realm: string; region: string };
+
+// An event rather than span attributes: a roster request looks up many
+// characters under one span, and each miss needs its own row in Honeycomb.
+function recordUpstreamMiss(source: string, code: string, ctx: CharacterCtx) {
+  trace.getActiveSpan()?.addEvent("character.upstream_miss", {
+    "app.upstream": source.toLowerCase().replace(/\s+/g, "_"),
+    "app.error_code": code,
+    "app.character.region": ctx.region.toLowerCase(),
+    "app.character.realm": ctx.realm.toLowerCase(),
+    "app.character.name": ctx.name.toLowerCase(),
+  });
+}
+
 // A missing character is expected user input, not a failure — and the service
 // already warn-logged it with more detail, so don't log it a second time here.
-function logRejection(source: string, reason: unknown, ctx: { name: string; realm: string; region: string }) {
-  if (reason instanceof GraphQLError && reason.extensions.code === "NOT_FOUND") {
+function logRejection(source: string, reason: unknown, ctx: CharacterCtx) {
+  const code = reason instanceof GraphQLError ? String(reason.extensions.code ?? "UNKNOWN") : "UNEXPECTED";
+  recordUpstreamMiss(source, code, ctx);
+  if (code === "NOT_FOUND") {
     return;
   }
   logger.error(`${source} profile failed`, {
@@ -80,6 +97,10 @@ export async function getCharacterProfiles(
   if (rioResult.status === "rejected") logRejection("RaiderIO", rioResult.reason, { name, realm, region });
   if (logsResult.status === "rejected") logRejection("WarcraftLogs", logsResult.reason, { name, realm, region });
   if (equipmentResult.status === "rejected") logRejection("Blizzard equipment", equipmentResult.reason, { name, realm, region });
+  // WCL answers a missing character with a null payload, not a rejection.
+  if (logsResult.status === "fulfilled" && logsResult.value && !logsResult.value.data) {
+    recordUpstreamMiss("WarcraftLogs", "NOT_FOUND", { name, realm, region });
+  }
 
   return {
     blizzardProfile: blizzardResult.status === "fulfilled" ? blizzardResult.value?.data : undefined,
