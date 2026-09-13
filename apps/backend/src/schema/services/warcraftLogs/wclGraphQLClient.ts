@@ -1,3 +1,4 @@
+import { trace } from "@opentelemetry/api";
 import { GraphQLError } from "graphql";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { createLogger } from "../../utils/logger.js";
@@ -27,10 +28,10 @@ export class WclGraphQLClient {
     return Math.max(0, this.circuitOpenUntil - Date.now());
   }
 
-  async query<T>(query: string, variables: object): Promise<{ data: T; headers: Headers }> {
+  async query<T>(query: string, variables: object): Promise<{ data: T }> {
     if (this.isCircuitOpen()) {
       const retryAfterMs = this.circuitRetryAfterMs();
-      logger.warn("WCL_CIRCUIT_OPEN", { retryAfterMs });
+      trace.getActiveSpan()?.setAttribute("app.wcl.circuit_open", true);
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
       });
@@ -38,7 +39,6 @@ export class WclGraphQLClient {
 
     const token = await this.tokens.getToken();
     const body = JSON.stringify({ query, variables });
-    const start = Date.now();
 
     // A hung fetch would hang every caller joined on the in-flight dedup map
     // and pin its entry until restart. 15s (not the 10s used for Blizzard/RIO)
@@ -51,10 +51,9 @@ export class WclGraphQLClient {
     });
 
     if (res.status === 429) {
-      const durationMs = Date.now() - start;
       this.circuitOpenUntil = Date.now() + RATE_LIMIT_BACKOFF_MS;
       const retryAfterMs = this.circuitRetryAfterMs();
-      logger.warn("WCL_CIRCUIT_OPENED", { durationMs, retryAfterMs });
+      logger.warn("WCL_CIRCUIT_OPENED", { retryAfterMs });
       throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
         extensions: { code: "RATE_LIMITED", retryAfterMs },
       });
@@ -86,6 +85,6 @@ export class WclGraphQLClient {
       }
       logger.warn("WCL partial response", { messages });
     }
-    return { data: json.data, headers: res.headers };
+    return { data: json.data };
   }
 }

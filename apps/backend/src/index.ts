@@ -20,9 +20,10 @@ import { renderLlmsTxt } from "./seo/llmsTxt.js";
 import { expressMiddleware } from "@as-integrations/express5";
 import { GraphQLError } from "graphql";
 import type { SelectionSetNode, ValidationRule } from "graphql";
+import { trace } from "@opentelemetry/api";
 import { createLogger } from "./schema/utils/logger.js";
 
-const graphqlLogger = createLogger({ service: "GraphQL" });
+const logger = createLogger({ service: "Server" });
 
 // Simple query depth limit — no extra dependency needed
 function maxQueryDepth(maxDepth: number): ValidationRule {
@@ -118,12 +119,12 @@ function createRateLimiter(maxRequests: number, windowMs: number) {
 
 await runMigrations(config.databaseUrl);
 initDb(config.databaseUrl);
-console.log("[db] Database ready");
+logger.info("Database ready");
 
 // ponytail: local runs share the production WarcraftLogs budget, so the hourly
 // crawl only runs in the deployed container — locally it's the /dev button below.
 const isLocal = process.env.NODE_ENV !== "production";
-if (isLocal) console.log("[mplus] Local run — hourly spec meta crawl disabled");
+if (isLocal) logger.info("Local run — hourly spec meta crawl disabled");
 else startMythicPlusStatsRefresh();
 
 const app = express();
@@ -152,19 +153,11 @@ const server = new ApolloServer<GraphQLContext>({
   introspection: process.env.NODE_ENV !== "production",
   plugins: [
     {
-      // One line per operation, tagged with who sent it, so upstream API
-      // spend (WCL quota above all) can be attributed companion vs website.
-      // Bots are ~97% of that volume and never spend quota (they're served
-      // from the DB cache), so they log at debug — the human signal stays
-      // readable and the persisted log keeps months of history instead of days.
-      async requestDidStart({ request, contextValue }) {
-        if (request.operationName !== "IntrospectionQuery") {
-          const level = contextValue.source === "bot" ? "debug" : "info";
-          graphqlLogger[level]("GraphQL request", {
-            operation: request.operationName ?? "anonymous",
-            source: contextValue.source,
-          });
-        }
+      // Tags the request span with who sent it, so upstream API spend (WCL
+      // quota above all) can be attributed companion vs website. The operation
+      // name is already on the graphql span; bots aren't traced at all.
+      async requestDidStart({ contextValue }) {
+        trace.getActiveSpan()?.setAttribute("app.source", contextValue.source);
       },
     },
   ],
@@ -438,4 +431,4 @@ setInterval(pruneCompanionTelemetry, 24 * 60 * 60 * 1000);
 
 app.listen({ port: config.port });
 
-console.log(`🚀 Server ready on port ${config.port}`);
+logger.info("Server ready", { port: config.port });
