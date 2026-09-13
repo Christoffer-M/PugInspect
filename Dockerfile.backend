@@ -35,4 +35,4 @@ USER appuser
 
 WORKDIR /app/apps/backend
 EXPOSE 4000
-CMD ["node", "dist/index.js"]
+CMD ["node", "--import", "./dist/telemetry.js", "dist/index.js"]
