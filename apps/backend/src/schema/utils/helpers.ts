@@ -1,3 +1,4 @@
+import { REALM_SLUGS } from "../../generated/realmSlugs.js";
 import { Difficulty, InputMaybe, Metric } from "@repo/graphql-types";
 
 const VALID_METRICS = new Set<Metric>(["dps", "hps", "points_and_damage", "points_and_healing"]);
@@ -19,6 +20,40 @@ export function normalizeRealm(realm: string): string {
     .replace(/[''`()]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+/** Lookup key for REALM_SLUGS: lowercased, every separator stripped, so
+ * "Der Rat von Dalaran", "DerRatvonDalaran" and "der-rat-von-dalaran" all land
+ * on one entry. Mirrors squashRealm in packages/ui/src/realmKey.ts — the two
+ * must derive keys identically or every lookup misses. */
+function squashRealm(realm: string): string {
+  return realm.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+/**
+ * Resolve any realm a client sends to Blizzard's own slug.
+ *
+ * normalizeRealm below only reformats punctuation, so it turns the
+ * Blizzard-normalized form clients sometimes send ("TarrenMill") into
+ * "tarrenmill" — which every upstream 404s. RaiderIO is lenient enough to
+ * answer some of them anyway, and that answer is what persists the bad realm
+ * as its own `characters` row and publishes it to the sitemap. So resolve
+ * here, at the boundary, and let everything downstream assume a real slug.
+ *
+ * Unknown realms fall through to normalizeRealm rather than being rejected:
+ * the table is only as fresh as the last deploy, and a realm opened since then
+ * is exactly when a real user is looking up a real character. isKnownRealm
+ * marks those as unvouched-for so the sitemap can decline to publish them.
+ */
+export function resolveRealm(realm: string, region: string): string {
+  return (
+    REALM_SLUGS[region.toLowerCase()]?.[squashRealm(realm)] ?? normalizeRealm(realm)
+  );
+}
+
+/** Whether a realm resolves to a slug Blizzard actually publishes. */
+export function isKnownRealm(realm: string, region: string): boolean {
+  return REALM_SLUGS[region.toLowerCase()]?.[squashRealm(realm)] !== undefined;
 }
 
 /** Canonical character name: lowercase, trimmed. */

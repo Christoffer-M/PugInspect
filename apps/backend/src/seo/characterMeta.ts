@@ -4,7 +4,7 @@ import {
   getRosterBySlug,
   type CharacterSeoSnapshot,
 } from "../db/persistence.js";
-import { normalizeName, normalizeRealm } from "../schema/utils/helpers.js";
+import { normalizeName, resolveRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
 import { currentRaidProgress } from "./raidProgress.js";
@@ -204,7 +204,7 @@ export async function renderCharacterPageHtml(
   name: string
 ): Promise<string | null> {
   const regionLc = region.trim().toLowerCase();
-  const realmSlug = normalizeRealm(realm);
+  const realmSlug = resolveRealm(realm, regionLc);
   const nameLc = normalizeName(name);
 
   if (!VALID_REGIONS.has(regionLc)) return null;

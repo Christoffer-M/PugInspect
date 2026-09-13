@@ -37,7 +37,7 @@ import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.servi
 import { VALID_REGIONS } from "../utils/regions.js";
 import { getRosterProfiles } from "../services/character/roster.service.js";
 import { getRosterBySlug, insertRoster, updateRosterCharacters } from "../../db/persistence.js";
-import { normalizeName, normalizeRealm } from "../utils/helpers.js";
+import { normalizeName, resolveRealm } from "../utils/helpers.js";
 
 /**
  * Return type for the Query.character resolver.
@@ -85,7 +85,7 @@ function validateRosterInput(args: {
   }
   const seen = new Set<string>();
   const chars = args.characters
-    .map((c) => ({ name: normalizeName(c.name), realm: normalizeRealm(c.realm) }))
+    .map((c) => ({ name: normalizeName(c.name), realm: resolveRealm(c.realm, region) }))
     .filter((c) => {
       const key = `${c.name}:${c.realm}`;
       if (!c.name || !c.realm || c.name.length > 50 || c.realm.length > 100 || seen.has(key)) {
@@ -121,6 +121,11 @@ export default {
           extensions: { code: "BAD_USER_INPUT" },
         });
       }
+
+      // Canonicalise the realm here, at the boundary: services, the DB write
+      // and the not-found echo below all read it off args, so resolving once
+      // here is what keeps a client's "TarrenMill" from becoming its own row.
+      args = { ...args, realm: resolveRealm(args.realm, args.region) };
 
       // Crawlers render the SPA and fire the same queries real users do; serve
       // them from the DB cache only (stale allowed) so bot crawls never spend
@@ -200,6 +205,16 @@ export default {
       if (!VALID_REGIONS.has(args.region.toLowerCase())) {
         throw new GraphQLError("Invalid region", { extensions: { code: "BAD_USER_INPUT" } });
       }
+      // The companion's main path, and it does not go through
+      // validateRosterInput — canonicalise here too or a stale client table
+      // writes bad realms straight to the DB.
+      args = {
+        ...args,
+        characters: args.characters.map((c) => ({
+          ...c,
+          realm: resolveRealm(c.realm, args.region),
+        })),
+      };
       // Only spend upstream quota on what the selection set actually asks
       // for - an identity-only query must not trigger 10 RIO + WCL lookups.
       const raiderIoRequested = isRosterCharacterFieldRequested(info, "raiderIo");

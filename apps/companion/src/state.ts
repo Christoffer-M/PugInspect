@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { slugRealm } from "@repo/ui";
+import { slugRealm, squashRealm } from "@repo/ui";
 import { CHUNK_SIZE, PARTS, lookupCharacters, type Part, type RosterEntry } from "./api";
 import { count } from "./analytics";
 import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
@@ -98,7 +98,10 @@ export const isLoading = (l: Lookup | undefined) => PARTS.some((p) => l?.parts[p
 export const errorOf = (l: Lookup | undefined) =>
   PARTS.map((p) => l?.parts[p]).find((s) => s?.state === "error")?.error;
 
-export const keyOf = (a: { name: string; realm: string }) => `${a.name.toLowerCase()}-${slugRealm(a.realm)}`;
+/** Identity for the in-memory lookup maps only — never sent upstream, so it
+ *  wants the raw realm squashed, not a slug: a session is single-region and
+ *  squashing can't collide two realms the way a guessed slug can. */
+export const keyOf = (a: { name: string; realm: string }) => `${a.name.toLowerCase()}-${squashRealm(a.realm)}`;
 
 export type Events = {
   onNewListing?: (session: Session) => void;
@@ -141,7 +144,7 @@ export function useCompanion(events: Events) {
           // Send the role the applicant signed up as: their active spec can say
           // otherwise (a healer Evoker sitting in Devastation), and the backend
           // picks the parse metric from this.
-          chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm), role: SPEC_ROLE[a.role] })),
+          chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm, region), role: SPEC_ROLE[a.role] })),
           scope
         );
         if (part === "core") count("notFound", entries.filter((e) => e.notFound).length);

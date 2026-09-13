@@ -77,7 +77,7 @@ const AddMemberControl: React.FC<{
   const add = (input: string) => {
     // Same parser as the export-string decoder, so a manually typed
     // "Bob-TarrenMill" or a Russian realm slugs identically to a paste.
-    const parsed = parseNameRealm(input);
+    const parsed = parseNameRealm(input, region);
     if (!parsed) return;
     // Deferred: Mantine writes the picked option into the input after
     // onOptionSubmit, which would overwrite a synchronous clear.

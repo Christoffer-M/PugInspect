@@ -76,11 +76,11 @@ describe("decodeRosterImport", () => {
   });
 
   it("parseNameRealm slugs manual entry the same way as a paste", () => {
-    expect(parseNameRealm("Bob-TarrenMill")).toEqual({ name: "Bob", realm: "tarren-mill" });
-    expect(parseNameRealm("Bob-Tarren Mill")).toEqual({ name: "Bob", realm: "tarren-mill" });
-    expect(parseNameRealm("Имя-РевущийФьорд")).toEqual({ name: "Имя", realm: "howling-fjord" });
-    expect(parseNameRealm("Bob-MalGanis")).toEqual({ name: "Bob", realm: "malganis" });
-    expect(parseNameRealm("NoRealm")).toBeNull();
+    expect(parseNameRealm("Bob-TarrenMill", "eu")).toEqual({ name: "Bob", realm: "tarren-mill" });
+    expect(parseNameRealm("Bob-Tarren Mill", "eu")).toEqual({ name: "Bob", realm: "tarren-mill" });
+    expect(parseNameRealm("Имя-РевущийФьорд", "eu")).toEqual({ name: "Имя", realm: "howling-fjord" });
+    expect(parseNameRealm("Bob-MalGanis", "eu")).toEqual({ name: "Bob", realm: "malganis" });
+    expect(parseNameRealm("NoRealm", "eu")).toBeNull();
   });
 
   it("returns null for non-export text, bad regions, and corrupted strings", async () => {

@@ -1,5 +1,6 @@
 import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./index.js";
+import { isKnownRealm } from "../schema/utils/helpers.js";
 import {
   characters,
   characterRioSnapshots,
@@ -681,10 +682,16 @@ export type SitemapCharacter = {
  * All characters for the server-generated sitemap, newest-updated first.
  * Values are already normalised to lowercase slugs at insert time, so they can
  * be used directly as URL path segments.
+ *
+ * Rows whose realm isn't one Blizzard publishes are dropped rather than listed:
+ * they are 404s, and a sitemap full of them is the one place a bad realm costs
+ * us something beyond a wasted row. Realms are resolved at the API boundary
+ * now, so this only screens rows written before that — and realms too new to
+ * be in the table, which is the right call for a sitemap either way.
  */
 export async function getSitemapCharacters(limit: number): Promise<SitemapCharacter[]> {
   try {
-    return await getDb()
+    const rows = await getDb()
       .select({
         region: characters.region,
         realm: characters.realm,
@@ -694,6 +701,7 @@ export async function getSitemapCharacters(limit: number): Promise<SitemapCharac
       .from(characters)
       .orderBy(desc(characters.updatedAt))
       .limit(limit);
+    return rows.filter((r) => isKnownRealm(r.realm, r.region));
   } catch (err) {
     logger.error("DB query failed (getSitemapCharacters)", { error: String(err) });
     return [];
