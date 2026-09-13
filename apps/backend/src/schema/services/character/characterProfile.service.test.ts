@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { trace } from "@opentelemetry/api";
+import { GraphQLError } from "graphql";
 import { getCharacterProfiles } from "./characterProfile.service.js";
 import { BlizzardService } from "../blizzard/blizzard.services.js";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
@@ -76,6 +78,38 @@ describe("getCharacterProfiles", () => {
     expect(profiles.rioProfile).toBeUndefined();
     expect(profiles.blizzardProfile).toBeDefined();
     expect(profiles.warcraftLogsProfile).toBeDefined();
+  });
+
+  // The not-found board in Honeycomb is built on these events.
+  it("records a span event per upstream miss", async () => {
+    const addEvent = vi.fn();
+    vi.spyOn(trace, "getActiveSpan").mockReturnValue({ addEvent } as never);
+    vi.mocked(BlizzardService.getCharacterProfile).mockRejectedValue(
+      new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } })
+    );
+    vi.mocked(BlizzardService.getCharacterEquipment).mockRejectedValue(new Error("boom"));
+    vi.mocked(WarcraftLogsService.getCharacterProfile).mockResolvedValue({ data: null, fetchedAt: 0 } as never);
+
+    await getCharacterProfiles({ ...args, name: "Pugsley" }, allRequested);
+
+    const character = { "app.character.region": "eu", "app.character.realm": "kazzak", "app.character.name": "pugsley" };
+    expect(addEvent).toHaveBeenCalledTimes(3);
+    expect(addEvent).toHaveBeenCalledWith("character.upstream_miss", {
+      "app.upstream": "blizzard",
+      "app.error_code": "NOT_FOUND",
+      ...character,
+    });
+    expect(addEvent).toHaveBeenCalledWith("character.upstream_miss", {
+      "app.upstream": "blizzard_equipment",
+      "app.error_code": "UNEXPECTED",
+      ...character,
+    });
+    expect(addEvent).toHaveBeenCalledWith("character.upstream_miss", {
+      "app.upstream": "warcraftlogs",
+      "app.error_code": "NOT_FOUND",
+      ...character,
+    });
+    vi.restoreAllMocks();
   });
 
   it("skips the upstreams the selection set didn't ask for", async () => {

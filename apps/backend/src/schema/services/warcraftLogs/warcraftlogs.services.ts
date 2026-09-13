@@ -324,7 +324,7 @@ export class WarcraftLogsService {
         error: error instanceof Error ? error.message : String(error),
       });
       throw new GraphQLError("Failed to fetch character profile from Warcraft Logs", {
-        extensions: { code: "NOT_FOUND" },
+        extensions: { code: "INTERNAL_SERVER_ERROR" },
       });
     }
   }
