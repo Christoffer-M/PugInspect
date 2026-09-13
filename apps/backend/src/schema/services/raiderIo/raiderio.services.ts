@@ -85,7 +85,6 @@ export class RaiderIOService {
         (m) => m.type === "character"
       );
 
-      logger.info("RaiderIO character suggestions fetched", { searchString: args.searchString, region: args.region, count: filteredMatches.length, durationMs: elapsed() });
       return filteredMatches.map((r) => ({
         name: r.name,
         realm: r.data.realm.name,
@@ -158,8 +157,6 @@ export class RaiderIOService {
     const name = normalizedName;
     const realm = normalizedRealm;
 
-    logger.info("RaiderIO character profile request", { normalizedName, normalizedRealm, region });
-
     const query: Record<string, string | number | boolean> = {
       name: normalizedName,
       realm: normalizedRealm,
@@ -179,7 +176,6 @@ export class RaiderIOService {
     try {
       const response = await fetcher<RaiderIoCharacterApiResponse>(url, options);
       const fetchedAt = Math.floor(Date.now() / 1000);
-      logger.info("RaiderIO character profile fetched", { name, realm, region, durationMs: elapsed() });
       persistRioProfile({ region, realm: normalizedRealm, name: normalizedName }, response, fetchedAt).catch((err: unknown) => {
         logger.warn("Failed to persist RIO profile to DB cache", { name, realm, region, error: String(err) });
       });

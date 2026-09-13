@@ -1,3 +1,4 @@
+import { trace } from "@opentelemetry/api";
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
@@ -209,8 +210,6 @@ export class WarcraftLogsService {
   ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
     const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
 
-    logger.info("WarcraftLogs character profile request", { name, realm: normalizedRealm, region, zoneId, partition });
-
     const start = Date.now();
     const { data, headers } = await this.client.query<CharacterProfileQuery>(
       CHARACTER_PROFILE.loc?.source.body ?? "",
@@ -236,6 +235,13 @@ export class WarcraftLogsService {
     // Every profile response carries rateLimitData; shout well before the
     // quota is gone, since exhaustion trips the circuit breaker site-wide.
     const rl = data?.rateLimitData;
+    if (rl) {
+      trace.getActiveSpan()?.setAttributes({
+        "wcl.rate_limit.points_spent": rl.pointsSpentThisHour,
+        "wcl.rate_limit.limit_per_hour": rl.limitPerHour,
+        "wcl.rate_limit.reset_in_s": rl.pointsResetIn,
+      });
+    }
     if (rl?.limitPerHour && rl.pointsSpentThisHour != null && rl.pointsSpentThisHour / rl.limitPerHour > 0.8) {
       logger.warn("WCL_QUOTA_HIGH", {
         pointsSpentThisHour: rl.pointsSpentThisHour,
@@ -249,7 +255,6 @@ export class WarcraftLogsService {
       return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
     }
 
-    logger.info("WarcraftLogs character profile fetched", { name, realm: normalizedRealm, region, durationMs, rateLimit: data?.rateLimitData, rateLimitHeaderInfo });
     return { data: data.characterData, fetchedAt: Math.floor(Date.now() / 1000) };
   }
 
