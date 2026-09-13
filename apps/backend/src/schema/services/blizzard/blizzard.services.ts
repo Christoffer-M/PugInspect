@@ -1,3 +1,4 @@
+import { trace } from "@opentelemetry/api";
 import { config } from "../../../config/index.js";
 import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
@@ -115,8 +116,6 @@ export class BlizzardService {
       const base = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}`;
       const ns = `namespace=profile-${region}&locale=en_US`;
 
-      logger.info("Blizzard character profile + media request", { name, realm: normalizedRealm, region });
-
       const [profileRes, mediaRes] = await Promise.allSettled([
         fetch(`${base}?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
         fetch(`${base}/character-media?${ns}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }),
@@ -142,10 +141,6 @@ export class BlizzardService {
       } else {
         logger.warn("Blizzard character media fetch failed (non-fatal)", { name, realm: normalizedRealm, region });
       }
-
-      // Timed at the point both the profile and its media have settled - that
-      // pair is what the caller actually waits on.
-      logger.info("Blizzard character profile fetched", { name, realm: normalizedRealm, region, durationMs: elapsed() });
 
       const characterId = await persistBlizzardProfile(
         { region, realm: normalizedRealm, name },
@@ -242,8 +237,6 @@ export class BlizzardService {
       const token = await this.tokens.getToken();
       const url = `https://${region}.api.blizzard.com/profile/wow/character/${normalizedRealm}/${name.toLowerCase()}/equipment?namespace=profile-${region}&locale=en_US`;
 
-      logger.info("Blizzard equipment request", { name, realm: normalizedRealm, region });
-
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
       if (res.status === 404) {
         logger.warn("Blizzard equipment not found", { name, realm: normalizedRealm, region, durationMs: elapsed() });
@@ -253,20 +246,15 @@ export class BlizzardService {
 
       const data = await res.json() as BlizzardCharacterEquipment;
       const fetchedAt = Math.floor(Date.now() / 1000);
-      const equipmentMs = elapsed();
 
       const iconsElapsed = startTimer();
       const iconMisses = await this.resolveItemIcons(data, token);
 
-      // The icon fan-out is up to 16 further requests and is reported on its
-      // own: a slow gear panel is often the icons, not the equipment call.
-      logger.info("Blizzard equipment fetched", {
-        name,
-        realm: normalizedRealm,
-        region,
-        durationMs: equipmentMs,
-        iconDurationMs: iconsElapsed(),
-        iconMisses,
+      // The icon fan-out is up to 16 further requests; misses above zero on
+      // most requests mean the in-process icon cache is cold or churning.
+      trace.getActiveSpan()?.setAttributes({
+        "blizzard.icon_duration_ms": iconsElapsed(),
+        "blizzard.icon_misses": iconMisses,
       });
 
       // persistEquipment catches and logs its own failures — cache writes are non-fatal
