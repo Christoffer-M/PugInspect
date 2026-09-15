@@ -61,9 +61,9 @@ const Home: React.FC = () => {
 export const Route = createFileRoute("/")({
   // Title/description are also prerendered into this route's static HTML —
   // keep in sync with apps/frontend/scripts/prerender.mjs.
+  // Description and canonical come from the prerendered HTML (scripts/prerender.mjs).
   head: () => ({
     meta: [{ title: "PugInspect - WoW Character Inspector" }],
-    links: [{ rel: "canonical", href: "https://puginspect.com/" }],
   }),
   component: Home,
 });

@@ -329,16 +329,9 @@ const EmptyState: React.FC = () => (
 export const Route = createFileRoute("/mythic-plus")({
   // Title/description are also prerendered into this route's static HTML —
   // keep in sync with apps/frontend/scripts/prerender.mjs.
+  // Description and canonical come from the prerendered HTML (scripts/prerender.mjs).
   head: () => ({
-    meta: [
-      { title: "Mythic+ Spec Meta | PugInspect" },
-      {
-        name: "description",
-        content:
-          "Which Mythic+ specs are actually performing. Median, top 5% and best-parse DPS and HPS for all 40 specs, from Warcraft Logs, refreshed hourly.",
-      },
-    ],
-    links: [{ rel: "canonical", href: "https://puginspect.com/mythic-plus" }],
+    meta: [{ title: "Mythic+ Spec Meta | PugInspect" }],
   }),
   component: MythicPlusMeta,
 });

@@ -46,8 +46,8 @@ export type CharacterQueryParams = {
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
-  // No canonical link here: /meta injects it for crawlers (and 301s
-  // non-canonical paths), and a second copy from the client only duplicated it.
+  // Title only: /meta injects description and canonical for crawlers (and 301s
+  // non-canonical paths), and HeadContent never dedupes against the served head.
   head: ({ params }) => ({
     meta: [{ title: `${params.name}-${params.realm} | PugInspect` }],
   }),
@@ -174,7 +174,8 @@ function CharacterPage() {
 
   // Old or hand-typed URLs ("tarrenmill", "EU/…/Bob") still render, since the
   // backend resolves the realm, but the title and outbound links are built
-  // from the URL. Swap it for the canonical form so they agree. In-app links already use realmSlug, so this is the fallback.
+  // from the URL. Swap it for the canonical form so they agree. In-app links
+  // already use realmSlug, so this is the fallback.
   // ponytail: the other queries refetch once under the new key; the backend
   // serves them from its own cache, so it's one extra round trip on old URLs.
   const realmSlug = characterInfo?.realmSlug;

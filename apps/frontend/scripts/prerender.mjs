@@ -23,8 +23,10 @@ const SEO_BLOCK = /<!--seo:start-->[\s\S]*?<!--seo:end-->/;
 const BODY_BLOCK = /<!--body:start-->[\s\S]*?<!--body:end-->/;
 
 /**
- * `title` and `description` are duplicated in each route's head() so that
- * client-side navigation updates the tab title too — change one, change both.
+ * `title` is duplicated in each route's head() so that client-side navigation
+ * updates the tab title too — change one, change both. Description and
+ * canonical live only here: HeadContent never dedupes against the served head,
+ * so repeating them in head() just produced a second copy.
  * `body` is a strict subset of what the rendered page shows: React wipes
  * #app on mount, so this is a plain-text stand-in, never crawler-only content.
  * All copy is authored here rather than user input, so nothing needs escaping.
