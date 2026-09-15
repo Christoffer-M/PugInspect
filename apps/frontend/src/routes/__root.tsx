@@ -8,12 +8,6 @@ import { config } from "../config";
 const Analytics: React.FC = () => {
   useEffect(() => {
     if (!import.meta.env.PROD) return;
-    if (!config.umamiWebsiteId) {
-      // VITE_UMAMI_WEBSITE_ID is baked in at build time; an empty value means
-      // the build arg was missing and no analytics will be sent at all.
-      console.warn("[analytics] VITE_UMAMI_WEBSITE_ID was empty at build time — tracking disabled");
-      return;
-    }
     const script = document.createElement("script");
     script.src = config.apiUrl + "/stats.js";
     script.defer = true;
