@@ -109,6 +109,9 @@ const CharacterSearchInput: React.FC = () => {
       <Autocomplete
         error={errorText}
         limit={10}
+        // The server already matched these; Mantine's default substring filter
+        // would hide "Condenial-Tarren Mill" for a half-typed "cond-TarrenM".
+        filter={({ options }) => options}
         placeholder="Ceases-Kazzak or paste a link"
         data={searchResults?.map((r) => ({
           value: `${r.name}-${r.realm}`,

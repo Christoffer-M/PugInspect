@@ -145,9 +145,13 @@ function assertNoMassRealmLoss(path: string, next: Record<string, Record<string,
  * "maelstrom". A region-less table silently hands those players another
  * region's slug.
  */
-async function fetchRealmSlugs(): Promise<Record<string, Record<string, string>>> {
+async function fetchRealmSlugs(): Promise<{
+  slugs: Record<string, Record<string, string>>;
+  names: Record<string, Record<string, string>>;
+}> {
   const access_token = await blizzardToken();
   const byRegion: Record<string, Record<string, string>> = {};
+  const namesByRegion: Record<string, Record<string, string>> = {};
 
   for (const region of REGIONS) {
     const index = await getJson(
@@ -160,8 +164,13 @@ async function fetchRealmSlugs(): Promise<Record<string, Record<string, string>>
       continue;
     }
     const table: Record<string, string> = {};
+    const displayNames: Record<string, string> = {};
     for (const realm of realms) {
       const names = typeof realm.name === "string" ? [realm.name] : Object.values(realm.name ?? {});
+      // en_US for every region, matching the slugs; any locale resolves back
+      // through the table below, so a displayed name always round-trips.
+      displayNames[realm.slug] =
+        (typeof realm.name === "string" ? realm.name : realm.name?.en_US) ?? names[0] ?? realm.slug;
       // The slug itself is a valid input too: the website's roster paste and
       // our own URLs already carry the dashed form.
       for (const variant of [...names, realm.slug]) {
@@ -179,8 +188,11 @@ async function fetchRealmSlugs(): Promise<Record<string, Record<string, string>>
     byRegion[region] = Object.fromEntries(
       Object.entries(table).sort(([a], [b]) => (a < b ? -1 : 1))
     );
+    namesByRegion[region] = Object.fromEntries(
+      Object.entries(displayNames).sort(([a], [b]) => (a < b ? -1 : 1))
+    );
   }
-  return byRegion;
+  return { slugs: byRegion, names: namesByRegion };
 }
 
 /**
@@ -260,7 +272,7 @@ const started = (r: { starts: { us: string } }) => Date.parse(r.starts.us) <= no
 
 async function main() {
   const current = EXPANSIONS[0]!;
-  const [mplus, wclZones, itemSetIds, heroTalents, realmSlugs, ...raidData] = await Promise.all([
+  const [mplus, wclZones, itemSetIds, heroTalents, { slugs: realmSlugs, names: realmNames }, ...raidData] = await Promise.all([
     getJson(`https://raider.io/api/v1/mythic-plus/static-data?expansion_id=${current.rioId}`),
     fetchWclZones(),
     fetchBlizzardItemSetIds(),
@@ -482,6 +494,10 @@ export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(
 // player's own locale with separators stripped, so keys are squashed the same
 // way; see resolveRealm in ../schema/utils/helpers.ts.
 export const REALM_SLUGS: Record<string, Record<string, string>> = ${stringify(realmSlugs)};
+
+// API slug → en_US display name, per region, for showing a realm the backend
+// only stored as a slug (character autocomplete).
+export const REALM_NAMES: Record<string, Record<string, string>> = ${stringify(realmNames)};
 `;
 
   // Backend only: it resolves every realm a client sends, so clients carry no copy.
@@ -520,7 +536,7 @@ export const REALM_SLUGS: Record<string, Record<string, string>> = ${stringify(r
     "\nReview with `git diff`. At an expansion boundary also update EXPANSIONS,\nMAX_LEVEL and ENCHANTABLE_SLOTS in scripts/season-config.mts."
   );
   console.log(
-    "\nNew Mythic+ season? Once deployed, backfill the autocomplete directory (a few hours):\n  docker compose exec -d backend node dist/scripts/crawl-leaderboards.js --periods=all"
+    "\nNew Mythic+ season? Once deployed, backfill the autocomplete directory (~10 min per week of the season so far):\n  docker compose exec -d backend sh -c 'node dist/scripts/crawl-leaderboards.js --periods=all > /tmp/backfill.log 2>&1'\nand read the result with: docker compose exec backend tail -n 5 /tmp/backfill.log"
   );
 }
 

@@ -11,6 +11,7 @@ import {
   updateRosterCharacters,
 } from "../../db/persistence.js";
 import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.js";
+import { searchDirectory } from "../../db/characterDirectory.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import type { BlizzardCharacterProfile } from "../services/blizzard/model/CharacterProfile.js";
 import type { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
@@ -36,6 +37,9 @@ vi.mock("../../db/persistence.js", () => ({
   insertRoster: vi.fn(),
   getRosterBySlug: vi.fn(),
   updateRosterCharacters: vi.fn(),
+}));
+vi.mock("../../db/characterDirectory.js", () => ({
+  searchDirectory: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("../../db/stats.js", () => ({
   getSiteStats: vi.fn(),
@@ -234,25 +238,61 @@ describe("Query.characterSuggestions", () => {
       characterSuggestions(region: $region, searchString: $searchString) {
         name
         realm
+        realmSlug
         region
       }
     }
   `;
 
-  it("returns suggestions from the service", async () => {
-    vi.mocked(RaiderIOService.getCharacterSuggestions).mockResolvedValue([
-      { name: "pugsley", realm: "kazzak", region: "eu" },
+  it("answers from the character directory without calling Raider.IO", async () => {
+    vi.mocked(searchDirectory).mockResolvedValueOnce([
+      { name: "mørk", realm: "aggra-português" },
+      { name: "mørkblad", realm: "tarren-mill" },
     ]);
 
-    const result = await execute(SUGGESTIONS_QUERY, {
-      region: "eu",
-      searchString: "pug",
-    });
+    const result = await execute(SUGGESTIONS_QUERY, { region: "EU", searchString: " Mørk " });
+
+    expect(result.errors).toBeUndefined();
+    expect(searchDirectory).toHaveBeenCalledWith("eu", "mørk", null);
+    expect(result.data!.characterSuggestions).toEqual([
+      { name: "Mørk", realm: "Aggra (Português)", realmSlug: "aggra-português", region: "EU" },
+      { name: "Mørkblad", realm: "Tarren Mill", realmSlug: "tarren-mill", region: "EU" },
+    ]);
+    expect(RaiderIOService.getCharacterSuggestions).not.toHaveBeenCalled();
+  });
+
+  it("narrows to a known realm exactly, or every realm a half-typed one could be", async () => {
+    await execute(SUGGESTIONS_QUERY, { region: "eu", searchString: "Pug-TarrenMill" });
+    expect(searchDirectory).toHaveBeenLastCalledWith("eu", "pug", ["tarren-mill"]);
+
+    await execute(SUGGESTIONS_QUERY, { region: "eu", searchString: "Pug-Tarr" });
+    expect(vi.mocked(searchDirectory).mock.lastCall![2]).toContain("tarren-mill");
+  });
+
+  it("falls back to Raider.IO when the directory has nothing", async () => {
+    vi.mocked(RaiderIOService.getCharacterSuggestions).mockResolvedValue([
+      { name: "pugsley", realm: "Kazzak", realmSlug: "kazzak", region: "EU" },
+    ]);
+
+    const result = await execute(SUGGESTIONS_QUERY, { region: "eu", searchString: "pug" });
 
     expect(result.errors).toBeUndefined();
     expect(result.data!.characterSuggestions).toEqual([
-      { name: "pugsley", realm: "kazzak", region: "eu" },
+      { name: "pugsley", realm: "Kazzak", realmSlug: "kazzak", region: "EU" },
     ]);
+  });
+
+  it("skips the directory for a realm that matches nothing, and survives a DB failure", async () => {
+    vi.mocked(RaiderIOService.getCharacterSuggestions).mockResolvedValue([]);
+
+    await execute(SUGGESTIONS_QUERY, { region: "eu", searchString: "pug-zzzqqq" });
+    expect(searchDirectory).not.toHaveBeenCalled();
+    expect(RaiderIOService.getCharacterSuggestions).toHaveBeenCalledTimes(1);
+
+    vi.mocked(searchDirectory).mockRejectedValueOnce(new Error("connection refused"));
+    const result = await execute(SUGGESTIONS_QUERY, { region: "eu", searchString: "pug" });
+    expect(result.errors).toBeUndefined();
+    expect(RaiderIOService.getCharacterSuggestions).toHaveBeenCalledTimes(2);
   });
 
   it("rejects search strings shorter than 3 characters", async () => {
@@ -263,6 +303,7 @@ describe("Query.characterSuggestions", () => {
 
     expect(result.errors?.[0]?.extensions?.code).toBe("BAD_USER_INPUT");
     expect(RaiderIOService.getCharacterSuggestions).not.toHaveBeenCalled();
+    expect(searchDirectory).not.toHaveBeenCalled();
   });
 });
 
