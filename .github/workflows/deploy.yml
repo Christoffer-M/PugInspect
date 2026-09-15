@@ -76,4 +76,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ${{ secrets.VPS_DEPLOY_PATH }}
+            # Pull first so bash runs this commit's deploy.sh, not the previous one.
+            git pull origin main
             TAG=${{ env.SHA }} bash deploy.sh

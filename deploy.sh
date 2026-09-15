@@ -7,6 +7,8 @@ cd "$DEPLOY_DIR"
 # Images are built and pushed by .github/workflows/deploy.yml; this box only
 # pulls them. TAG is the commit SHA CI built. Without one, deploy :latest (the
 # newest main build); to roll back, pass an older SHA: TAG=<sha> ./deploy.sh
+# Only roll back past deploys without migrations: the backend migrates on start
+# and nothing migrates back down, so old code would meet the newer schema.
 export TAG="${TAG:-latest}"
 
 echo "==> Pulling latest changes (compose files)..."
@@ -18,7 +20,8 @@ echo "==> Pulling images ($TAG)..."
 docker compose pull backend frontend
 
 echo "==> Restarting containers..."
-docker compose up -d --no-build --remove-orphans
+# --wait fails the deploy if a container never becomes healthy.
+docker compose up -d --no-build --remove-orphans --wait --wait-timeout 180
 
 # Every deploy leaves the previous SHA's images behind; drop any not in use.
 echo "==> Pruning old images..."
