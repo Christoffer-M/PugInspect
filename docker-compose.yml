@@ -26,6 +26,9 @@ services:
       - internal
 
   backend:
+    # Production pulls the image CI pushed (deploy.sh sets TAG); `docker compose
+    # up --build` still builds locally from the Dockerfile.
+    image: ghcr.io/christoffer-m/puginspect-backend:${TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile.backend
@@ -60,11 +63,10 @@ services:
       - internal
 
   frontend:
+    image: ghcr.io/christoffer-m/puginspect-frontend:${TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile.frontend
-      args:
-        VITE_UMAMI_WEBSITE_ID: ${VITE_UMAMI_WEBSITE_ID}
     logging: *logging
     environment:
       VIRTUAL_HOST: puginspect.com,www.puginspect.com

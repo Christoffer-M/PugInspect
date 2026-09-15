@@ -4,19 +4,24 @@ set -euo pipefail
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DEPLOY_DIR"
 
-echo "==> Pulling latest changes..."
+# Images are built and pushed by .github/workflows/deploy.yml; this box only
+# pulls them. TAG is the commit SHA CI built. Without one, deploy :latest (the
+# newest main build); to roll back, pass an older SHA: TAG=<sha> ./deploy.sh
+export TAG="${TAG:-latest}"
+
+echo "==> Pulling latest changes (compose files)..."
 git pull origin main
 
-# The Umami website id is baked into the frontend bundle at build time; an
-# empty value silently disables analytics, so refuse to deploy without it.
-if [ -z "${VITE_UMAMI_WEBSITE_ID:-}" ] && ! grep -qE '^VITE_UMAMI_WEBSITE_ID=..*' .env 2>/dev/null; then
-  echo "ERROR: VITE_UMAMI_WEBSITE_ID is not set." >&2
-  echo "Add it to $DEPLOY_DIR/.env (read by docker compose) or export it before deploying." >&2
-  exit 1
-fi
+echo "==> Pulling images ($TAG)..."
+# Only the app images — pulling postgres too would restart the database
+# whenever a new 17.x patch lands.
+docker compose pull backend frontend
 
-echo "==> Building and restarting containers..."
-docker compose build --pull
-docker compose up -d --remove-orphans
+echo "==> Restarting containers..."
+docker compose up -d --no-build --remove-orphans
+
+# Every deploy leaves the previous SHA's images behind; drop any not in use.
+echo "==> Pruning old images..."
+docker image prune -af --filter label=com.puginspect.image=true
 
 echo "==> Done."

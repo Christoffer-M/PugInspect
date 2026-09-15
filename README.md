@@ -93,10 +93,7 @@ Optional frontend build variables:
 
 ```env
 VITE_GRAPHQL_URL=http://localhost:4000/graphql
-VITE_UMAMI_WEBSITE_ID=your_umami_website_id
 ```
-
-`VITE_UMAMI_WEBSITE_ID` is baked into the frontend bundle at build time. For production deploys it must be present in the `.env` file next to `docker-compose.yml` (or exported in the shell) — `deploy.sh` refuses to deploy without it, since an empty value silently disables analytics.
 
 When running through Docker Compose, `DATABASE_URL` is provided to the backend container automatically and points at the Compose Postgres service. The backend still reads API credentials from `apps/backend/.env`.
 
