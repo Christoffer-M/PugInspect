@@ -63,7 +63,7 @@ async function execute(query: string, variables: Record<string, unknown>) {
 // Partial profiles — only the fields the mappers actually read.
 const blizzardProfile = {
   name: "Pugsley",
-  realm: { name: "Kazzak" },
+  realm: { name: "Kazzak", slug: "kazzak" },
   gender: { name: "Male" },
   faction: { name: "Horde" },
   race: { name: "Orc" },
@@ -285,6 +285,7 @@ describe("Roster Check", () => {
       rosterCharacters(region: $region, characters: $characters, difficulty: $difficulty) {
         name
         realm
+        realmSlug
         notFound
         role
         character {
@@ -323,7 +324,8 @@ describe("Roster Check", () => {
       region: "eu",
       characters: [
         { name: "Pugsley", realm: "Kazzak" },
-        { name: "Typoed", realm: "Kazzak" },
+        // The companion sends the addon's raw form; the slug comes back resolved.
+        { name: "Typoed", realm: "TarrenMill" },
       ],
       difficulty: "Heroic",
     });
@@ -333,11 +335,18 @@ describe("Roster Check", () => {
     expect(entries).toHaveLength(2);
     expect(entries[0]).toMatchObject({
       name: "Pugsley",
+      realmSlug: "kazzak",
       notFound: false,
       role: "DPS", // Enhancement Shaman
     });
     expect((entries[0]!.character as Record<string, unknown>).class).toBe("Shaman");
-    expect(entries[1]).toMatchObject({ name: "typoed", notFound: true, role: null, character: null });
+    expect(entries[1]).toMatchObject({
+      name: "typoed",
+      realmSlug: "tarren-mill",
+      notFound: true,
+      role: null,
+      character: null,
+    });
     // notFound is expected input - no search events fired for roster views
     expect(recordSearchEvent).not.toHaveBeenCalled();
   });

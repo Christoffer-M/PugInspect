@@ -15,7 +15,7 @@ import {
 } from "@mantine/core";
 import { IconSearch, IconUsersGroup } from "@tabler/icons-react";
 import { Page } from "../components/layout/Page";
-import { storeRosterSecret, useCreateRoster } from "../queries/roster";
+import { storeRosterSecret, useCreateRoster, type RosterCharacterKey } from "../queries/roster";
 import { decodeRosterImport, CLASS_FILE_NAMES, type RosterImport } from "../util/rosterImport";
 import { getClassColor, upperCaseFirstLetter } from "../util/util";
 import { getRaidDisplayName, DEFAULT_RAID } from "../data/raidZones";
@@ -27,9 +27,20 @@ const ADDON_URL = "https://www.curseforge.com/wow/addons/puginspect";
 
 /** Class/role hints from the export string, stashed for the results page so
  *  pending cards render in class colors before the lookup resolves. */
-export function stashRosterHints(slug: string, decoded: RosterImport) {
+export function stashRosterHints(
+  roster: { slug: string; characters: RosterCharacterKey[] },
+  decoded: RosterImport
+) {
+  // Hints are read back keyed on the slugs the backend resolved, which the
+  // pasted realms aren't. The backend keeps order and only drops entries, so
+  // each saved character is the first unclaimed hint with its name.
+  const unclaimed = [...decoded.characters];
+  const hints = roster.characters.flatMap((c) => {
+    const i = unclaimed.findIndex((h) => h.name.toLowerCase() === c.name);
+    return i === -1 ? [] : [{ ...unclaimed.splice(i, 1)[0]!, realm: c.realm }];
+  });
   try {
-    sessionStorage.setItem(`roster-hints-${slug}`, JSON.stringify(decoded.characters));
+    sessionStorage.setItem(`roster-hints-${roster.slug}`, JSON.stringify(hints));
   } catch {
     // Session storage can be unavailable (private mode) - hints are cosmetic.
   }
@@ -68,7 +79,7 @@ const RosterPaste: React.FC = () => {
       {
         onSuccess: (roster) => {
           storeRosterSecret(roster.region, roster.slug, roster.editSecret);
-          stashRosterHints(roster.slug, decoded);
+          stashRosterHints(roster, decoded);
           void navigate({
             to: "/roster/$region/$slug",
             params: { region: roster.region, slug: roster.slug },

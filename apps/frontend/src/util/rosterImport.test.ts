@@ -24,7 +24,7 @@ function encodeExportString(payload: string): string {
 }
 
 describe("decodeRosterImport", () => {
-  it("decodes a full export string with class/role hints and realm slugging", async () => {
+  it("decodes a full export string with class/role hints, realms as written", async () => {
     const encoded = encodeExportString(
       "eu;Ceasetank-TarrenMill:WARRIOR:T;Lightwell-Kazzak:PRIEST:H;Ceases-Kazzak:MAGE:D;Nohints-Area52"
     );
@@ -34,15 +34,15 @@ describe("decodeRosterImport", () => {
     expect(result).toEqual({
       region: "eu",
       characters: [
-        { name: "Ceasetank", realm: "tarren-mill", classFile: "WARRIOR", role: "TANK" },
-        { name: "Lightwell", realm: "kazzak", classFile: "PRIEST", role: "HEALER" },
-        { name: "Ceases", realm: "kazzak", classFile: "MAGE", role: "DPS" },
-        { name: "Nohints", realm: "area-52", classFile: undefined, role: undefined },
+        { name: "Ceasetank", realm: "TarrenMill", classFile: "WARRIOR", role: "TANK" },
+        { name: "Lightwell", realm: "Kazzak", classFile: "PRIEST", role: "HEALER" },
+        { name: "Ceases", realm: "Kazzak", classFile: "MAGE", role: "DPS" },
+        { name: "Nohints", realm: "Area52", classFile: undefined, role: undefined },
       ],
     });
   });
 
-  it("handles Cyrillic names and maps Russian realms to their transliterated slugs", async () => {
+  it("handles Cyrillic names and realms", async () => {
     const encoded = encodeExportString(
       "eu;Пуговка-Гордунни:MAGE:D;Тест-РевущийФьорд:DRUID:H;Лич-Король-лич:PRIEST:H"
     );
@@ -50,37 +50,24 @@ describe("decodeRosterImport", () => {
     const result = await decodeRosterImport(encoded);
 
     expect(result?.characters).toEqual([
-      { name: "Пуговка", realm: "gordunni", classFile: "MAGE", role: "DPS" },
-      { name: "Тест", realm: "howling-fjord", classFile: "DRUID", role: "HEALER" },
+      { name: "Пуговка", realm: "Гордунни", classFile: "MAGE", role: "DPS" },
+      { name: "Тест", realm: "РевущийФьорд", classFile: "DRUID", role: "HEALER" },
       // Realm itself contains a dash - first-dash split keeps it intact.
-      { name: "Лич", realm: "lich-king", classFile: "PRIEST", role: "HEALER" },
+      { name: "Лич", realm: "Король-лич", classFile: "PRIEST", role: "HEALER" },
     ]);
   });
 
-  it("maps apostrophe realms to their dash-less slugs", async () => {
-    const encoded = encodeExportString(
-      "us;Bob-MalGanis:MAGE:D;Alice-KelThuzad:PRIEST:H;Carl-Kiljaeden:ROGUE:D"
-    );
-    const result = await decodeRosterImport(encoded);
-    expect(result?.characters.map((c) => c.realm)).toEqual([
-      "malganis", // NOT mal-ganis - the apostrophe left a case boundary
-      "kelthuzad",
-      "kiljaeden", // lowercase after apostrophe - heuristic already correct
-    ]);
-  });
-
-  it("dedupes repeated characters and survives surrounding whitespace", async () => {
-    const encoded = encodeExportString("eu;Pug-Kazzak:MAGE:D;Pug-Kazzak:MAGE:D");
+  it("dedupes repeated characters, across realm spellings, and survives surrounding whitespace", async () => {
+    const encoded = encodeExportString("eu;Pug-TarrenMill:MAGE:D;Pug-Tarren Mill:MAGE:D");
     const result = await decodeRosterImport(`  ${encoded}\n`);
     expect(result?.characters).toHaveLength(1);
   });
 
-  it("parseNameRealm slugs manual entry the same way as a paste", () => {
-    expect(parseNameRealm("Bob-TarrenMill", "eu")).toEqual({ name: "Bob", realm: "tarren-mill" });
-    expect(parseNameRealm("Bob-Tarren Mill", "eu")).toEqual({ name: "Bob", realm: "tarren-mill" });
-    expect(parseNameRealm("Имя-РевущийФьорд", "eu")).toEqual({ name: "Имя", realm: "howling-fjord" });
-    expect(parseNameRealm("Bob-MalGanis", "eu")).toEqual({ name: "Bob", realm: "malganis" });
-    expect(parseNameRealm("NoRealm", "eu")).toBeNull();
+  it("parseNameRealm splits manual entry the same way as a paste", () => {
+    expect(parseNameRealm(" Bob - Tarren Mill ")).toEqual({ name: "Bob", realm: "Tarren Mill" });
+    expect(parseNameRealm("Bob-der-rat-von-dalaran")).toEqual({ name: "Bob", realm: "der-rat-von-dalaran" });
+    expect(parseNameRealm("NoRealm")).toBeNull();
+    expect(parseNameRealm("Bob-")).toBeNull();
   });
 
   it("returns null for non-export text, bad regions, and corrupted strings", async () => {

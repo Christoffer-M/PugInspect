@@ -101,6 +101,7 @@ window.fetch = async (input, init) => {
       return {
         name: c.name,
         realm: c.realm,
+        realmSlug: c.realm.toLowerCase(), // ponytail: close enough for the mock realms
         notFound: false,
         role: null,
         character: {

@@ -11,7 +11,7 @@
  * credentials), then review the diff. Hand-maintained inputs live in
  * scripts/season-config.mts. See docs/SEASONAL_UPDATES.md.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -480,19 +480,17 @@ export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(
   const realmSlugsFile = `${header}
 // Realm name → API slug, every region and locale. Clients send the realm in the
 // player's own locale with separators stripped, so keys are squashed the same
-// way; see slugRealm in ../realm.ts.
+// way; see resolveRealm in ../schema/utils/helpers.ts.
 export const REALM_SLUGS: Record<string, Record<string, string>> = ${stringify(realmSlugs)};
 `;
 
-  const realmSlugsPath = resolve(root, "packages/ui/src/generated/realmSlugs.ts");
+  // Backend only: it resolves every realm a client sends, so clients carry no copy.
+  const realmSlugsPath = resolve(root, "apps/backend/src/generated/realmSlugs.ts");
   // A truncated realm index would silently gut the table — every realm breaks
   // at once, and the diff reads as an ordinary deletion in an automated PR.
   // There is no hand-maintained table underneath this any more, so fail loudly.
   assertNoMassRealmLoss(realmSlugsPath, realmSlugs);
-  mkdirSync(dirname(realmSlugsPath), { recursive: true });
   writeFileSync(realmSlugsPath, realmSlugsFile);
-  writeFileSync(resolve(root, "apps/backend/src/generated/realmSlugs.ts"), realmSlugsFile);
-  console.log(`Wrote ${resolve(root, "apps/backend/src/generated/realmSlugs.ts")}`);
   console.log(
     `Wrote ${realmSlugsPath} (${Object.entries(realmSlugs)
       .map(([r, t]) => `${r}: ${Object.keys(t).length}`)

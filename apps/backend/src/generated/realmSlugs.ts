@@ -5,7 +5,7 @@
 
 // Realm name → API slug, every region and locale. Clients send the realm in the
 // player's own locale with separators stripped, so keys are squashed the same
-// way; see slugRealm in ../realm.ts.
+// way; see resolveRealm in ../schema/utils/helpers.ts.
 export const REALM_SLUGS: Record<string, Record<string, string>> = {
   "eu": {
     "52區": "area-52",

@@ -236,6 +236,7 @@ export default {
         return {
           name: blizz?.name ?? name,
           realm: blizz?.realm.name ?? realm,
+          realmSlug: blizz?.realm.slug ?? realm,
           notFound,
           role,
           character: notFound

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { slugRealm, squashRealm } from "@repo/ui";
+import { squashRealm } from "@repo/ui";
 import { CHUNK_SIZE, PARTS, lookupCharacters, type Part, type RosterEntry } from "./api";
 import { count } from "./analytics";
 import { MYTHIC_PLUS_ZONE_ID } from "./generated/seasonConfig";
@@ -143,8 +143,9 @@ export function useCompanion(events: Events) {
           region,
           // Send the role the applicant signed up as: their active spec can say
           // otherwise (a healer Evoker sitting in Devastation), and the backend
-          // picks the parse metric from this.
-          chunk.map((a) => ({ name: a.name, realm: slugRealm(a.realm, region), role: SPEC_ROLE[a.role] })),
+          // picks the parse metric from this. The realm goes as the addon sent
+          // it: the backend owns the realm table and resolves it.
+          chunk.map((a) => ({ name: a.name, realm: a.realm, role: SPEC_ROLE[a.role] })),
           scope
         );
         if (part === "core") count("notFound", entries.filter((e) => e.notFound).length);
@@ -157,6 +158,9 @@ export function useCompanion(events: Events) {
               entry: {
                 ...prev?.entry,
                 ...e,
+                // Only the core part carries realmSlug; a later part without
+                // Blizzard's answer must not swap the display name back to a slug.
+                realm: part === "core" ? e.realm : (prev?.entry?.realm ?? e.realm),
                 character: e.character
                   ? { ...prev?.entry?.character, ...e.character }
                   : (prev?.entry?.character ?? null),

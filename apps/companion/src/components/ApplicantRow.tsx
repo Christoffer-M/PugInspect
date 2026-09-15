@@ -3,7 +3,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import roleDps from "../assets/role-dps.png";
 import roleHealer from "../assets/role-healer.png";
 import roleTank from "../assets/role-tank.png";
-import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor, slugRealm } from "@repo/ui";
+import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor } from "@repo/ui";
 import { DEFAULT_RAID } from "../generated/seasonConfig";
 import type { Part, RosterEntry } from "../api";
 import { CLASS_BY_ID, errorOf, type Applicant, type Lookup } from "../state";
@@ -25,13 +25,6 @@ function RoleBadge({ role }: { role: Applicant["role"] }) {
   const [src, label] = hit;
   return <img className={classes.role} src={src} alt={label} title={label} />;
 }
-
-/** "TarrenMill" → "Tarren Mill" via the slug; good enough for a subtitle. */
-const prettyRealm = (realm: string, region: string) =>
-  slugRealm(realm, region)
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 
 const TIERS = {
   M: ["M", "mythic_bosses_killed", RAID_DIFFICULTY_COLORS.mythic],
@@ -69,6 +62,12 @@ export function ApplicantRow({
 }) {
   const c = lookup?.entry?.character;
   const notFound = lookup?.entry?.notFound === true;
+  // Both come from the lookup, since only the backend has the realm table. The
+  // backend echoes the slug as `realm` when Blizzard had no profile, so a realm
+  // equal to its slug is no display name: keep the addon's own form
+  // ("DerRatvonDalaran") then, and until the core lookup lands.
+  const entry = lookup?.entry;
+  const realmName = entry?.realmSlug && entry.realm !== entry.realmSlug ? entry.realm : a.realm;
   const className = c?.class ?? CLASS_FILE_NAMES[CLASS_BY_ID[a.classId] ?? ""];
   const color = getClassColor(className);
   const rio = c?.raiderIo?.currentSeason?.all;
@@ -97,7 +96,12 @@ export function ApplicantRow({
       style={{ "--class-color": color } as CSSProperties}
       onClick={(e) => {
         e.preventDefault();
-        if (!notFound) openUrl(`https://puginspect.com/${region}/${slugRealm(a.realm, region)}/${a.name.toLowerCase()}`);
+        // Without a slug (core lookup failed or pending) the raw realm still works:
+        // the character page's backend query resolves it.
+        if (!notFound)
+          openUrl(
+            `https://puginspect.com/${region}/${encodeURIComponent(entry?.realmSlug ?? a.realm)}/${encodeURIComponent(a.name.toLowerCase())}`
+          );
       }}
       href="#"
     >
@@ -112,7 +116,7 @@ export function ApplicantRow({
           {group && (
             <span className={classes.groupText}>{group.role === "leader" ? `group of ${group.size}` : "member"} · </span>
           )}
-          {prettyRealm(a.realm, region)}
+          {realmName}
           {className && ` · ${c?.activeSpec ? `${c.activeSpec} ` : ""}${className}`}
           {failure && (
             <span className={app.mono} style={{ color: "#f4c15e" }} title={failure}>
