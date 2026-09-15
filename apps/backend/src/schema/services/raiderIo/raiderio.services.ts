@@ -64,8 +64,11 @@ export class RaiderIOService {
   static async getCharacterSuggestions(
     args: QueryCharacterSuggestionsArgs
   ): Promise<CharacterSearchResponse[]> {
+    // Typeahead: a suggestion that arrives after 5s is useless, and without a
+    // bound this had run to 17s when RaiderIO's search backend was degraded.
     const options: RequestInit = {
       method: "GET",
+      signal: AbortSignal.timeout(5_000),
     };
 
     const query: Record<string, string | number | boolean> = {
