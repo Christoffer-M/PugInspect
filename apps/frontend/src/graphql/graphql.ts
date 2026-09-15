@@ -557,7 +557,16 @@ export type RosterEntry = {
   character?: Maybe<Character>;
   name: Scalars['String']['output'];
   notFound: Scalars['Boolean']['output'];
+  /**
+   * Blizzard's display name when the character was found (Der Rat von Dalaran),
+   * otherwise the resolved slug.
+   */
   realm: Scalars['String']['output'];
+  /**
+   * Canonical API slug (der-rat-von-dalaran). Build character URLs from this;
+   * clients carry no realm table of their own.
+   */
+  realmSlug: Scalars['String']['output'];
   role?: Maybe<SpecRole>;
 };
 
