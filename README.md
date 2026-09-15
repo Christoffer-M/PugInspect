@@ -187,15 +187,6 @@ To remove the local Postgres volume as well:
 docker compose down --volumes
 ```
 
-## Deployment
-
-Every push to `main` that passes CI deploys automatically:
-
-1. The Deploy workflow builds the backend and frontend images from the exact commit CI tested and pushes them to GitHub Container Registry as `ghcr.io/christoffer-m/puginspect-backend` and `puginspect-frontend`, tagged with the commit SHA and `latest`.
-2. It then connects to the server, pulls `main`, and runs `deploy.sh` with that SHA. The script pulls the two images, restarts the containers (failing the run if they don't become healthy), and prunes old images. Nothing is built on the server.
-
-To roll back, run `TAG=<older-sha> ./deploy.sh` on the server. Only roll back past deploys that didn't add a migration: the backend migrates on startup and nothing migrates back down.
-
 ## Useful Commands
 
 | Command                             | Description                                    |
