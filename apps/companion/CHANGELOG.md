@@ -4,6 +4,13 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.6.3
+
+- Realm names under each applicant now come from Blizzard once their details load, so
+  realms like "Der Rat von Dalaran" read correctly instead of as a guessed spelling. Until
+  then the name shows as the game sends it.
+- A smaller download: the app no longer ships its own copy of every realm name.
+
 ## 0.6.2
 
 - Corrects what the app reports in its anonymous usage statistics: waiting for the addon's
