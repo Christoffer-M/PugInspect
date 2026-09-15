@@ -158,6 +158,9 @@ export function useCompanion(events: Events) {
               entry: {
                 ...prev?.entry,
                 ...e,
+                // Only the core part carries realmSlug; a later part without
+                // Blizzard's answer must not swap the display name back to a slug.
+                realm: part === "core" ? e.realm : (prev?.entry?.realm ?? e.realm),
                 character: e.character
                   ? { ...prev?.entry?.character, ...e.character }
                   : (prev?.entry?.character ?? null),

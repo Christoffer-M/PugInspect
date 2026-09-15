@@ -62,10 +62,12 @@ export function ApplicantRow({
 }) {
   const c = lookup?.entry?.character;
   const notFound = lookup?.entry?.notFound === true;
-  // Both come from the lookup, since only the backend has the realm table. Until
-  // it lands the subtitle shows the addon's own form ("DerRatvonDalaran").
-  const realmSlug = lookup?.entry?.realmSlug;
-  const realmName = c ? lookup?.entry?.realm : a.realm;
+  // Both come from the lookup, since only the backend has the realm table. The
+  // backend echoes the slug as `realm` when Blizzard had no profile, so a realm
+  // equal to its slug is no display name: keep the addon's own form
+  // ("DerRatvonDalaran") then, and until the core lookup lands.
+  const entry = lookup?.entry;
+  const realmName = entry?.realmSlug && entry.realm !== entry.realmSlug ? entry.realm : a.realm;
   const className = c?.class ?? CLASS_FILE_NAMES[CLASS_BY_ID[a.classId] ?? ""];
   const color = getClassColor(className);
   const rio = c?.raiderIo?.currentSeason?.all;
@@ -94,7 +96,12 @@ export function ApplicantRow({
       style={{ "--class-color": color } as CSSProperties}
       onClick={(e) => {
         e.preventDefault();
-        if (!notFound && realmSlug) openUrl(`https://puginspect.com/${region}/${realmSlug}/${a.name.toLowerCase()}`);
+        // Without a slug (core lookup failed or pending) the raw realm still works:
+        // the character page's backend query resolves it.
+        if (!notFound)
+          openUrl(
+            `https://puginspect.com/${region}/${encodeURIComponent(entry?.realmSlug ?? a.realm)}/${encodeURIComponent(a.name.toLowerCase())}`
+          );
       }}
       href="#"
     >
