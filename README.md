@@ -7,12 +7,15 @@ Production site: [puginspect.com](https://puginspect.com/)
 ## Features
 
 - Character lookup by region, realm, and name.
-- Blizzard profile integration for canonical character data, avatar media, class/spec/race details, item level, guild, faction, and achievement points.
+- Blizzard profile integration for canonical character data, avatar media, class/spec/race details, equipped gear, item level, guild, faction, and achievement points.
 - Raider.IO integration for Mythic+ scores, best and recent dungeon runs, and raid progression.
 - Warcraft Logs integration for raid rankings, parses, metrics, zone partitions, and difficulty-specific performance data.
 - Potential alt detection based on Blizzard achievement timestamps.
+- Roster Check (`/roster`): paste an export string from the PugInspect in-game addon to inspect a whole raid roster at once. The format is documented in [`docs/ROSTER_EXPORT_FORMAT.md`](docs/ROSTER_EXPORT_FORMAT.md).
+- Mythic+ Spec Meta (`/mythic-plus`): spec popularity across top Warcraft Logs Mythic+ rankings, refreshed hourly by a backend crawl.
+- Site stats (`/stats`): search volume, region breakdown, and class distribution.
+- PugInspect Companion: a Windows desktop app that shows Group Finder applicants the moment they apply, enriched with the same data. See [`apps/companion/README.md`](apps/companion/README.md).
 - PostgreSQL-backed caching for external API responses using Drizzle migrations.
-- Docker Compose setup for running Postgres, the backend, and the frontend together.
 - Crawler and answer-engine support: per-character meta tags injected server-side for
   bots that don't run JavaScript, a database-backed `sitemap.xml`, and an `llms.txt`
   site summary generated from the season config.
@@ -25,14 +28,21 @@ This repository is a pnpm and Turborepo monorepo.
 puginspect/
 ├── apps/
 │   ├── frontend/          # Vite, React, TanStack Router, Mantine
-│   └── backend/           # Apollo GraphQL Server, Express, Drizzle, Postgres
+│   ├── backend/           # Apollo GraphQL Server, Express, Drizzle, Postgres
+│   └── companion/         # Tauri 2 desktop app (Windows)
 ├── packages/
 │   ├── graphql-types/     # Shared generated GraphQL types
+│   ├── ui/                # Theme and UI primitives shared by frontend and companion
 │   └── typescript-config/ # Shared TypeScript configuration
-├── nginx/                 # Nginx config for containerized frontend/proxy
+├── e2e/                   # Playwright smoke tests
+├── scripts/               # Season config generator, telemetry queries
+├── docs/                  # Format specs and runbooks
+├── nginx/                 # Nginx config baked into the frontend image
 ├── docker-compose.yml
+├── docker-compose.override.yml
 ├── Dockerfile.backend
 ├── Dockerfile.frontend
+├── deploy.sh              # Production deploy: pull images and restart
 ├── package.json
 ├── turbo.json
 └── pnpm-workspace.yaml
@@ -53,20 +63,28 @@ puginspect/
 - Apollo Server with Express
 - PostgreSQL with Drizzle ORM and migrations
 - External APIs: Blizzard Battle.net API, Raider.IO API, and Warcraft Logs API
+- OpenTelemetry traces and logs (optional, off unless an OTLP endpoint is configured)
+
+**Companion**
+
+- Tauri 2 (Rust) with React
 
 **Tooling and deployment**
 
 - pnpm workspaces
 - Turborepo
+- Vitest and Playwright
 - Docker and Docker Compose
 - Nginx for the containerized frontend and `/graphql` proxy
+- GitHub Actions and GitHub Container Registry
 
 ## Requirements
 
-- Node.js 24 for the backend runtime. The root package allows Node 18+, but the backend package and Docker image currently target Node 24.
-- pnpm 10.18.3
+- Node.js 24 (the root package requires 23+, the backend and its Docker image target 24).
+- pnpm 11.25.0 — the version is pinned in `package.json` `packageManager`, so `corepack enable` picks it up.
 - PostgreSQL 17 for local development, or Docker Compose.
 - API credentials for Blizzard, Raider.IO, and Warcraft Logs.
+- Rust, only for building the companion natively.
 
 ## Environment Variables
 
@@ -83,19 +101,31 @@ ALLOWED_ORIGINS=http://localhost:3000
 PORT=4000
 ```
 
-Credential documentation:
+Optional backend variables:
 
-- [Blizzard Battle.net Developer Portal](https://develop.battle.net/)
-- [Warcraft Logs API documentation](https://www.warcraftlogs.com/api/docs)
-- [Raider.IO API documentation](https://raider.io/api)
+| Variable                                                                         | Purpose                                                                                                 |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_ORIGIN`                                                                  | Public origin for canonical and `og:url` links in injected meta tags (default `https://puginspect.com`) |
+| `FRONTEND_ORIGIN`                                                                | Where the backend fetches the built `index.html` for bot meta injection (default `http://frontend`)     |
+| `LOG_LEVEL`                                                                      | Log verbosity, e.g. `debug` (default `info`)                                                            |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME` | Enable OpenTelemetry export; telemetry is off when the endpoint is unset                                |
+| `COMPANION_MIN_VERSION`                                                          | Reject companion builds older than this version                                                         |
+| `COMPANION_TELEMETRY_TOKEN`                                                      | Password for the internal `/companion-telemetry` view; the route is not registered when unset           |
 
 Optional frontend build variables:
 
 ```env
 VITE_GRAPHQL_URL=http://localhost:4000/graphql
+VITE_API_URL=
 ```
 
-When running through Docker Compose, `DATABASE_URL` is provided to the backend container automatically and points at the Compose Postgres service. The backend still reads API credentials from `apps/backend/.env`.
+When running through Docker Compose, `DATABASE_URL` is provided to the backend container automatically and points at the Compose Postgres service. The backend still reads API credentials from `apps/backend/.env`. Compose reads `POSTGRES_PASSWORD` from a `.env` file next to `docker-compose.yml` (default `localdev`).
+
+Credential documentation:
+
+- [Blizzard Battle.net Developer Portal](https://develop.battle.net/)
+- [Warcraft Logs API documentation](https://www.warcraftlogs.com/api/docs)
+- [Raider.IO API documentation](https://raider.io/api)
 
 ## Local Development
 
@@ -122,6 +152,7 @@ To run apps separately:
 ```bash
 pnpm --filter frontend dev
 pnpm --filter backend dev
+pnpm --filter companion dev
 ```
 
 ## Docker Compose
@@ -132,11 +163,15 @@ The repository includes a Compose stack for local containerized runs:
 docker compose up --build
 ```
 
+`--build` matters: without it Compose pulls the published production images instead of building your working tree.
+
 This starts:
 
-- `postgres` on `127.0.0.1:5432`
-- `backend` on `127.0.0.1:4000`
-- `frontend` on `127.0.0.1:8080`
+- `postgres` on port `5432`
+- `backend` on port `4000`
+- `frontend` on port `8080`
+
+`docker-compose.override.yml` publishes these ports on all interfaces, not just localhost.
 
 The frontend container serves the built Vite app through Nginx and proxies `/graphql`, `/stats.js`, and `/api/send` to the backend container. The latter two are first-party proxies for the Umami analytics script and its event endpoint, so ad blockers that block the `stats.*` subdomain don't drop visitor data. The backend applies Drizzle migrations during startup.
 
@@ -152,6 +187,15 @@ To remove the local Postgres volume as well:
 docker compose down --volumes
 ```
 
+## Deployment
+
+Every push to `main` that passes CI deploys automatically:
+
+1. The Deploy workflow builds the backend and frontend images from the exact commit CI tested and pushes them to GitHub Container Registry as `ghcr.io/christoffer-m/puginspect-backend` and `puginspect-frontend`, tagged with the commit SHA and `latest`.
+2. It then connects to the server, pulls `main`, and runs `deploy.sh` with that SHA. The script pulls the two images, restarts the containers (failing the run if they don't become healthy), and prunes old images. Nothing is built on the server.
+
+To roll back, run `TAG=<older-sha> ./deploy.sh` on the server. Only roll back past deploys that didn't add a migration: the backend migrates on startup and nothing migrates back down.
+
 ## Useful Commands
 
 | Command                             | Description                                    |
@@ -159,13 +203,15 @@ docker compose down --volumes
 | `pnpm install`                      | Install workspace dependencies                 |
 | `pnpm dev`                          | Run all apps in development mode through Turbo |
 | `pnpm build`                        | Build all packages and apps                    |
-| `pnpm lint`                         | Run lint tasks through Turbo                   |
 | `pnpm check-types`                  | Run TypeScript checks                          |
+| `pnpm test`                         | Run unit and integration tests                 |
+| `pnpm test:e2e`                     | Run Playwright smoke tests                     |
+| `pnpm format`                       | Format TypeScript and Markdown with Prettier   |
 | `pnpm codegen`                      | Run GraphQL code generation                    |
+| `pnpm season:update`                | Regenerate season config from live APIs        |
 | `pnpm --filter backend db:migrate`  | Run backend database migrations                |
 | `pnpm --filter backend db:generate` | Generate a new Drizzle migration               |
 | `pnpm --filter backend db:studio`   | Open Drizzle Studio                            |
-| `pnpm --filter frontend test`       | Run frontend tests                             |
 
 ## Data Flow
 
@@ -175,7 +221,8 @@ External API responses are cached in Postgres snapshots with service-specific ex
 
 ## Notes for Contributors
 
-- Keep generated GraphQL types up to date after schema or query changes with `pnpm codegen`.
-- Add Drizzle migrations for database schema changes instead of editing existing migrations.
+- Keep generated GraphQL types up to date after schema or query changes with `pnpm codegen`. CI fails when they are stale.
+- Generate Drizzle migrations with `pnpm --filter backend db:generate` instead of writing or editing migration files by hand.
+- Seasonal game data (max level, raid tiers, M+ seasons, enchantable slots) is tagged with `SEASON-CONFIG:` comments; a scheduled workflow opens a PR when `pnpm season:update` finds new API data.
 - Keep API credentials out of version control.
 - Prefer Docker Compose when testing the full production-like flow locally.
