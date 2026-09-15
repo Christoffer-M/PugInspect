@@ -2,7 +2,7 @@ import { createLogger } from "../../utils/logger.js";
 import { normalizeName } from "../../utils/helpers.js";
 import { VALID_REGIONS } from "../../utils/regions.js";
 import { BlizzardService } from "./blizzard.services.js";
-import { getDirectoryUpdatedAt, upsertDirectory } from "../../../db/characterDirectory.js";
+import { upsertDirectory } from "../../../db/characterDirectory.js";
 import type { NewCharacterDirectoryEntry } from "../../../db/schema.js";
 
 const logger = createLogger({ service: "LeaderboardCrawler" });
@@ -60,9 +60,9 @@ async function getJson<T>(url: string, token: string): Promise<T> {
 
 /**
  * Pause after each realm-week during a season backfill. A regular pass is
- * ~2,250 requests in a couple of minutes; a backfill is that per elapsed week
- * and would otherwise sail past the 36,000/hour budget live lookups share.
- * ~8 requests every 2s ≈ 14,000/hour.
+ * ~1,650 requests in ~3 minutes; a backfill is that per elapsed week and would
+ * otherwise sail past the 36,000/hour budget live lookups share. Measured
+ * Sept 2026: 8,000 boards in 57 minutes, ≈ 8,500 requests/hour.
  */
 const BACKFILL_REALM_DELAY_MS = 2_000;
 
@@ -170,10 +170,9 @@ async function runOnce() {
 }
 
 export function startLeaderboardCrawl(): void {
-  void (async () => {
-    // Deploys restart the process; only crawl on boot if the last pass is due.
-    const updatedAt = await getDirectoryUpdatedAt().catch(() => null);
-    if (!updatedAt || Date.now() - updatedAt.getTime() > REFRESH_INTERVAL_MS) await runOnce();
-  })();
+  // ponytail: crawls on every boot, ~1,660 requests per deploy. There is no
+  // reliable "last pass" marker — lookups and the seed also write the table —
+  // so add a meta row if deploys ever get frequent enough for this to matter.
+  void runOnce();
   setInterval(() => void runOnce(), REFRESH_INTERVAL_MS).unref();
 }

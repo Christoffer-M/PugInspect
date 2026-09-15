@@ -95,6 +95,8 @@ const AddMemberControl: React.FC<{
           size="xs"
           w={220}
           limit={10}
+          // Server-matched already; see CharacterSearchInput.
+          filter={({ options }) => options}
           placeholder="Add Name-Realm"
           data={suggestions.map((r) => `${r.name}-${r.realm}`)}
           value={value}

@@ -1,4 +1,4 @@
-import { REALM_SLUGS } from "../../generated/realmSlugs.js";
+import { REALM_NAMES, REALM_SLUGS } from "../../generated/realmSlugs.js";
 import { Difficulty, InputMaybe, Metric } from "@repo/graphql-types";
 
 const VALID_METRICS = new Set<Metric>(["dps", "hps", "points_and_damage", "points_and_healing"]);
@@ -58,6 +58,23 @@ export function resolveRealm(realm: string, region: string): string {
 /** Whether a realm resolves to a slug Blizzard actually publishes. */
 export function isKnownRealm(realm: string, region: string): boolean {
   return REALM_SLUGS[region.toLowerCase()]?.[squashRealm(realm)] !== undefined;
+}
+
+/** Every realm slug whose name, in any locale, starts with what's been typed so
+ * far ("Tarr", "TarrenM", "tarren-m") — for autocomplete on a half-typed realm. */
+export function realmSlugsStartingWith(prefix: string, region: string): string[] {
+  const key = squashRealm(prefix);
+  if (!key) return [];
+  const slugs = new Set<string>();
+  for (const [name, slug] of Object.entries(REALM_SLUGS[region.toLowerCase()] ?? {})) {
+    if (name.startsWith(key)) slugs.add(slug);
+  }
+  return [...slugs];
+}
+
+/** A realm's display name ("Tarren Mill") from its slug, falling back to the slug. */
+export function realmDisplayName(slug: string, region: string): string {
+  return REALM_NAMES[region.toLowerCase()]?.[slug] ?? slug;
 }
 
 /** Canonical character name: lowercase, trimmed. */

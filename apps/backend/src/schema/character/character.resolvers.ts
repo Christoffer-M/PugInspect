@@ -18,10 +18,7 @@ import {
   isFieldRequested,
   isRosterCharacterFieldRequested,
 } from "../utils/fetcher.js";
-import {
-  CharacterSearchResponse,
-  RaiderIOService,
-} from "../services/raiderIo/raiderio.services.js";
+import type { CharacterSearchResponse } from "../services/raiderIo/raiderio.services.js";
 import { AchievementsService } from "../services/blizzard/achievements.service.js";
 import { getLinkedCharacters } from "../../db/persistence.js";
 import { getCompanionTelemetry, type CompanionTelemetry } from "../../db/companionTelemetry.js";
@@ -36,6 +33,7 @@ import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import { VALID_REGIONS } from "../utils/regions.js";
 import { getRosterProfiles } from "../services/character/roster.service.js";
+import { getCharacterSuggestions } from "../services/character/characterSuggestions.service.js";
 import { getRosterBySlug, insertRoster, updateRosterCharacters } from "../../db/persistence.js";
 import { normalizeName, resolveRealm } from "../utils/helpers.js";
 
@@ -328,7 +326,7 @@ export default {
         );
       }
 
-      return await RaiderIOService.getCharacterSuggestions(args);
+      return await getCharacterSuggestions(args);
     },
   },
 

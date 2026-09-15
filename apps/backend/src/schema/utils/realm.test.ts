@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isKnownRealm, normalizeRealm, resolveRealm } from "./helpers.js";
+import { isKnownRealm, normalizeRealm, realmDisplayName, realmSlugsStartingWith, resolveRealm } from "./helpers.js";
 
 /**
  * The backend is the boundary where a realm becomes canonical: whatever a
@@ -63,5 +63,31 @@ describe("resolveRealm", () => {
   it("does not leak a realm across regions", () => {
     // Tarren Mill is EU-only; asking US for it must not hand back the EU slug.
     expect(isKnownRealm("TarrenMill", "us")).toBe(false);
+  });
+});
+
+describe("realmSlugsStartingWith", () => {
+  it("matches a half-typed realm in any spelling or locale", () => {
+    for (const typed of ["Tarr", "tarren-m", "TarrenM", "Tarren M"])
+      expect(realmSlugsStartingWith(typed, "eu")).toContain("tarren-mill");
+    expect(realmSlugsStartingWith("Ревущий", "eu")).toContain("howling-fjord");
+  });
+
+  it("returns nothing for no match or empty input, and stays in its region", () => {
+    expect(realmSlugsStartingWith("zzzqqq", "eu")).toEqual([]);
+    expect(realmSlugsStartingWith("--", "eu")).toEqual([]);
+    expect(realmSlugsStartingWith("Tarren", "us")).not.toContain("tarren-mill");
+  });
+});
+
+describe("realmDisplayName", () => {
+  it("round-trips through resolveRealm, which the roster page relies on", () => {
+    for (const slug of ["aggra-português", "kaelthas", "der-rat-von-dalaran", "howling-fjord"])
+      expect(resolveRealm(realmDisplayName(slug, "eu"), "eu")).toBe(slug);
+    expect(realmDisplayName("area-52", "US")).toBe("Area 52");
+  });
+
+  it("falls back to the slug for a realm the table doesn't know", () => {
+    expect(realmDisplayName("brand-new-realm", "eu")).toBe("brand-new-realm");
   });
 });
