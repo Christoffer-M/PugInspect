@@ -24,8 +24,8 @@ export function normalizeRealm(realm: string): string {
 
 /** Lookup key for REALM_SLUGS: lowercased, every separator stripped, so
  * "Der Rat von Dalaran", "DerRatvonDalaran" and "der-rat-von-dalaran" all land
- * on one entry. Mirrors squashRealm in packages/ui/src/realmKey.ts — the two
- * must derive keys identically or every lookup misses. */
+ * on one entry. Mirrors squashRealm in packages/ui/src/realmKey.ts, which the
+ * generator builds the keys with — the two must agree or every lookup misses. */
 function squashRealm(realm: string): string {
   return realm.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 }
@@ -40,14 +40,18 @@ function squashRealm(realm: string): string {
  * as its own `characters` row and publishes it to the sitemap. So resolve
  * here, at the boundary, and let everything downstream assume a real slug.
  *
- * Unknown realms fall through to normalizeRealm rather than being rejected:
- * the table is only as fresh as the last deploy, and a realm opened since then
- * is exactly when a real user is looking up a real character. isKnownRealm
- * marks those as unvouched-for so the sitemap can decline to publish them.
+ * Unknown realms fall through to a guess rather than being rejected: the table
+ * is only as fresh as the last deploy, and a realm opened since then is exactly
+ * when a real user is looking up a real character. The guess re-inserts dashes
+ * at case/digit boundaries, which is right whenever every word is capitalized
+ * ("BrandNewRealm") and wrong otherwise ("DerRatvonDalaran" → "der-ratvon-dalaran")
+ * — run `pnpm season:update` if you see one. isKnownRealm marks these as
+ * unvouched-for so the sitemap can decline to publish them.
  */
 export function resolveRealm(realm: string, region: string): string {
   return (
-    REALM_SLUGS[region.toLowerCase()]?.[squashRealm(realm)] ?? normalizeRealm(realm)
+    REALM_SLUGS[region.toLowerCase()]?.[squashRealm(realm)] ??
+    normalizeRealm(realm.replace(/(\p{Ll})(\p{Lu})/gu, "$1-$2").replace(/(\p{L})(\d)/gu, "$1-$2"))
   );
 }
 

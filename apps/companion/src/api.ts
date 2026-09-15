@@ -18,6 +18,7 @@ const CORE = graphql(`
     rosterCharacters(region: $region, characters: $characters) {
       name
       realm
+      realmSlug
       notFound
       role
       character {

@@ -1,4 +1,4 @@
-import { slugRealm } from "@repo/ui";
+import { squashRealm } from "@repo/ui";
 
 export { CLASS_FILE_NAMES } from "@repo/ui";
 
@@ -15,7 +15,7 @@ export { CLASS_FILE_NAMES } from "@repo/ui";
 
 export type RosterImportCharacter = {
   name: string;
-  /** Slugged realm, same form the character page uses. */
+  /** Realm as written ("TarrenMill", "РевущийФьорд") - the backend resolves it to a slug. */
   realm: string;
   /** Blizzard class file name, e.g. "DEATHKNIGHT". Display hint only. */
   classFile?: string;
@@ -52,15 +52,15 @@ function decodeForPrint(encoded: string): Uint8Array | null {
   return Uint8Array.from(out);
 }
 
-/** Split a "Name-Realm" string on the FIRST dash (realm slugs contain dashes)
- * and slug the realm, including the special-realm table - the single parsing
- * path for both the export-string decoder and manual entry. */
-export function parseNameRealm(input: string, region: string): { name: string; realm: string } | null {
+/** Split a "Name-Realm" string on the FIRST dash (realm slugs contain dashes) -
+ * the single parsing path for both the export-string decoder and manual entry.
+ * The realm is left as written; the backend resolves it. */
+export function parseNameRealm(input: string): { name: string; realm: string } | null {
   const trimmed = input.trim();
   const dash = trimmed.indexOf("-");
   if (dash <= 0) return null;
   const name = trimmed.slice(0, dash).trim();
-  const realm = slugRealm(trimmed.slice(dash + 1), region);
+  const realm = trimmed.slice(dash + 1).trim();
   if (!name || !realm) return null;
   return { name, realm };
 }
@@ -74,10 +74,10 @@ function parsePayload(payload: string): RosterImport | null {
   for (const record of records) {
     if (!record) continue;
     const [nameRealm = "", classFile, role] = record.split(":");
-    const parsed = parseNameRealm(nameRealm, region);
+    const parsed = parseNameRealm(nameRealm);
     if (!parsed) continue;
     const { name, realm } = parsed;
-    const key = `${name.toLowerCase()}:${realm}`;
+    const key = `${name.toLowerCase()}:${squashRealm(realm)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     characters.push({

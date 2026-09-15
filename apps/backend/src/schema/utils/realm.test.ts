@@ -17,14 +17,26 @@ describe("resolveRealm", () => {
   });
 
   it("keeps lowercase words a case-boundary guess would swallow", () => {
+    // Regression: "DerRatvonDalaran" guessed to "der-ratvon-dalaran", which
+    // Blizzard 404s while RaiderIO tolerates it. Seen in production 2026-09-12.
     expect(resolveRealm("DerRatvonDalaran", "eu")).toBe("der-rat-von-dalaran");
     expect(resolveRealm("ChamberofAspects", "eu")).toBe("chamber-of-aspects");
     expect(resolveRealm("KultderVerdammten", "eu")).toBe("kult-der-verdammten");
+    expect(resolveRealm("ZirkeldesCenarius", "eu")).toBe("zirkel-des-cenarius");
+    expect(resolveRealm("SistersofElune", "us")).toBe("sisters-of-elune");
   });
 
-  it("resolves localized names, including transliterated Russian realms", () => {
+  it("resolves localized, apostrophe and parenthesized names", () => {
     expect(resolveRealm("РевущийФьорд", "eu")).toBe("howling-fjord");
     expect(resolveRealm("Гордунни", "eu")).toBe("gordunni");
+    expect(resolveRealm("MalGanis", "us")).toBe("malganis"); // not "mal-ganis"
+    expect(resolveRealm("Aggra (Português)", "eu")).toBe("aggra-português");
+  });
+
+  it("accepts every spelling variant clients send, with any region casing", () => {
+    for (const variant of ["Der Rat von Dalaran", "DerRatvonDalaran", "der-rat-von-dalaran"])
+      expect(resolveRealm(variant, "eu")).toBe("der-rat-von-dalaran");
+    expect(resolveRealm("TarrenMill", "EU")).toBe("tarren-mill");
   });
 
   it("disambiguates a realm name that means different realms per region", () => {
@@ -42,6 +54,8 @@ describe("resolveRealm", () => {
   it("passes unknown realms through rather than rejecting them", () => {
     // A realm opened since the last deploy still has to work.
     expect(resolveRealm("Brand New Realm", "eu")).toBe("brand-new-realm");
+    // The addon's stripped form gets a case-boundary guess.
+    expect(resolveRealm("BrandNewRealm", "eu")).toBe("brand-new-realm");
     expect(isKnownRealm("Brand New Realm", "eu")).toBe(false);
     expect(isKnownRealm("TarrenMill", "eu")).toBe(true);
   });

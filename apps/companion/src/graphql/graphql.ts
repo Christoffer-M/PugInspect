@@ -557,7 +557,16 @@ export type RosterEntry = {
   character?: Maybe<Character>;
   name: Scalars['String']['output'];
   notFound: Scalars['Boolean']['output'];
+  /**
+   * Blizzard's display name when the character was found (Der Rat von Dalaran),
+   * otherwise the resolved slug.
+   */
   realm: Scalars['String']['output'];
+  /**
+   * Canonical API slug (der-rat-von-dalaran). Build character URLs from this;
+   * clients carry no realm table of their own.
+   */
+  realmSlug: Scalars['String']['output'];
   role?: Maybe<SpecRole>;
 };
 
@@ -696,7 +705,7 @@ export type RosterCharactersCoreQueryVariables = Exact<{
 }>;
 
 
-export type RosterCharactersCoreQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, role?: SpecRole | null, character?: { __typename?: 'Character', class?: string | null, activeSpec?: string | null, equippedItemLevel?: number | null } | null }> };
+export type RosterCharactersCoreQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, realmSlug: string, notFound: boolean, role?: SpecRole | null, character?: { __typename?: 'Character', class?: string | null, activeSpec?: string | null, equippedItemLevel?: number | null } | null }> };
 
 export type RosterCharactersRioQueryVariables = Exact<{
   region: Scalars['String']['input'];
@@ -748,6 +757,7 @@ export const RosterCharactersCoreDocument = new TypedDocumentString(`
   rosterCharacters(region: $region, characters: $characters) {
     name
     realm
+    realmSlug
     notFound
     role
     character {
