@@ -150,6 +150,26 @@ describe("Query.character", () => {
     expect(recordSearchEvent).toHaveBeenCalledWith("char-uuid-1");
   });
 
+  it("returns the resolved realmSlug for a non-canonical realm", async () => {
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile: undefined,
+      blizzardAvatarUrl: null,
+      rioProfile: undefined,
+      warcraftLogsProfile: undefined,
+      characterId: null,
+    });
+
+    const result = await execute(
+      `query C($name: String!, $realm: String!, $region: String!) {
+        character(name: $name, realm: $realm, region: $region) { realmSlug }
+      }`,
+      { name: "bob", realm: "tarrenmill", region: "eu" }
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data!.character).toEqual({ realmSlug: "tarren-mill" });
+  });
+
   it("does not record a search event for follow-up-only queries", async () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile: undefined,

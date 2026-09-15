@@ -14,6 +14,7 @@ export const CharacterInfoQueryDoc = graphql(`
     character(name: $name, realm: $realm, region: $region, bypassCache: $bypassCache) {
       name
       realm
+      realmSlug
       region
       class
       race

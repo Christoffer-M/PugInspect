@@ -382,6 +382,11 @@ export const characterTypedefs = gql`
   type Character {
     name: String!
     realm: String!
+    """
+    Canonical API slug (der-rat-von-dalaran). Build character URLs from this;
+    clients carry no realm table of their own.
+    """
+    realmSlug: String!
     region: String!
     class: String
     race: String

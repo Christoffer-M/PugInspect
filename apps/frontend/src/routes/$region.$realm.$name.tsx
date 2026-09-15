@@ -176,6 +176,18 @@ function CharacterPage() {
     enabled: isMythicPlusView,
   });
 
+  // Old or hand-typed URLs ("tarrenmill") still render, since the backend
+  // resolves the realm, but the canonical tag, title and outbound links are
+  // all built from the URL. Swap it for the resolved slug so they agree.
+  // ponytail: the other queries refetch once under the new key; the backend
+  // serves them from its own cache, so it's one extra round trip on old URLs.
+  const realmSlug = characterInfo?.realmSlug;
+  useEffect(() => {
+    if (realmSlug && realmSlug !== realm) {
+      navigate({ params: (prev) => ({ ...prev, realm: realmSlug }), search: (prev) => prev, replace: true });
+    }
+  }, [realmSlug, realm]);
+
   const { add: addToHistory } = useSearchHistory();
   useEffect(() => {
     if (!characterInfo) return;

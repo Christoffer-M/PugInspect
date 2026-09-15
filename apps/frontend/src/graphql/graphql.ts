@@ -54,6 +54,11 @@ export type Character = {
   raidLogs?: Maybe<RaidLogs>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
+  /**
+   * Canonical API slug (der-rat-von-dalaran). Build character URLs from this;
+   * clients carry no realm table of their own.
+   */
+  realmSlug: Scalars['String']['output'];
   region: Scalars['String']['output'];
 };
 
@@ -717,7 +722,7 @@ export type CharacterInfoQueryVariables = Exact<{
 }>;
 
 
-export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null, potentialAlts: Array<{ __typename?: 'AltCharacter', name: string, realm: string, region: string, class?: string | null, avatarUrl?: string | null, itemLevel?: number | null, mythicPlusScore?: number | null, mythicPlusColor?: string | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, summary?: string | null, total_bosses?: number | null, normal_bosses_killed?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null }> | null }> } | null };
+export type CharacterInfoQuery = { __typename?: 'Query', character?: { __typename?: 'Character', name: string, realm: string, realmSlug: string, region: string, class?: string | null, race?: string | null, activeSpec?: string | null, faction?: string | null, gender?: string | null, level?: number | null, equippedItemLevel?: number | null, averageItemLevel?: number | null, achievementPoints?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string, realm: string } | null, potentialAlts: Array<{ __typename?: 'AltCharacter', name: string, realm: string, region: string, class?: string | null, avatarUrl?: string | null, itemLevel?: number | null, mythicPlusScore?: number | null, mythicPlusColor?: string | null, raidProgression?: Array<{ __typename?: 'RaidProgressionDetail', raid: string, summary?: string | null, total_bosses?: number | null, normal_bosses_killed?: number | null, heroic_bosses_killed?: number | null, mythic_bosses_killed?: number | null }> | null }> } | null };
 
 export type CharacterMythicPlusLogsQueryVariables = Exact<{
   name: Scalars['String']['input'];
@@ -908,6 +913,7 @@ export const CharacterInfoDocument = new TypedDocumentString(`
   ) {
     name
     realm
+    realmSlug
     region
     class
     race

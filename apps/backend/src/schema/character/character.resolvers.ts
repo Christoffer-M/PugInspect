@@ -61,6 +61,7 @@ function buildCharacter(
   return {
     name: blizzardProfile?.name ?? key.name,
     realm: blizzardProfile?.realm.name ?? key.realm,
+    realmSlug: blizzardProfile?.realm.slug ?? key.realm,
     region: key.region,
     // Internal field - not in the GraphQL schema, used by field resolvers below
     _characterId: characterId ?? null,
