@@ -519,6 +519,9 @@ export const REALM_SLUGS: Record<string, Record<string, string>> = ${stringify(r
   console.log(
     "\nReview with `git diff`. At an expansion boundary also update EXPANSIONS,\nMAX_LEVEL and ENCHANTABLE_SLOTS in scripts/season-config.mts."
   );
+  console.log(
+    "\nNew Mythic+ season? Once deployed, backfill the autocomplete directory (a few hours):\n  docker compose exec -d backend node dist/scripts/crawl-leaderboards.js --periods=all"
+  );
 }
 
 main().catch((err) => {

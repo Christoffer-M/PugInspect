@@ -1,6 +1,7 @@
 import { ApolloServer, BaseContext } from "@apollo/server";
 import { characterTypedefs } from "./schema/character/character.typedefs.js";
 import { startMythicPlusStatsRefresh } from "./schema/services/mythicPlusStats/scheduler.js";
+import { startLeaderboardCrawl } from "./schema/services/blizzard/leaderboardCrawler.js";
 import {
   defaultZoneId,
   refreshMythicPlusStats,
@@ -121,11 +122,15 @@ await runMigrations(config.databaseUrl);
 initDb(config.databaseUrl);
 logger.info("Database ready");
 
-// ponytail: local runs share the production WarcraftLogs budget, so the hourly
-// crawl only runs in the deployed container — locally it's the /dev button below.
+// ponytail: local runs share the production WarcraftLogs and Blizzard budgets, so
+// crawls only run in the deployed container — locally it's the /dev button below
+// and `pnpm crawl:leaderboards`.
 const isLocal = process.env.NODE_ENV !== "production";
-if (isLocal) logger.info("Local run — hourly spec meta crawl disabled");
-else startMythicPlusStatsRefresh();
+if (isLocal) logger.info("Local run — scheduled crawls disabled");
+else {
+  startMythicPlusStatsRefresh();
+  startLeaderboardCrawl();
+}
 
 const app = express();
 // Production requests arrive through Cloudflare plus two local proxies

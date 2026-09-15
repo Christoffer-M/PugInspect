@@ -4,6 +4,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   real,
   jsonb,
   text,
@@ -269,6 +270,33 @@ export const searchEvents = pgTable(
 
 export type SearchEvent = typeof searchEvents.$inferSelect;
 export type NewSearchEvent = typeof searchEvents.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// character_directory
+// Every character seen on a Blizzard Mythic+ leaderboard, for autocomplete.
+// Deliberately NOT `characters`: the sitemap and /stats read that table, and a
+// crawl's worth of never-visited characters would flood both.
+// ---------------------------------------------------------------------------
+export const characterDirectory = pgTable(
+  "character_directory",
+  {
+    region: varchar("region", { length: 2 }).notNull(),
+    realm: varchar("realm", { length: 100 }).notNull(),
+    name: varchar("name", { length: 50 }).notNull(),
+    // Blizzard playable-specialization id from the character's latest run
+    specId: integer("spec_id"),
+    // Completion time of the latest run seen, i.e. real activity, not crawl time
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.region, t.realm, t.name] }),
+    // Prefix search (name LIKE 'abc%') regardless of the database collation
+    index("character_directory_name_prefix_idx").on(t.name.op("text_pattern_ops")),
+  ]
+);
+
+export type NewCharacterDirectoryEntry = typeof characterDirectory.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // Relations (used by Drizzle's relational query API)

@@ -1,5 +1,6 @@
 import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./index.js";
+import { upsertDirectory } from "./characterDirectory.js";
 import { isKnownRealm } from "../schema/utils/helpers.js";
 import {
   characters,
@@ -393,6 +394,12 @@ export async function persistBlizzardProfile(
           equippedItemLevel: data.equipped_item_level,
         },
       });
+
+    // Blizzard just confirmed this character exists, so it belongs in
+    // autocomplete. Non-fatal: the profile is already cached.
+    await upsertDirectory([{ ...key, specId: data.active_spec.id, lastSeenAt: fetchedAtDate }]).catch((err: unknown) =>
+      logger.warn("Character directory write failed", { key, error: String(err) })
+    );
 
     return characterId;
   } catch (err) {
