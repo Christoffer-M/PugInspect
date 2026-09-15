@@ -8,6 +8,7 @@ export const CharacterSearchQuery = graphql(`
     characterSuggestions(searchString: $searchString, region: $region) {
       name
       realm
+      realmSlug
       region
     }
   }

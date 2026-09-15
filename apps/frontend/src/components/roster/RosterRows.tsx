@@ -75,7 +75,7 @@ const Row = React.memo(function Row({
     // Plain <a>, not <Paper component="a">: Paper writes an inline background
     // that the :hover rule can't override.
     <Tag
-      href={notFound ? undefined : `/${region.toLowerCase()}/${normalizeRealm(character?.realm ?? hint.realm)}/${name.toLowerCase()}`}
+      href={notFound ? undefined : `/${region.toLowerCase()}/${character?.realmSlug ?? normalizeRealm(hint.realm)}/${name.toLowerCase()}`}
       target="_blank"
       rel="noopener noreferrer"
       className={`${classes.rowGrid} ${classes.row} ${notFound ? classes.rowNotFound : ""}`}

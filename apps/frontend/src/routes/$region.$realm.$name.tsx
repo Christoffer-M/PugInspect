@@ -176,26 +176,30 @@ function CharacterPage() {
     enabled: isMythicPlusView,
   });
 
-  // Old or hand-typed URLs ("tarrenmill") still render, since the backend
-  // resolves the realm, but the canonical tag, title and outbound links are
-  // all built from the URL. Swap it for the resolved slug so they agree.
+  // Old or hand-typed URLs ("tarrenmill", "EU/…/Bob") still render, since the
+  // backend resolves the realm, but the canonical tag, title and outbound
+  // links are all built from the URL. Swap it for the canonical form so they
+  // agree. In-app links already use realmSlug, so this is the fallback.
   // ponytail: the other queries refetch once under the new key; the backend
   // serves them from its own cache, so it's one extra round trip on old URLs.
   const realmSlug = characterInfo?.realmSlug;
   useEffect(() => {
-    if (realmSlug && realmSlug !== realm) {
-      navigate({ params: (prev) => ({ ...prev, realm: realmSlug }), search: (prev) => prev, replace: true });
+    if (!realmSlug) return;
+    const canonical = { region: region.toLowerCase(), realm: realmSlug, name: name.toLowerCase() };
+    if (canonical.region !== region || canonical.realm !== realm || canonical.name !== name) {
+      navigate({ params: canonical, search: (prev) => prev, replace: true });
     }
-  }, [realmSlug, realm]);
+  }, [realmSlug, region, realm, name]);
 
   const { add: addToHistory } = useSearchHistory();
   useEffect(() => {
     if (!characterInfo) return;
     addToHistory({
-      name,
-      // display name from the API ("Aggra (Português)"), not the URL slug — nav sites re-normalize
+      name: name.toLowerCase(),
+      // display name from the API ("Aggra (Português)") for the label; links use realmSlug
       realm: characterInfo.realm || realm,
-      region,
+      realmSlug: characterInfo.realmSlug,
+      region: region.toLowerCase(),
       class: characterInfo.class ?? undefined,
     });
   }, [characterInfo?.class, name, realm, region]);

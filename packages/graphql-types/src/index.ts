@@ -574,6 +574,8 @@ export type SearchResult = {
   __typename?: 'SearchResult';
   name: Scalars['String']['output'];
   realm: Scalars['String']['output'];
+  /** Canonical API slug; build the character URL from this. */
+  realmSlug: Scalars['String']['output'];
   region: Scalars['String']['output'];
 };
 

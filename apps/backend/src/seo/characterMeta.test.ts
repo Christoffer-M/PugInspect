@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderCharacterPageHtml } from "./characterMeta.js";
+import { characterRedirectPath, renderCharacterPageHtml } from "./characterMeta.js";
 import { getCharacterSeoSnapshot, type CharacterSeoSnapshot } from "../db/persistence.js";
 import { DEFAULT_RAID } from "../generated/seasonConfig.js";
 
@@ -50,6 +50,21 @@ beforeEach(() => {
   fetchMock.mockResolvedValue({ ok: true, text: async () => TEMPLATE });
   vi.mocked(getCharacterSeoSnapshot).mockReset();
   vi.mocked(getCharacterSeoSnapshot).mockResolvedValue(null);
+});
+
+describe("characterRedirectPath", () => {
+  it("is null for an already-canonical path", () => {
+    expect(characterRedirectPath("eu", "tarren-mill", "bob")).toBeNull();
+    expect(characterRedirectPath("eu", "pozzo-delleternità", "régòliz")).toBeNull();
+  });
+
+  it("points non-canonical realms and casing at the canonical path", () => {
+    expect(characterRedirectPath("eu", "tarrenmill", "bob")).toBe("/eu/tarren-mill/bob");
+    expect(characterRedirectPath("eu", "гордунни", "Стоуфилд")).toBe(
+      `/eu/gordunni/${encodeURIComponent("стоуфилд")}`
+    );
+    expect(characterRedirectPath("EU", "tarren-mill", "Bob")).toBe("/eu/tarren-mill/bob");
+  });
 });
 
 // NOTE: characterMeta caches the fetched index.html at module level, so test

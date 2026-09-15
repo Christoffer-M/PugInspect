@@ -362,6 +362,8 @@ export const characterTypedefs = gql`
   type SearchResult {
     name: String!
     realm: String!
+    "Canonical API slug; build the character URL from this."
+    realmSlug: String!
     region: String!
   }
 

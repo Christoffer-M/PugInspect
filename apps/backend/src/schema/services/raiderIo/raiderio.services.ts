@@ -3,7 +3,7 @@ import { RAID_PROGRESSION_FIELD } from "../../../generated/seasonConfig.js";
 import { fetcher, FetchError } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
 import { trace } from "@opentelemetry/api";
-import { dedupeInFlight, normalizeRealm, normalizeName } from "../../utils/helpers.js";
+import { dedupeInFlight, normalizeRealm, normalizeName, resolveRealm } from "../../utils/helpers.js";
 import { markCache, markStale } from "../../utils/spans.js";
 import { getCachedRioProfile, persistRioProfile } from "../../../db/persistence.js";
 import { GraphQLError } from "graphql";
@@ -20,6 +20,7 @@ const baseApiUrl = "https://raider.io/api";
 export type CharacterSearchResponse = {
   name: string;
   realm: string;
+  realmSlug: string;
   region: string;
 };
 
@@ -90,6 +91,9 @@ export class RaiderIOService {
       return filteredMatches.map((r) => ({
         name: r.name,
         realm: r.data.realm.name,
+        // Resolved like every other lookup, not RIO's own slug: this is what
+        // the character route and the DB key on.
+        realmSlug: resolveRealm(r.data.realm.name, r.data.region.slug),
         region: r.data.region.short_name,
       }));
     } catch (error) {

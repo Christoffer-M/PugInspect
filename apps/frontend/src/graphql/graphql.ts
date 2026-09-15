@@ -579,6 +579,8 @@ export type SearchResult = {
   __typename?: 'SearchResult';
   name: Scalars['String']['output'];
   realm: Scalars['String']['output'];
+  /** Canonical API slug; build the character URL from this. */
+  realmSlug: Scalars['String']['output'];
   region: Scalars['String']['output'];
 };
 
@@ -769,7 +771,7 @@ export type CharacterSearchQueryVariables = Exact<{
 }>;
 
 
-export type CharacterSearchQuery = { __typename?: 'Query', characterSuggestions: Array<{ __typename?: 'SearchResult', name: string, realm: string, region: string }> };
+export type CharacterSearchQuery = { __typename?: 'Query', characterSuggestions: Array<{ __typename?: 'SearchResult', name: string, realm: string, realmSlug: string, region: string }> };
 
 export type CompanionTelemetryQueryVariables = Exact<{
   token: Scalars['String']['input'];
@@ -817,7 +819,7 @@ export type RosterCoreQueryVariables = Exact<{
 }>;
 
 
-export type RosterCoreQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, role?: SpecRole | null, character?: { __typename?: 'Character', name: string, realm: string, region: string, class?: string | null, activeSpec?: string | null, level?: number | null, equippedItemLevel?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string } | null } | null }> };
+export type RosterCoreQuery = { __typename?: 'Query', rosterCharacters: Array<{ __typename?: 'RosterEntry', name: string, realm: string, notFound: boolean, role?: SpecRole | null, character?: { __typename?: 'Character', name: string, realm: string, realmSlug: string, region: string, class?: string | null, activeSpec?: string | null, level?: number | null, equippedItemLevel?: number | null, avatarUrl?: string | null, guild?: { __typename?: 'Guild', name: string } | null } | null }> };
 
 export type RosterRioQueryVariables = Exact<{
   region: Scalars['String']['input'];
@@ -1126,6 +1128,7 @@ export const CharacterSearchDocument = new TypedDocumentString(`
   characterSuggestions(searchString: $searchString, region: $region) {
     name
     realm
+    realmSlug
     region
   }
 }
@@ -1329,6 +1332,7 @@ export const RosterCoreDocument = new TypedDocumentString(`
     character {
       name
       realm
+      realmSlug
       region
       class
       activeSpec
