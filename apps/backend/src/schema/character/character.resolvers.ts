@@ -123,10 +123,17 @@ export default {
         });
       }
 
-      // Canonicalise the realm here, at the boundary: services, the DB write
-      // and the not-found echo below all read it off args, so resolving once
-      // here is what keeps a client's "TarrenMill" from becoming its own row.
-      args = { ...args, realm: resolveRealm(args.realm, args.region) };
+      // Canonicalise the key here, at the boundary: services, the DB write
+      // and the not-found echo below all read it off args, and the characters
+      // unique index is case-sensitive. Resolving once here is what keeps a
+      // client's "TarrenMill" or "Стоуфилд" from becoming its own row.
+      // rosterCharacters and validateRosterInput normalize the same way.
+      args = {
+        ...args,
+        name: normalizeName(args.name),
+        realm: resolveRealm(args.realm, args.region),
+        region: args.region.toLowerCase(),
+      };
 
       // Crawlers render the SPA and fire the same queries real users do; serve
       // them from the DB cache only (stale allowed) so bot crawls never spend
