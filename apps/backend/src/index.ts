@@ -13,7 +13,7 @@ import { parseBeat, pruneCompanionTelemetry, recordCompanionBeat } from "./db/co
 import express from "express";
 import cors from "cors";
 import { isbot } from "isbot";
-import { renderCharacterPageHtml, renderRosterPageHtml } from "./seo/characterMeta.js";
+import { characterRedirectPath, renderCharacterPageHtml, renderRosterPageHtml } from "./seo/characterMeta.js";
 import { renderCharacterCard } from "./seo/characterCard.js";
 import { renderSitemapXml } from "./seo/sitemap.js";
 import { renderLlmsTxt } from "./seo/llmsTxt.js";
@@ -393,10 +393,16 @@ app.get("/meta/roster/:region/:slug", metaRateLimiter, async (req, res) => {
 
 app.get("/meta/:region/:realm/:name", metaRateLimiter, async (req, res) => {
   const { region, realm, name } = req.params;
-  const html =
-    typeof region === "string" && typeof realm === "string" && typeof name === "string"
-      ? await renderCharacterPageHtml(region, realm, name)
-      : null;
+  if (typeof region !== "string" || typeof realm !== "string" || typeof name !== "string") {
+    res.status(404).type("text/plain").send("Not found");
+    return;
+  }
+  const redirect = characterRedirectPath(region, realm, name);
+  if (redirect) {
+    res.redirect(301, redirect);
+    return;
+  }
+  const html = await renderCharacterPageHtml(region, realm, name);
   if (!html) {
     res.status(404).type("text/plain").send("Not found");
     return;

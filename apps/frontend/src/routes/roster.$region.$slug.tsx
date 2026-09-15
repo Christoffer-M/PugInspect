@@ -522,17 +522,10 @@ const RosterResults: React.FC = () => {
 };
 
 export const Route = createFileRoute("/roster/$region/$slug")({
-  head: ({ params }) => ({
-    meta: [
-      { title: "Roster Check | PugInspect" },
-      {
-        name: "description",
-        content: "A shared raid roster check - every character's gear, score and logs at a glance.",
-      },
-    ],
-    links: [
-      { rel: "canonical", href: `https://puginspect.com/roster/${params.region}/${params.slug}` },
-    ],
+  // Title only: /meta/roster injects description and canonical for crawlers,
+  // and HeadContent never dedupes against the served head.
+  head: () => ({
+    meta: [{ title: "Roster Check | PugInspect" }],
   }),
   component: RosterResults,
 });

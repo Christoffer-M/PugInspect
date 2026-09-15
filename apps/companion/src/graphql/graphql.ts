@@ -54,6 +54,11 @@ export type Character = {
   raidLogs?: Maybe<RaidLogs>;
   raiderIo?: Maybe<RaiderIo>;
   realm: Scalars['String']['output'];
+  /**
+   * Canonical API slug (der-rat-von-dalaran). Build character URLs from this;
+   * clients carry no realm table of their own.
+   */
+  realmSlug: Scalars['String']['output'];
   region: Scalars['String']['output'];
 };
 
@@ -574,6 +579,8 @@ export type SearchResult = {
   __typename?: 'SearchResult';
   name: Scalars['String']['output'];
   realm: Scalars['String']['output'];
+  /** Canonical API slug; build the character URL from this. */
+  realmSlug: Scalars['String']['output'];
   region: Scalars['String']['output'];
 };
 

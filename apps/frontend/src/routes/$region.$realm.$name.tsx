@@ -46,14 +46,10 @@ export type CharacterQueryParams = {
 
 export const Route = createFileRoute("/$region/$realm/$name")({
   component: CharacterPage,
+  // Title only: /meta injects description and canonical for crawlers (and 301s
+  // non-canonical paths), and HeadContent never dedupes against the served head.
   head: ({ params }) => ({
     meta: [{ title: `${params.name}-${params.realm} | PugInspect` }],
-    links: [
-      {
-        rel: "canonical",
-        href: `https://puginspect.com/${params.region.toLowerCase()}/${encodeURIComponent(normalizeRealm(params.realm))}/${encodeURIComponent(params.name.toLowerCase())}`,
-      },
-    ],
   }),
   validateSearch: (search: Record<string, unknown>): CharacterQueryParams => {
     const parsePartition = (value: unknown): CharacterQueryParams["partition"] => {
@@ -176,14 +172,30 @@ function CharacterPage() {
     enabled: isMythicPlusView,
   });
 
+  // Old or hand-typed URLs ("tarrenmill", "EU/…/Bob") still render, since the
+  // backend resolves the realm, but the title and outbound links are built
+  // from the URL. Swap it for the canonical form so they agree. In-app links
+  // already use realmSlug, so this is the fallback.
+  // ponytail: the other queries refetch once under the new key; the backend
+  // serves them from its own cache, so it's one extra round trip on old URLs.
+  const realmSlug = characterInfo?.realmSlug;
+  useEffect(() => {
+    if (!realmSlug) return;
+    const canonical = { region: region.toLowerCase(), realm: realmSlug, name: name.toLowerCase() };
+    if (canonical.region !== region || canonical.realm !== realm || canonical.name !== name) {
+      navigate({ params: canonical, search: (prev) => prev, replace: true });
+    }
+  }, [realmSlug, region, realm, name]);
+
   const { add: addToHistory } = useSearchHistory();
   useEffect(() => {
     if (!characterInfo) return;
     addToHistory({
-      name,
-      // display name from the API ("Aggra (Português)"), not the URL slug — nav sites re-normalize
+      name: name.toLowerCase(),
+      // display name from the API ("Aggra (Português)") for the label; links use realmSlug
       realm: characterInfo.realm || realm,
-      region,
+      realmSlug: characterInfo.realmSlug,
+      region: region.toLowerCase(),
       class: characterInfo.class ?? undefined,
     });
   }, [characterInfo?.class, name, realm, region]);

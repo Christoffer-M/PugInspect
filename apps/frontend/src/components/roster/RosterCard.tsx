@@ -80,7 +80,7 @@ export const RosterCard = React.memo(function RosterCard({
   const rioPending = entry?.pending.rio === true;
   const logsPending = entry?.pending.logs === true;
 
-  const characterUrl = `/${region.toLowerCase()}/${normalizeRealm(character?.realm ?? hint.realm)}/${name.toLowerCase()}`;
+  const characterUrl = `/${region.toLowerCase()}/${character?.realmSlug ?? normalizeRealm(hint.realm)}/${name.toLowerCase()}`;
 
   return (
     // A real link (new tab) rather than navigate(): the roster page is the

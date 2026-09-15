@@ -194,6 +194,20 @@ function fallbackShell(metaBlock: string, bodyBlock: string | null): string {
 }
 
 /**
+ * The canonical /{region}/{realm}/{name} path when the requested one differs
+ * from it (old sitemap entries like /eu/tarrenmill/bob, hand-typed casing), so
+ * /meta can answer crawlers with a 301 instead of a duplicate page. Null when
+ * the path is already canonical.
+ */
+export function characterRedirectPath(region: string, realm: string, name: string): string | null {
+  const regionLc = region.trim().toLowerCase();
+  const realmSlug = resolveRealm(realm, regionLc);
+  const nameLc = normalizeName(name);
+  if (regionLc === region && realmSlug === realm && nameLc === name) return null;
+  return `/${regionLc}/${encodeURIComponent(realmSlug)}/${encodeURIComponent(nameLc)}`;
+}
+
+/**
  * Renders index.html with per-character SEO meta tags injected, replacing the
  * static defaults between the seo:start/seo:end markers.
  * Returns null for invalid input (caller should 404).

@@ -7,6 +7,8 @@ const MAX_ENTRIES = 20;
 export type HistoryEntry = {
   name: string;
   realm: string;
+  /** Canonical slug from the API. Missing on entries saved before it existed. */
+  realmSlug?: string;
   region: string;
   class?: string;
   timestamp: number;
@@ -23,6 +25,10 @@ function isSameCharacter(
     a.region.toLowerCase() === b.region.toLowerCase()
   );
 }
+
+/** URL realm for an entry: the API slug, or a best guess for old entries
+ *  (the character page redirects if the guess is off). */
+export const entryRealmSlug = (e: HistoryEntry) => e.realmSlug ?? normalizeRealm(e.realm);
 
 /** Persisted search history; hooks sharing the key stay in sync across components and tabs. */
 export function useSearchHistory() {

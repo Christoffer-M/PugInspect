@@ -266,16 +266,9 @@ const RosterPaste: React.FC = () => {
 export const Route = createFileRoute("/roster/")({
   // Title/description are also prerendered into this route's static HTML —
   // keep in sync with apps/frontend/scripts/prerender.mjs.
+  // Description and canonical come from the prerendered HTML (scripts/prerender.mjs).
   head: () => ({
-    meta: [
-      { title: "Roster Check - Inspect a Full Raid Roster | PugInspect" },
-      {
-        name: "description",
-        content:
-          "Paste a raid roster export and inspect the whole team at once - item level, RIO score, raid progress and log percentiles for every character on one screen.",
-      },
-    ],
-    links: [{ rel: "canonical", href: "https://puginspect.com/roster" }],
+    meta: [{ title: "Roster Check - Inspect a Full Raid Roster | PugInspect" }],
   }),
   component: RosterPaste,
 });

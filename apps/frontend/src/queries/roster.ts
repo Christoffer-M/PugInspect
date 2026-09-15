@@ -114,6 +114,7 @@ const rosterCoreQuery = graphql(`
       character {
         name
         realm
+        realmSlug
         region
         class
         activeSpec

@@ -65,7 +65,9 @@ const CharacterSearchInput: React.FC = () => {
     }
   }, [initialName, initialRealm, initialRegion]);
 
-  const navigateToCharacter = (input: string) => {
+  /** realmSlug comes from an autocomplete pick; typed and pasted input only
+   *  has the realm as written, and the character page redirects if it's off. */
+  const navigateToCharacter = (input: string, realmSlug?: string) => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
@@ -81,7 +83,7 @@ const CharacterSearchInput: React.FC = () => {
     if (name && realm) {
       router
         .navigate({
-          to: `/${region.toLowerCase()}/${normalizeRealm(realm)}/${name.toLowerCase()}`,
+          to: `/${region.toLowerCase()}/${realmSlug ?? normalizeRealm(realm)}/${name.toLowerCase()}`,
         })
         .then(() => setSearchTerm(""));
     } else {
@@ -119,7 +121,8 @@ const CharacterSearchInput: React.FC = () => {
           setSearchTerm(search);
         }}
         onOptionSubmit={(selectedValue) => {
-          navigateToCharacter(selectedValue);
+          const picked = searchResults.find((r) => `${r.name}-${r.realm}` === selectedValue);
+          navigateToCharacter(selectedValue, picked?.realmSlug);
         }}
         style={{ flex: 1, minWidth: 0 }}
         comboboxProps={{
