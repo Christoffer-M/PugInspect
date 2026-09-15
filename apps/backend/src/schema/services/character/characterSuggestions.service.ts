@@ -38,6 +38,7 @@ export function getCharacterSuggestions(args: QueryCharacterSuggestionsArgs): Pr
   return withSpan("character.suggestions", {}, async () => {
     const span = trace.getActiveSpan();
     const region = args.region.toLowerCase();
+    span?.setAttribute("app.suggest.region", region);
     const parsed = parseSuggestionInput(args.searchString, region);
 
     let own: CharacterSearchResponse[] = [];

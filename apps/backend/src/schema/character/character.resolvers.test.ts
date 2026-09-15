@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, assert, beforeEach } from "vitest";
 import { ApolloServer } from "@apollo/server";
+import { trace, type Span } from "@opentelemetry/api";
 import { characterTypedefs } from "./character.typedefs.js";
 import characterResolvers from "./character.resolvers.js";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
@@ -293,6 +294,24 @@ describe("Query.characterSuggestions", () => {
     const result = await execute(SUGGESTIONS_QUERY, { region: "eu", searchString: "pug" });
     expect(result.errors).toBeUndefined();
     expect(RaiderIOService.getCharacterSuggestions).toHaveBeenCalledTimes(2);
+  });
+
+  it("records the outcome on the span — the evidence for dropping Raider.IO", async () => {
+    const setAttribute = vi.fn();
+    const spy = vi.spyOn(trace, "getActiveSpan").mockReturnValue({ setAttribute } as unknown as Span);
+    vi.mocked(RaiderIOService.getCharacterSuggestions).mockResolvedValue([
+      { name: "pugsley", realm: "Kazzak", realmSlug: "kazzak", region: "KR" },
+    ]);
+
+    await execute(SUGGESTIONS_QUERY, { region: "KR", searchString: "pug" });
+    spy.mockRestore();
+
+    expect(Object.fromEntries(setAttribute.mock.calls)).toEqual({
+      "app.suggest.region": "kr",
+      "app.suggest.own_count": 0,
+      "app.suggest.fallback_used": true,
+      "app.suggest.fallback_count": 1,
+    });
   });
 
   it("rejects search strings shorter than 3 characters", async () => {
