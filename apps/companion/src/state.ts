@@ -151,9 +151,15 @@ export function useCompanion(events: Events) {
         if (part === "core") count("notFound", entries.filter((e) => e.notFound).length);
         setLookups((l) => {
           const next = { ...l };
-          for (const e of entries) {
-            const prev = next[keyOf(e)];
-            next[keyOf(e)] = {
+          for (const [i, e] of entries.entries()) {
+            // Key off what we asked for, not what came back: the response
+            // carries Blizzard's en_US realm name, which for a Russian realm is
+            // not the name the game (and so the strip) reports -- "Gordunni"
+            // against "Гордунни", two different keys, and the row stayed
+            // loading forever. The backend answers 1:1 by position.
+            const key = keyOf(chunk[i] ?? e);
+            const prev = next[key];
+            next[key] = {
               parts: { ...prev?.parts, [part]: { state: "done" } },
               entry: {
                 ...prev?.entry,
