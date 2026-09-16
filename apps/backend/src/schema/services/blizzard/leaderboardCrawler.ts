@@ -2,7 +2,7 @@ import { createLogger } from "../../utils/logger.js";
 import { normalizeName } from "../../utils/helpers.js";
 import { VALID_REGIONS } from "../../utils/regions.js";
 import { BlizzardService } from "./blizzard.services.js";
-import { upsertDirectory } from "../../../db/characterDirectory.js";
+import { directorySizes, upsertDirectory } from "../../../db/characterDirectory.js";
 import type { NewCharacterDirectoryEntry } from "../../../db/schema.js";
 
 const logger = createLogger({ service: "LeaderboardCrawler" });
@@ -151,7 +151,22 @@ export async function crawlLeaderboards({ allPeriods = false } = {}) {
   } else {
     logger.info("Mythic+ leaderboard crawl finished", result);
   }
+  await logDirectorySize();
   return result;
+}
+
+/** One log line per region plus a "total", so the board can chart the directory
+ *  growing. Non-fatal: a failed count must not fail the crawl that just ran. */
+async function logDirectorySize(): Promise<void> {
+  try {
+    const sizes = await directorySizes();
+    const total = sizes.reduce((n, s) => n + s.rows, 0);
+    for (const { region, rows } of [...sizes, { region: "total", rows: total }]) {
+      logger.info("Character directory size", { region, rows });
+    }
+  } catch (error) {
+    logger.warn("Character directory size count failed", { error: String(error) });
+  }
 }
 
 let crawlInFlight = false;

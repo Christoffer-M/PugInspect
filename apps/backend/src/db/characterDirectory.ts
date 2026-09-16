@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, like, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, like, sql } from "drizzle-orm";
 import { getDb } from "./index.js";
 import { characterDirectory } from "./schema.js";
 import type { NewCharacterDirectoryEntry } from "./schema.js";
@@ -52,4 +52,13 @@ export async function searchDirectory(
     )
     .orderBy(sql`${characterDirectory.name} <> ${namePrefix}`, desc(characterDirectory.lastSeenAt))
     .limit(limit);
+}
+
+/** How many characters we know per region — the crawl publishes this so the
+ *  autocomplete board can show the directory growing. */
+export async function directorySizes(): Promise<{ region: string; rows: number }[]> {
+  return getDb()
+    .select({ region: characterDirectory.region, rows: count() })
+    .from(characterDirectory)
+    .groupBy(characterDirectory.region);
 }
