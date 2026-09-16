@@ -185,7 +185,11 @@ fn decode_block(s: &str) -> Option<String> {
         bytes.extend(&acc.to_le_bytes()[..chunk.len() - 1]);
     }
     let out = miniz_oxide::inflate::decompress_to_vec_with_limit(&bytes, 16 * 1024).ok()?;
-    String::from_utf8(out).ok()
+    // Lossy, not strict: the CRC already vouched for these bytes being the ones the addon
+    // compressed, so the only way they are not UTF-8 is the addon's byte-wise trim landing
+    // inside a character -- routine on a Russian realm, where every name is two bytes a
+    // character. That costs the severed line (parse_body drops it), never the frame.
+    Some(String::from_utf8_lossy(&out).into_owned())
 }
 
 fn decode_at(img: &RgbaImage, x0: u32, y0: u32) -> Result<String, DecodeErr> {
@@ -231,27 +235,39 @@ pub fn parse(payload: &str) -> Result<Frame, ParseErr> {
     parse_body(&h, lines.split('\n').filter(|l| !l.is_empty())).ok_or(ParseErr::Malformed)
 }
 
+/// One body line: "<Name-Realm>:<role>:<classId>:<ilvl>:<applicantId>:<bestLevel>:<timed>".
+fn applicant(line: &str, realm: &str) -> Option<Applicant> {
+    let f: Vec<&str> = line.split(':').collect();
+    if f.len() != 7 {
+        return None;
+    }
+    let (name, r) = f[0].rsplit_once('-').unwrap_or((f[0], realm));
+    Some(Applicant {
+        name: name.into(),
+        realm: r.into(),
+        role: f[1].into(),
+        class_id: f[2].parse().ok()?,
+        ilvl: f[3].parse().ok()?,
+        group: f[4].parse().ok()?,
+        best_level: f[5].parse().ok()?,
+        best_timed: f[6] == "1",
+    })
+}
+
 fn parse_body<'a>(h: &[&str], lines: impl Iterator<Item = &'a str>) -> Option<Frame> {
     let realm = h[3].to_string();
-    let applicants = lines
-        .map(|l| {
-            let f: Vec<&str> = l.split(':').collect();
-            if f.len() != 7 {
-                return None;
-            }
-            let (name, r) = f[0].rsplit_once('-').unwrap_or((f[0], &realm));
-            Some(Applicant {
-                name: name.into(),
-                realm: r.into(),
-                role: f[1].into(),
-                class_id: f[2].parse().ok()?,
-                ilvl: f[3].parse().ok()?,
-                group: f[4].parse().ok()?,
-                best_level: f[5].parse().ok()?,
-                best_timed: f[6] == "1",
-            })
-        })
-        .collect::<Option<Vec<_>>>()?;
+    let all: Vec<&str> = lines.collect();
+    let mut applicants = Vec::with_capacity(all.len());
+    for (i, l) in all.iter().enumerate() {
+        match applicant(l, &realm) {
+            Some(a) => applicants.push(a),
+            // The addon's MAX_BYTES trim cuts the last line, and a Cyrillic list overruns
+            // that budget routinely -- drop the applicant it severed. Any earlier bad line
+            // is a real protocol disagreement and still fails the frame.
+            None if i + 1 == all.len() => {}
+            None => return None,
+        }
+    }
     Some(Frame {
         hb: h[1].parse().ok()?,
         region: h[2].into(),
@@ -551,6 +567,45 @@ mod tests {
         let incompressible: String = (0..1000).map(|i| (b'a' + (i * 7 % 26) as u8) as char).collect();
         let painted = wire(&format!("5\t1\teu\tR\t1\t1\tt\t1\t+\n{incompressible}"));
         assert!(painted.len() <= MAX_LEN, "{} bytes vs {MAX_LEN}", painted.len());
+    }
+
+    /// A Russian realm's applicants are Cyrillic end to end, two bytes a character.
+    /// The strip is bytes, not characters, so this only has to survive the round trip --
+    /// and it is also where the addon's 1000-byte budget gets eaten twice as fast.
+    #[test]
+    fn cyrillic_applicants_round_trip() {
+        let p = "5\t7\teu\tГордунни\t1\t2516\tКлюч +12\t2\t+\n\
+            Аластор-Гордунни:D:8:641:41:12:1\n\
+            Алариония-Гордунни:H:5:638:42:10:0";
+        let f = parse(&decode(&encode(wire(p).as_bytes())).unwrap()).unwrap();
+        assert_eq!(f.realm, "Гордунни");
+        assert_eq!(f.title, "Ключ +12");
+        let a = &f.applicants;
+        assert_eq!((a[0].name.as_str(), a[0].realm.as_str()), ("Аластор", "Гордунни"));
+        assert_eq!((a[1].name.as_str(), a[1].ilvl), ("Алариония", 638));
+    }
+
+    /// What the addon's byte budget does to a Russian list: 20 Cyrillic lines run past
+    /// MAX_BYTES, so the payload arrives cut mid-line -- and, two bytes a character, the cut
+    /// can land inside one. Neither may cost more than the line it truncated.
+    #[test]
+    fn a_trimmed_line_costs_only_that_line() {
+        let head = "5\t7\teu\tГордунни\t1\t2516\tКлюч +12\t20\t+";
+        let mut p = String::from(head);
+        for i in 0..20 {
+            p += &format!("\nАластор{i}-Гордунни:D:8:64{}:4{i}:12:1", i % 10);
+        }
+        assert!(p.len() > 1000, "a Cyrillic list has to overrun the budget for this to matter");
+        // Cut inside the last character that fits, which is what a byte-wise trim does.
+        let cut = (1..4).find(|n| std::str::from_utf8(&p.as_bytes()[..1000 - n]).is_err()).unwrap();
+        let trimmed = String::from_utf8_lossy(&p.as_bytes()[..1000 - cut + 1]).into_owned();
+        let f = parse(&decode(&encode(wire(&trimmed).as_bytes())).unwrap()).unwrap();
+        assert_eq!(f.realm, "Гордунни");
+        // Everything before the cut survives; only the severed line is gone.
+        assert!(f.applicants.len() >= 15, "{} applicants survived", f.applicants.len());
+        assert_eq!(f.applicants[0].name, "Аластор0");
+        // And the count the header carries still says how many the game has.
+        assert_eq!(f.total, 20);
     }
 
     #[test]
