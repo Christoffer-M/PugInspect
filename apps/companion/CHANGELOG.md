@@ -4,6 +4,12 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.7.0
+
+- Character pages can now open in the app instead of your browser, in one window that every
+  later applicant reuses rather than a new tab each time. Off by default -- turn on "Open
+  characters in the app, not the browser" under Settings if the tabs pile up on you.
+
 ## 0.6.4
 
 - Applicants from Russian realms now load like everyone else. Their score, parses and item
