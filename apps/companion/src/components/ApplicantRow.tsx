@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { invoke } from "@tauri-apps/api/core";
+import { loadSettings } from "../settings";
 import roleDps from "../assets/role-dps.png";
 import roleHealer from "../assets/role-healer.png";
 import roleTank from "../assets/role-tank.png";
@@ -98,10 +100,12 @@ export function ApplicantRow({
         e.preventDefault();
         // Without a slug (core lookup failed or pending) the raw realm still works:
         // the character page's backend query resolves it.
-        if (!notFound)
-          openUrl(
-            `https://puginspect.com/${region}/${encodeURIComponent(entry?.realmSlug ?? a.realm)}/${encodeURIComponent(a.name.toLowerCase())}`
-          );
+        if (!notFound) {
+          const url = `https://puginspect.com/${region}/${encodeURIComponent(entry?.realmSlug ?? a.realm)}/${encodeURIComponent(a.name.toLowerCase())}`;
+          // Read at click time rather than as a prop: the value only matters here.
+          if (loadSettings().openInApp) invoke("open_in_app", { url }).catch(() => openUrl(url));
+          else openUrl(url);
+        }
       }}
       href="#"
     >
