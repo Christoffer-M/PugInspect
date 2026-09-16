@@ -1,10 +1,15 @@
 name: Companion release
 
 # Tag `companion-vX.Y.Z` (matching the version in apps/companion/package.json)
-# to build a DRAFT GitHub release with the NSIS installer, the signed updater
-# artifact and latest.json. Smoke-test the draft's installer, then click
-# Publish in the GitHub UI — that triggers companion-promote.yml, which copies
-# latest.json to the rolling `companion-latest` release that installed apps poll.
+# to build a GitHub PRE-RELEASE with the NSIS installer, the signed updater
+# artifact and latest.json.
+#
+# A pre-release counts as published, so this triggers companion-promote.yml the
+# moment the build lands: latest.json goes to the rolling `companion-latest`
+# release, and every installed app picks the update up within 6 h. There is no
+# gate between a green run here and users — a tag is a ship. It was a draft
+# until 0.6.4; drafts are invisible to anyone without repo access, which made
+# handing a build to a tester harder than it was worth.
 #
 # Requires the repo secret TAURI_SIGNING_PRIVATE_KEY (contents of
 # ~/.tauri/puginspect-companion.key — the key has no password).
@@ -75,4 +80,5 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "PugInspect Companion v__VERSION__"
           releaseBody: ${{ steps.notes.outputs.body }}
-          releaseDraft: true
+          releaseDraft: false
+          prerelease: true
