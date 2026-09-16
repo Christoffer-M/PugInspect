@@ -4,6 +4,14 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.6.4
+
+- Applicants from Russian realms now load like everyone else. Their score, parses and item
+  level never arrived before, leaving the row stuck loading.
+- A long applicant list with Russian names no longer reports the addon as out of date. The
+  list was being cut short in a way the app could not read, so it blamed the addon instead
+  of showing the applicants it did get.
+
 ## 0.6.3
 
 - Realm names under each applicant now come from Blizzard once their details load, so
