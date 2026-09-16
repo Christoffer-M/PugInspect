@@ -32,6 +32,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
+  "launch_handler": { "client_mode": "navigate-existing" },
   "theme_color": "#070f1e",
   "background_color": "#0d1a2e"
 }
