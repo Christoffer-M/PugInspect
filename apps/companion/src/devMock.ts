@@ -37,6 +37,9 @@ const emit = (event: string, payload: unknown) =>
         return { status: "", frame: null };
       case "plugin:app|version":
         return "0.1.0-dev";
+      case "open_in_app":
+        window.open(args.url, "puginspect-viewer");
+        return;
       case "plugin:opener|open_url":
         window.open(args.url, "_blank");
         return;

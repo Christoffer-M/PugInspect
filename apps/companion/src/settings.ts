@@ -5,6 +5,7 @@ export type Settings = {
   startMinimized: boolean;
   alwaysOnTop: boolean;
   closeAction: "hide" | "quit";
+  openInApp: boolean;
   notifyApplicant: boolean;
   notifyListing: boolean;
   sound: boolean;
@@ -17,6 +18,7 @@ const DEFAULTS: Settings = {
   startMinimized: false,
   alwaysOnTop: true,
   closeAction: "hide",
+  openInApp: false,
   notifyApplicant: true,
   notifyListing: true,
   sound: false,

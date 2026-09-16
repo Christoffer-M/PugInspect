@@ -86,6 +86,11 @@ export function Settings({ settings, update }: { settings: S; update: (p: Partia
             ]}
           />
         </div>
+        <Toggle
+          label="Open characters in the app, not the browser"
+          checked={settings.openInApp}
+          onChange={(v) => update({ openInApp: v })}
+        />
       </Section>
       <Section title="Notifications">
         <Toggle label="Desktop notifications" checked={settings.notifyApplicant || settings.notifyListing} onChange={(v) => update({ notifyApplicant: v, notifyListing: v })} />
