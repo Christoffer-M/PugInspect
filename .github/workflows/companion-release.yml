@@ -4,12 +4,17 @@ name: Companion release
 # to build a GitHub PRE-RELEASE with the NSIS installer, the signed updater
 # artifact and latest.json.
 #
-# A pre-release counts as published, so this triggers companion-promote.yml the
-# moment the build lands: latest.json goes to the rolling `companion-latest`
-# release, and every installed app picks the update up within 6 h. There is no
-# gate between a green run here and users — a tag is a ship. It was a draft
-# until 0.6.4; drafts are invisible to anyone without repo access, which made
-# handing a build to a tester harder than it was worth.
+# The last step promotes latest.json to the rolling `companion-latest` release,
+# so every installed app picks the update up within 6 h. There is no gate
+# between a green run here and users — a tag is a ship. It was a draft until
+# 0.6.4; drafts are invisible to anyone without repo access, which made handing
+# a build to a tester harder than it was worth.
+#
+# The promote runs HERE rather than in a workflow keyed on `release: published`.
+# A release that tauri-action creates is authored by github-actions[bot], and
+# GitHub does not start workflow runs from events made with GITHUB_TOKEN, so
+# that trigger never fired once releases stopped being published by hand. It
+# silently shipped nothing for 0.7.0.
 #
 # Requires the repo secret TAURI_SIGNING_PRIVATE_KEY (contents of
 # ~/.tauri/puginspect-companion.key — the key has no password).
@@ -82,3 +87,21 @@ jobs:
           releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: false
           prerelease: true
+
+      - name: Promote latest.json to companion-latest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p latest.json --clobber
+          # The updater reads the version out of this file, so a mismatch here ships
+          # the wrong thing to every client. Cheap to check, expensive to miss.
+          v=$(node -p "require('./apps/companion/package.json').version")
+          [ "$(jq -r .version latest.json)" = "$v" ] || {
+            echo "latest.json says $(jq -r .version latest.json), expected $v"; exit 1; }
+          gh release view companion-latest -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create companion-latest -R "$GITHUB_REPOSITORY" --prerelease \
+              --title "Companion updater manifest" \
+              --notes "Rolling release holding latest.json for the companion auto-updater. Do not delete."
+          gh release upload companion-latest latest.json -R "$GITHUB_REPOSITORY" --clobber
