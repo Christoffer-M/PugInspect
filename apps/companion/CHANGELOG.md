@@ -4,6 +4,12 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.7.1
+
+- Character pages opened from the app now carry a marker saying the link came from the
+  companion, so PugInspect's anonymous visit counts can tell companion clicks apart from
+  ordinary web visits. It identifies the app, not you.
+
 ## 0.7.0
 
 - Character pages can now open in the app instead of your browser, in one window that every
