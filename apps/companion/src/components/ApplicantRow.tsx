@@ -101,9 +101,14 @@ export function ApplicantRow({
         // Without a slug (core lookup failed or pending) the raw realm still works:
         // the character page's backend query resolves it.
         if (!notFound) {
-          const url = `https://puginspect.com/${region}/${encodeURIComponent(entry?.realmSlug ?? a.realm)}/${encodeURIComponent(a.name.toLowerCase())}`;
+          const path = `https://puginspect.com/${region}/${encodeURIComponent(entry?.realmSlug ?? a.realm)}/${encodeURIComponent(a.name.toLowerCase())}`;
           // Read at click time rather than as a prop: the value only matters here.
-          if (loadSettings().openInApp) invoke("open_in_app", { url }).catch(() => openUrl(url));
+          const inApp = loadSettings().openInApp;
+          // Umami parses utm_* on its own: source separates companion clicks from
+          // website traffic, medium the in-app webview from a real browser tab.
+          // The canonical-slug redirect preserves search params, so these survive it.
+          const url = `${path}?utm_source=companion&utm_medium=${inApp ? "in_app" : "browser"}`;
+          if (inApp) invoke("open_in_app", { url }).catch(() => openUrl(url));
           else openUrl(url);
         }
       }}

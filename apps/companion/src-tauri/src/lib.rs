@@ -109,6 +109,8 @@ mod tests {
     #[test]
     fn viewer_url_only_accepts_our_own_site() {
         assert!(viewer_url("https://puginspect.com/eu/draenor/puggy").is_ok());
+        // Character links carry utm_* for analytics attribution.
+        assert!(viewer_url("https://puginspect.com/eu/draenor/puggy?utm_source=companion&utm_medium=in_app").is_ok());
         for bad in [
             "http://puginspect.com/eu/draenor/puggy",   // plaintext
             "https://puginspect.com.evil.io/eu",        // suffix, not our host
