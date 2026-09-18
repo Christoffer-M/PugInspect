@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { count } from "./analytics";
 
@@ -14,40 +14,49 @@ export type UpdateState = {
 };
 
 type Phase = "idle" | "installing" | "done" | { error: string };
+export type CheckResult = "latest" | "available" | "failed";
 
-/** Polls the updater endpoint; returns install controls once an update exists, else null. */
-export function useUpdate(): UpdateState | null {
+/** Polls the updater endpoint; returns install controls once an update exists (else null),
+ *  plus a manual check for the settings screen. */
+export function useUpdate(): [UpdateState | null, () => Promise<CheckResult>] {
   const [update, setUpdate] = useState<Update | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
+  const poll = useRef<() => Promise<CheckResult>>(async () => "failed");
 
   useEffect(() => {
-    if (phase === "installing" || phase === "done") return; // don't swap the update mid-install
+    if (phase === "installing" || phase === "done") {
+      poll.current = async () => "available"; // don't swap the update mid-install
+      return;
+    }
     let stale = false;
-    const poll = async () => {
+    poll.current = async () => {
       try {
         const next = await check();
-        if (!next) return;
+        if (!next) return "latest";
         if (stale || next.version === update?.version) {
           next.close(); // Rust-side resource — don't leak the rid
-          return;
+          return "available";
         }
         update?.close();
         setUpdate(next);
         setPhase("idle"); // a newer release supersedes a failed install of the old one
+        return "available";
       } catch (e) {
         console.warn("update check failed:", e); // offline or no release yet — the next interval retries
+        return "failed";
       }
     };
-    poll();
-    const id = window.setInterval(poll, CHECK_MS);
+    poll.current();
+    const id = window.setInterval(() => poll.current(), CHECK_MS);
     return () => {
       stale = true;
       window.clearInterval(id);
     };
   }, [update, phase]);
 
-  if (!update) return null;
-  return {
+  const checkNow = () => poll.current();
+  if (!update) return [null, checkNow];
+  return [{
     version: update.version,
     notes: update.body?.trim() ?? "",
     installing: phase === "installing",
@@ -67,5 +76,5 @@ export function useUpdate(): UpdateState | null {
         },
       );
     },
-  };
+  }, checkNow];
 }

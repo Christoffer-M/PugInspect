@@ -32,7 +32,7 @@ export default function App() {
   const [now, setNow] = useState(Date.now);
   const [version, setVersion] = useState("");
   const [startedAt] = useState(Date.now);
-  const newRelease = useUpdate();
+  const [newRelease, checkUpdate] = useUpdate();
   const [dismissedUpdate, setDismissedUpdate] = useState("");
   const [notifiedUpdate, setNotifiedUpdate] = useState("");
 
@@ -128,7 +128,7 @@ export default function App() {
         <div className={pageClasses.appBg} />
         <div className={classes.app}>
           <Titlebar tone={tone} onBack={() => setScreen("main")} />
-          <Settings settings={settings} update={update} />
+          <Settings settings={settings} update={update} release={newRelease} checkUpdate={checkUpdate} />
           <StatusBar
             tone={lost || mismatch ? "lost" : session ? "ok" : "idle"}
             label={mismatch ? "Version mismatch" : lost ? "Sync lost" : session ? "Synced" : "Waiting to sync"}
