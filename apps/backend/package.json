@@ -19,7 +19,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "backfill:alt-links": "pnpm run build && node dist/scripts/backfill-alt-links.js",
-    "crawl:leaderboards": "pnpm run build && node dist/scripts/crawl-leaderboards.js"
+    "crawl:leaderboards": "pnpm run build && node dist/scripts/crawl-leaderboards.js",
+    "backfill:progression": "pnpm run build && node dist/scripts/backfill-progression.js"
   },
   "keywords": [],
   "author": "",

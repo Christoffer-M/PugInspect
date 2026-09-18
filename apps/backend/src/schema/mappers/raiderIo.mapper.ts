@@ -1,92 +1,14 @@
-import { RaiderIo, Maybe, Segment, MythicPlusRun } from "@repo/graphql-types";
+import type { MythicPlusRun } from "@repo/graphql-types";
+import type { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
 
-const CLASS_NAMES: Record<number, string> = {
-  1: "Warrior",
-  2: "Paladin",
-  3: "Hunter",
-  4: "Rogue",
-  5: "Priest",
-  6: "Death Knight",
-  7: "Shaman",
-  8: "Mage",
-  9: "Warlock",
-  10: "Monk",
-  11: "Druid",
-  12: "Demon Hunter",
-  13: "Evoker",
-};
-
-export function mapClassIdToName(classId: number): string {
-  return CLASS_NAMES[classId] ?? "Unknown";
-}
-
-export function mapClassIdToSlug(classId: number): string {
-  return mapClassIdToName(classId).toLowerCase().replace(/ /g, "");
-}
-
-import { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
-
-function mapMythicPlusRuns(
-  runs?: RaiderIoCharacterApiResponse[
-    | "mythic_plus_best_runs"
-    | "mythic_plus_recent_runs"]
-): MythicPlusRun[] | undefined {
-  if (!runs) return undefined;
-  return runs.map((run) => ({
+export function mapRecentRuns(profile: RaiderIoCharacterApiResponse): MythicPlusRun[] {
+  return (profile.mythic_plus_recent_runs ?? []).map((run) => ({
+    dungeonId: run.map_challenge_mode_id,
     dungeon: run.dungeon,
-    short_name: run.short_name,
-    challange_mode_id: run.map_challenge_mode_id,
-    key_level: run.mythic_level,
-    completed_at: run.completed_at,
-    icon_url: run.icon_url,
-    background_image_url: run.background_image_url,
+    keyLevel: run.mythic_level,
+    completedAt: run.completed_at,
+    upgrades: run.num_keystone_upgrades,
+    spec: run.spec.name,
     url: run.url,
-    keystone_upgrades: run.num_keystone_upgrades,
-    role: run.role,
-    spec: {
-      name: run.spec.name,
-      slug: run.spec.slug,
-    },
-    class: {
-      name: mapClassIdToName(run.spec.class_id),
-      slug: mapClassIdToSlug(run.spec.class_id),
-    },
   }));
-}
-
-export function mapRaiderIo(
-  rioProfile: RaiderIoCharacterApiResponse
-): RaiderIo | null {
-  if (!rioProfile) return null;
-
-  const currentSeason = rioProfile.mythic_plus_scores_by_season?.[0];
-  const previousSeason = rioProfile.mythic_plus_scores_by_season?.[1];
-  const segmentsCurrentSeason = currentSeason?.segments;
-  const segmentsPreviousSeason = previousSeason?.segments;
-  const raidProgression = Object.entries(rioProfile.raid_progression || {}).map(
-    ([raid, details]) => ({ raid, ...details })
-  );
-
-  const getSegment = (seg?: { color?: string; score?: number }): Maybe<Segment> =>
-    seg ? { color: seg.color ?? "", score: seg.score ?? 0 } : null;
-
-  return {
-    raidProgression,
-    bestMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_best_runs),
-    recentMythicPlusRuns: mapMythicPlusRuns(rioProfile.mythic_plus_recent_runs),
-    currentSeason: {
-      season: currentSeason?.season ?? null,
-      all: getSegment(segmentsCurrentSeason?.all),
-      dps: getSegment(segmentsCurrentSeason?.dps),
-      healer: getSegment(segmentsCurrentSeason?.healer),
-      tank: getSegment(segmentsCurrentSeason?.tank),
-    },
-    previousSeason: {
-      season: previousSeason?.season ?? null,
-      all: getSegment(segmentsPreviousSeason?.all),
-      dps: getSegment(segmentsPreviousSeason?.dps),
-      healer: getSegment(segmentsPreviousSeason?.healer),
-      tank: getSegment(segmentsPreviousSeason?.tank),
-    },
-  };
 }

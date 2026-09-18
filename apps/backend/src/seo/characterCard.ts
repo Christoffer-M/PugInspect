@@ -4,11 +4,12 @@ import { getCharacterSeoSnapshot, type CharacterSeoSnapshot } from "../db/persis
 import { normalizeName, resolveRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
-import { currentRaidProgress } from "./raidProgress.js";
+import { currentRaidProgress, topTimedKey } from "./progress.js";
+import { ratingColor } from "../schema/services/raiderIo/scoreTiers.service.js";
 
 const logger = createLogger({ service: "CharacterCard" });
 
-const CARD_TTL_MS = 15 * 60_000; // 15 minutes, matching the RIO cache
+const CARD_TTL_MS = 15 * 60_000; // 15 minutes, matching the progression cache
 const FALLBACK_COLOR = "#7a8290";
 
 const FONT_BARLOW_URL =
@@ -93,7 +94,7 @@ function h(
 
 /** Current-tier raid progression summary, e.g. "4/8 M". */
 function raidProgressSummary(snapshot: CharacterSeoSnapshot): string {
-  const progress = currentRaidProgress(snapshot.raidProgression);
+  const progress = currentRaidProgress(snapshot.progression?.raidProgression);
   return progress ? `${progress.killed}/${progress.total} ${progress.difficulty[0]}` : "—";
 }
 
@@ -149,9 +150,11 @@ function buildCard(snapshot: CharacterSeoSnapshot): Element {
   const realmLine = `(${snapshot.region.toUpperCase()}) ${snapshot.realm}`;
   const traits = [snapshot.race, snapshot.specialization, snapshot.class].filter(Boolean).join(" ");
   const ilvl = snapshot.itemLevel != null ? String(Math.round(snapshot.itemLevel)) : "—";
-  const mScore = snapshot.mythicPlusScore != null ? String(Math.round(snapshot.mythicPlusScore)) : "—";
-  const topKey = snapshot.topKeyLevel != null ? `+${snapshot.topKeyLevel}` : "—";
-  const mColor = snapshot.mythicPlusColor ?? "#FF5252";
+  const season = snapshot.progression?.mythicPlus.currentSeason;
+  const mScore = season ? String(Math.round(season.rating)) : "—";
+  const timedKey = topTimedKey(season);
+  const topKey = timedKey != null ? `+${timedKey}` : "—";
+  const mColor = (season && ratingColor(season.season, season.rating)) ?? "#FF5252";
 
   const avatar = snapshot.thumbnailUrl
     ? h(
@@ -192,7 +195,7 @@ function buildCard(snapshot: CharacterSeoSnapshot): Element {
         { style: { display: "flex", flex: 1, flexDirection: "column", justifyContent: "center", paddingLeft: "34px", paddingRight: "60px", gap: "18px" } },
         h("div", { style: { display: "flex", gap: "18px" } },
           statCard("Item Level", ilvl, "#E8EDF2"),
-          statCard("M+ Score", mScore, mColor, true)
+          statCard("M+ Rating", mScore, mColor, true)
         ),
         h("div", { style: { display: "flex", gap: "18px" } },
           statCard("Top Key", topKey, "#E8EDF2"),

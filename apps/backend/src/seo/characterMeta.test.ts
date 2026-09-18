@@ -25,18 +25,20 @@ function snapshot(overrides: Partial<CharacterSeoSnapshot> = {}): CharacterSeoSn
     race: "Orc",
     thumbnailUrl: null,
     itemLevel: 678.4,
-    mythicPlusScore: 2801.7,
-    mythicPlusColor: null,
-    topKeyLevel: 14,
-    raidProgression: {
-      [DEFAULT_RAID]: {
-        summary: "4/8 M",
-        expansion_id: 11,
-        total_bosses: 8,
-        normal_bosses_killed: 8,
-        heroic_bosses_killed: 8,
-        mythic_bosses_killed: 4,
+    progression: {
+      mythicPlus: {
+        currentSeason: {
+          season: "season-mn-2",
+          rating: 2801.7,
+          color: null,
+          bestRuns: [
+            { dungeonId: 1, dungeon: "A", keyLevel: 15, upgrades: 0, completedAt: "", spec: null, url: null },
+            { dungeonId: 2, dungeon: "B", keyLevel: 14, upgrades: 1, completedAt: "", spec: null, url: null },
+          ],
+        },
+        previousSeason: null,
       },
+      raidProgression: [{ raid: DEFAULT_RAID, normal: 8, heroic: 8, mythic: 4 }],
     },
     ...overrides,
   };
@@ -117,7 +119,7 @@ describe("renderCharacterPageHtml", () => {
     const html = await renderCharacterPageHtml("eu", "kazzak", "pugsley");
 
     expect(html).toContain(
-      "Pugsley on Kazzak (EU) — Orc Enhancement Shaman, ilvl 678, M+ score 2802."
+      "Pugsley on Kazzak (EU) — Orc Enhancement Shaman, ilvl 678, M+ rating 2802."
     );
     expect(getCharacterSeoSnapshot).toHaveBeenCalledWith({
       region: "eu",
@@ -136,7 +138,7 @@ describe("renderCharacterPageHtml", () => {
     expect(html).toContain("<h1>Pugsley-Kazzak (EU)</h1>");
     expect(html).toContain("Pugsley is an Orc Enhancement Shaman on Kazzak (EU).");
     expect(html).toContain("<dt>Item level</dt>\n      <dd>678</dd>");
-    expect(html).toContain("<dt>Mythic+ score</dt>\n      <dd>2802</dd>");
+    expect(html).toContain("<dt>Mythic+ rating</dt>\n      <dd>2802</dd>");
     expect(html).toContain("<dt>Best Mythic+ key</dt>\n      <dd>+14</dd>");
     // Mythic kills outrank the heroic clear, matching the character page.
     expect(html).toContain("4/8 Mythic in");
@@ -150,7 +152,7 @@ describe("renderCharacterPageHtml", () => {
 
   it("omits facts the snapshot doesn't have", async () => {
     vi.mocked(getCharacterSeoSnapshot).mockResolvedValue(
-      snapshot({ itemLevel: null, mythicPlusScore: null, topKeyLevel: null, raidProgression: null })
+      snapshot({ itemLevel: null, progression: null })
     );
 
     const html = await renderCharacterPageHtml("eu", "kazzak", "pugsley");

@@ -38,11 +38,11 @@ export const PAGES = [
     nav: "Character inspector",
     title: "PugInspect - WoW Character Inspector",
     description:
-      "Inspect any World of Warcraft character in seconds - gear and item level, Raider.IO Mythic+ score, raid progression and Warcraft Logs parse percentiles.",
+      "Inspect any World of Warcraft character in seconds - gear and item level, Mythic+ rating, raid progression and Warcraft Logs parse percentiles.",
     h1: "Welcome to PugInspect",
     body: [
-      "<p>Quickly view WoW character stats, RIO scores, and raid logs. Start by typing a character name, or paste a Raider.IO or PugInspect link.</p>",
-      "<p>Each character page combines gear and item level from the Blizzard profile API, Mythic+ score and dungeon runs from Raider.IO, and raid parse percentiles from Warcraft Logs.</p>",
+      "<p>Quickly view WoW character stats, M+ ratings, and raid logs. Start by typing a character name, or paste a Raider.IO or PugInspect link.</p>",
+      "<p>Each character page combines gear, item level, Mythic+ rating and raid progression from the Blizzard profile API, recent Mythic+ runs from Raider.IO, and raid parse percentiles from Warcraft Logs.</p>",
     ],
   },
   {
@@ -64,11 +64,11 @@ export const PAGES = [
     nav: "Roster check",
     title: "Roster Check - Inspect a Full Raid Roster | PugInspect",
     description:
-      "Paste a raid roster export and inspect the whole team at once - item level, RIO score, raid progress and log percentiles for every character on one screen.",
+      "Paste a raid roster export and inspect the whole team at once - item level, M+ rating, raid progress and log percentiles for every character on one screen.",
     h1: "Roster Check",
     body: [
       "<p>Is this pug going to clear it, or waste your evening?</p>",
-      "<p>Paste a roster export from the PugInspect addon and inspect the whole team at once - item level, Raider.IO score, raid progress and log percentiles for every character on one screen.</p>",
+      "<p>Paste a roster export from the PugInspect addon and inspect the whole team at once - item level, M+ rating, raid progress and log percentiles for every character on one screen.</p>",
     ],
   },
   {

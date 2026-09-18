@@ -12,50 +12,50 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import classes from "./AltsHoverCard.module.css";
 import { normalizeRealm, upperCaseFirstLetter } from "../../util/util";
-import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
-import { AltCharacter, RoleType } from "../../graphql/graphql";
+import { DEFAULT_RAID, RAIDS, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
+import { RoleType } from "../../graphql/graphql";
+import type { AltInfo } from "../../queries/character-info";
 
-const sortAlts = (alts: AltCharacter[]): AltCharacter[] =>
+const sortAlts = (alts: AltInfo[]): AltInfo[] =>
   [...alts].sort((a, b) => {
-    const aScore = a.mythicPlusScore ?? 0;
-    const bScore = b.mythicPlusScore ?? 0;
+    const aScore = a.mythicPlus?.currentSeason?.rating ?? 0;
+    const bScore = b.mythicPlus?.currentSeason?.rating ?? 0;
     if (aScore !== bScore) return bScore - aScore;
 
     const aRaid = a.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
     const bRaid = b.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
 
-    const aMythic = aRaid?.mythic_bosses_killed ?? 0;
-    const bMythic = bRaid?.mythic_bosses_killed ?? 0;
+    const aMythic = aRaid?.mythic ?? 0;
+    const bMythic = bRaid?.mythic ?? 0;
     if (aMythic !== bMythic) return bMythic - aMythic;
 
-    const aHeroic = aRaid?.heroic_bosses_killed ?? 0;
-    const bHeroic = bRaid?.heroic_bosses_killed ?? 0;
+    const aHeroic = aRaid?.heroic ?? 0;
+    const bHeroic = bRaid?.heroic ?? 0;
     if (aHeroic !== bHeroic) return bHeroic - aHeroic;
 
-    const aNormal = aRaid?.normal_bosses_killed ?? 0;
-    const bNormal = bRaid?.normal_bosses_killed ?? 0;
-    return bNormal - aNormal;
+    return (bRaid?.normal ?? 0) - (aRaid?.normal ?? 0);
   });
 
-const RaidProgression: React.FC<{ alt: AltCharacter }> = ({ alt }) => {
+const RaidProgression: React.FC<{ alt: AltInfo }> = ({ alt }) => {
   const prog = alt.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
   if (!prog) return null;
+  const total = RAIDS[DEFAULT_RAID]?.bosses;
   return (
     <Group gap={6}>
       <Text size="xs" style={{ color: RAID_DIFFICULTY_COLORS.normal }}>
-        {prog.normal_bosses_killed}/{prog.total_bosses}N
+        {prog.normal}/{total}N
       </Text>
       <Text size="xs" style={{ color: RAID_DIFFICULTY_COLORS.heroic }}>
-        {prog.heroic_bosses_killed}/{prog.total_bosses}H
+        {prog.heroic}/{total}H
       </Text>
       <Text size="xs" style={{ color: RAID_DIFFICULTY_COLORS.mythic }}>
-        {prog.mythic_bosses_killed}/{prog.total_bosses}M
+        {prog.mythic}/{total}M
       </Text>
     </Group>
   );
 };
 
-export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
+export const AltsHoverCard: React.FC<{ alts: AltInfo[] }> = ({ alts }) => {
   const navigate = useNavigate();
   const sorted = sortAlts(alts);
 
@@ -110,9 +110,9 @@ export const AltsHoverCard: React.FC<{ alts: AltCharacter[] }> = ({ alts }) => {
                     </Stack>
                   </Group>
                   <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
-                    {alt.mythicPlusScore != null && alt.mythicPlusScore > 0 && (
-                      <Text size="xs" style={{ color: alt.mythicPlusColor ?? undefined }}>
-                        {Math.round(alt.mythicPlusScore)} M+
+                    {alt.mythicPlus?.currentSeason && (
+                      <Text size="xs" style={{ color: alt.mythicPlus.currentSeason.color ?? undefined }}>
+                        {Math.round(alt.mythicPlus.currentSeason.rating)} M+
                       </Text>
                     )}
                     <RaidProgression alt={alt} />

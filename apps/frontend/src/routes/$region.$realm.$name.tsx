@@ -11,7 +11,7 @@ import { RaidLogsTable } from "../components/logs/RaidLogsTable";
 import { MythicPlusLogsTable } from "../components/logs/MythicPlusLogsTable";
 import { Page } from "../components/layout/Page";
 import { useCharacterInfoQuery } from "../queries/character-info";
-import { useCharacterRaiderIoQuery } from "../queries/character-raiderio";
+import { useCharacterProgressionQuery, useCharacterRecentRunsQuery } from "../queries/character-progression";
 import { useCharacterGearQuery } from "../queries/character-gear";
 import { GearSection } from "../components/gear/GearSection";
 import { Difficulty, Metric, RoleType } from "../graphql/graphql";
@@ -111,9 +111,14 @@ function CharacterPage() {
     isError,
   } = useCharacterInfoQuery({ name, realm, region });
 
-  // RaiderIO — M+ runs, raid progression, season scores, cached 15 min
-  const { data: raiderIoData, isFetching: isFetchingRaiderIo } =
-    useCharacterRaiderIoQuery({ name, realm, region });
+  // Blizzard — M+ rating, best runs, raid progression, cached 15 min
+  const { data: progression, isFetching: isFetchingProgression } =
+    useCharacterProgressionQuery({ name, realm, region });
+
+  // RaiderIO — recent runs only (Blizzard has no run history), cached 15 min.
+  // Its own query so the slow upstream never holds up the header.
+  const { data: recentRuns, isFetching: isFetchingRecentRuns } =
+    useCharacterRecentRunsQuery({ name, realm, region });
 
   // Blizzard — equipped gear, cached 1 h
   const {
@@ -238,9 +243,11 @@ function CharacterPage() {
             <CharacterHeader
               name={name}
               characterInfo={characterInfo}
-              raiderIo={raiderIoData}
+              mythicPlus={progression?.mythicPlus}
+              raidProgression={progression?.raidProgression}
+              recentRuns={recentRuns}
               isLoadingInfo={isFetchingInfo}
-              isLoadingRaiderIo={isFetchingRaiderIo}
+              isLoadingProgression={isFetchingProgression}
               isError={isError}
               bestParseAverage={
                 (isMythicPlusView
@@ -282,8 +289,8 @@ function CharacterPage() {
               />
               {!isMythicPlusView && (
                 <RaidProgression
-                  raidData={raiderIoData?.raidProgression ?? []}
-                  isLoading={isFetchingRaiderIo}
+                  raidData={progression?.raidProgression ?? []}
+                  isLoading={isFetchingProgression}
                   selectedRaid={searchRaid ?? DEFAULT_RAID ?? null}
                   onRaidChange={handleRaidChange}
                 />
@@ -307,14 +314,16 @@ function CharacterPage() {
             <Grid w="100%">
               <Grid.Col span={{ sm: 12, md: 6 }}>
                 <BestMythicPlusRunsTable
-                  isFetching={isFetchingRaiderIo}
-                  characterRuns={raiderIoData?.bestMythicPlusRuns ?? []}
+                  isFetching={isFetchingProgression}
+                  characterRuns={progression?.mythicPlus?.currentSeason?.bestRuns ?? []}
+                  characterClass={characterInfo?.class}
                 />
               </Grid.Col>
               <Grid.Col span={{ sm: 12, md: 6 }}>
                 <RecentMythicPlusRunsTable
-                  isFetching={isFetchingRaiderIo}
-                  characterRuns={raiderIoData?.recentMythicPlusRuns ?? []}
+                  isFetching={isFetchingRecentRuns}
+                  characterRuns={recentRuns ?? []}
+                  characterClass={characterInfo?.class}
                 />
               </Grid.Col>
             </Grid>

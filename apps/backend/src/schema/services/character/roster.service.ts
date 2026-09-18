@@ -22,25 +22,11 @@ const CONCURRENCY = 5;
 // which is exactly SPECS' className/specName.
 const ROLE_BY_CLASS_SPEC = new Map(SPECS.map((s) => [`${s.className}/${s.specName}`, s.role]));
 
-// RIO reports the role directly; its vocabulary differs from SpecRole.
-const RIO_ROLES: Record<string, SpecRole> = { TANK: "TANK", HEALING: "HEALER", DPS: "DPS" };
-
-/** Role from the Blizzard profile, falling back to RaiderIO when Blizzard is
- *  down - without the fallback a healer would be ranked on damage and dropped
- *  from the composition counts during a Blizzard outage. */
-export function roleForProfiles(profiles: {
-  blizzardProfile?: BlizzardCharacterProfile;
-  rioProfile?: { active_spec_role?: string } | undefined;
-}): SpecRole | null {
+/** Role from the Blizzard profile's class + active spec. */
+export function roleForProfiles(profiles: { blizzardProfile?: BlizzardCharacterProfile }): SpecRole | null {
   const blizz = profiles.blizzardProfile;
-  if (blizz) {
-    const role = ROLE_BY_CLASS_SPEC.get(
-      `${blizz.character_class.name}/${blizz.active_spec.name}`
-    );
-    if (role) return role;
-  }
-  const rioRole = profiles.rioProfile?.active_spec_role;
-  return rioRole ? (RIO_ROLES[rioRole.toUpperCase()] ?? null) : null;
+  if (!blizz) return null;
+  return ROLE_BY_CLASS_SPEC.get(`${blizz.character_class.name}/${blizz.active_spec.name}`) ?? null;
 }
 
 export type RosterProfileBundle = {
@@ -59,6 +45,7 @@ const EMPTY_PROFILES: Awaited<ReturnType<typeof getCharacterProfiles>> = {
   blizzardAvatarUrl: undefined,
   characterId: null,
   rioProfile: undefined,
+  progression: undefined,
   warcraftLogsProfile: undefined,
   equipment: undefined,
 };
@@ -72,7 +59,8 @@ export async function getRosterProfiles(
   },
   options: {
     cacheOnly: boolean;
-    raiderIoRequested: boolean;
+    /** mythicPlus / raidProgression (Blizzard). */
+    progressionRequested: boolean;
     raidLogsRequested: boolean;
     /** Rank on WCL's Mythic+ "points" metrics (what the character page shows) instead of dps/hps. */
     mythicPlusLogsRequested?: boolean;
@@ -116,12 +104,13 @@ export async function getRosterProfiles(
       difficulty: args.difficulty,
       zoneId: args.zoneId,
     };
-    // Phase 1: identity (Blizzard, usually a 24h-cached DB hit) + RIO.
+    // Phase 1: identity (Blizzard, usually a 24h-cached DB hit) + progression.
     // getCharacterProfiles allSettles its upstreams - a missing character
     // comes back as empty profiles, never a rejection.
     const profiles = await getCharacterProfiles(charArgs, {
       blizzardRequested: true,
-      raiderIoRequested: options.raiderIoRequested,
+      progressionRequested: options.progressionRequested,
+      recentRunsRequested: false,
       raidLogsRequested: false,
       mythicPlusLogsRequested: false,
       gearRequested: false,
@@ -132,7 +121,7 @@ export async function getRosterProfiles(
     // The caller's role wins: the companion knows which role an applicant
     // signed up as, which the active spec can contradict.
     const role = c.role ?? roleForProfiles(profiles);
-    const found = profiles.blizzardProfile || profiles.rioProfile;
+    const found = profiles.blizzardProfile || profiles.progression;
 
     // Phase 2: WCL parses, only for characters that exist - sequenced after
     // the profile so healers can be ranked on healing. Omitting the metric
@@ -166,7 +155,7 @@ export async function getRosterProfiles(
 
   trace.getActiveSpan()?.setAttributes({
     "app.roster.characters": chars.length,
-    "app.roster.raiderio_requested": options.raiderIoRequested,
+    "app.roster.progression_requested": options.progressionRequested,
     "app.roster.logs_requested": options.raidLogsRequested || options.mythicPlusLogsRequested,
     "app.roster.cache_only": options.cacheOnly,
   });

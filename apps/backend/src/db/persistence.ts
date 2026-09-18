@@ -5,6 +5,7 @@ import { isKnownRealm } from "../schema/utils/helpers.js";
 import {
   characters,
   characterRioSnapshots,
+  characterProgressionSnapshots,
   characterWclSnapshots,
   characterBlizzardSnapshots,
   characterEquipmentSnapshots,
@@ -12,7 +13,9 @@ import {
   characterLinks,
   rosters,
 } from "./schema.js";
-import type { RaiderIoCharacterApiResponse, RaidProgression } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
+import type { RaiderIoCharacterApiResponse } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
+import type { CharacterProgression } from "../schema/services/blizzard/model/Progression.js";
+import type { AltCharacter } from "@repo/graphql-types";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
 import type { BlizzardCharacterProfile } from "../schema/services/blizzard/model/CharacterProfile.js";
 import type { BlizzardCharacterEquipment } from "../schema/services/blizzard/model/CharacterEquipment.js";
@@ -21,7 +24,7 @@ import { createLogger } from "../schema/utils/logger.js";
 
 const logger = createLogger({ service: "DBPersistence" });
 
-const CACHE_TTL_SECONDS = 900; // 15 minutes — RaiderIO and WarcraftLogs
+const CACHE_TTL_SECONDS = 900; // 15 minutes — RaiderIO, WarcraftLogs and Blizzard M+
 const BLIZZARD_CACHE_TTL_SECONDS = 86_400; // 24 hours — Blizzard data changes infrequently
 const EQUIPMENT_CACHE_TTL_SECONDS = 3_600; // 1 hour — gear changes per loot drop; bypassCache covers "I just upgraded"
 const ACHIEVEMENT_CACHE_TTL_SECONDS = 604_800; // 7 days — achievements don't un-complete
@@ -134,7 +137,6 @@ export async function persistRioProfile(
 
     const fetchedAtDate = new Date(fetchedAt * 1000);
     const expiresAtDate = new Date((fetchedAt + CACHE_TTL_SECONDS) * 1000);
-    const score = data.mythic_plus_scores_by_season?.[0]?.segments?.all?.score ?? null;
 
     await db
       .insert(characterRioSnapshots)
@@ -143,7 +145,6 @@ export async function persistRioProfile(
         fetchedAt: fetchedAtDate,
         expiresAt: expiresAtDate,
         rawData: data,
-        mythicPlusScore: score,
       })
       .onConflictDoUpdate({
         target: characterRioSnapshots.characterId,
@@ -151,11 +152,69 @@ export async function persistRioProfile(
           fetchedAt: fetchedAtDate,
           expiresAt: expiresAtDate,
           rawData: data,
-          mythicPlusScore: score,
         },
       });
   } catch (err) {
     logger.error("DB cache write failed (rio)", { key, error: String(err) });
+  }
+}
+
+/** allowStale serves expired snapshots too — for crawler traffic, which must never trigger upstream fetches. */
+export async function getCachedProgression(
+  key: CharacterKey,
+  allowStale = false
+): Promise<{ data: CharacterProgression; fetchedAt: number } | null> {
+  try {
+    const rows = await getDb()
+      .select({
+        rawData: characterProgressionSnapshots.rawData,
+        fetchedAt: characterProgressionSnapshots.fetchedAt,
+      })
+      .from(characterProgressionSnapshots)
+      .innerJoin(characters, eq(characterProgressionSnapshots.characterId, characters.id))
+      .where(
+        and(
+          eq(characters.region, key.region),
+          eq(characters.realm, key.realm),
+          eq(characters.name, key.name),
+          ...(allowStale ? [] : [gt(characterProgressionSnapshots.expiresAt, new Date())])
+        )
+      )
+      .limit(1);
+
+    if (!rows[0]) return null;
+
+    return {
+      data: rows[0].rawData,
+      fetchedAt: Math.floor(rows[0].fetchedAt.getTime() / 1000),
+    };
+  } catch (err) {
+    logger.error("DB cache read failed (progression)", { key, error: String(err) });
+    return null;
+  }
+}
+
+export async function persistProgression(
+  key: CharacterKey,
+  data: CharacterProgression,
+  fetchedAt: number
+): Promise<void> {
+  try {
+    const db = getDb();
+    const characterId = await upsertCharacter(db, key);
+
+    const values = {
+      fetchedAt: new Date(fetchedAt * 1000),
+      expiresAt: new Date((fetchedAt + CACHE_TTL_SECONDS) * 1000),
+      rawData: data,
+    };
+
+    await db
+      .insert(characterProgressionSnapshots)
+      .values({ characterId, ...values })
+      .onConflictDoUpdate({ target: characterProgressionSnapshots.characterId, set: values });
+  } catch (err) {
+    logger.error("DB cache write failed (progression)", { key, error: String(err) });
   }
 }
 
@@ -168,10 +227,7 @@ export type CharacterSeoSnapshot = {
   race: string | null;
   thumbnailUrl: string | null;
   itemLevel: number | null;
-  mythicPlusScore: number | null;
-  mythicPlusColor: string | null;
-  topKeyLevel: number | null;
-  raidProgression: Record<string, RaidProgression> | null;
+  progression: CharacterProgression | null;
 };
 
 /**
@@ -194,19 +250,10 @@ export async function getCharacterSeoSnapshot(
         race: characters.race,
         thumbnailUrl: characters.thumbnailUrl,
         itemLevel: characters.itemLevel,
-        mythicPlusScore: characterRioSnapshots.mythicPlusScore,
-        mythicPlusColor: sql<
-          string | null
-        >`${characterRioSnapshots.rawData}->'mythic_plus_scores_by_season'->0->'segments'->'all'->>'color'`,
-        topKeyLevel: sql<
-          number | null
-        >`(${characterRioSnapshots.rawData}->'mythic_plus_best_runs'->0->>'mythic_level')::int`,
-        raidProgression: sql<
-          Record<string, RaidProgression> | null
-        >`${characterRioSnapshots.rawData}->'raid_progression'`,
+        progression: characterProgressionSnapshots.rawData,
       })
       .from(characters)
-      .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
+      .leftJoin(characterProgressionSnapshots, eq(characterProgressionSnapshots.characterId, characters.id))
       .where(
         and(
           eq(characters.region, key.region),
@@ -609,15 +656,8 @@ export async function insertCharacterLink(idA: string, idB: string): Promise<voi
   }
 }
 
-/** Returns all characters linked to the given characterId, with cached ilvl and M+ score. */
-export async function getLinkedCharacters(
-  characterId: string
-): Promise<{
-  name: string; realm: string; region: string; class: string | null;
-  itemLevel: number | null; avatarUrl: string | null;
-  mythicPlusScore: number | null; mythicPlusColor: string | null;
-  raidProgression: { raid: string; summary: string; expansion_id: number; total_bosses: number; normal_bosses_killed: number; heroic_bosses_killed: number; mythic_bosses_killed: number }[];
-}[]> {
+/** Returns all characters linked to the given characterId, with their cached ilvl and progression. */
+export async function getLinkedCharacters(characterId: string): Promise<AltCharacter[]> {
   try {
     const db = getDb();
 
@@ -651,26 +691,17 @@ export async function getLinkedCharacters(
         class: characters.class,
         itemLevel: characters.itemLevel,
         avatarUrl: characters.thumbnailUrl,
-        mythicPlusScore: characterRioSnapshots.mythicPlusScore,
-        mythicPlusColor: sql<string | null>`${characterRioSnapshots.rawData}->'mythic_plus_scores_by_season'->0->'segments'->'all'->>'color'`,
-        rioRawData: characterRioSnapshots.rawData,
+        progression: characterProgressionSnapshots.rawData,
       })
       .from(characters)
-      // RIO snapshot may be stale — intentional. Alt card data is best-effort display.
-      .leftJoin(characterRioSnapshots, eq(characterRioSnapshots.characterId, characters.id))
+      // Snapshot may be stale — intentional. Alt card data is best-effort display.
+      .leftJoin(characterProgressionSnapshots, eq(characterProgressionSnapshots.characterId, characters.id))
       .where(inArray(characters.id, linkedIds));
 
-    return rows.map(({ rioRawData, ...rest }) => ({
+    return rows.map(({ progression, ...rest }) => ({
       ...rest,
-      raidProgression: Object.entries(rioRawData?.raid_progression ?? {}).map(([raid, data]) => ({
-        raid,
-        summary: data.summary,
-        expansion_id: data.expansion_id,
-        total_bosses: data.total_bosses,
-        normal_bosses_killed: data.normal_bosses_killed,
-        heroic_bosses_killed: data.heroic_bosses_killed,
-        mythic_bosses_killed: data.mythic_bosses_killed,
-      })),
+      mythicPlus: progression?.mythicPlus ?? null,
+      raidProgression: progression?.raidProgression ?? null,
     }));
   } catch (err) {
     logger.error("DB query failed (getLinkedCharacters)", { characterId, error: String(err) });

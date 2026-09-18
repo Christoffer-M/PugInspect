@@ -32,8 +32,8 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
     const ilvls = found
       .map((e) => e.character!.equippedItemLevel)
       .filter((v): v is number => v != null);
-    const rios = found
-      .map((e) => e.character!.raiderIo?.currentSeason?.all?.score)
+    const ratings = found
+      .map((e) => e.character!.mythicPlus?.currentSeason?.rating)
       .filter((v): v is number => v != null)
       .map(Math.round);
     const progs = found
@@ -57,8 +57,8 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
       avgIlvl: avg(ilvls),
       minIlvl: ilvls.length ? Math.min(...ilvls) : null,
       maxIlvl: ilvls.length ? Math.max(...ilvls) : null,
-      avgRio: avg(rios),
-      minRio: rios.length ? Math.min(...rios) : null,
+      avgRating: avg(ratings),
+      minRating: ratings.length ? Math.min(...ratings) : null,
       avgKills: progs.length
         ? Math.round((progs.reduce((a, p) => a + p.kills, 0) / progs.length) * 10) / 10
         : null,
@@ -74,7 +74,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
   // A member counts as fetched only once all three upstreams have answered for
   // it - the identity lookup lands first, and calling that "done" would park
   // the bar at 100% while scores and parses are still arriving.
-  const settled = entries.filter((e) => !e.pending.rio && !e.pending.logs).length;
+  const settled = entries.filter((e) => !e.pending.progression && !e.pending.logs).length;
   const loading = settled < totalCount;
 
   return (
@@ -101,12 +101,12 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
           </span>
         </div>
         <div className={classes.summaryCell}>
-          <span className={classes.summaryLabel}>Avg RIO</span>
+          <span className={classes.summaryLabel}>Avg M+</span>
           <span className={classes.summaryValue} style={{ color: "#e6ebf5" }}>
-            {stats.avgRio?.toLocaleString() ?? "-"}
+            {stats.avgRating?.toLocaleString() ?? "-"}
           </span>
           <span className={classes.summarySub}>
-            {stats.minRio != null ? `low ${stats.minRio.toLocaleString()}` : ""}
+            {stats.minRating != null ? `low ${stats.minRating.toLocaleString()}` : ""}
           </span>
         </div>
         <div className={classes.summaryCell}>
@@ -169,7 +169,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
         <Group gap={10} px={16} pb={12} pt={0} wrap="nowrap">
           <Text size="12px" c="dimmed" style={{ whiteSpace: "nowrap" }}>
             Fetching {settled} / {totalCount} character{totalCount === 1 ? "" : "s"} -
-            Blizzard, Raider.IO, Warcraft Logs
+            Blizzard, Warcraft Logs
           </Text>
           <Progress value={(settled / Math.max(totalCount, 1)) * 100} size={4} flex={1} />
         </Group>

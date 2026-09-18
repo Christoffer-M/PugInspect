@@ -19,10 +19,9 @@ export type AltCharacter = {
   avatarUrl?: Maybe<Scalars['String']['output']>;
   class?: Maybe<Scalars['String']['output']>;
   itemLevel?: Maybe<Scalars['Float']['output']>;
-  mythicPlusColor?: Maybe<Scalars['String']['output']>;
-  mythicPlusScore?: Maybe<Scalars['Float']['output']>;
+  mythicPlus?: Maybe<MythicPlus>;
   name: Scalars['String']['output'];
-  raidProgression?: Maybe<Array<RaidProgressionDetail>>;
+  raidProgression?: Maybe<Array<RaidProgress>>;
   realm: Scalars['String']['output'];
   region: Scalars['String']['output'];
 };
@@ -45,18 +44,23 @@ export type Character = {
   gender?: Maybe<Scalars['String']['output']>;
   guild?: Maybe<Guild>;
   level?: Maybe<Scalars['Int']['output']>;
+  /** Blizzard. */
+  mythicPlus?: Maybe<MythicPlus>;
   mythicPlusLogs?: Maybe<MythicPlusLogs>;
   name: Scalars['String']['output'];
   potentialAlts: Array<AltCharacter>;
   race?: Maybe<Scalars['String']['output']>;
   raidLogs?: Maybe<RaidLogs>;
-  raiderIo?: Maybe<RaiderIo>;
+  /** Blizzard. */
+  raidProgression?: Maybe<Array<RaidProgress>>;
   realm: Scalars['String']['output'];
   /**
    * Canonical API slug (der-rat-von-dalaran). Build character URLs from this;
    * clients carry no realm table of their own.
    */
   realmSlug: Scalars['String']['output'];
+  /** Raider.IO - Blizzard has no run history. */
+  recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
   region: Scalars['String']['output'];
 };
 
@@ -301,10 +305,12 @@ export type MutationUpdateRosterArgs = {
   slug: Scalars['String']['input'];
 };
 
-export type MythicPlusClass = {
-  __typename?: 'MythicPlusClass';
-  name: Scalars['String']['output'];
-  slug: Scalars['String']['output'];
+/** Mythic+ rating and best runs from Blizzard. */
+export type MythicPlus = {
+  __typename?: 'MythicPlus';
+  currentSeason?: Maybe<MythicPlusSeason>;
+  /** Null for a character with no keys that season. */
+  previousSeason?: Maybe<MythicPlusSeason>;
 };
 
 export type MythicPlusDungeon = {
@@ -338,24 +344,31 @@ export type MythicPlusRanking = {
 
 export type MythicPlusRun = {
   __typename?: 'MythicPlusRun';
-  background_image_url: Scalars['String']['output'];
-  challange_mode_id: Scalars['Int']['output'];
-  class?: Maybe<MythicPlusClass>;
-  completed_at: Scalars['String']['output'];
+  completedAt: Scalars['String']['output'];
   dungeon: Scalars['String']['output'];
-  icon_url: Scalars['String']['output'];
-  key_level: Scalars['Int']['output'];
-  keystone_upgrades: Scalars['Int']['output'];
-  role: Scalars['String']['output'];
-  short_name: Scalars['String']['output'];
-  spec?: Maybe<MythicPlusSpec>;
-  url: Scalars['String']['output'];
+  /** Keystone dungeon (challenge mode) id: the key into the client's dungeon config for icons. */
+  dungeonId: Scalars['Int']['output'];
+  keyLevel: Scalars['Int']['output'];
+  /** The character's spec in the run, e.g. Beast Mastery. */
+  spec?: Maybe<Scalars['String']['output']>;
+  /** 0 when over time, else the keystone upgrade count (1-3). */
+  upgrades: Scalars['Int']['output'];
+  /** Run page on Raider.IO; null for Blizzard runs, which have none. */
+  url?: Maybe<Scalars['String']['output']>;
 };
 
-export type MythicPlusSpec = {
-  __typename?: 'MythicPlusSpec';
-  name: Scalars['String']['output'];
-  slug: Scalars['String']['output'];
+export type MythicPlusSeason = {
+  __typename?: 'MythicPlusSeason';
+  /** Best run per dungeon, highest rated first. */
+  bestRuns: Array<MythicPlusRun>;
+  /**
+   * Raider.IO's colour for the rating (#rrggbb), from that season's current
+   * scale. Null when the scale isn't available; clients fall back to their own.
+   */
+  color?: Maybe<Scalars['String']['output']>;
+  rating: Scalars['Float']['output'];
+  /** Season slug from the season config, e.g. season-mn-2. Null if the config predates it. */
+  season?: Maybe<Scalars['String']['output']>;
 };
 
 /**
@@ -461,15 +474,16 @@ export type RaidLogs = ZoneLogs & {
   raidRankings?: Maybe<Array<RaidRanking>>;
 };
 
-export type RaidProgressionDetail = {
-  __typename?: 'RaidProgressionDetail';
-  expansion_id?: Maybe<Scalars['Int']['output']>;
-  heroic_bosses_killed?: Maybe<Scalars['Int']['output']>;
-  mythic_bosses_killed?: Maybe<Scalars['Int']['output']>;
-  normal_bosses_killed?: Maybe<Scalars['Int']['output']>;
+/**
+ * Bosses killed per difficulty in one raid, keyed by the season config's raid
+ * slug (which also holds the boss count). Raids without a kill are omitted.
+ */
+export type RaidProgress = {
+  __typename?: 'RaidProgress';
+  heroic: Scalars['Int']['output'];
+  mythic: Scalars['Int']['output'];
+  normal: Scalars['Int']['output'];
   raid: Scalars['String']['output'];
-  summary?: Maybe<Scalars['String']['output']>;
-  total_bosses?: Maybe<Scalars['Int']['output']>;
 };
 
 export type RaidRanking = {
@@ -481,15 +495,6 @@ export type RaidRanking = {
   rankPercent?: Maybe<Scalars['Float']['output']>;
   spec?: Maybe<Scalars['String']['output']>;
   totalKills?: Maybe<Scalars['Int']['output']>;
-};
-
-export type RaiderIo = {
-  __typename?: 'RaiderIo';
-  bestMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
-  currentSeason?: Maybe<SeasonScores>;
-  previousSeason?: Maybe<SeasonScores>;
-  raidProgression?: Maybe<Array<RaidProgressionDetail>>;
-  recentMythicPlusRuns?: Maybe<Array<MythicPlusRun>>;
 };
 
 export type RecentSearch = {
@@ -577,21 +582,6 @@ export type SearchResult = {
   /** Canonical API slug; build the character URL from this. */
   realmSlug: Scalars['String']['output'];
   region: Scalars['String']['output'];
-};
-
-export type SeasonScores = {
-  __typename?: 'SeasonScores';
-  all?: Maybe<Segment>;
-  dps?: Maybe<Segment>;
-  healer?: Maybe<Segment>;
-  season?: Maybe<Scalars['String']['output']>;
-  tank?: Maybe<Segment>;
-};
-
-export type Segment = {
-  __typename?: 'Segment';
-  color: Scalars['String']['output'];
-  score: Scalars['Float']['output'];
 };
 
 export type SiteStats = {

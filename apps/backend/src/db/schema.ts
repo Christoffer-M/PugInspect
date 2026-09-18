@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { RaiderIoCharacterApiResponse } from "../schema/services/raiderIo/model/CharacterApiResponse.js";
+import type { CharacterProgression } from "../schema/services/blizzard/model/Progression.js";
 import type { CharacterProfileQuery } from "../schema/services/warcraftLogs/generated/index.js";
 import type { BlizzardCharacterProfile } from "../schema/services/blizzard/model/CharacterProfile.js";
 import type { BlizzardCharacterEquipment } from "../schema/services/blizzard/model/CharacterEquipment.js";
@@ -69,8 +70,6 @@ export const characterRioSnapshots = pgTable(
     // Full raw API response stored as JSONB so that no API data is discarded.
     // The .$type<T>() annotation gives compile-time safety for consumers.
     rawData: jsonb("raw_data").$type<RaiderIoCharacterApiResponse>().notNull(),
-    // Extracted for lightweight analytics queries without JSON path operators.
-    mythicPlusScore: real("mythic_plus_score"),
   },
   (t) => [
     uniqueIndex("rio_snapshots_character_unique").on(t.characterId),
@@ -80,6 +79,26 @@ export const characterRioSnapshots = pgTable(
 
 export type CharacterRioSnapshot = typeof characterRioSnapshots.$inferSelect;
 export type NewCharacterRioSnapshot = typeof characterRioSnapshots.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// character_progression_snapshots
+// One row per character (upsert). Blizzard Mythic+ rating, best runs and raid
+// progression, stored as served (CharacterProgression) — see that type for why
+// it isn't the raw response.
+// ---------------------------------------------------------------------------
+export const characterProgressionSnapshots = pgTable(
+  "character_progression_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    rawData: jsonb("raw_data").$type<CharacterProgression>().notNull(),
+  },
+  (t) => [uniqueIndex("progression_snapshots_character_unique").on(t.characterId)]
+);
 
 // ---------------------------------------------------------------------------
 // character_wcl_snapshots

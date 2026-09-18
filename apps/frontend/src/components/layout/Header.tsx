@@ -203,7 +203,7 @@ const Header: React.FC = () => {
         <NavRow
           icon={<IconSearch size={17} color="#8b7fd4" />}
           label="Character search"
-          desc="Stats, RIO and logs"
+          desc="Stats, M+ rating and logs"
           active={!!matchRoute({ to: "/" }) || !!matchRoute({ to: "/$region/$realm/$name" })}
           onClick={() => {
             setNavOpen(false);

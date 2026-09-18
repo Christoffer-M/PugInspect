@@ -46,13 +46,13 @@ function buildLlmsTxt(): string {
 
 > A free World of Warcraft character inspector. Look up any character in the ${joinWithOr(
     regions.map((r) => r.toUpperCase())
-  )} region and read their gear, item level, Raider.IO Mythic+ score, raid progression and Warcraft Logs parse percentiles on a single page.
+  )} region and read their gear, item level, Mythic+ rating, raid progression and Warcraft Logs parse percentiles on a single page.
 
 PugInspect answers one question: how good is this character, really? It merges
 three public data sources onto one page — Blizzard's Battle.net profile API
-(gear, item level, class, specialization, race, guild, faction, achievements),
-Raider.IO (Mythic+ score, best and recent dungeon runs, raid progression) and
-Warcraft Logs (per-boss parse percentiles, DPS and HPS metrics, difficulty
+(gear, item level, class, specialization, race, guild, faction, achievements,
+Mythic+ rating, best dungeon runs, raid progression), Raider.IO (recent dungeon
+runs, and the colour scale Mythic+ ratings are shown in) and Warcraft Logs (per-boss parse percentiles, DPS and HPS metrics, difficulty
 splits) — so a guild officer vetting a pug applicant does not have to open
 three sites and reconcile them by hand.
 
@@ -86,7 +86,7 @@ not hand-maintained.
   and refreshed hourly. Answers "which spec is actually performing this
   season", as opposed to which spec is popular.
 - [Roster check](${origin}/roster): paste a raid roster export and inspect the
-  whole team at once — item level, Raider.IO score, raid progress and log
+  whole team at once — item level, M+ rating, raid progress and log
   percentiles for every character on one screen. Produces a shareable link.
 - [Privacy policy](${origin}/privacy-policy): what is collected (analytics
   only) and what is not.

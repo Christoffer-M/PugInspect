@@ -7,7 +7,7 @@ import {
 import { normalizeName, resolveRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
-import { currentRaidProgress } from "./raidProgress.js";
+import { currentRaidProgress, topTimedKey } from "./progress.js";
 import { DEFAULT_RAID } from "../generated/seasonConfig.js";
 
 const logger = createLogger({ service: "CharacterMeta" });
@@ -24,7 +24,7 @@ const BODY_BLOCK = /<!--body:start-->[\s\S]*?<!--body:end-->/;
 const EMPTY_APP = '<div id="app"></div>';
 
 const GENERIC_DESCRIPTION =
-  "View gear, Raider.IO score, raid progression and Mythic+ runs.";
+  "View gear, Mythic+ rating, raid progression and Mythic+ runs.";
 
 /** Escapes all HTML-significant characters. Route params arrive percent-decoded
  * from Express, so every user-supplied or DB-sourced value must pass through
@@ -72,13 +72,14 @@ function buildDescription(
   region: string
 ): string {
   const identity = `${displayName} on ${displayRealm} (${region.toUpperCase()})`;
+  const rating = snapshot?.progression?.mythicPlus.currentSeason?.rating;
 
   const traits = [snapshot?.race, snapshot?.specialization, snapshot?.class]
     .filter(Boolean)
     .join(" ");
   const stats = [
     snapshot?.itemLevel != null ? `ilvl ${Math.round(snapshot.itemLevel)}` : null,
-    snapshot?.mythicPlusScore != null ? `M+ score ${Math.round(snapshot.mythicPlusScore)}` : null,
+    rating != null ? `M+ rating ${Math.round(rating)}` : null,
   ].filter(Boolean);
 
   const details = [traits, ...stats].filter(Boolean).join(", ");
@@ -110,14 +111,14 @@ function buildBodySummary(
   if (!snapshot) return null;
 
   const identity = [snapshot.race, snapshot.specialization, snapshot.class].filter(Boolean).join(" ");
-  const progress = currentRaidProgress(snapshot.raidProgression);
+  const progress = currentRaidProgress(snapshot.progression?.raidProgression);
 
   const facts: [string, string][] = [];
   if (snapshot.itemLevel != null) facts.push(["Item level", String(Math.round(snapshot.itemLevel))]);
-  if (snapshot.mythicPlusScore != null) {
-    facts.push(["Mythic+ score", String(Math.round(snapshot.mythicPlusScore))]);
-  }
-  if (snapshot.topKeyLevel != null) facts.push(["Best Mythic+ key", `+${snapshot.topKeyLevel}`]);
+  const season = snapshot.progression?.mythicPlus.currentSeason;
+  const topKey = topTimedKey(season);
+  if (season) facts.push(["Mythic+ rating", String(Math.round(season.rating))]);
+  if (topKey != null) facts.push(["Best Mythic+ key", `+${topKey}`]);
   if (progress) {
     facts.push([
       "Raid progress",
@@ -145,9 +146,9 @@ function buildBodySummary(
   return `<div id="app">
   <main>
     <h1>${escapeHtml(heading)}</h1>
-    <p>${escapeHtml(intro)} This page combines gear and item level from the Blizzard
-    profile API, Mythic+ score and dungeon runs from Raider.IO, and raid parse
-    percentiles from Warcraft Logs.</p>${factList}
+    <p>${escapeHtml(intro)} This page combines gear, item level, Mythic+ rating and raid
+    progression from the Blizzard profile API, recent Mythic+ runs from Raider.IO,
+    and raid parse percentiles from Warcraft Logs.</p>${factList}
     <p>Figures are a snapshot from the last time this character was looked up, not
     live values.</p>
     <p><a href="${config.publicOrigin}/">Inspect another character</a> ·
@@ -269,7 +270,7 @@ export async function renderRosterPageHtml(region: string, slug: string): Promis
 
   const count = roster.characters.length;
   const title = `Roster Check (${count} character${count === 1 ? "" : "s"}) | PugInspect`;
-  const description = `A shared ${regionLc.toUpperCase()} raid roster - item level, Raider.IO score, raid progress and log percentiles for all ${count} characters at a glance.`;
+  const description = `A shared ${regionLc.toUpperCase()} raid roster - item level, M+ rating, raid progress and log percentiles for all ${count} characters at a glance.`;
   const canonical = `${config.publicOrigin}/roster/${regionLc}/${slug}`;
 
   const metaBlock = [

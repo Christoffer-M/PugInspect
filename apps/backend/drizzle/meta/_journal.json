@@ -148,6 +148,13 @@
       "when": 1789496663519,
       "tag": "0020_seed_character_directory",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789742840220,
+      "tag": "0021_progression_snapshots",
+      "breakpoints": true
     }
   ]
 }

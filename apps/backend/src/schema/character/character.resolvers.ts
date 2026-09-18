@@ -9,7 +9,9 @@ import {
 } from "@repo/graphql-types";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
-import { mapRaiderIo } from "../mappers/raiderIo.mapper.js";
+import { mapRecentRuns } from "../mappers/raiderIo.mapper.js";
+import { ratingColor } from "../services/raiderIo/scoreTiers.service.js";
+import type { StoredMythicPlusSeason } from "../services/blizzard/model/Progression.js";
 import { mapRaidLogs } from "../mappers/raidLogs.mapper.js";
 import { mapMythicPlusLogs } from "../mappers/mythicPlusLogs.mapper.js";
 import { mapGear } from "../mappers/gear.mapper.js";
@@ -53,8 +55,8 @@ type Profiles = Awaited<ReturnType<typeof getCharacterProfiles>>;
  *  Query.character and Query.rosterCharacters. */
 function buildCharacter(
   key: { name: string; realm: string; region: string },
-  { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId, equipment }: Profiles,
-  requested: { raiderIo: boolean; raidLogs: boolean; mythicPlusLogs: boolean; gear: boolean }
+  { blizzardProfile, blizzardAvatarUrl, rioProfile, progression, warcraftLogsProfile, characterId, equipment }: Profiles,
+  requested: { raidLogs: boolean; mythicPlusLogs: boolean; gear: boolean }
 ): CharacterWithMeta {
   return {
     name: blizzardProfile?.name ?? key.name,
@@ -64,7 +66,9 @@ function buildCharacter(
     // Internal field - not in the GraphQL schema, used by field resolvers below
     _characterId: characterId ?? null,
     ...(blizzardProfile ? mapBlizzardCharacter(blizzardProfile, blizzardAvatarUrl ?? null) : {}),
-    raiderIo: requested.raiderIo && rioProfile ? mapRaiderIo(rioProfile) : null,
+    mythicPlus: progression?.mythicPlus ?? null,
+    raidProgression: progression?.raidProgression ?? null,
+    recentMythicPlusRuns: rioProfile ? mapRecentRuns(rioProfile) : null,
     raidLogs: requested.raidLogs && warcraftLogsProfile ? mapRaidLogs(warcraftLogsProfile) : null,
     mythicPlusLogs:
       requested.mythicPlusLogs && warcraftLogsProfile ? mapMythicPlusLogs(warcraftLogsProfile) : null,
@@ -140,26 +144,29 @@ export default {
 
       const raidLogsRequested = isFieldRequested(info, "raidLogs");
       const mythicPlusLogsRequested = isFieldRequested(info, "mythicPlusLogs");
-      const raiderIoRequested = isFieldRequested(info, "raiderIo");
+      const progressionRequested =
+        isFieldRequested(info, "mythicPlus") || isFieldRequested(info, "raidProgression");
+      const recentRunsRequested = isFieldRequested(info, "recentMythicPlusRuns");
       const gearRequested = isFieldRequested(info, "gear");
       const blizzardRequested = isAnyFieldRequestedBesides(
         info,
-        new Set(["raiderIo", "raidLogs", "mythicPlusLogs", "gear"])
+        new Set(["mythicPlus", "raidProgression", "recentMythicPlusRuns", "raidLogs", "mythicPlusLogs", "gear"])
       );
 
-      const { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId, equipment } =
-        await getCharacterProfiles(args, {
+      const profiles = await getCharacterProfiles(args, {
           raidLogsRequested,
           mythicPlusLogsRequested,
-          raiderIoRequested,
+          progressionRequested,
+          recentRunsRequested,
           blizzardRequested,
           gearRequested,
           bypassCache: !cacheOnly && (args.bypassCache ?? false),
           cacheOnly,
         });
+      const { characterId } = profiles;
 
       // Search analytics — only the identity query (blizzard fields) counts as
-      // a "search", so the raiderIo/raidLogs/mythicPlusLogs follow-up queries a
+      // a "search", so the progression/raidLogs/mythicPlusLogs follow-up queries a
       // page view issues don't multi-count. Fire-and-forget. Crawler visits
       // aren't searches.
       if (characterId && blizzardRequested && !cacheOnly) {
@@ -181,9 +188,8 @@ export default {
 
       return buildCharacter(
         args,
-        { blizzardProfile, blizzardAvatarUrl, rioProfile, warcraftLogsProfile, characterId, equipment },
+        profiles,
         {
-          raiderIo: raiderIoRequested,
           raidLogs: raidLogsRequested,
           mythicPlusLogs: mythicPlusLogsRequested,
           gear: gearRequested,
@@ -222,8 +228,10 @@ export default {
         })),
       };
       // Only spend upstream quota on what the selection set actually asks
-      // for - an identity-only query must not trigger 10 RIO + WCL lookups.
-      const raiderIoRequested = isRosterCharacterFieldRequested(info, "raiderIo");
+      // for - an identity-only query must not trigger 10 progression + WCL lookups.
+      const progressionRequested =
+        isRosterCharacterFieldRequested(info, "mythicPlus") ||
+        isRosterCharacterFieldRequested(info, "raidProgression");
       const raidLogsRequested = isRosterCharacterFieldRequested(info, "raidLogs");
       // M+ parses come from the same zone-scoped WCL profile; the caller picks
       // the zone via zoneId (the companion passes the season's M+ zone).
@@ -232,12 +240,12 @@ export default {
       // "search", and 30 background achievement fetches per view is real load.
       const bundles = await getRosterProfiles(args, {
         cacheOnly: context?.isBot === true,
-        raiderIoRequested,
+        progressionRequested,
         raidLogsRequested,
         mythicPlusLogsRequested,
       });
       return bundles.map(({ name, realm, role, profiles }) => {
-        const notFound = !profiles.blizzardProfile && !profiles.rioProfile;
+        const notFound = !profiles.blizzardProfile && !profiles.progression;
         const blizz = profiles.blizzardProfile;
         return {
           name: blizz?.name ?? name,
@@ -248,7 +256,6 @@ export default {
           character: notFound
             ? null
             : buildCharacter({ name, realm, region: args.region }, profiles, {
-                raiderIo: raiderIoRequested,
                 raidLogs: raidLogsRequested,
                 mythicPlusLogs: mythicPlusLogsRequested,
                 gear: false,
@@ -366,5 +373,10 @@ export default {
       if (!parent._characterId) return [];
       return getLinkedCharacters(parent._characterId);
     },
+  },
+
+  // Derived on read, never stored: Raider.IO's scale moves during a season.
+  MythicPlusSeason: {
+    color: (season: StoredMythicPlusSeason) => ratingColor(season.season, season.rating),
   },
 };

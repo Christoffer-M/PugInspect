@@ -401,7 +401,12 @@ export const characterTypedefs = gql`
     achievementPoints: Int
     guild: Guild
     avatarUrl: String
-    raiderIo: RaiderIo
+    "Blizzard."
+    mythicPlus: MythicPlus
+    "Blizzard."
+    raidProgression: [RaidProgress!]
+    "Raider.IO - Blizzard has no run history."
+    recentMythicPlusRuns: [MythicPlusRun!]
     raidLogs(role: RoleType, metric: Metric, byBracket: Boolean): RaidLogs
     mythicPlusLogs(role: RoleType, metric: Metric): MythicPlusLogs
     potentialAlts: [AltCharacter!]!
@@ -461,9 +466,8 @@ export const characterTypedefs = gql`
     class: String
     avatarUrl: String
     itemLevel: Float
-    mythicPlusScore: Float
-    mythicPlusColor: String
-    raidProgression: [RaidProgressionDetail!]
+    mythicPlus: MythicPlus
+    raidProgression: [RaidProgress!]
   }
 
   type Guild {
@@ -471,58 +475,49 @@ export const characterTypedefs = gql`
     realm: String!
   }
 
-  type RaiderIo {
-    raidProgression: [RaidProgressionDetail!]
-    bestMythicPlusRuns: [MythicPlusRun!]
-    recentMythicPlusRuns: [MythicPlusRun!]
-    currentSeason: SeasonScores
-    previousSeason: SeasonScores
+  "Mythic+ rating and best runs from Blizzard."
+  type MythicPlus {
+    currentSeason: MythicPlusSeason
+    "Null for a character with no keys that season."
+    previousSeason: MythicPlusSeason
   }
-  
-  type SeasonScores {
+
+  type MythicPlusSeason {
+    "Season slug from the season config, e.g. season-mn-2. Null if the config predates it."
     season: String
-    all: Segment
-    dps: Segment
-    healer: Segment
-    tank: Segment
+    rating: Float!
+    """
+    Raider.IO's colour for the rating (#rrggbb), from that season's current
+    scale. Null when the scale isn't available; clients fall back to their own.
+    """
+    color: String
+    "Best run per dungeon, highest rated first."
+    bestRuns: [MythicPlusRun!]!
   }
+
   type MythicPlusRun {
+    "Keystone dungeon (challenge mode) id: the key into the client's dungeon config for icons."
+    dungeonId: Int!
     dungeon: String!
-    short_name: String!
-    challange_mode_id: Int!
-    key_level: Int!
-    completed_at: String!
-    icon_url: String!
-    background_image_url: String!
-    url: String!
-    keystone_upgrades: Int!
-    role: String!
-    spec: MythicPlusSpec
-    class: MythicPlusClass
+    keyLevel: Int!
+    completedAt: String!
+    "0 when over time, else the keystone upgrade count (1-3)."
+    upgrades: Int!
+    "The character's spec in the run, e.g. Beast Mastery."
+    spec: String
+    "Run page on Raider.IO; null for Blizzard runs, which have none."
+    url: String
   }
 
-  type MythicPlusSpec {
-    name: String!
-    slug: String!
-  }
-  type MythicPlusClass {
-    name: String!
-    slug: String!
-  }
-
-  type RaidProgressionDetail {
+  """
+  Bosses killed per difficulty in one raid, keyed by the season config's raid
+  slug (which also holds the boss count). Raids without a kill are omitted.
+  """
+  type RaidProgress {
     raid: String!
-    summary: String
-    expansion_id: Int
-    total_bosses: Int
-    normal_bosses_killed: Int
-    heroic_bosses_killed: Int
-    mythic_bosses_killed: Int
-  }
-
-  type Segment {
-    score: Float!
-    color: String!
+    normal: Int!
+    heroic: Int!
+    mythic: Int!
   }
 
   interface ZoneLogs {

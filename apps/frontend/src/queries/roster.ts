@@ -12,19 +12,19 @@ import {
   RosterLogsQueryVariables,
   RosterQuery,
   RosterQueryVariables,
-  RosterRioQuery,
-  RosterRioQueryVariables,
+  RosterProgressionQuery,
+  RosterProgressionQueryVariables,
   UpdateRosterMutation,
   UpdateRosterMutationVariables,
 } from "../graphql/graphql";
 import { queryKeys } from "../queryKeys";
 
 /** The three upstreams, each fetched on its own. */
-export const ROSTER_PARTS = ["core", "rio", "logs"] as const;
+export const ROSTER_PARTS = ["core", "progression", "logs"] as const;
 export type RosterPart = (typeof ROSTER_PARTS)[number];
 
 type CoreRow = RosterCoreQuery["rosterCharacters"][number];
-type RioCharacter = NonNullable<RosterRioQuery["rosterCharacters"][number]["character"]>;
+type ProgressionCharacter = NonNullable<RosterProgressionQuery["rosterCharacters"][number]["character"]>;
 type LogsCharacter = NonNullable<RosterLogsQuery["rosterCharacters"][number]["character"]>;
 
 /** A roster member merged from whichever parts have landed. `pending` lets the
@@ -33,7 +33,7 @@ type LogsCharacter = NonNullable<RosterLogsQuery["rosterCharacters"][number]["ch
  *  WarcraftLogs is still in flight. */
 export type RosterEntry = Omit<CoreRow, "character"> & {
   character:
-    | (NonNullable<CoreRow["character"]> & Partial<RioCharacter> & Partial<LogsCharacter>)
+    | (NonNullable<CoreRow["character"]> & Partial<ProgressionCharacter> & Partial<LogsCharacter>)
     | null;
   pending: Record<Exclude<RosterPart, "core">, boolean>;
 };
@@ -95,13 +95,13 @@ const rosterQuery = graphql(`
 /**
  * Three documents, not one: the backend spends upstream quota per selection
  * set (see `isRosterCharacterFieldRequested` in character.resolvers.ts), and
- * its roster lookup awaits RaiderIO before it starts the WarcraftLogs call.
- * Asking for both in one query therefore puts RIO's latency in front of every
- * parse. Split, each upstream lands on its own - the same shape the companion
+ * its roster lookup awaits the Blizzard progression lookup before it starts the
+ * WarcraftLogs call. Asking for both in one query therefore puts that latency in
+ * front of every parse. Split, each upstream lands on its own - the same shape the companion
  * app uses.
  *
  * Only the logs document takes a difficulty/zone, so toggling difficulty
- * refetches parses alone: identity and RIO progression are difficulty-agnostic
+ * refetches parses alone: identity and progression are difficulty-agnostic
  * (progFor derives every difficulty from the one raidProgression payload).
  */
 const rosterCoreQuery = graphql(`
@@ -129,28 +129,17 @@ const rosterCoreQuery = graphql(`
   }
 `);
 
-const rosterRioQuery = graphql(`
-  query RosterRio($region: String!, $characters: [RosterCharacterInput!]!) {
+const rosterProgressionQuery = graphql(`
+  query RosterProgression($region: String!, $characters: [RosterCharacterInput!]!) {
     rosterCharacters(region: $region, characters: $characters) {
       name
       realm
       notFound
       character {
-        raiderIo {
-          currentSeason {
-            all {
-              score
-              color
-            }
-          }
-          raidProgression {
-            raid
-            total_bosses
-            normal_bosses_killed
-            heroic_bosses_killed
-            mythic_bosses_killed
-          }
+        mythicPlus {
+          currentSeason { rating color }
         }
+        raidProgression { raid normal heroic mythic }
       }
     }
   }
@@ -279,7 +268,7 @@ const combineParts = <T,>(results: readonly PartResult<T>[]): PartResult<T>[] =>
   results.map((r) => ({ data: r.data, isError: r.isError, refetch: r.refetch }));
 
 export type RosterChunkResult = {
-  /** Defined once the core lookup lands; RIO and parses merge in as they arrive. */
+  /** Defined once the core lookup lands; progression and parses merge in as they arrive. */
   data: RosterEntry[] | undefined;
   isError: boolean;
   refetch: () => void;
@@ -308,7 +297,7 @@ export const useRosterChunks = ({
     enabled,
     retry: false,
     meta: { suppressErrorToast: true },
-    // Mirrors the backend's 900s WCL/RIO snapshot TTL.
+    // Mirrors the backend's 900s WCL/progression snapshot TTL.
     gcTime: 1000 * 60 * 15,
     staleTime: 1000 * 60 * 15,
   } as const;
@@ -328,13 +317,13 @@ export const useRosterChunks = ({
     })),
   });
 
-  const rioResults = useQueries({
+  const progressionResults = useQueries({
     combine: combineParts,
     queries: chunks.map((chunk) => ({
       ...shared,
-      queryKey: queryKeys.rosterChunk("rio", region, chunk),
-      queryFn: async (): Promise<RosterRioQuery["rosterCharacters"]> => {
-        const response = await execute<RosterRioQuery, RosterRioQueryVariables>(rosterRioQuery, {
+      queryKey: queryKeys.rosterChunk("progression", region, chunk),
+      queryFn: async (): Promise<RosterProgressionQuery["rosterCharacters"]> => {
+        const response = await execute<RosterProgressionQuery, RosterProgressionQueryVariables>(rosterProgressionQuery, {
           region,
           characters: chunk,
         });
@@ -367,7 +356,7 @@ export const useRosterChunks = ({
     () =>
       chunks.map((_, i) => {
         const core = coreResults[i];
-        const rio = rioResults[i];
+        const progression = progressionResults[i];
         const logs = logsResults[i];
         return {
           // Every part answers 1:1 with the request (the backend pads invalid
@@ -378,17 +367,17 @@ export const useRosterChunks = ({
             character: row.character
               ? {
                   ...row.character,
-                  ...(rio?.data?.[j]?.character ?? {}),
+                  ...(progression?.data?.[j]?.character ?? {}),
                   ...(logs?.data?.[j]?.character ?? {}),
                 }
               : null,
-            pending: { rio: isPending(rio), logs: isPending(logs) },
+            pending: { progression: isPending(progression), logs: isPending(logs) },
           })),
-          isError: Boolean(core?.isError || rio?.isError || logs?.isError),
-          // Retry only the parts that failed - a RIO outage shouldn't re-spend
+          isError: Boolean(core?.isError || progression?.isError || logs?.isError),
+          // Retry only the parts that failed - a Blizzard outage shouldn't re-spend
           // Blizzard and WarcraftLogs quota for the whole chunk.
           refetch: () => {
-            for (const part of [core, rio, logs]) {
+            for (const part of [core, progression, logs]) {
               if (part?.isError) part.refetch();
             }
           },
@@ -396,14 +385,14 @@ export const useRosterChunks = ({
       }),
     // chunks is rebuilt every render, so it can't be a dependency itself - its
     // length is all the mapping below actually reads from it.
-    [chunks.length, coreResults, rioResults, logsResults]
+    [chunks.length, coreResults, progressionResults, logsResults]
   );
 };
 
 /** Pre-fill the part caches for an edited character list from rows we already
  *  have, so an edit re-renders in place instead of dropping every card back to
  *  a skeleton (and refetching data that can't have changed). Each part seeds
- *  independently, so an edit made before RIO or the parses landed still carries
+ *  independently, so an edit made before progression or the parses landed still carries
  *  the identity rows across. */
 export const useSeedRosterChunks = (region: string, difficulty: Difficulty) => {
   const queryClient = useQueryClient();

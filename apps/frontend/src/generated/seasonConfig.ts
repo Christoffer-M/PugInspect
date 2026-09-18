@@ -15,6 +15,8 @@ export type RaidInfo = {
   zoneId?: number;
   displayName: string;
   expansion: number;
+  /** Boss count Blizzard tracks progression over; absent for a logs-only raid. */
+  bosses?: number;
 };
 
 export const EXPANSION_DISPLAY_NAMES: Record<number, string> = {
@@ -42,27 +44,32 @@ export const RAIDS: Record<string, RaidInfo> = {
   "the-venomous-abyss": {
     "zoneId": 53,
     "displayName": "The Venomous Abyss",
-    "expansion": 11
+    "expansion": 11,
+    "bosses": 8
   },
   "sporefall": {
     "zoneId": 50,
     "displayName": "Sporefall",
-    "expansion": 11
+    "expansion": 11,
+    "bosses": 1
   },
   "tier-mn-1": {
     "zoneId": 46,
     "displayName": "The Voidspire, The Dreamrift, March on Quel'Danas",
-    "expansion": 11
+    "expansion": 11,
+    "bosses": 9
   },
   "manaforge-omega": {
     "zoneId": 44,
     "displayName": "Manaforge Omega",
-    "expansion": 10
+    "expansion": 10,
+    "bosses": 8
   },
   "liberation-of-undermine": {
     "zoneId": 42,
     "displayName": "Liberation of Undermine",
-    "expansion": 10
+    "expansion": 10,
+    "bosses": 8
   },
   "blackrock-depths": {
     "zoneId": 40,
@@ -72,37 +79,26 @@ export const RAIDS: Record<string, RaidInfo> = {
   "nerubar-palace": {
     "zoneId": 38,
     "displayName": "Nerub-ar Palace",
-    "expansion": 10
-  },
-  "awakened-amirdrassil-the-dreams-hope": {
-    "zoneId": 35,
-    "displayName": "Awakened Amirdrassil, the Dream's Hope",
-    "expansion": 9
-  },
-  "awakened-aberrus-the-shadowed-crucible": {
-    "zoneId": 33,
-    "displayName": "Awakened Aberrus, the Shadowed Crucible",
-    "expansion": 9
-  },
-  "awakened-vault-of-the-incarnates": {
-    "zoneId": 31,
-    "displayName": "Awakened Vault of the Incarnates",
-    "expansion": 9
+    "expansion": 10,
+    "bosses": 8
   },
   "amirdrassil-the-dreams-hope": {
     "zoneId": 35,
     "displayName": "Amirdrassil, the Dream's Hope",
-    "expansion": 9
+    "expansion": 9,
+    "bosses": 9
   },
   "aberrus-the-shadowed-crucible": {
     "zoneId": 33,
     "displayName": "Aberrus, the Shadowed Crucible",
-    "expansion": 9
+    "expansion": 9,
+    "bosses": 9
   },
   "vault-of-the-incarnates": {
     "zoneId": 31,
     "displayName": "Vault of the Incarnates",
-    "expansion": 9
+    "expansion": 9,
+    "bosses": 8
   }
 };
 
