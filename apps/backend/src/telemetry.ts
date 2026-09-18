@@ -48,15 +48,6 @@ export const serverRootsOnly = new tracing.ParentBasedSampler({
   remoteParentNotSampled: serverKindOnly,
 });
 
-let sdk: NodeSDK | undefined;
-
-/** Flushes and stops the SDK. For one-off scripts: the batch processors export
- *  every few seconds, so a script that just exits loses its last logs — often
- *  the summary line. A no-op when telemetry is off. */
-export async function shutdownTelemetry(): Promise<void> {
-  await sdk?.shutdown();
-}
-
 if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
   // ESM modules can only be patched through a loader hook. Scoped to what the
   // instrumentations below patch; fetch needs no hook (diagnostics_channel).
@@ -64,7 +55,7 @@ if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
     data: { include: ["http", "pg", "graphql"] },
   });
 
-  sdk = new NodeSDK({
+  const sdk = new NodeSDK({
     serviceName: process.env.OTEL_SERVICE_NAME ?? "puginspect-backend",
     sampler: serverRootsOnly,
     // No metrics. Logs are left to the SDK's env default (OTLP, same endpoint
