@@ -62,11 +62,11 @@ const Row = React.memo(function Row({
   const prog = entry ? progFor(entry, difficulty) : null;
   const name = character?.name ?? upperCaseFirstLetter(hint.name);
   const realm = upperCaseFirstLetter(character?.realm ?? hint.realm);
-  const rio = character?.raiderIo?.currentSeason?.all?.score;
+  const rio = character?.mythicPlus?.currentSeason?.rating;
   const best = character?.raidLogs?.bestPerformanceAverage;
-  // RIO and parses land after identity, so a resolved row can still be waiting
+  // Progression and parses land after identity, so a resolved row can still be waiting
   // on them - a dash there would read as "no score" / "no logs".
-  const rioPending = entry?.pending.rio === true;
+  const progressionPending = entry?.pending.progression === true;
   const logsPending = entry?.pending.logs === true;
   // Cast keeps `href` typed; React drops it when it's undefined on a div.
   const Tag = (notFound ? "div" : "a") as "a";
@@ -111,17 +111,17 @@ const Row = React.memo(function Row({
       >
         {character?.equippedItemLevel ?? "-"}
       </span>
-      {rioPending ? (
+      {progressionPending ? (
         <Skeleton h={12} w={40} />
       ) : (
         <span
           className={classes.rowValue}
-          style={{ color: character?.raiderIo?.currentSeason?.all?.color ?? "var(--mantine-color-dark-2)" }}
+          style={{ color: character?.mythicPlus?.currentSeason?.color ?? "var(--mantine-color-dark-2)" }}
         >
           {rio != null ? Math.round(rio).toLocaleString() : "-"}
         </span>
       )}
-      {rioPending ? (
+      {progressionPending ? (
         <Skeleton h={12} w={40} />
       ) : (
         <span
@@ -138,7 +138,7 @@ const Row = React.memo(function Row({
         </span>
       ) : (
         <Text size="11.5px" c="dimmed">
-          {rioPending || (prog && prog.kills > 0) ? "no logs" : "no kills"}
+          {progressionPending || (prog && prog.kills > 0) ? "no logs" : "no kills"}
         </Text>
       )}
       <span className={classes.rowParse}>

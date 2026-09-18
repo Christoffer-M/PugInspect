@@ -25,18 +25,20 @@ function snapshot(overrides: Partial<CharacterSeoSnapshot> = {}): CharacterSeoSn
     race: "Orc",
     thumbnailUrl: null,
     itemLevel: 678.4,
-    mythicPlusScore: 2801.7,
-    mythicPlusColor: null,
-    topKeyLevel: 14,
-    raidProgression: {
-      [DEFAULT_RAID]: {
-        summary: "4/8 M",
-        expansion_id: 11,
-        total_bosses: 8,
-        normal_bosses_killed: 8,
-        heroic_bosses_killed: 8,
-        mythic_bosses_killed: 4,
+    progression: {
+      mythicPlus: {
+        currentSeason: {
+          season: "season-mn-2",
+          rating: 2801.7,
+          color: null,
+          bestRuns: [
+            { dungeonId: 1, dungeon: "A", keyLevel: 15, upgrades: 0, completedAt: "", spec: null, url: null },
+            { dungeonId: 2, dungeon: "B", keyLevel: 14, upgrades: 1, completedAt: "", spec: null, url: null },
+          ],
+        },
+        previousSeason: null,
       },
+      raidProgression: [{ raid: DEFAULT_RAID, normal: 8, heroic: 8, mythic: 4 }],
     },
     ...overrides,
   };
@@ -150,7 +152,7 @@ describe("renderCharacterPageHtml", () => {
 
   it("omits facts the snapshot doesn't have", async () => {
     vi.mocked(getCharacterSeoSnapshot).mockResolvedValue(
-      snapshot({ itemLevel: null, mythicPlusScore: null, topKeyLevel: null, raidProgression: null })
+      snapshot({ itemLevel: null, progression: null })
     );
 
     const html = await renderCharacterPageHtml("eu", "kazzak", "pugsley");

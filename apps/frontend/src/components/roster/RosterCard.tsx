@@ -6,7 +6,7 @@ import type { RosterEntry } from "../../queries/roster";
 import { SpecImage } from "../ui/SpecImage";
 import { ParsePill, ROLE_COLORS } from "@repo/ui";
 import { getClassColor, normalizeRealm, upperCaseFirstLetter } from "../../util/util";
-import { DEFAULT_RAID, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
+import { DEFAULT_RAID, RAIDS, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import { CLASS_FILE_NAMES } from "../../util/rosterImport";
 import classes from "./Roster.module.css";
 
@@ -20,21 +20,20 @@ const DIFFICULTY_META: Record<string, { letter: string; word: string; color: str
   [Difficulty.Mythic]: { letter: "M", word: "Mythic", color: RAID_DIFFICULTY_COLORS.mythic },
 };
 
-/** Boss kills at the given difficulty for the current raid, from RIO's
- *  all-difficulty progression (so a difficulty toggle never refetches this). */
+/** Boss kills at the given difficulty for the current raid, from the
+ *  all-difficulty progression (so a difficulty toggle never refetches this).
+ *  Null until progression has loaded; a raid without a kill has no entry. */
 export function progFor(
   entry: RosterEntry,
   difficulty: Difficulty
 ): { kills: number; total: number } | null {
-  const prog = entry.character?.raiderIo?.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
-  if (!prog || prog.total_bosses == null) return null;
+  const progression = entry.character?.raidProgression;
+  const total = RAIDS[DEFAULT_RAID]?.bosses;
+  if (!progression || total == null) return null;
+  const prog = progression.find((r) => r.raid === DEFAULT_RAID);
   const kills =
-    difficulty === Difficulty.Normal
-      ? prog.normal_bosses_killed
-      : difficulty === Difficulty.Heroic
-        ? prog.heroic_bosses_killed
-        : prog.mythic_bosses_killed;
-  return { kills: kills ?? 0, total: prog.total_bosses };
+    difficulty === Difficulty.Normal ? prog?.normal : difficulty === Difficulty.Heroic ? prog?.heroic : prog?.mythic;
+  return { kills: kills ?? 0, total };
 }
 
 export type RosterCardHint = {
@@ -75,9 +74,9 @@ export const RosterCard = React.memo(function RosterCard({
   const best = character?.raidLogs?.bestPerformanceAverage;
   const median = character?.raidLogs?.medianPerformanceAverage;
   const name = character?.name ?? upperCaseFirstLetter(hint.name);
-  // RIO and parses arrive after the identity lookup, so a found card renders
+  // Progression and parses arrive after the identity lookup, so a found card renders
   // with those cells still in flight - a dash there would read as "no score".
-  const rioPending = entry?.pending.rio === true;
+  const progressionPending = entry?.pending.progression === true;
   const logsPending = entry?.pending.logs === true;
 
   const characterUrl = `/${region.toLowerCase()}/${character?.realmSlug ?? normalizeRealm(hint.realm)}/${name.toLowerCase()}`;
@@ -183,22 +182,22 @@ export const RosterCard = React.memo(function RosterCard({
             </div>
             <div className={classes.statCell}>
               <span className={classes.statLabel}>RIO</span>
-              {rioPending ? (
+              {progressionPending ? (
                 <Skeleton h={14} w={44} mt={3} />
               ) : (
                 <span
                   className={classes.statValue}
-                  style={{ color: character?.raiderIo?.currentSeason?.all?.color ?? "var(--mantine-color-dark-2)" }}
+                  style={{ color: character?.mythicPlus?.currentSeason?.color ?? "var(--mantine-color-dark-2)" }}
                 >
-                  {character?.raiderIo?.currentSeason?.all?.score != null
-                    ? Math.round(character.raiderIo.currentSeason.all.score).toLocaleString()
+                  {character?.mythicPlus?.currentSeason
+                    ? Math.round(character.mythicPlus.currentSeason.rating).toLocaleString()
                     : "-"}
                 </span>
               )}
             </div>
             <div className={classes.statCell}>
               <span className={classes.statLabel}>Prog</span>
-              {rioPending ? (
+              {progressionPending ? (
                 <Skeleton h={14} w={44} mt={3} />
               ) : (
                 <span
@@ -235,7 +234,7 @@ export const RosterCard = React.memo(function RosterCard({
             <div className={classes.noLogs} style={{ marginTop: 10 }}>
               <IconChartBarOff size={14} color="var(--mantine-color-dark-2)" />
               <Text size="12px" c="dimmed">
-                {rioPending || (prog && prog.kills > 0)
+                {progressionPending || (prog && prog.kills > 0)
                   ? `No logged ${diff.word} pulls`
                   : `No ${diff.word} kills yet`}
               </Text>

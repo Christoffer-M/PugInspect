@@ -14,7 +14,7 @@ export function withSpan<T>(name: string, attributes: Attributes, fn: () => Prom
   });
 }
 
-type CacheSource = "blizzard_profile" | "blizzard_equipment" | "raiderio" | "wcl";
+type CacheSource = "blizzard_profile" | "blizzard_equipment" | "blizzard_progression" | "raiderio" | "wcl";
 
 /** Where one upstream's data came from for the active span: the DB snapshot or
  *  a real upstream call. */

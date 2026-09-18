@@ -124,7 +124,7 @@ export function useCompanion(events: Events) {
   const eventsRef = useRef(events);
   eventsRef.current = events;
   const seenRef = useRef<Record<string, number>>({});
-  const pending = useRef<{ region: string; parts: Record<Part, Applicant[]> }>({ region: "", parts: { core: [], rio: [], logs: [] } });
+  const pending = useRef<{ region: string; parts: Record<Part, Applicant[]> }>({ region: "", parts: { core: [], progression: [], logs: [] } });
   const debounce = useRef<number | undefined>(undefined);
 
   /** One part for one chunk; each part runs its own chunks so a slow upstream
@@ -198,7 +198,7 @@ export function useCompanion(events: Events) {
     const isKeys = sessionRef.current?.difficulty === "+";
     const difficulty = gqlDifficulty(sessionRef.current?.difficulty ?? "");
     const scope = isKeys ? { zoneId: MYTHIC_PLUS_ZONE_ID } : { difficulty };
-    pending.current = { region, parts: { core: [], rio: [], logs: [] } };
+    pending.current = { region, parts: { core: [], progression: [], logs: [] } };
     const queued = new Set(PARTS.flatMap((p) => parts[p].map(keyOf)));
     if (queued.size) count("lookups", queued.size);
     for (const p of PARTS) void runPart(p, region, parts[p], scope);

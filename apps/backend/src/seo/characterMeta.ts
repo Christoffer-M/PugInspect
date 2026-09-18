@@ -7,7 +7,7 @@ import {
 import { normalizeName, resolveRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
-import { currentRaidProgress } from "./raidProgress.js";
+import { currentRaidProgress, topTimedKey } from "./progress.js";
 import { DEFAULT_RAID } from "../generated/seasonConfig.js";
 
 const logger = createLogger({ service: "CharacterMeta" });
@@ -72,13 +72,14 @@ function buildDescription(
   region: string
 ): string {
   const identity = `${displayName} on ${displayRealm} (${region.toUpperCase()})`;
+  const rating = snapshot?.progression?.mythicPlus.currentSeason?.rating;
 
   const traits = [snapshot?.race, snapshot?.specialization, snapshot?.class]
     .filter(Boolean)
     .join(" ");
   const stats = [
     snapshot?.itemLevel != null ? `ilvl ${Math.round(snapshot.itemLevel)}` : null,
-    snapshot?.mythicPlusScore != null ? `M+ score ${Math.round(snapshot.mythicPlusScore)}` : null,
+    rating != null ? `M+ score ${Math.round(rating)}` : null,
   ].filter(Boolean);
 
   const details = [traits, ...stats].filter(Boolean).join(", ");
@@ -110,14 +111,14 @@ function buildBodySummary(
   if (!snapshot) return null;
 
   const identity = [snapshot.race, snapshot.specialization, snapshot.class].filter(Boolean).join(" ");
-  const progress = currentRaidProgress(snapshot.raidProgression);
+  const progress = currentRaidProgress(snapshot.progression?.raidProgression);
 
   const facts: [string, string][] = [];
   if (snapshot.itemLevel != null) facts.push(["Item level", String(Math.round(snapshot.itemLevel))]);
-  if (snapshot.mythicPlusScore != null) {
-    facts.push(["Mythic+ score", String(Math.round(snapshot.mythicPlusScore))]);
-  }
-  if (snapshot.topKeyLevel != null) facts.push(["Best Mythic+ key", `+${snapshot.topKeyLevel}`]);
+  const season = snapshot.progression?.mythicPlus.currentSeason;
+  const topKey = topTimedKey(season);
+  if (season) facts.push(["Mythic+ score", String(Math.round(season.rating))]);
+  if (topKey != null) facts.push(["Best Mythic+ key", `+${topKey}`]);
   if (progress) {
     facts.push([
       "Raid progress",

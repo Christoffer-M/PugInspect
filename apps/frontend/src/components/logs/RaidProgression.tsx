@@ -1,13 +1,13 @@
 import { Grid, Paper, RingProgress, Select, Stack, Text } from "@mantine/core";
-import { RaidProgressionDetail } from "../../graphql/graphql";
+import { RaidProgress } from "../../graphql/graphql";
 import { getRaidExpansion, RAIDS } from "../../data/raidZones";
 import { useMemo } from "react";
 import { SectionTitle } from "@repo/ui";
 import classes from "./RaidProgression.module.css";
 
 // Options come straight from the generated RAIDS map (release order, newest
-// first) — independent of the character's raid_progression data, which is
-// only used for the selected raid's kill counts.
+// first) — independent of the character's progression, which only has entries
+// for raids with a kill.
 const RAID_OPTIONS = (() => {
   const groups: Record<string, { value: string; label: string }[]> = {};
   for (const [slug, raid] of Object.entries(RAIDS)) {
@@ -18,7 +18,7 @@ const RAID_OPTIONS = (() => {
 })();
 
 type RaidProgressionProps = {
-  raidData: RaidProgressionDetail[];
+  raidData: RaidProgress[];
   isLoading: boolean;
   selectedRaid?: string | null;
   onRaidChange?: (raid: string | null) => void;
@@ -41,20 +41,11 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
     [raidData, selectedRaid],
   );
 
-  const total = raidDataItem?.total_bosses || 1;
+  const total = (selectedRaid && RAIDS[selectedRaid]?.bosses) || 1;
 
-  const normalKilled =
-    !isLoading && raidDataItem?.normal_bosses_killed
-      ? raidDataItem.normal_bosses_killed
-      : 0;
-  const heroicKilled =
-    !isLoading && raidDataItem?.heroic_bosses_killed
-      ? raidDataItem.heroic_bosses_killed
-      : 0;
-  const mythicKilled =
-    !isLoading && raidDataItem?.mythic_bosses_killed
-      ? raidDataItem.mythic_bosses_killed
-      : 0;
+  const normalKilled = !isLoading ? (raidDataItem?.normal ?? 0) : 0;
+  const heroicKilled = !isLoading ? (raidDataItem?.heroic ?? 0) : 0;
+  const mythicKilled = !isLoading ? (raidDataItem?.mythic ?? 0) : 0;
 
   const rings = [
     { label: "Normal", killed: normalKilled, color: DIFFICULTY_COLORS.Normal },
@@ -100,9 +91,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
                       lh={1.2}
                       ff="Space Grotesk, system-ui, sans-serif"
                     >
-                      {raidDataItem
-                        ? `${killed}/${raidDataItem.total_bosses}`
-                        : "0/0"}
+                      {`${killed}/${total}`}
                     </Text>
                   }
                   sections={[{ value: (killed / total) * 100, color }]}

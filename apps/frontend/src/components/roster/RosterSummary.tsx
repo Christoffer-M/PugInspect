@@ -33,7 +33,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
       .map((e) => e.character!.equippedItemLevel)
       .filter((v): v is number => v != null);
     const rios = found
-      .map((e) => e.character!.raiderIo?.currentSeason?.all?.score)
+      .map((e) => e.character!.mythicPlus?.currentSeason?.rating)
       .filter((v): v is number => v != null)
       .map(Math.round);
     const progs = found
@@ -74,7 +74,7 @@ export const RosterSummary: React.FC<RosterSummaryProps> = ({ entries, totalCoun
   // A member counts as fetched only once all three upstreams have answered for
   // it - the identity lookup lands first, and calling that "done" would park
   // the bar at 100% while scores and parses are still arriving.
-  const settled = entries.filter((e) => !e.pending.rio && !e.pending.logs).length;
+  const settled = entries.filter((e) => !e.pending.progression && !e.pending.logs).length;
   const loading = settled < totalCount;
 
   return (

@@ -3,11 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { graphql } from "../graphql";
 import { execute } from "../api/graphqlClient";
 import { queryKeys } from "../queryKeys";
-import {
-  Character,
-  CharacterInfoQuery,
-  CharacterInfoQueryVariables,
-} from "../graphql/graphql";
+import { CharacterInfoQuery, CharacterInfoQueryVariables } from "../graphql/graphql";
+
+/** The character as this query selects it — not the full schema type. */
+export type CharacterInfo = NonNullable<CharacterInfoQuery["character"]>;
+export type AltInfo = CharacterInfo["potentialAlts"][number];
 
 export const CharacterInfoQueryDoc = graphql(`
   query CharacterInfo($name: String!, $realm: String!, $region: String!, $bypassCache: Boolean) {
@@ -37,16 +37,10 @@ export const CharacterInfoQueryDoc = graphql(`
         class
         avatarUrl
         itemLevel
-        mythicPlusScore
-        mythicPlusColor
-        raidProgression {
-          raid
-          summary
-          total_bosses
-          normal_bosses_killed
-          heroic_bosses_killed
-          mythic_bosses_killed
+        mythicPlus {
+          currentSeason { rating color }
         }
+        raidProgression { raid normal heroic mythic }
       }
     }
   }
@@ -63,7 +57,7 @@ export const useCharacterInfoQuery = ({
   useQuery({
     queryKey: queryKeys.character(name, realm, region),
     retry: false,
-    queryFn: async (): Promise<Character | undefined | null> => {
+    queryFn: async (): Promise<CharacterInfo | undefined | null> => {
       const response = await execute<CharacterInfoQuery, CharacterInfoQueryVariables>(
         CharacterInfoQueryDoc,
         {

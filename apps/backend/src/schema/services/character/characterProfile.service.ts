@@ -3,6 +3,7 @@ import { GraphQLError } from "graphql";
 import { trace } from "@opentelemetry/api";
 import { BlizzardService } from "../blizzard/blizzard.services.js";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
+import { ProgressionService } from "../blizzard/progression.service.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
 
 type CharacterCtx = { name: string; realm: string; region: string };
@@ -31,20 +32,32 @@ export async function getCharacterProfiles(
   {
     raidLogsRequested,
     mythicPlusLogsRequested,
-    raiderIoRequested,
+    progressionRequested,
+    recentRunsRequested,
     blizzardRequested,
     gearRequested,
     bypassCache,
     cacheOnly = false,
-  }: { raidLogsRequested: boolean; mythicPlusLogsRequested: boolean; raiderIoRequested: boolean; blizzardRequested: boolean; gearRequested: boolean; bypassCache: boolean; cacheOnly?: boolean }
+  }: {
+    raidLogsRequested: boolean;
+    mythicPlusLogsRequested: boolean;
+    /** mythicPlus / raidProgression - Blizzard. */
+    progressionRequested: boolean;
+    /** recentMythicPlusRuns - the only thing still fetched from Raider.IO. */
+    recentRunsRequested: boolean;
+    blizzardRequested: boolean;
+    gearRequested: boolean;
+    bypassCache: boolean;
+    cacheOnly?: boolean;
+  }
 ) {
   const { name, realm, region } = args;
 
-  const [blizzardResult, rioResult, logsResult, equipmentResult] = await Promise.allSettled([
+  const [blizzardResult, rioResult, logsResult, equipmentResult, progressionResult] = await Promise.allSettled([
     blizzardRequested
       ? BlizzardService.getCharacterProfile(args, bypassCache, cacheOnly)
       : Promise.resolve(null),
-    raiderIoRequested
+    recentRunsRequested
       ? RaiderIOService.getCharacterProfile(args, bypassCache, cacheOnly)
       : Promise.resolve(null),
     raidLogsRequested || mythicPlusLogsRequested
@@ -53,12 +66,16 @@ export async function getCharacterProfiles(
     gearRequested
       ? BlizzardService.getCharacterEquipment(args, bypassCache, cacheOnly)
       : Promise.resolve(null),
+    progressionRequested
+      ? ProgressionService.getProgression(args, bypassCache, cacheOnly)
+      : Promise.resolve(null),
   ]);
 
   if (blizzardResult.status === "rejected") recordRejection("Blizzard", blizzardResult.reason, { name, realm, region });
   if (rioResult.status === "rejected") recordRejection("RaiderIO", rioResult.reason, { name, realm, region });
   if (logsResult.status === "rejected") recordRejection("WarcraftLogs", logsResult.reason, { name, realm, region });
   if (equipmentResult.status === "rejected") recordRejection("Blizzard equipment", equipmentResult.reason, { name, realm, region });
+  if (progressionResult.status === "rejected") recordRejection("Blizzard progression", progressionResult.reason, { name, realm, region });
   // WCL answers a missing character with a null payload, not a rejection.
   if (logsResult.status === "fulfilled" && logsResult.value && !logsResult.value.data) {
     recordUpstreamMiss("WarcraftLogs", "NOT_FOUND", { name, realm, region });
@@ -71,5 +88,6 @@ export async function getCharacterProfiles(
     rioProfile: rioResult.status === "fulfilled" ? rioResult.value?.data : undefined,
     warcraftLogsProfile: logsResult.status === "fulfilled" ? logsResult.value?.data : undefined,
     equipment: equipmentResult.status === "fulfilled" ? equipmentResult.value?.data : undefined,
+    progression: progressionResult.status === "fulfilled" ? progressionResult.value?.data : undefined,
   };
 }

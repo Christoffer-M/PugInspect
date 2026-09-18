@@ -4,10 +4,14 @@ import { GraphQLError } from "graphql";
 import { getCharacterProfiles } from "./characterProfile.service.js";
 import { BlizzardService } from "../blizzard/blizzard.services.js";
 import { RaiderIOService } from "../raiderIo/raiderio.services.js";
+import { ProgressionService } from "../blizzard/progression.service.js";
 import { WarcraftLogsService } from "../warcraftLogs/warcraftlogs.services.js";
 
 vi.mock("../blizzard/blizzard.services.js", () => ({
   BlizzardService: { getCharacterProfile: vi.fn(), getCharacterEquipment: vi.fn() },
+}));
+vi.mock("../blizzard/progression.service.js", () => ({
+  ProgressionService: { getProgression: vi.fn() },
 }));
 vi.mock("../raiderIo/raiderio.services.js", () => ({
   RaiderIOService: { getCharacterProfile: vi.fn() },
@@ -34,13 +38,17 @@ beforeEach(() => {
   vi.mocked(WarcraftLogsService.getCharacterProfile).mockImplementation(() =>
     after({ data: {}, fetchedAt: 0 } as never)
   );
+  vi.mocked(ProgressionService.getProgression).mockImplementation(() =>
+    after({ data: {}, fetchedAt: 0 } as never)
+  );
 });
 
 const args = { name: "pugsley", realm: "kazzak", region: "eu" };
 const allRequested = {
   raidLogsRequested: true,
   mythicPlusLogsRequested: false,
-  raiderIoRequested: true,
+  progressionRequested: true,
+  recentRunsRequested: true,
   blizzardRequested: true,
   gearRequested: true,
   bypassCache: false,
@@ -56,7 +64,7 @@ describe("getCharacterProfiles", () => {
     await getCharacterProfiles(args, allRequested);
     const elapsed = Date.now() - start;
 
-    // Serialized, four 50ms upstreams would take ~200ms.
+    // Serialized, five 50ms upstreams would take ~250ms.
     expect(elapsed).toBeLessThan(UPSTREAM_DELAY_MS * 2.5);
   });
 
@@ -67,6 +75,7 @@ describe("getCharacterProfiles", () => {
     expect(profiles.rioProfile).toBeDefined();
     expect(profiles.warcraftLogsProfile).toBeDefined();
     expect(profiles.equipment).toBeDefined();
+    expect(profiles.progression).toBeDefined();
     expect(profiles.characterId).toBe("id");
   });
 
@@ -115,13 +124,15 @@ describe("getCharacterProfiles", () => {
   it("skips the upstreams the selection set didn't ask for", async () => {
     await getCharacterProfiles(args, {
       ...allRequested,
-      raiderIoRequested: false,
+      progressionRequested: false,
+      recentRunsRequested: false,
       raidLogsRequested: false,
       gearRequested: false,
     });
 
     expect(BlizzardService.getCharacterProfile).toHaveBeenCalled();
     expect(RaiderIOService.getCharacterProfile).not.toHaveBeenCalled();
+    expect(ProgressionService.getProgression).not.toHaveBeenCalled();
     expect(WarcraftLogsService.getCharacterProfile).not.toHaveBeenCalled();
     expect(BlizzardService.getCharacterEquipment).not.toHaveBeenCalled();
   });

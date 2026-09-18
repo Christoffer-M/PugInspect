@@ -5,7 +5,7 @@ import type {
   Difficulty,
   RosterCharacterInput,
   RosterCharactersCoreQuery,
-  RosterCharactersRioQuery,
+  RosterCharactersProgressionQuery,
 } from "./graphql/graphql";
 
 const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL ?? "https://puginspect.com/graphql";
@@ -30,17 +30,15 @@ const CORE = graphql(`
   }
 `);
 
-const RIO = graphql(`
-  query RosterCharactersRio($region: String!, $characters: [RosterCharacterInput!]!) {
+const PROGRESSION = graphql(`
+  query RosterCharactersProgression($region: String!, $characters: [RosterCharacterInput!]!) {
     rosterCharacters(region: $region, characters: $characters) {
       name
       realm
       notFound
       character {
-        raiderIo {
-          currentSeason { all { score color } }
-          raidProgression { raid total_bosses normal_bosses_killed heroic_bosses_killed mythic_bosses_killed }
-        }
+        mythicPlus { currentSeason { rating color } }
+        raidProgression { raid normal heroic mythic }
       }
     }
   }
@@ -73,18 +71,18 @@ const KEY_LOGS = graphql(`
 `);
 
 /** The three upstreams, each fetched on its own. */
-export const PARTS = ["core", "rio", "logs"] as const;
+export const PARTS = ["core", "progression", "logs"] as const;
 export type Part = (typeof PARTS)[number];
 
 type CoreRow = RosterCharactersCoreQuery["rosterCharacters"][number];
-type RioCharacter = NonNullable<RosterCharactersRioQuery["rosterCharacters"][number]["character"]>;
+type ProgressionCharacter = NonNullable<RosterCharactersProgressionQuery["rosterCharacters"][number]["character"]>;
 
 /** A looked-up applicant, merged from whichever parts have landed. `logs` is the
  *  best-performance average for whichever parses the listing called for, so the
  *  UI needs no raid/keys branch. */
 export type RosterEntry = Omit<CoreRow, "character"> & {
   character:
-    | (NonNullable<CoreRow["character"]> & Partial<RioCharacter> & { logs?: number | null })
+    | (NonNullable<CoreRow["character"]> & Partial<ProgressionCharacter> & { logs?: number | null })
     | null;
 };
 
@@ -100,7 +98,7 @@ export async function lookupCharacters(
 ): Promise<RosterEntry[]> {
   const keys = "zoneId" in scope;
   const logs = part === "logs";
-  const query = part === "core" ? CORE : part === "rio" ? RIO : keys ? KEY_LOGS : RAID_LOGS;
+  const query = part === "core" ? CORE : part === "progression" ? PROGRESSION : keys ? KEY_LOGS : RAID_LOGS;
   const response = await fetch(GRAPHQL_URL, {
     method: "POST",
     headers: {

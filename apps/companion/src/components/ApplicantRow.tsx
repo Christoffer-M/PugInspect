@@ -6,7 +6,7 @@ import roleDps from "../assets/role-dps.png";
 import roleHealer from "../assets/role-healer.png";
 import roleTank from "../assets/role-tank.png";
 import { CLASS_FILE_NAMES, RAID_DIFFICULTY_COLORS, getClassColor, getParseColor } from "@repo/ui";
-import { DEFAULT_RAID } from "../generated/seasonConfig";
+import { DEFAULT_RAID, DEFAULT_RAID_BOSSES } from "../generated/seasonConfig";
 import type { Part, RosterEntry } from "../api";
 import { CLASS_BY_ID, errorOf, type Applicant, type Lookup } from "../state";
 import app from "../App.module.css";
@@ -29,21 +29,23 @@ function RoleBadge({ role }: { role: Applicant["role"] }) {
 }
 
 const TIERS = {
-  M: ["M", "mythic_bosses_killed", RAID_DIFFICULTY_COLORS.mythic],
-  H: ["H", "heroic_bosses_killed", RAID_DIFFICULTY_COLORS.heroic],
-  N: ["N", "normal_bosses_killed", RAID_DIFFICULTY_COLORS.normal],
+  M: ["M", "mythic", RAID_DIFFICULTY_COLORS.mythic],
+  H: ["H", "heroic", RAID_DIFFICULTY_COLORS.heroic],
+  N: ["N", "normal", RAID_DIFFICULTY_COLORS.normal],
 } as const;
 
 /** Kills on the season's raid (same DEFAULT_RAID the web app uses) at the listing's
  *  difficulty, or the highest difficulty with a kill when the listing is not a raid. */
 function progOf(entry: RosterEntry | undefined, difficulty: string): { text: string; color: string } | null {
-  const p = entry?.character?.raiderIo?.raidProgression?.find((r) => r.raid === DEFAULT_RAID);
-  if (!p || p.total_bosses == null) return null;
+  const progression = entry?.character?.raidProgression;
+  if (!progression) return null;
+  // A raid without a kill has no entry.
+  const p = progression.find((r) => r.raid === DEFAULT_RAID);
   const wanted = TIERS[difficulty as keyof typeof TIERS];
-  const tiers = (wanted ? [wanted] : [TIERS.M, TIERS.H, TIERS.N]).map(([l, k, c]) => [l, p[k], c] as const);
-  const hit = tiers.find(([, kills]) => (kills ?? 0) > 0);
-  if (!hit) return { text: `0/${p.total_bosses}`, color: DIM };
-  return { text: `${hit[1]}/${p.total_bosses} ${hit[0]}`, color: hit[2] };
+  const tiers = (wanted ? [wanted] : [TIERS.M, TIERS.H, TIERS.N]).map(([l, k, c]) => [l, p?.[k] ?? 0, c] as const);
+  const hit = tiers.find(([, kills]) => kills > 0);
+  if (!hit) return { text: `0/${DEFAULT_RAID_BOSSES}`, color: DIM };
+  return { text: `${hit[1]}/${DEFAULT_RAID_BOSSES} ${hit[0]}`, color: hit[2] };
 }
 
 export function ApplicantRow({
@@ -72,7 +74,7 @@ export function ApplicantRow({
   const realmName = entry?.realmSlug && entry.realm !== entry.realmSlug ? entry.realm : a.realm;
   const className = c?.class ?? CLASS_FILE_NAMES[CLASS_BY_ID[a.classId] ?? ""];
   const color = getClassColor(className);
-  const rio = c?.raiderIo?.currentSeason?.all;
+  const rating = c?.mythicPlus?.currentSeason;
   const prog = progOf(lookup?.entry, difficulty);
   // The game is the authority here: its value is live where the API's comes from an hourly
   // snapshot. The lookup only fills in when the game had nothing to report.
@@ -137,8 +139,8 @@ export function ApplicantRow({
       <span className={classes.value} style={{ color: ilvl ? "var(--pi-text-bright)" : DIM }}>
         {ilvl || (loading("core") ? skeleton : "-")}
       </span>
-      <span className={classes.value} style={{ color: rio?.color ?? DIM }}>
-        {loading("rio") ? skeleton : Math.round(rio?.score ?? 0) || "-"}
+      <span className={classes.value} style={{ color: rating?.color ?? DIM }}>
+        {loading("progression") ? skeleton : Math.round(rating?.rating ?? 0) || "-"}
       </span>
       <span className={classes.value} style={{ color: best != null ? getParseColor(best) : DIM }}>
         {loading("logs") ? skeleton : best != null ? Math.floor(best) : "-"}
@@ -149,7 +151,7 @@ export function ApplicantRow({
         </span>
       ) : (
         <span className={classes.value} style={{ color: prog?.color ?? DIM }}>
-          {loading("rio") ? skeleton : (prog?.text ?? "-")}
+          {loading("progression") ? skeleton : (prog?.text ?? "-")}
         </span>
       )}
       <span className={classes.open}>↗</span>

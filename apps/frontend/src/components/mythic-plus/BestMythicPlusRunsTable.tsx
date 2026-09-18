@@ -6,38 +6,31 @@ import { CURRENT_DUNGEONS } from "../../generated/seasonConfig";
 
 type MythicPlusRunsTableProps = {
   characterRuns: MythicPlusRun[];
+  characterClass?: string | null;
   isFetching: boolean;
 };
 
 export const BestMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
-  characterRuns: characterRuns,
+  characterRuns,
+  characterClass,
   isFetching = false,
 }) => {
-  const combinedRuns: (MythicPlusRun | undefined)[] = CURRENT_DUNGEONS.map(
-    (dungeon) => {
-      const run = characterRuns.find(
-        (run) => run.challange_mode_id === dungeon.challenge_mode_id,
-      );
-      return {
-        ...run,
-        dungeon: dungeon.name,
-        icon_url: dungeon.icon_url,
-      } as MythicPlusRun | undefined;
-    },
-  );
-
-  combinedRuns.sort((a, b) => (b?.key_level ?? 0) - (a?.key_level ?? 0));
-
-  const rows = combinedRuns.map((dungeon, idx) => {
-    return (
+  // Every dungeon of the season gets a row, run or not.
+  const rows = CURRENT_DUNGEONS.map((dungeon) => ({
+    dungeon,
+    run: characterRuns.find((run) => run.dungeonId === dungeon.challenge_mode_id),
+  }))
+    .sort((a, b) => (b.run?.keyLevel ?? 0) - (a.run?.keyLevel ?? 0))
+    .map(({ dungeon, run }) => (
       <RunTableRow
-        key={`recent-mythic-plus-run-${idx}`}
-        mythicPlusRun={dungeon}
+        key={dungeon.challenge_mode_id}
+        dungeonId={dungeon.challenge_mode_id}
+        dungeonName={dungeon.name}
+        mythicPlusRun={run}
+        characterClass={characterClass}
         isFetching={isFetching}
-        url={dungeon?.url}
       />
-    );
-  });
+    ));
 
   return (
     <Stack flex={1} gap={0}>

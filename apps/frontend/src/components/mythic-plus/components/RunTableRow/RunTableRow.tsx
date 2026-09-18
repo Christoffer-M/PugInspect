@@ -8,51 +8,39 @@ import {
   Anchor,
   Tooltip,
 } from "@mantine/core";
-import { IconCirclePlus, IconQuestionMark, IconShield, IconStarFilled, IconSword } from "@tabler/icons-react";
+import { IconStarFilled } from "@tabler/icons-react";
 import { MythicPlusRun } from "../../../../graphql/graphql";
 import classes from "./RunTableRow.module.css";
 import { DungeonNameMaxWidth } from "../RunTableHeader";
 import { getClassIconSrc } from "../../../../assets/classIcons";
+import { CURRENT_DUNGEONS } from "../../../../generated/seasonConfig";
 
-export function mapRoleToIcon(role?: string) {
-  if (!role) return <IconQuestionMark />;
-  switch (role.toLowerCase()) {
-    case "tank":
-      return <IconShield />;
-    case "healer":
-      return <IconCirclePlus />;
-    case "dps":
-      return <IconSword />;
-    default:
-      return <IconQuestionMark />;
-  }
-}
-
+const DUNGEON_ICONS = new Map(CURRENT_DUNGEONS.map((d) => [d.challenge_mode_id, d.icon_url]));
 
 type DungeonRowProps = {
+  dungeonId?: number;
+  dungeonName?: string;
   mythicPlusRun?: MythicPlusRun;
+  /** The character's class — the run only carries the spec. */
+  characterClass?: string | null;
   isFetching: boolean;
-  url?: string;
 };
 
 const RunTableRow: React.FC<DungeonRowProps> = ({
+  dungeonId,
+  dungeonName,
   mythicPlusRun,
+  characterClass,
   isFetching,
-  url,
 }) => {
+  const specName = mythicPlusRun?.spec ?? "Unknown Spec";
+  const classImageSrc =
+    characterClass && mythicPlusRun?.spec ? getClassIconSrc(characterClass, mythicPlusRun.spec) : undefined;
+  const iconUrl = dungeonId != null ? DUNGEON_ICONS.get(dungeonId) : undefined;
+  const url = mythicPlusRun?.url;
 
-  const classNameSlug = mythicPlusRun?.class?.slug || "unknown";
-  const specName = mythicPlusRun?.spec?.name || "Unknown Spec";
-  const specSlug = mythicPlusRun?.spec?.slug?.replace(/-/g, "") || "unknown";
-
-  const getClassImageSrc = () => {
-    if (!mythicPlusRun?.class?.slug || !mythicPlusRun?.spec?.slug) return null;
-
-    return getClassIconSrc(classNameSlug, specSlug);
-  };
-
-  const completedAt = mythicPlusRun?.completed_at
-    ? new Date(mythicPlusRun.completed_at).toLocaleDateString()
+  const completedAt = mythicPlusRun?.completedAt
+    ? new Date(mythicPlusRun.completedAt).toLocaleDateString()
     : "-";
 
   return (
@@ -66,16 +54,16 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
             boxShadow: "0 2px 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08)",
           }}>
             <img
-              src={mythicPlusRun?.icon_url}
-              alt={mythicPlusRun?.dungeon}
+              src={iconUrl}
+              alt={dungeonName}
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
           </Box>
-          <Tooltip label={mythicPlusRun?.dungeon ?? "Unknown Dungeon"} withArrow openDelay={50} style={{ minWidth: 0, flex: 1 }} >
+          <Tooltip label={dungeonName ?? "Unknown Dungeon"} withArrow openDelay={50} style={{ minWidth: 0, flex: 1 }} >
             {url ? <Anchor size="sm" m={0} href={url} target="_blank" truncate='end' style={{ display: 'block' }} >
-              {mythicPlusRun?.dungeon}
+              {dungeonName}
             </Anchor> : <Text size="sm" m={0} style={{ display: 'block' }} truncate='end'  >
-              {mythicPlusRun?.dungeon}
+              {dungeonName}
             </Text>}
           </Tooltip>
         </Group>
@@ -84,9 +72,9 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
         <Skeleton visible={isFetching} className={classes.skeleton}>
           <Group gap={4}>
             <Text size="sm" m={0}>
-              {mythicPlusRun?.key_level ?? "-"}
+              {mythicPlusRun?.keyLevel ?? "-"}
             </Text>
-            {Array.from({ length: mythicPlusRun?.keystone_upgrades ?? 0 }).map(
+            {Array.from({ length: mythicPlusRun?.upgrades ?? 0 }).map(
               (_, i) => (
                 <IconStarFilled key={i} size={10} color="gold" />
               ),
@@ -96,7 +84,7 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
       </Table.Td>
       <Table.Td>
         <Skeleton visible={isFetching} className={classes.skeleton}>
-          {getClassImageSrc() && (
+          {classImageSrc && (
             <Tooltip label={specName} withArrow openDelay={50}>
               <Box style={{
                 width: 22, height: 22, flexShrink: 0,
@@ -105,8 +93,8 @@ const RunTableRow: React.FC<DungeonRowProps> = ({
                 boxShadow: "0 2px 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08)",
               }}>
                 <img
-                  src={getClassImageSrc()!}
-                  alt={`${classNameSlug}-${specSlug}`}
+                  src={classImageSrc}
+                  alt={specName}
                   style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                 />
               </Box>

@@ -1,64 +1,38 @@
 import { Paper, Skeleton, Stack, Text, Image, Box, Group } from "@mantine/core";
 import { upperCaseFirstLetter, getClassColor, getParseColor } from "../../util/util";
 import { AltsHoverCard } from "./AltsHoverCard";
-import { Character, RaiderIo, SeasonScores } from "../../graphql/graphql";
+import { MythicPlus, MythicPlusRun, MythicPlusSeason, RaidProgress } from "../../graphql/graphql";
+import type { CharacterInfo } from "../../queries/character-info";
 import { DEFAULT_RAID, RAIDS, RAID_DIFFICULTY_COLORS } from "../../data/raidZones";
 import classes from "./CharacterHeader.module.css";
 
 const DIMMED = "var(--mantine-color-dimmed)";
 
-function getTopRioScore(season: SeasonScores | null | undefined): { score: number; role: string; color: string } | null {
-  if (!season) return null;
-
-  const all = season.all;
-  if (all?.score != null && all.score >= 100) {
-    return { score: all.score, role: "All", color: all.color ?? getParseColor(all.score / 40) };
-  }
-
-  const roles = [
-    { role: "DPS", data: season.dps },
-    { role: "Healer", data: season.healer },
-    { role: "Tank", data: season.tank },
-  ]
-    .filter((r) => r.data?.score != null && r.data.score >= 100)
-    .sort((a, b) => (b.data?.score ?? 0) - (a.data?.score ?? 0));
-
-  const best = roles[0];
-  if (!best?.data?.score) return null;
-  return { score: best.data.score, role: best.role, color: best.data.color ?? "#ff8a3d" };
+/** Rating and colour for a season, or null below 100 (a key or two, not worth showing). */
+function seasonRating(season: MythicPlusSeason | null | undefined): { rating: number; color: string } | null {
+  if (!season || season.rating < 100) return null;
+  // No colour for an ended season — Blizzard drops it
+  return { rating: season.rating, color: season.color ?? getParseColor(season.rating / 40) };
 }
 
-/** RaiderIO season slugs look like "season-tww-3"; the trailing number is the season. */
+/** Season slugs look like "season-mn-2"; the trailing number is the season. */
 function formatSeasonLabel(slug: string | null | undefined): string | null {
   const n = slug?.match(/(\d+)$/)?.[1];
   return n ? `S${n}` : null;
 }
 
-/** RaiderIO run URLs embed the season: ".../mythic-plus-runs/season-mn-1/<id>-...". */
-function runSeason(url: string | null | undefined): string | null {
-  return url?.match(/mythic-plus-runs\/([^/]+)\//)?.[1] ?? null;
+/** Highest *timed* best-run key level. Best runs are one per dungeon ranked by
+ * rating, so a depleted key can sit in there — skip those to keep the "timed"
+ * label honest. Kept in sync with topTimedKey in backend seo/progress.ts. */
+function getTopKeyLevel(season: MythicPlusSeason | null | undefined): number | null {
+  const levels = season?.bestRuns.filter((r) => r.upgrades > 0).map((r) => r.keyLevel) ?? [];
+  return levels.length ? Math.max(...levels) : null;
 }
 
-/** Highest *timed* best-run key level for a season (any season when slug is null).
- * Best runs are ranked by score, so a depleted key can sit in there — skip those
- * to keep the "timed" label honest. */
-function getTopKeyLevel(raiderIo: RaiderIo | null | undefined, season: string | null): number | null {
-  const runs = raiderIo?.bestMythicPlusRuns?.filter(
-    (r) => r.keystone_upgrades > 0 && (!season || runSeason(r.url) === season),
-  );
-  if (!runs?.length) return null;
-  const max = Math.max(...runs.map((r) => r.key_level ?? 0));
-  return max > 0 ? max : null;
-}
-
-/** Days since the most recent logged M+ run, or null if none. */
-function getLastActiveDays(raiderIo: RaiderIo | null | undefined): number | null {
-  const runs = [
-    ...(raiderIo?.recentMythicPlusRuns ?? []),
-    ...(raiderIo?.bestMythicPlusRuns ?? []),
-  ];
+/** Days since the most recent M+ run, or null if none. */
+function getLastActiveDays(runs: MythicPlusRun[]): number | null {
   if (!runs.length) return null;
-  const latest = Math.max(...runs.map((r) => new Date(r.completed_at).getTime()));
+  const latest = Math.max(...runs.map((r) => new Date(r.completedAt).getTime()));
   if (!isFinite(latest)) return null;
   return Math.floor((Date.now() - latest) / (1000 * 60 * 60 * 24));
 }
@@ -78,26 +52,19 @@ function getLastActiveColor(days: number): string {
 
 // RAIDS is newest-first. Previous tier = the nearest older raid with more than
 // one boss — single-boss mid-tier raids (Sporefall) aren't what people compare against.
-function getPreviousRaid(raiderIo: RaiderIo | null | undefined): string | undefined {
-  const slugs = Object.keys(RAIDS);
-  return slugs.slice(slugs.indexOf(DEFAULT_RAID) + 1).find((slug) => {
-    const bosses = raiderIo?.raidProgression?.find((p) => p.raid === slug)?.total_bosses;
-    return bosses != null && bosses > 1;
-  });
-}
+const PREVIOUS_RAID = Object.keys(RAIDS)
+  .slice(Object.keys(RAIDS).indexOf(DEFAULT_RAID) + 1)
+  .find((slug) => RAIDS[slug]!.bosses > 1);
 
-/** Raid progression summary for a tier, e.g. "4/8 M".
- * Kept in sync with raidProgressSummary in backend seo/characterCard.ts. */
-function getRaidProgressSummary(raiderIo: RaiderIo | null | undefined, raid: string | undefined): string | null {
-  const current = raiderIo?.raidProgression?.find((p) => p.raid === raid);
-  if (!current) return null;
-  const total = current.total_bosses ?? 0;
-  const mythic = current.mythic_bosses_killed ?? 0;
-  const heroic = current.heroic_bosses_killed ?? 0;
-  const normal = current.normal_bosses_killed ?? 0;
-  if (mythic > 0) return `${mythic}/${total} M`;
-  if (heroic > 0) return `${heroic}/${total} H`;
-  if (normal > 0) return `${normal}/${total} N`;
+/** Raid progression summary for a tier, e.g. "4/8 M"; "—" without a kill.
+ * Kept in sync with currentRaidProgress in backend seo/progress.ts. */
+function getRaidProgressSummary(progression: RaidProgress[] | null | undefined, raid: string | undefined): string | null {
+  if (!progression || !raid) return null;
+  const kills = progression.find((p) => p.raid === raid);
+  const total = RAIDS[raid]?.bosses ?? 0;
+  if (kills?.mythic) return `${kills.mythic}/${total} M`;
+  if (kills?.heroic) return `${kills.heroic}/${total} H`;
+  if (kills?.normal) return `${kills.normal}/${total} N`;
   return "—";
 }
 
@@ -130,25 +97,29 @@ function StatSkeleton({ valueW, subW, withPrev }: { valueW: number; subW: number
 
 export const CharacterHeader: React.FC<{
   name: string;
-  characterInfo: Character | undefined | null;
-  raiderIo: RaiderIo | undefined | null;
+  characterInfo: CharacterInfo | undefined | null;
+  mythicPlus: MythicPlus | undefined | null;
+  raidProgression: RaidProgress[] | undefined | null;
+  /** From Raider.IO; only sharpens "last active", so it may arrive later. */
+  recentRuns: MythicPlusRun[] | undefined;
   isLoadingInfo: boolean;
-  isLoadingRaiderIo: boolean;
+  isLoadingProgression: boolean;
   isError: boolean;
   bestParseAverage?: number | null;
   bestParseSource?: string;
   isLoadingBestParse?: boolean;
-}> = ({ name, characterInfo, raiderIo, isLoadingInfo, isLoadingRaiderIo, isError, bestParseAverage, bestParseSource, isLoadingBestParse }) => {
+}> = ({ name, characterInfo, mythicPlus, raidProgression, recentRuns, isLoadingInfo, isLoadingProgression, isError, bestParseAverage, bestParseSource, isLoadingBestParse }) => {
   const classColor = getClassColor(characterInfo?.class);
-  const rioScore = getTopRioScore(raiderIo?.currentSeason);
-  const prevRioScore = getTopRioScore(raiderIo?.previousSeason);
-  const seasonLabel = formatSeasonLabel(raiderIo?.currentSeason?.season);
-  const prevSeasonLabel = formatSeasonLabel(raiderIo?.previousSeason?.season);
-  const topKey = getTopKeyLevel(raiderIo, raiderIo?.currentSeason?.season ?? null);
-  const prevTopKey = getTopKeyLevel(raiderIo, raiderIo?.previousSeason?.season ?? null);
-  const raidProgress = getRaidProgressSummary(raiderIo, DEFAULT_RAID);
-  const prevRaidProgress = getRaidProgressSummary(raiderIo, getPreviousRaid(raiderIo));
-  const lastActiveDays = getLastActiveDays(raiderIo);
+  const { currentSeason, previousSeason } = mythicPlus ?? {};
+  const rating = seasonRating(currentSeason);
+  const prevRating = seasonRating(previousSeason);
+  const seasonLabel = formatSeasonLabel(currentSeason?.season);
+  const prevSeasonLabel = formatSeasonLabel(previousSeason?.season);
+  const topKey = getTopKeyLevel(currentSeason);
+  const prevTopKey = getTopKeyLevel(previousSeason);
+  const raidProgress = getRaidProgressSummary(raidProgression, DEFAULT_RAID);
+  const prevRaidProgress = getRaidProgressSummary(raidProgression, PREVIOUS_RAID);
+  const lastActiveDays = getLastActiveDays([...(recentRuns ?? []), ...(currentSeason?.bestRuns ?? [])]);
 
   return (
     <Paper
@@ -230,27 +201,27 @@ export const CharacterHeader: React.FC<{
         <Box className={classes.statstrip}>
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>RIO Score</Text>
-            {isLoadingRaiderIo ? (
+            {isLoadingProgression ? (
               <StatSkeleton valueW={54} subW={62} withPrev />
             ) : (
               <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
                 <Text
                   className={classes.statVal}
                   m={0}
-                  style={{ color: rioScore?.color ?? DIMMED }}
+                  style={{ color: rating?.color ?? DIMMED }}
                 >
-                  {rioScore ? Math.round(rioScore.score).toLocaleString() : "—"}
+                  {rating ? Math.round(rating.rating).toLocaleString() : "—"}
                 </Text>
                 {/* Only worth tagging the score as "current" when a previous
                     season sits under it to contrast against. */}
-                {prevRioScore && (
+                {prevRating && (
                   <Text className={classes.statSub} m={0}>
                     current{seasonLabel ? ` (${seasonLabel})` : ""}
                   </Text>
                 )}
               </Group>
             )}
-            {!isLoadingRaiderIo && prevRioScore && (
+            {!isLoadingProgression && prevRating && (
               <Group
                 className={`${classes.prevSeason} ${classes.scoreRow}`}
                 gap={6}
@@ -260,9 +231,9 @@ export const CharacterHeader: React.FC<{
                 <Text
                   className={classes.prevSeasonVal}
                   m={0}
-                  style={{ color: prevRioScore.color }}
+                  style={{ color: prevRating.color }}
                 >
-                  {Math.round(prevRioScore.score).toLocaleString()}
+                  {Math.round(prevRating.rating).toLocaleString()}
                 </Text>
                 <Text className={classes.statSub} m={0}>
                   previous{prevSeasonLabel ? ` (${prevSeasonLabel})` : ""}
@@ -273,7 +244,7 @@ export const CharacterHeader: React.FC<{
 
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Top Key</Text>
-            {isLoadingRaiderIo ? (
+            {isLoadingProgression ? (
               <StatSkeleton valueW={31} subW={29} />
             ) : (
               <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
@@ -287,7 +258,7 @@ export const CharacterHeader: React.FC<{
                 </Text>
               </Group>
             )}
-            {!isLoadingRaiderIo && prevTopKey != null && (
+            {!isLoadingProgression && prevTopKey != null && (
               <Group className={`${classes.prevSeason} ${classes.scoreRow}`} gap={6} align="baseline" wrap="nowrap">
                 <Text className={classes.prevSeasonVal} m={0}>
                   +{prevTopKey}
@@ -301,7 +272,7 @@ export const CharacterHeader: React.FC<{
 
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Raid Prog</Text>
-            {isLoadingRaiderIo ? (
+            {isLoadingProgression ? (
               <StatSkeleton valueW={52} subW={58} withPrev />
             ) : (
               <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
@@ -315,7 +286,7 @@ export const CharacterHeader: React.FC<{
                 <Text className={classes.statSub} m={0}>current tier</Text>
               </Group>
             )}
-            {!isLoadingRaiderIo && prevRaidProgress && prevRaidProgress !== "—" && (
+            {!isLoadingProgression && prevRaidProgress && prevRaidProgress !== "—" && (
               <Group className={`${classes.prevSeason} ${classes.scoreRow}`} gap={6} align="baseline" wrap="nowrap">
                 <Text
                   className={classes.prevSeasonVal}
@@ -331,7 +302,7 @@ export const CharacterHeader: React.FC<{
 
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Last Active</Text>
-            {isLoadingRaiderIo ? (
+            {isLoadingProgression ? (
               <Skeleton h={24} w={70} mt={2} />
             ) : (
               <Text

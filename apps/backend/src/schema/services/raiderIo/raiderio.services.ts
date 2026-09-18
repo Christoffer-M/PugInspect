@@ -1,5 +1,4 @@
 import { config } from "../../../config/index.js";
-import { RAID_PROGRESSION_FIELD } from "../../../generated/seasonConfig.js";
 import { fetcher, FetchError } from "../../utils/fetcher.js";
 import { createLogger } from "../../utils/logger.js";
 import { trace } from "@opentelemetry/api";
@@ -24,29 +23,10 @@ export type CharacterSearchResponse = {
   region: string;
 };
 
-enum CharacterFieldKey {
-  MythicPlusScoresBySeason = "mythic_plus_scores_by_season",
-  MythicPlusRanks = "mythic_plus_ranks",
-  RaidProgression = "raid_progression",
-  Gear = "gear",
-  MythicPlusRecentRuns = "mythic_plus_recent_runs",
-  MythicPlusHighestLevelRuns = "mythic_plus_highest_level_runs",
-  MythicPlusAlternateRuns = "mythic_plus_alternate_runs",
-  MythicPlusBestRuns = "mythic_plus_best_runs",
-}
-
-type CharacterField = {
-  key: CharacterFieldKey;
-  value?: string;
-};
-
-const fields: CharacterField[] = [
-  { key: CharacterFieldKey.MythicPlusScoresBySeason, value: "current:previous" },
-  { key: CharacterFieldKey.MythicPlusBestRuns },
-  { key: CharacterFieldKey.Gear },
-  { key: CharacterFieldKey.RaidProgression, value: RAID_PROGRESSION_FIELD },
-  { key: CharacterFieldKey.MythicPlusRecentRuns },
-];
+// Only recent runs: rating, best runs and raid progression come from Blizzard
+// (blizzard/progression.service.ts), which answers in ~150ms where a cold
+// RIO profile takes ~1s. Nothing else on the RIO profile is read.
+const PROFILE_FIELDS = "mythic_plus_recent_runs";
 
 const logger = createLogger({ service: "RaiderIO" });
 
@@ -164,9 +144,7 @@ export class RaiderIOService {
       realm: normalizedRealm,
       region,
       access_key: config.raiderIoApiKey,
-      fields: fields
-        .map((f) => `${f.key}${f.value ? `:${f.value}` : ""}`)
-        .join(","),
+      fields: PROFILE_FIELDS,
     };
 
     const url = this.buildUrlWithQueries(
@@ -195,11 +173,10 @@ export class RaiderIOService {
         });
       }
 
-      // RaiderIO is flaky enough that blanking the whole section on every
-      // blip is the worse answer: the score, raid progression and key levels
-      // all vanish for a character we looked up minutes ago. Serve the expired
-      // snapshot instead — the TTL is 15 minutes, so "stale" is the difference
-      // between one M+ run and none.
+      // RaiderIO is flaky enough that blanking the recent runs on every blip
+      // is the worse answer for a character we looked up minutes ago. Serve
+      // the expired snapshot instead — the TTL is 15 minutes, so "stale" is
+      // the difference between one M+ run and none.
       trace.getActiveSpan()?.recordException(error as Error);
       const stale = await getCachedRioProfile({ region, realm: normalizedRealm, name: normalizedName }, true);
       if (stale) {

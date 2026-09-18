@@ -324,6 +324,10 @@ async function main() {
 
   // --- Raids (current + previous expansion), newest first ------------------
   const raids: Record<string, object> = {};
+  // Backend copy keeps RIO's own raid name and boss list: Blizzard's
+  // encounters/raids payload is matched against them to rebuild progression
+  // under RIO's slugs, including multi-instance tiers like tier-mn-1.
+  const backendRaids: Record<string, { name: string; encounters: string[] }> = {};
   let defaultRaid: string | undefined;
   for (const [i, expansion] of EXPANSIONS.entries()) {
     const expansionRaids = (raidData[i].raids as any[]).filter(started);
@@ -339,6 +343,11 @@ async function main() {
         zoneId,
         displayName: RAID_DISPLAY_OVERRIDES[r.slug] ?? r.name,
         expansion: expansion.rioId,
+        bosses: r.encounters.length,
+      };
+      backendRaids[r.slug] = {
+        name: r.name,
+        encounters: (r.encounters as any[]).map((e) => e.name),
       };
       // Default = newest raid tier of the current expansion; single-boss
       // event raids (e.g. Sporefall) don't count as a tier.
@@ -346,18 +355,6 @@ async function main() {
     }
   }
   if (!defaultRaid) throw new Error("No default raid found (≥3 encounters, current expansion)");
-
-  // Raider.IO's profile API only has keywords for the current and previous
-  // expansion — raids from older EXPANSIONS entries must be requested as
-  // explicit slugs.
-  const raidProgressionField = [
-    "current-expansion",
-    "previous-expansion",
-    ...Object.entries(raids)
-      .filter(([, r]) => (r as { expansion: number }).expansion !== EXPANSIONS[0]!.rioId)
-      .filter(([, r]) => (r as { expansion: number }).expansion !== EXPANSIONS[1]?.rioId)
-      .map(([slug]) => slug),
-  ].join(":");
 
   // --- Tier-set ranges: seed + new contiguous 13-blocks above it -----------
   const tierRanges = [...TIER_SEED].sort((a, b) => a.from - b.from);
@@ -405,6 +402,7 @@ export type RaidInfo = {
   zoneId?: number;
   displayName: string;
   expansion: number;
+  bosses: number;
 };
 
 export const EXPANSION_DISPLAY_NAMES: Record<number, string> = ${stringify(
@@ -444,6 +442,12 @@ export type Dungeon = {
   background_image_url: string;
 };
 
+export type RaidInfo = {
+  /** Raider.IO's name, which is Blizzard's instance name for single-instance raids. */
+  name: string;
+  encounters: string[];
+};
+
 export const DEFAULT_RAID = ${stringify(defaultRaid)};
 
 // Needed by the Mythic+ spec-meta crawler, which iterates zones/encounters
@@ -454,9 +458,10 @@ export const DEFAULT_MYTHIC_PLUS_SEASON = ${stringify(currentSeason.slug)};
 
 export const CURRENT_DUNGEONS: Dungeon[] = ${stringify(dungeons)};
 
-// Raider.IO character-profile \`raid_progression\` field value: keyword scopes
-// for current/previous expansion plus explicit slugs for older raids.
-export const RAID_PROGRESSION_FIELD = ${stringify(raidProgressionField)};
+// Raids newest first, keyed by slug (the key every client looks progression up
+// by). Blizzard's per-instance kills are mapped onto these; see
+// blizzardProgression.mapper.ts.
+export const RAIDS: Record<string, RaidInfo> = ${stringify(backendRaids)};
 
 // Slots expected to carry a permanent enchant this era.
 export const ENCHANTABLE_SLOTS = ${stringify(ENCHANTABLE_SLOTS)};
@@ -481,6 +486,7 @@ export const HERO_TALENTS_BY_SPEC: Record<string, string[]> = ${stringify(
   // Companion-only: it needs just the raid slug to pick the right progression row.
   const companion = `${header}
 export const DEFAULT_RAID = ${stringify(defaultRaid)};
+export const DEFAULT_RAID_BOSSES = ${(raids[defaultRaid] as { bosses: number }).bosses};
 /** WCL zone of the current Mythic+ season, for M+ parse lookups. */
 export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(
     // currentSeason is Raider.IO's raw season object and has no zoneId — the

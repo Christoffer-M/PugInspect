@@ -22,7 +22,8 @@ const characterKey =
 
 export const queryKeys = {
   character: characterKey("character"),
-  characterRaiderIo: characterKey("characterRaiderIo"),
+  characterProgression: characterKey("characterProgression"),
+  characterRecentRuns: characterKey("characterRecentRuns"),
   characterGear: characterKey("characterGear"),
   zonePartitions: (zoneId: number) => ["zonePartitions", zoneId],
   characterRaidLogs: (args: CharacterRaidLogsQueryVariables) => {
@@ -47,9 +48,9 @@ export const queryKeys = {
   roster: (region: string, slug: string) => ["roster", region.toLowerCase(), slug],
   /** One key per upstream part per chunk. `scope` is the difficulty for the
    *  parses part and undefined for the others, so a difficulty toggle refetches
-   *  parses alone - identity and RIO progression are difficulty-agnostic. */
+   *  parses alone - identity and progression are difficulty-agnostic. */
   rosterChunk: (
-    part: "core" | "rio" | "logs",
+    part: "core" | "progression" | "logs",
     region: string,
     chunk: { name: string; realm: string }[],
     scope?: string

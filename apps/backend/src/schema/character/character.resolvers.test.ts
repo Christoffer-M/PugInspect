@@ -15,7 +15,7 @@ import { getSiteStats, recordSearchEvent, type SiteStats } from "../../db/stats.
 import { searchDirectory } from "../../db/characterDirectory.js";
 import { WarcraftLogsService } from "../services/warcraftLogs/warcraftlogs.services.js";
 import type { BlizzardCharacterProfile } from "../services/blizzard/model/CharacterProfile.js";
-import type { RaiderIoCharacterApiResponse } from "../services/raiderIo/model/CharacterApiResponse.js";
+import type { CharacterProgression } from "../services/blizzard/model/Progression.js";
 
 vi.mock("../services/character/characterProfile.service.js", () => ({
   getCharacterProfiles: vi.fn(),
@@ -81,14 +81,13 @@ const blizzardProfile = {
   equipped_item_level: 678,
 } as unknown as BlizzardCharacterProfile;
 
-const rioProfile = {
-  mythic_plus_scores_by_season: [
-    {
-      season: "season-tww-2",
-      segments: { all: { score: 2800, color: "#ff8000" } },
-    },
-  ],
-} as unknown as RaiderIoCharacterApiResponse;
+const progression: CharacterProgression = {
+  mythicPlus: {
+    currentSeason: { season: "season-mn-2", rating: 2800, color: "#ff8000", bestRuns: [] },
+    previousSeason: null,
+  },
+  raidProgression: [],
+};
 
 const CHARACTER_QUERY = `
   query Character($name: String!, $realm: String!, $region: String!) {
@@ -100,7 +99,7 @@ const CHARACTER_QUERY = `
       activeSpec
       equippedItemLevel
       guild { name realm }
-      raiderIo { currentSeason { all { score color } } }
+      mythicPlus { currentSeason { rating color } }
       potentialAlts { name realm region }
     }
   }
@@ -111,7 +110,7 @@ describe("Query.character", () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile,
       blizzardAvatarUrl: null,
-      rioProfile,
+      progression,
       warcraftLogsProfile: undefined,
       characterId: "char-uuid-1",
     });
@@ -123,9 +122,8 @@ describe("Query.character", () => {
         class: null,
         itemLevel: null,
         avatarUrl: null,
-        mythicPlusScore: null,
-        mythicPlusColor: null,
-        raidProgression: [],
+        mythicPlus: null,
+        raidProgression: null,
       },
     ]);
 
@@ -144,9 +142,7 @@ describe("Query.character", () => {
       activeSpec: "Enhancement",
       equippedItemLevel: 678,
       guild: { name: "Pug Life", realm: "Kazzak" },
-      raiderIo: {
-        currentSeason: { all: { score: 2800, color: "#ff8000" } },
-      },
+      mythicPlus: { currentSeason: { rating: 2800, color: "#ff8000" } },
       potentialAlts: [{ name: "pugalt", realm: "kazzak", region: "eu" }],
     });
     expect(getLinkedCharacters).toHaveBeenCalledWith("char-uuid-1");
@@ -203,7 +199,7 @@ describe("Query.character", () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile: undefined,
       blizzardAvatarUrl: null,
-      rioProfile,
+      progression,
       warcraftLogsProfile: undefined,
       characterId: "char-uuid-1",
     });
@@ -211,7 +207,7 @@ describe("Query.character", () => {
     const result = await execute(
       `query Character($name: String!, $realm: String!, $region: String!) {
         character(name: $name, realm: $realm, region: $region) {
-          raiderIo { currentSeason { all { score } } }
+          mythicPlus { currentSeason { rating } }
         }
       }`,
       { name: "Pugsley", realm: "Kazzak", region: "eu" }
@@ -219,6 +215,45 @@ describe("Query.character", () => {
 
     expect(result.errors).toBeUndefined();
     expect(recordSearchEvent).not.toHaveBeenCalled();
+  });
+
+  // The whole point of the Blizzard/Raider.IO split: the page's progression query must
+  // not wait on Raider.IO, and the recent-runs query must not refetch Blizzard.
+  it("sends only recent runs to Raider.IO and everything else to Blizzard", async () => {
+    vi.mocked(getCharacterProfiles).mockResolvedValue({
+      blizzardProfile: undefined,
+      blizzardAvatarUrl: null,
+      rioProfile: {
+        mythic_plus_recent_runs: [
+          { dungeon: "Murder Row", map_challenge_mode_id: 587, mythic_level: 12, completed_at: "", num_keystone_upgrades: 1, url: "u", spec: { name: "Fire" } },
+        ],
+      },
+      warcraftLogsProfile: undefined,
+      characterId: null,
+    });
+    const query = (selection: string) =>
+      execute(
+        `query C($name: String!, $realm: String!, $region: String!) {
+          character(name: $name, realm: $realm, region: $region) { ${selection} }
+        }`,
+        { name: "Pugsley", realm: "Kazzak", region: "eu" }
+      );
+
+    const recent = await query("recentMythicPlusRuns { dungeon keyLevel spec }");
+    expect(recent.errors).toBeUndefined();
+    expect(recent.data!.character).toEqual({
+      recentMythicPlusRuns: [{ dungeon: "Murder Row", keyLevel: 12, spec: "Fire" }],
+    });
+    expect(vi.mocked(getCharacterProfiles).mock.lastCall![1]).toMatchObject({
+      progressionRequested: false,
+      recentRunsRequested: true,
+    });
+
+    await query("mythicPlus { currentSeason { rating } } raidProgression { raid }");
+    expect(vi.mocked(getCharacterProfiles).mock.lastCall![1]).toMatchObject({
+      progressionRequested: true,
+      recentRunsRequested: false,
+    });
   });
 
   it("rejects an invalid region with BAD_USER_INPUT", async () => {
@@ -396,7 +431,7 @@ describe("Roster Check", () => {
           name
           class
           activeSpec
-          raiderIo { currentSeason { all { score } } }
+          mythicPlus { currentSeason { rating } }
           raidLogs { bestPerformanceAverage }
         }
       }
@@ -409,7 +444,7 @@ describe("Roster Check", () => {
         ? {
             blizzardProfile,
             blizzardAvatarUrl: null,
-            rioProfile,
+            progression,
             warcraftLogsProfile: undefined,
             characterId: "char-uuid-1",
             equipment: undefined,
@@ -464,7 +499,7 @@ describe("Roster Check", () => {
         active_spec: { name: name === "treeboi" ? "Restoration" : "Enhancement" },
       } as unknown as BlizzardCharacterProfile,
       blizzardAvatarUrl: null,
-      rioProfile,
+      progression,
       warcraftLogsProfile: undefined,
       characterId: "char-uuid-1",
       equipment: undefined,
@@ -494,7 +529,7 @@ describe("Roster Check", () => {
         active_spec: { name: "Devastation" },
       } as unknown as BlizzardCharacterProfile,
       blizzardAvatarUrl: null,
-      rioProfile,
+      progression,
       warcraftLogsProfile: undefined,
       characterId: "char-uuid-1",
       equipment: undefined,
@@ -518,7 +553,7 @@ describe("Roster Check", () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile,
       blizzardAvatarUrl: null,
-      rioProfile,
+      progression,
       warcraftLogsProfile: undefined,
       characterId: "char-uuid-1",
       equipment: undefined,
@@ -542,7 +577,7 @@ describe("Roster Check", () => {
     expect(getCharacterProfiles).toHaveBeenCalledTimes(1);
   });
 
-  it("skips RIO and WCL entirely for identity-only selections", async () => {
+  it("skips progression and WCL entirely for identity-only selections", async () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile,
       blizzardAvatarUrl: null,
@@ -562,17 +597,17 @@ describe("Roster Check", () => {
     expect(result.errors).toBeUndefined();
     expect(getCharacterProfiles).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ raiderIoRequested: false })
+      expect.objectContaining({ progressionRequested: false })
     );
     expect(WarcraftLogsService.getCharacterProfile).not.toHaveBeenCalled();
   });
 
   // The web roster page and the companion both split their lookup into
-  // core/rio/logs documents, because roster.service awaits RIO before it starts
-  // the WCL call. That only pays off while a parses-only selection leaves
-  // raiderIoRequested false - if it ever flips true, every parse queues behind
-  // RaiderIO again.
-  it("keeps the parts independent: a parses-only selection never requests RIO", async () => {
+  // core/progression/logs documents, because roster.service awaits progression
+  // before it starts the WCL call. That only pays off while a parses-only
+  // selection leaves progressionRequested false - if it ever flips true, every
+  // parse queues behind the progression lookup again.
+  it("keeps the parts independent: a parses-only selection never requests progression", async () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile,
       blizzardAvatarUrl: null,
@@ -597,26 +632,26 @@ describe("Roster Check", () => {
     // raidLogsRequested: false there and does WCL itself in phase 2.
     expect(getCharacterProfiles).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ raiderIoRequested: false, blizzardRequested: true })
+      expect.objectContaining({ progressionRequested: false, blizzardRequested: true })
     );
     expect(WarcraftLogsService.getCharacterProfile).toHaveBeenCalled();
   });
 
-  it("keeps the parts independent: a RIO-only selection never fetches parses", async () => {
+  it("keeps the parts independent: a progression-only selection never fetches parses", async () => {
     vi.mocked(getCharacterProfiles).mockResolvedValue({
       blizzardProfile,
       blizzardAvatarUrl: null,
-      rioProfile,
+      progression,
       warcraftLogsProfile: undefined,
       characterId: "char-uuid-1",
       equipment: undefined,
     });
 
     const result = await execute(
-      `query RosterRio($region: String!, $characters: [RosterCharacterInput!]!) {
+      `query RosterProgression($region: String!, $characters: [RosterCharacterInput!]!) {
         rosterCharacters(region: $region, characters: $characters) {
           name
-          character { raiderIo { currentSeason { all { score } } } }
+          character { mythicPlus { currentSeason { rating } } }
         }
       }`,
       { region: "eu", characters: [{ name: "Pugsley", realm: "Kazzak" }] }
@@ -625,7 +660,8 @@ describe("Roster Check", () => {
     expect(result.errors).toBeUndefined();
     expect(getCharacterProfiles).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ raiderIoRequested: true })
+      // Rosters never need Raider.IO: progression is all Blizzard.
+      expect.objectContaining({ progressionRequested: true, recentRunsRequested: false })
     );
     expect(WarcraftLogsService.getCharacterProfile).not.toHaveBeenCalled();
   });

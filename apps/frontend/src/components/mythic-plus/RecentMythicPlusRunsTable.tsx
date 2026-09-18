@@ -5,23 +5,25 @@ import RunTableHeader from "./components/RunTableHeader";
 
 type MythicPlusRunsTableProps = {
   characterRuns: MythicPlusRun[];
+  characterClass?: string | null;
   isFetching: boolean;
 };
 
 export const RecentMythicPlusRunsTable: React.FC<MythicPlusRunsTableProps> = ({
-  characterRuns: characterRuns,
+  characterRuns,
+  characterClass,
   isFetching = false,
 }) => {
-  const rows = characterRuns.map((run, idx) => {
-    return (
-      <RunTableRow
-        key={`best-mythic-plus-run-${run.dungeon}-${idx}`}
-        mythicPlusRun={run}
-        isFetching={isFetching}
-        url={run?.url}
-      />
-    );
-  });
+  const rows = characterRuns.map((run, idx) => (
+    <RunTableRow
+      key={`recent-mythic-plus-run-${run.dungeonId}-${idx}`}
+      dungeonId={run.dungeonId}
+      dungeonName={run.dungeon}
+      mythicPlusRun={run}
+      characterClass={characterClass}
+      isFetching={isFetching}
+    />
+  ));
   return (
     <Stack flex={1} gap={0}>
       <Group gap={4} align="center" mb={4}>

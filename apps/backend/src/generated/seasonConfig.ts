@@ -20,6 +20,12 @@ export type Dungeon = {
   background_image_url: string;
 };
 
+export type RaidInfo = {
+  /** Raider.IO's name, which is Blizzard's instance name for single-instance raids. */
+  name: string;
+  encounters: string[];
+};
+
 export const DEFAULT_RAID = "the-venomous-abyss";
 
 // Needed by the Mythic+ spec-meta crawler, which iterates zones/encounters
@@ -122,9 +128,178 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
   }
 ];
 
-// Raider.IO character-profile `raid_progression` field value: keyword scopes
-// for current/previous expansion plus explicit slugs for older raids.
-export const RAID_PROGRESSION_FIELD = "current-expansion:previous-expansion:awakened-amirdrassil-the-dreams-hope:awakened-aberrus-the-shadowed-crucible:awakened-vault-of-the-incarnates:amirdrassil-the-dreams-hope:aberrus-the-shadowed-crucible:vault-of-the-incarnates";
+// Raids newest first, keyed by slug (the key every client looks progression up
+// by). Blizzard's per-instance kills are mapped onto these; see
+// blizzardProgression.mapper.ts.
+export const RAIDS: Record<string, RaidInfo> = {
+  "the-venomous-abyss": {
+    "name": "The Venomous Abyss",
+    "encounters": [
+      "Nek'zali the Soulcoiler",
+      "Entombed Sentinels",
+      "The Lost Explorers",
+      "Vashnik the Malignant",
+      "Sszorak",
+      "The Twin Fangs",
+      "The Coiled Altar",
+      "Ula'tek"
+    ]
+  },
+  "sporefall": {
+    "name": "Sporefall",
+    "encounters": [
+      "Rotmire"
+    ]
+  },
+  "tier-mn-1": {
+    "name": "MN Tier 1 (VS / DR / MQD)",
+    "encounters": [
+      "Imperator Averzian",
+      "Vorasius",
+      "Fallen-King Salhadaar",
+      "Vaelgor & Ezzorak",
+      "Lightblinded Vanguard",
+      "Crown of the Cosmos",
+      "Chimaerus the Undreamt God",
+      "Belo'ren, Child of Al'ar",
+      "Midnight Falls"
+    ]
+  },
+  "manaforge-omega": {
+    "name": "Manaforge Omega",
+    "encounters": [
+      "Plexus Sentinel",
+      "Loom'ithar",
+      "Soulbinder Naazindhri",
+      "Forgeweaver Araz",
+      "The Soul Hunters",
+      "Fractillus",
+      "Nexus-King Salhadaar",
+      "Dimensius"
+    ]
+  },
+  "liberation-of-undermine": {
+    "name": "Liberation of Undermine",
+    "encounters": [
+      "Vexie and the Geargrinders",
+      "Cauldron of Carnage",
+      "Rik Reverb",
+      "Stix Bunkjunker",
+      "Sprocketmonger Lockenstock",
+      "One-Armed Bandit",
+      "Mug'Zee, Heads of Security",
+      "Chrome King Gallywix"
+    ]
+  },
+  "blackrock-depths": {
+    "name": "Blackrock Depths",
+    "encounters": [
+      "Lord Roccor",
+      "Bael'Gar",
+      "Lord Incendius",
+      "Golem Lord Argelmach",
+      "The Seven",
+      "General Angerforge",
+      "Ambassador Flamelash",
+      "Emperor Dagran Thaurissan"
+    ]
+  },
+  "nerubar-palace": {
+    "name": "Nerub-ar Palace",
+    "encounters": [
+      "Ulgrax the Devourer",
+      "The Bloodbound Horror",
+      "Sikran",
+      "Rasha'nan",
+      "Broodtwister Ovi'nax",
+      "Nexus-Princess Ky'veza",
+      "The Silken Court",
+      "Queen Ansurek"
+    ]
+  },
+  "awakened-amirdrassil-the-dreams-hope": {
+    "name": "Awakened Amirdrassil, the Dream's Hope",
+    "encounters": [
+      "Awakened Gnarlroot",
+      "Awakened Igira the Cruel",
+      "Awakened Volcoross",
+      "Awakened Council of Dreams",
+      "Awakened Larodar, Keeper of the Flame",
+      "Awakened Nymue, Weaver of the Cycle",
+      "Awakened Smolderon",
+      "Awakened Tindral Sageswift, Seer of the Flame",
+      "Awakened Fyrakk the Blazing"
+    ]
+  },
+  "awakened-aberrus-the-shadowed-crucible": {
+    "name": "Awakened Aberrus, the Shadowed Crucible",
+    "encounters": [
+      "Awakened Kazzara, the Hellforged",
+      "Awakened The Amalgamation Chamber",
+      "Awakened The Forgotten Experiments",
+      "Awakened Assault of the Zaqali",
+      "Awakened Rashok, the Elder",
+      "Awakened The Vigilant Steward, Zskarn",
+      "Awakened Magmorax",
+      "Awakened Echo of Neltharion",
+      "Awakened Scalecommander Sarkareth"
+    ]
+  },
+  "awakened-vault-of-the-incarnates": {
+    "name": "Awakened Vault of the Incarnates",
+    "encounters": [
+      "Awakened Eranog",
+      "Awakened Terros",
+      "Awakened The Primal Council",
+      "Awakened Sennarth, the Cold Breath",
+      "Awakened Dathea, Ascended",
+      "Awakened Kurog Grimtotem",
+      "Awakened Broodkeeper Diurna",
+      "Awakened Raszageth the Storm-Eater"
+    ]
+  },
+  "amirdrassil-the-dreams-hope": {
+    "name": "Amirdrassil, the Dream's Hope",
+    "encounters": [
+      "Gnarlroot",
+      "Igira the Cruel",
+      "Volcoross",
+      "Council of Dreams",
+      "Larodar, Keeper of the Flame",
+      "Nymue, Weaver of the Cycle",
+      "Smolderon",
+      "Tindral Sageswift, Seer of the Flame",
+      "Fyrakk the Blazing"
+    ]
+  },
+  "aberrus-the-shadowed-crucible": {
+    "name": "Aberrus, the Shadowed Crucible",
+    "encounters": [
+      "Kazzara, the Hellforged",
+      "The Amalgamation Chamber",
+      "The Forgotten Experiments",
+      "Assault of the Zaqali",
+      "Rashok, the Elder",
+      "The Vigilant Steward, Zskarn",
+      "Magmorax",
+      "Echo of Neltharion",
+      "Scalecommander Sarkareth"
+    ]
+  },
+  "vault-of-the-incarnates": {
+    "name": "Vault of the Incarnates",
+    "encounters": [
+      "Eranog",
+      "Terros",
+      "The Primal Council",
+      "Sennarth, the Cold Breath",
+      "Dathea, Ascended",
+      "Kurog Grimtotem",
+      "Broodkeeper Diurna",
+      "Raszageth the Storm-Eater"
+    ]
+  }
+};
 
 // Slots expected to carry a permanent enchant this era.
 export const ENCHANTABLE_SLOTS = [

@@ -7,10 +7,9 @@ type AltCharacter {
   avatarUrl: String
   class: String
   itemLevel: Float
-  mythicPlusColor: String
-  mythicPlusScore: Float
+  mythicPlus: MythicPlus
   name: String!
-  raidProgression: [RaidProgressionDetail!]
+  raidProgression: [RaidProgress!]
   realm: String!
   region: String!
 }
@@ -31,18 +30,23 @@ type Character {
   gender: String
   guild: Guild
   level: Int
+  """Blizzard."""
+  mythicPlus: MythicPlus
   mythicPlusLogs(metric: Metric, role: RoleType): MythicPlusLogs
   name: String!
   potentialAlts: [AltCharacter!]!
   race: String
   raidLogs(byBracket: Boolean, metric: Metric, role: RoleType): RaidLogs
-  raiderIo: RaiderIo
+  """Blizzard."""
+  raidProgression: [RaidProgress!]
   realm: String!
   """
   Canonical API slug (der-rat-von-dalaran). Build character URLs from this;
   clients carry no realm table of their own.
   """
   realmSlug: String!
+  """Raider.IO - Blizzard has no run history."""
+  recentMythicPlusRuns: [MythicPlusRun!]
   region: String!
 }
 
@@ -247,9 +251,11 @@ type Mutation {
   updateRoster(characters: [RosterCharacterInput!]!, editSecret: String!, region: String!, slug: String!): Roster!
 }
 
-type MythicPlusClass {
-  name: String!
-  slug: String!
+"""Mythic+ rating and best runs from Blizzard."""
+type MythicPlus {
+  currentSeason: MythicPlusSeason
+  """Null for a character with no keys that season."""
+  previousSeason: MythicPlusSeason
 }
 
 type MythicPlusDungeon {
@@ -279,23 +285,33 @@ type MythicPlusRanking {
 }
 
 type MythicPlusRun {
-  background_image_url: String!
-  challange_mode_id: Int!
-  class: MythicPlusClass
-  completed_at: String!
+  completedAt: String!
   dungeon: String!
-  icon_url: String!
-  key_level: Int!
-  keystone_upgrades: Int!
-  role: String!
-  short_name: String!
-  spec: MythicPlusSpec
-  url: String!
+  """
+  Keystone dungeon (challenge mode) id: the key into the client's dungeon config for icons.
+  """
+  dungeonId: Int!
+  keyLevel: Int!
+  """The character's spec in the run, e.g. Beast Mastery."""
+  spec: String
+  """0 when over time, else the keystone upgrade count (1-3)."""
+  upgrades: Int!
+  """Run page on Raider.IO; null for Blizzard runs, which have none."""
+  url: String
 }
 
-type MythicPlusSpec {
-  name: String!
-  slug: String!
+type MythicPlusSeason {
+  """Best run per dungeon, highest rated first."""
+  bestRuns: [MythicPlusRun!]!
+  """
+  In-game rating colour (#rrggbb). Null once the season has ended: Blizzard drops it.
+  """
+  color: String
+  rating: Float!
+  """
+  Season slug from the season config, e.g. season-mn-2. Null if the config predates it.
+  """
+  season: String
 }
 
 """
@@ -349,14 +365,15 @@ type RaidLogs implements ZoneLogs {
   raidRankings: [RaidRanking!]
 }
 
-type RaidProgressionDetail {
-  expansion_id: Int
-  heroic_bosses_killed: Int
-  mythic_bosses_killed: Int
-  normal_bosses_killed: Int
+"""
+Bosses killed per difficulty in one raid, keyed by the season config's raid
+slug (which also holds the boss count). Raids without a kill are omitted.
+"""
+type RaidProgress {
+  heroic: Int!
+  mythic: Int!
+  normal: Int!
   raid: String!
-  summary: String
-  total_bosses: Int
 }
 
 type RaidRanking {
@@ -367,14 +384,6 @@ type RaidRanking {
   rankPercent: Float
   spec: String
   totalKills: Int
-}
-
-type RaiderIo {
-  bestMythicPlusRuns: [MythicPlusRun!]
-  currentSeason: SeasonScores
-  previousSeason: SeasonScores
-  raidProgression: [RaidProgressionDetail!]
-  recentMythicPlusRuns: [MythicPlusRun!]
 }
 
 type RecentSearch {
@@ -457,19 +466,6 @@ type SearchResult {
   """Canonical API slug; build the character URL from this."""
   realmSlug: String!
   region: String!
-}
-
-type SeasonScores {
-  all: Segment
-  dps: Segment
-  healer: Segment
-  season: String
-  tank: Segment
-}
-
-type Segment {
-  color: String!
-  score: Float!
 }
 
 type SiteStats {
