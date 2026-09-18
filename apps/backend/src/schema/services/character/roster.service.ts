@@ -14,8 +14,7 @@ const logger = createLogger({ service: "Roster" });
 /** Hard cap per request - the client chunks a 30-man roster into 3 calls. */
 export const ROSTER_CHUNK_LIMIT = 10;
 
-/** Upstream fan-out cap: 5 characters in flight × ≤3 upstreams each.
- *  Same pacing pattern as scripts/backfill-alt-links.ts. */
+/** Upstream fan-out cap: 5 characters in flight × ≤3 upstreams each. */
 const CONCURRENCY = 5;
 
 // Blizzard reports class/spec by display name ("Death Knight" / "Beast Mastery"),
