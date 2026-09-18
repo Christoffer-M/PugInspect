@@ -108,6 +108,26 @@ function getRaidProgressColor(summary: string | null): string {
   return DIMMED;
 }
 
+/** Loading placeholder shaped like a loaded stat: value + inline sub-label, and
+ * optionally the previous-season row, so the strip doesn't widen when data lands.
+ * Widths measured from a typical loaded header. */
+function StatSkeleton({ valueW, subW, withPrev }: { valueW: number; subW: number; withPrev?: boolean }) {
+  return (
+    <>
+      <Group className={classes.scoreRow} gap={6} align="flex-end" wrap="nowrap" mt={2}>
+        <Skeleton h={24} w={valueW} />
+        <Skeleton h={10} w={subW} mb={3} />
+      </Group>
+      {withPrev && (
+        <Group className={`${classes.prevSeason} ${classes.scoreRow}`} gap={6} align="center" wrap="nowrap">
+          <Skeleton h={13} w={39} my={2} />
+          <Skeleton h={10} w={subW + 4} />
+        </Group>
+      )}
+    </>
+  );
+}
+
 export const CharacterHeader: React.FC<{
   name: string;
   characterInfo: Character | undefined | null;
@@ -172,11 +192,13 @@ export const CharacterHeader: React.FC<{
 
         {/* Identity */}
         {isLoadingInfo || isError ? (
-          <Stack gap="xs">
-            <Skeleton h={22} w={180} animate={!isError} />
-            <Skeleton h={15} w={140} animate={!isError} />
-            <Skeleton h={15} w={160} animate={!isError} />
-            <Skeleton h={15} w={130} animate={!isError} />
+          // Mirrors the loaded block line-for-line (name ≈32.5px, sm lines ≈20.3px).
+          // No alts pill placeholder: most characters have no linked alts.
+          <Stack gap={1}>
+            <Skeleton h={22} w={180} my={5} animate={!isError} />
+            <Skeleton h={14} w={140} my={3} animate={!isError} />
+            <Skeleton h={14} w={160} my={3} animate={!isError} />
+            <Skeleton h={14} w={130} my={3} animate={!isError} />
           </Stack>
         ) : (
           characterInfo && (
@@ -209,7 +231,7 @@ export const CharacterHeader: React.FC<{
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>RIO Score</Text>
             {isLoadingRaiderIo ? (
-              <Skeleton h={24} w={70} mt={2} />
+              <StatSkeleton valueW={54} subW={62} withPrev />
             ) : (
               <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
                 <Text
@@ -252,7 +274,7 @@ export const CharacterHeader: React.FC<{
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Top Key</Text>
             {isLoadingRaiderIo ? (
-              <Skeleton h={24} w={50} mt={2} />
+              <StatSkeleton valueW={31} subW={29} />
             ) : (
               <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
                 <Text className={classes.statVal} m={0} style={{ color: "var(--mantine-color-text)" }}>
@@ -280,7 +302,7 @@ export const CharacterHeader: React.FC<{
           <Stack className={classes.stat} gap={3}>
             <Text className={classes.statLabel} m={0}>Raid Prog</Text>
             {isLoadingRaiderIo ? (
-              <Skeleton h={24} w={64} mt={2} />
+              <StatSkeleton valueW={52} subW={58} withPrev />
             ) : (
               <Group className={classes.scoreRow} gap={6} align="baseline" wrap="nowrap">
                 <Text
