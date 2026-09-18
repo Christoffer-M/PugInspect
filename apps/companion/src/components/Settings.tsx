@@ -22,16 +22,18 @@ function Toggle({
   checked,
   onChange,
   indent,
+  disabled,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   indent?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <label className={`${classes.rowItem} ${indent ? classes.indent : ""}`}>
       {label}
-      <Switch size="xs" checked={checked} onChange={(e) => onChange(e.currentTarget.checked)} />
+      <Switch size="xs" disabled={disabled} checked={checked} onChange={(e) => onChange(e.currentTarget.checked)} />
     </label>
   );
 }
@@ -93,10 +95,10 @@ export function Settings({ settings, update }: { settings: S; update: (p: Partia
         />
       </Section>
       <Section title="Notifications">
-        <Toggle label="Desktop notifications" checked={settings.notifyApplicant || settings.notifyListing} onChange={(v) => update({ notifyApplicant: v, notifyListing: v })} />
-        <Toggle indent label="New applicant" checked={settings.notifyApplicant} onChange={(v) => update({ notifyApplicant: v })} />
-        <Toggle indent label="New listing detected" checked={settings.notifyListing} onChange={(v) => update({ notifyListing: v })} />
-        <Toggle indent label="Play a sound" checked={settings.sound} onChange={(v) => update({ sound: v })} />
+        <Toggle label="Desktop notifications" checked={settings.notifications} onChange={(v) => update({ notifications: v })} />
+        <Toggle indent disabled={!settings.notifications} label="New applicant" checked={settings.notifyApplicant} onChange={(v) => update({ notifyApplicant: v })} />
+        <Toggle indent disabled={!settings.notifications} label="New listing detected" checked={settings.notifyListing} onChange={(v) => update({ notifyListing: v })} />
+        <Toggle indent disabled={!settings.notifications} label="Play a sound" checked={settings.sound} onChange={(v) => update({ sound: v })} />
       </Section>
       <Section title="Troubleshooting">
         <Diagnostic />

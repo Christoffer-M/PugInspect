@@ -39,10 +39,12 @@ export default function App() {
   const { link, session, lookups, seenAt, lastFrameAt } = useCompanion({
     onNewListing: (s) => {
       setToastAt(Date.now());
+      if (!settings.notifications) return;
       if (settings.notifyListing) notify("New group finder listing", s.title || "Started a new session");
       if (settings.sound) ding();
     },
     onNewApplicants: (fresh, s) => {
+      if (!settings.notifications) return;
       if (settings.notifyApplicant)
         notify(fresh.length === 1 ? `${fresh[0]!.name} applied` : `${fresh.length} new applicants`, s.title);
       if (settings.sound) ding();
@@ -149,7 +151,7 @@ export default function App() {
     <>
       <div className={pageClasses.appBg} />
       <div className={classes.app}>
-        <Titlebar tone={tone} onSettings={() => setScreen("settings")} />
+        <Titlebar tone={tone} onSettings={() => setScreen("settings")} muted={!settings.notifications} onToggleMute={() => update({ notifications: !settings.notifications })} />
         {newRelease && (newRelease.version !== dismissedUpdate || link === "app_outdated") && <UpdateBanner update={newRelease} onClose={() => setDismissedUpdate(newRelease.version)} />}
         {lost && <SyncLost />}
         {mismatch && shown && <VersionMismatch link={link} hasUpdate={!!newRelease} />}
@@ -162,9 +164,10 @@ export default function App() {
           </div>
         )}
         {lost ? (
-          <StatusBar tone="lost" label="Sync lost" detail={lastFrameAt ? `${ago(now - lastFrameAt)} ago` : undefined} right={<RetryButton onClick={() => invoke("retry_sync")} />} />
+          <StatusBar muted={!settings.notifications} tone="lost" label="Sync lost" detail={lastFrameAt ? `${ago(now - lastFrameAt)} ago` : undefined} right={<RetryButton onClick={() => invoke("retry_sync")} />} />
         ) : shown ? (
           <StatusBar
+            muted={!settings.notifications}
             tone={mismatch ? "lost" : "ok"}
             label={mismatch ? "Version mismatch" : "Synced"}
             detail={failedDetail ?? (pendingLookups ? `${pendingLookups} pending ${pendingLookups === 1 ? "lookup" : "lookups"}` : toastAt ? `new session ${ago(now - toastAt)} ago` : undefined)}
@@ -178,7 +181,7 @@ export default function App() {
             }
           />
         ) : (
-          <StatusBar tone={mismatch ? "lost" : "idle"} label={mismatch ? "Version mismatch" : "Waiting to sync"} right={<span className={classes.mono}>idle {pad(Math.floor((now - startedAt) / 60000))}:{pad(Math.floor(((now - startedAt) / 1000) % 60))}</span>} />
+          <StatusBar muted={!settings.notifications} tone={mismatch ? "lost" : "idle"} label={mismatch ? "Version mismatch" : "Waiting to sync"} right={<span className={classes.mono}>idle {pad(Math.floor((now - startedAt) / 60000))}:{pad(Math.floor(((now - startedAt) / 1000) % 60))}</span>} />
         )}
       </div>
     </>
