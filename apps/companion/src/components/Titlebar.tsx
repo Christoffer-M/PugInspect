@@ -21,8 +21,8 @@ export function Titlebar({ tone, onBack, onSettings, muted, onToggleMute }: Prop
     <div className={classes.bar} data-tauri-drag-region>
       <Group gap={8} data-tauri-drag-region>
         {onBack ? (
-          <ActionIcon variant="subtle" size="sm" onClick={onBack} aria-label="Back">
-            <IconArrowLeft size={14} />
+          <ActionIcon variant="subtle" size="md" onClick={onBack} aria-label="Back">
+            <IconArrowLeft size={16} />
           </ActionIcon>
         ) : (
           <span className={`${app.dot} ${dot}`} style={{ animation: "none" }} />
@@ -33,24 +33,24 @@ export function Titlebar({ tone, onBack, onSettings, muted, onToggleMute }: Prop
       <div className={classes.controls}>
         {onToggleMute && (
           <Tooltip label={muted ? "Unmute notifications" : "Mute notifications"} openDelay={400}>
-            <ActionIcon variant="subtle" color="accent" size="sm" onClick={onToggleMute} aria-label="Toggle notifications" aria-pressed={!muted}>
-              {muted ? <IconBellOff size={15} color="var(--mantine-color-dark-3)" /> : <IconBell size={15} color="var(--mantine-color-accent-5)" />}
+            <ActionIcon variant="subtle" color="accent" size="md" onClick={onToggleMute} aria-label="Toggle notifications" aria-pressed={!muted}>
+              {muted ? <IconBellOff size={17} color="var(--mantine-color-dark-3)" /> : <IconBell size={17} color="var(--mantine-color-accent-5)" />}
             </ActionIcon>
           </Tooltip>
         )}
         {onSettings && (
-          <ActionIcon variant="subtle" color="gray" size="sm" onClick={onSettings} aria-label="Settings">
-            <IconSettings size={13} />
+          <ActionIcon variant="subtle" color="gray" size="md" onClick={onSettings} aria-label="Settings">
+            <IconSettings size={15} />
           </ActionIcon>
         )}
-        <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => win.minimize()} aria-label="Minimize">
-          <IconMinus size={13} />
+        <ActionIcon variant="subtle" color="gray" size="md" onClick={() => win.minimize()} aria-label="Minimize">
+          <IconMinus size={15} />
         </ActionIcon>
-        <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => win.toggleMaximize()} aria-label="Maximize">
-          <IconSquare size={11} />
+        <ActionIcon variant="subtle" color="gray" size="md" onClick={() => win.toggleMaximize()} aria-label="Maximize">
+          <IconSquare size={13} />
         </ActionIcon>
-        <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => win.close()} aria-label="Close">
-          <IconX size={13} />
+        <ActionIcon variant="subtle" color="gray" size="md" onClick={() => win.close()} aria-label="Close">
+          <IconX size={15} />
         </ActionIcon>
       </div>
     </div>
