@@ -169,6 +169,23 @@ function resolveJournalInstances(
   return { instanceIds: parts.map((j) => j.id), bosses: parts.reduce((n, j) => n + j.bosses.length, 0) };
 }
 
+/**
+ * Raider.IO's rating colour scale for a season, highest threshold first. Only
+ * an ended season's is baked into the config — its scale is final — while the
+ * live season's keeps moving and is fetched by the backend at runtime.
+ */
+async function fetchScoreTiers(season: string): Promise<[number, string][]> {
+  const payload = await getJson(`https://raider.io/api/v1/mythic-plus/score-tiers?season=${season}`);
+  if (!Array.isArray(payload) || payload.length === 0) throw new Error(`No score tiers for ${season}`);
+  return payload
+    .map((t: { score?: unknown; rgbHex?: unknown }): [number, string] => {
+      if (typeof t.score !== "number" || typeof t.rgbHex !== "string" || !/^#[0-9a-f]{6}$/i.test(t.rgbHex))
+        throw new Error(`Malformed score tier for ${season}: ${JSON.stringify(t)}`);
+      return [t.score, t.rgbHex.toLowerCase()];
+    })
+    .sort((a, b) => b[0] - a[0]);
+}
+
 function assertNoMassRealmLoss(path: string, next: Record<string, Record<string, string>>) {
   let previous: Record<string, Record<string, string>>;
   try {
@@ -389,8 +406,15 @@ async function main() {
       throw new Error(`Raider.IO season ${s.slug} has no blizzard_season_id`);
     seasonSlugsByBlizzardId[s.blizzard_season_id] = s.slug;
   }
-  if (!Object.values(seasonSlugsByBlizzardId).includes(currentSeason.slug))
-    throw new Error(`Current season ${currentSeason.slug} has no Blizzard season id`);
+  const seasonsNewestFirst = Object.entries(seasonSlugsByBlizzardId)
+    .sort(([a], [b]) => Number(b) - Number(a))
+    .map(([, slug]) => slug);
+  if (seasonsNewestFirst[0] !== currentSeason.slug)
+    throw new Error(`Newest Blizzard-mapped season ${seasonsNewestFirst[0]} is not the current ${currentSeason.slug}`);
+  // The character page shows the current and previous season; only the
+  // previous one's scale is final, so only it is frozen here.
+  const previousSeason = seasonsNewestFirst[1];
+  const previousSeasonTiers = previousSeason ? await fetchScoreTiers(previousSeason) : [];
 
   const dungeons = (currentSeason.dungeons as any[]).map((d) => ({
     id: d.id,
@@ -567,6 +591,16 @@ export const CURRENT_DUNGEONS: Dungeon[] = ${stringify(dungeons)};
 // Blizzard Mythic+ season id → Raider.IO season slug: the season's label and
 // the key for its score colour scale.
 export const MYTHIC_PLUS_SEASON_SLUGS: Record<number, string> = ${stringify(seasonSlugsByBlizzardId)};
+
+// Raider.IO's final rating colour scale for the previous season, as
+// [minimum rating, colour], highest first. The live season's scale moves, so
+// the backend fetches that one at runtime instead.
+export const PREVIOUS_SEASON_SCORE_TIERS: { season: string | null; tiers: [number, string][] } = {
+  season: ${stringify(previousSeason ?? null)},
+  tiers: [
+${previousSeasonTiers.map(([score, color]) => `    [${score}, ${JSON.stringify(color)}],`).join("\n")}
+  ],
+};
 
 // Raids Blizzard tracks progression for, keyed by the slug every client looks
 // progression up by. Resolved from the Blizzard journal at generation time;

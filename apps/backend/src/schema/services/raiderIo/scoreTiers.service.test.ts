@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { colorForRating, parseScoreTiers, ratingColor } from "./scoreTiers.service.js";
+import { colorForRating, nextRefreshDelay, parseScoreTiers, ratingColor } from "./scoreTiers.service.js";
+import { MYTHIC_PLUS_SEASON_SLUGS, PREVIOUS_SEASON_SCORE_TIERS } from "../../../generated/seasonConfig.js";
 
 // Shape of https://raider.io/api/v1/mythic-plus/score-tiers (trimmed).
 const payload = [
@@ -34,8 +35,27 @@ describe("score tiers", () => {
     expect(() => parseScoreTiers([{ score: 3000, rgbHex: "purple" }])).toThrow();
   });
 
-  it("has no colour for a season whose tiers aren't loaded", () => {
-    expect(ratingColor("season-mn-2", 3000)).toBeNull();
+  // Read from the generated config rather than hard-coded, so these hold
+  // across season rollovers.
+  const [liveSeason] = Object.entries(MYTHIC_PLUS_SEASON_SLUGS)
+    .sort(([a], [b]) => Number(b) - Number(a))
+    .map(([, slug]) => slug);
+
+  it("colours the previous season from the frozen config scale, with no fetch", () => {
+    const { season, tiers } = PREVIOUS_SEASON_SCORE_TIERS;
+    const [topScore, topColor] = tiers[0]!;
+    expect(season).not.toBe(liveSeason);
+    expect(ratingColor(season, topScore)).toBe(topColor);
+  });
+
+  it("has no colour for the live season before its first fetch, or an unknown season", () => {
+    expect(ratingColor(liveSeason, 3000)).toBeNull();
+    expect(ratingColor("season-that-does-not-exist", 3000)).toBeNull();
     expect(ratingColor(null, 3000)).toBeNull();
+  });
+
+  it("refreshes hourly, and retries within minutes after a failure", () => {
+    expect(nextRefreshDelay(0)).toBe(3_600_000);
+    expect([1, 2, 3, 10].map(nextRefreshDelay)).toEqual([60_000, 120_000, 300_000, 300_000]);
   });
 });
