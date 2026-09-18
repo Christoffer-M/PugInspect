@@ -33,8 +33,10 @@ fn diagnose(app: AppHandle) -> Result<String, String> {
 /// Opt-in alternative to handing the URL to the default browser, which spawns a fresh
 /// tab per click: one reusable window we navigate ourselves. The label is fixed, so the
 /// second click reuses the window the first one built.
+/// Must be async: a sync command runs on the main thread, and building a webview window
+/// there deadlocks on Windows (tauri-apps/wry#583) - blank white viewer, frozen app.
 #[tauri::command]
-fn open_in_app(app: AppHandle, url: String) -> Result<(), String> {
+async fn open_in_app(app: AppHandle, url: String) -> Result<(), String> {
     let url = viewer_url(&url)?;
     if let Some(w) = app.get_webview_window("viewer") {
         w.navigate(url).map_err(|e| e.to_string())?;
