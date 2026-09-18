@@ -154,8 +154,6 @@ const CharacterSearchInput: React.FC = () => {
             lower.includes("raider.io/") ||
             lower.includes("puginspect.com/")
           ) {
-            // Page.tsx's window paste handler would navigate a second time.
-            e.stopPropagation();
             handleCharacterUrl(pastedText);
             // Phones can only paste into a text field, so "anywhere" is desktop-only.
             if (hasKeyboard && !localStorage.getItem(PASTE_TIP_SEEN)) {
