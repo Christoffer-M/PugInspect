@@ -35,7 +35,12 @@ const Home: React.FC = () => {
           <CharacterSearchInput />
 
           <Text className={classes.hint} m={0}>
-            Start by typing a character name above, or paste a Raider.IO or PugInspect link — anywhere on this page.
+            Start by typing a character name above
+            {/* Phones can only paste into a text field. */}
+            <Box component="span" visibleFrom="sm">
+              , or paste a Raider.IO or PugInspect link — anywhere on this page
+            </Box>
+            .
           </Text>
 
           {recentChars.length > 0 && (

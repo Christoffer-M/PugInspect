@@ -1,11 +1,14 @@
 import {
   Autocomplete,
   Flex,
+  Kbd,
   Loader,
   Select,
+  Tooltip,
   useMantineTheme,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedValue, useMediaQuery } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -21,12 +24,16 @@ import { useCharacterSearchQuery } from "../../queries/character-search";
 // API we have no credentials for. None of them ever worked; don't add them back.
 export const regions = ["EU", "US", "KR", "TW"];
 
+const pasteKeys = /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘ V" : "Ctrl V";
+const PASTE_TIP_SEEN = "pasteAnywhereTipSeen";
+
 const CharacterSearchInput: React.FC = () => {
   const params = useParams({
     from: "/$region/$realm/$name",
     shouldThrow: false,
   });
   const theme = useMantineTheme();
+  const hasKeyboard = useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
 
   const initialRegion = params?.region;
   const initialRealm = params?.realm;
@@ -40,6 +47,7 @@ const CharacterSearchInput: React.FC = () => {
 
   const [errorText, setErrorText] = useState("");
   const router = useRouter();
+  const showPasteHint = hasKeyboard && !searchTerm;
 
   const { data: searchResults = [], isLoading } = useCharacterSearchQuery(
     debouncedSearch,
@@ -112,7 +120,7 @@ const CharacterSearchInput: React.FC = () => {
         // The server already matched these; Mantine's default substring filter
         // would hide "Condenial-Tarren Mill" for a half-typed "cond-TarrenM".
         filter={({ options }) => options}
-        placeholder="Ceases-Kazzak or paste a link"
+        placeholder={hasKeyboard ? "Ceases-Kazzak or paste a link" : "Ceases-Kazzak"}
         data={searchResults?.map((r) => ({
           value: `${r.name}-${r.realm}`,
           label: `${r.name}-${r.realm}`,
@@ -146,12 +154,43 @@ const CharacterSearchInput: React.FC = () => {
             lower.includes("raider.io/") ||
             lower.includes("puginspect.com/")
           ) {
+            // Page.tsx's window paste handler would navigate a second time.
+            e.stopPropagation();
             handleCharacterUrl(pastedText);
+            // Phones can only paste into a text field, so "anywhere" is desktop-only.
+            if (hasKeyboard && !localStorage.getItem(PASTE_TIP_SEEN)) {
+              localStorage.setItem(PASTE_TIP_SEEN, "1");
+              notifications.show({
+                title: "Tip: paste anywhere",
+                message: `Press ${pasteKeys} anywhere on the page to open a character link.`,
+                autoClose: 6000,
+              });
+            }
             return;
           }
         }}
+        rightSectionPointerEvents="auto"
+        rightSectionWidth={!isLoading && showPasteHint ? 56 : undefined}
         rightSection={
-          isLoading ? <Loader size="sm" color={theme.colors.gray[1]} /> : null
+          isLoading ? (
+            <Loader size="sm" color={theme.colors.gray[1]} />
+          ) : !showPasteHint ? null : (
+            <Tooltip
+              label="Paste a Raider.IO or PugInspect link anywhere on the page or in the search box. Either works."
+              multiline
+              w={220}
+              withArrow
+            >
+              <Kbd
+                size="sm"
+                // The monospace ⌘ glyph renders a third smaller than the V.
+                ff="var(--mantine-font-family)"
+                style={{ cursor: "help", whiteSpace: "nowrap" }}
+              >
+                {pasteKeys}
+              </Kbd>
+            </Tooltip>
+          )
         }
       />
     </Flex>
