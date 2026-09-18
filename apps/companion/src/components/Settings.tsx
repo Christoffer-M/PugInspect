@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Button, Group, SegmentedControl, Switch, Text } from "@mantine/core";
 import { invoke } from "@tauri-apps/api/core";
 import type { Settings as S } from "../settings";
+import type { CheckResult, UpdateState } from "../updates";
 import app from "../App.module.css";
 import classes from "./Settings.module.css";
 
@@ -67,7 +68,61 @@ function Diagnostic() {
   );
 }
 
-export function Settings({ settings, update }: { settings: S; update: (p: Partial<S>) => void }) {
+/// Manual update check. The update banner lives on the main screen, so a found update
+/// is installable from here too.
+function Updates({ release, checkUpdate }: { release: UpdateState | null; checkUpdate: () => Promise<CheckResult> }) {
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<CheckResult>();
+  const status = release
+    ? release.done
+      ? "Update installed. Restart the app to finish."
+      : release.error
+        ? `Update failed: ${release.error}`
+        : `Companion ${release.version} is available.`
+    : result === "latest"
+      ? "You're on the latest version."
+      : result === "failed"
+        ? "Couldn't check for updates. Try again later."
+        : "Check for a new version of the companion.";
+  return (
+    <div className={classes.rowItem}>
+      <span>{status}</span>
+      {release ? (
+        !release.done && (
+          <Button size="compact-xs" variant="light" loading={release.installing} onClick={release.install}>
+            {release.error ? "Retry" : "Install & restart"}
+          </Button>
+        )
+      ) : (
+        <Button
+          size="compact-xs"
+          variant="light"
+          loading={checking}
+          onClick={() => {
+            setChecking(true);
+            checkUpdate()
+              .then(setResult)
+              .finally(() => setChecking(false));
+          }}
+        >
+          Check now
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export function Settings({
+  settings,
+  update,
+  release,
+  checkUpdate,
+}: {
+  settings: S;
+  update: (p: Partial<S>) => void;
+  release: UpdateState | null;
+  checkUpdate: () => Promise<CheckResult>;
+}) {
   return (
     <div className={classes.scroll}>
       <Section title="Startup">
@@ -99,6 +154,9 @@ export function Settings({ settings, update }: { settings: S; update: (p: Partia
         <Toggle indent disabled={!settings.notifications} label="New applicant" checked={settings.notifyApplicant} onChange={(v) => update({ notifyApplicant: v })} />
         <Toggle indent disabled={!settings.notifications} label="New listing detected" checked={settings.notifyListing} onChange={(v) => update({ notifyListing: v })} />
         <Toggle indent disabled={!settings.notifications} label="Play a sound" checked={settings.sound} onChange={(v) => update({ sound: v })} />
+      </Section>
+      <Section title="Updates">
+        <Updates release={release} checkUpdate={checkUpdate} />
       </Section>
       <Section title="Troubleshooting">
         <Diagnostic />
