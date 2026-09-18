@@ -4,6 +4,14 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.9.0
+
+- A bell button in the titlebar mutes notifications in one click. The status bar says
+  "notifications muted" while it is on, so the app is never silently quiet.
+- Settings has a "Check now" button under Updates, so you can pull in a new release
+  without waiting or restarting the app.
+- The titlebar is a little taller and easier to hit.
+
 ## 0.8.1
 
 - Opening a character in the app no longer freezes the companion on Windows. The window
