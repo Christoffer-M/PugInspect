@@ -13,3 +13,4 @@
 .ok { color: #7fe0a3; }
 .lost { color: #f4c15e; }
 .idle { color: var(--mantine-color-dark-2); }
+.muted { color: #f4a50e; }

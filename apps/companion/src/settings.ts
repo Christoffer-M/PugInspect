@@ -6,6 +6,8 @@ export type Settings = {
   alwaysOnTop: boolean;
   closeAction: "hide" | "quit";
   openInApp: boolean;
+  /** Master switch; the titlebar bell and Settings both write it. */
+  notifications: boolean;
   notifyApplicant: boolean;
   notifyListing: boolean;
   sound: boolean;
@@ -19,6 +21,7 @@ const DEFAULTS: Settings = {
   alwaysOnTop: true,
   closeAction: "hide",
   openInApp: false,
+  notifications: true,
   notifyApplicant: true,
   notifyListing: true,
   sound: false,
