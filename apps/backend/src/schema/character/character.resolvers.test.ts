@@ -5,6 +5,7 @@ import { characterTypedefs } from "./character.typedefs.js";
 import characterResolvers from "./character.resolvers.js";
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { RaiderIOService } from "../services/raiderIo/raiderio.services.js";
+import { ratingColor } from "../services/raiderIo/scoreTiers.service.js";
 import {
   getLinkedCharacters,
   getRosterBySlug,
@@ -22,6 +23,9 @@ vi.mock("../services/character/characterProfile.service.js", () => ({
 }));
 vi.mock("../services/blizzard/achievements.service.js", () => ({
   AchievementsService: { enrichAndLinkAlts: vi.fn().mockResolvedValue(undefined) },
+}));
+vi.mock("../services/raiderIo/scoreTiers.service.js", () => ({
+  ratingColor: vi.fn(() => "#a335ee"),
 }));
 vi.mock("../services/raiderIo/raiderio.services.js", () => ({
   RaiderIOService: { getCharacterSuggestions: vi.fn() },
@@ -83,7 +87,7 @@ const blizzardProfile = {
 
 const progression: CharacterProgression = {
   mythicPlus: {
-    currentSeason: { season: "season-mn-2", rating: 2800, color: "#ff8000", bestRuns: [] },
+    currentSeason: { season: "season-mn-2", rating: 2800, bestRuns: [] },
     previousSeason: null,
   },
   raidProgression: [],
@@ -142,9 +146,11 @@ describe("Query.character", () => {
       activeSpec: "Enhancement",
       equippedItemLevel: 678,
       guild: { name: "Pug Life", realm: "Kazzak" },
-      mythicPlus: { currentSeason: { rating: 2800, color: "#ff8000" } },
+      mythicPlus: { currentSeason: { rating: 2800, color: "#a335ee" } },
       potentialAlts: [{ name: "pugalt", realm: "kazzak", region: "eu" }],
     });
+    // The colour is never stored: it's resolved from the season's scale on read.
+    expect(ratingColor).toHaveBeenCalledWith("season-mn-2", 2800);
     expect(getLinkedCharacters).toHaveBeenCalledWith("char-uuid-1");
     // Identity lookup (blizzard fields requested) counts as one search
     expect(recordSearchEvent).toHaveBeenCalledTimes(1);

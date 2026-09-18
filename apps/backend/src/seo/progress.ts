@@ -1,4 +1,5 @@
-import type { MythicPlusSeason, RaidProgress as RaidKills } from "@repo/graphql-types";
+import type { RaidProgress as RaidKills } from "@repo/graphql-types";
+import type { StoredMythicPlusSeason } from "../schema/services/blizzard/model/Progression.js";
 import { DEFAULT_RAID, RAIDS } from "../generated/seasonConfig.js";
 
 export type RaidProgress = {
@@ -17,7 +18,7 @@ export function currentRaidProgress(progression: RaidKills[] | null | undefined)
   const current = progression?.find((p) => p.raid === DEFAULT_RAID);
   if (!current) return null;
 
-  const total = RAIDS[DEFAULT_RAID]?.encounters.length ?? 0;
+  const total = RAIDS[DEFAULT_RAID]?.bosses ?? 0;
   if (current.mythic) return { killed: current.mythic, total, difficulty: "Mythic" };
   if (current.heroic) return { killed: current.heroic, total, difficulty: "Heroic" };
   if (current.normal) return { killed: current.normal, total, difficulty: "Normal" };
@@ -26,7 +27,7 @@ export function currentRaidProgress(progression: RaidKills[] | null | undefined)
 
 /** Highest timed key of the season. Kept in sync with getTopKeyLevel in
  *  frontend CharacterHeader.tsx. */
-export function topTimedKey(season: MythicPlusSeason | null | undefined): number | null {
+export function topTimedKey(season: StoredMythicPlusSeason | null | undefined): number | null {
   const levels = season?.bestRuns.filter((r) => r.upgrades > 0).map((r) => r.keyLevel) ?? [];
   return levels.length ? Math.max(...levels) : null;
 }

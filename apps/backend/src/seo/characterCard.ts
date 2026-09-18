@@ -5,10 +5,11 @@ import { normalizeName, resolveRealm } from "../schema/utils/helpers.js";
 import { VALID_REGIONS } from "../schema/utils/regions.js";
 import { createLogger } from "../schema/utils/logger.js";
 import { currentRaidProgress, topTimedKey } from "./progress.js";
+import { ratingColor } from "../schema/services/raiderIo/scoreTiers.service.js";
 
 const logger = createLogger({ service: "CharacterCard" });
 
-const CARD_TTL_MS = 15 * 60_000; // 15 minutes, matching the RIO cache
+const CARD_TTL_MS = 15 * 60_000; // 15 minutes, matching the progression cache
 const FALLBACK_COLOR = "#7a8290";
 
 const FONT_BARLOW_URL =
@@ -153,7 +154,7 @@ function buildCard(snapshot: CharacterSeoSnapshot): Element {
   const mScore = season ? String(Math.round(season.rating)) : "—";
   const timedKey = topTimedKey(season);
   const topKey = timedKey != null ? `+${timedKey}` : "—";
-  const mColor = season?.color ?? "#FF5252";
+  const mColor = (season && ratingColor(season.season, season.rating)) ?? "#FF5252";
 
   const avatar = snapshot.thumbnailUrl
     ? h(
@@ -194,7 +195,7 @@ function buildCard(snapshot: CharacterSeoSnapshot): Element {
         { style: { display: "flex", flex: 1, flexDirection: "column", justifyContent: "center", paddingLeft: "34px", paddingRight: "60px", gap: "18px" } },
         h("div", { style: { display: "flex", gap: "18px" } },
           statCard("Item Level", ilvl, "#E8EDF2"),
-          statCard("M+ Score", mScore, mColor, true)
+          statCard("M+ Rating", mScore, mColor, true)
         ),
         h("div", { style: { display: "flex", gap: "18px" } },
           statCard("Top Key", topKey, "#E8EDF2"),

@@ -304,7 +304,8 @@ type MythicPlusSeason {
   """Best run per dungeon, highest rated first."""
   bestRuns: [MythicPlusRun!]!
   """
-  In-game rating colour (#rrggbb). Null once the season has ended: Blizzard drops it.
+  Raider.IO's colour for the rating (#rrggbb), from that season's current
+  scale. Null when the scale isn't available; clients fall back to their own.
   """
   color: String
   rating: Float!

@@ -41,7 +41,9 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
     [raidData, selectedRaid],
   );
 
-  const total = (selectedRaid && RAIDS[selectedRaid]?.bosses) || 1;
+  // Undefined for a raid Blizzard doesn't report progression for (listed for
+  // its logs only) — show that honestly rather than as 0 kills.
+  const bosses = selectedRaid ? RAIDS[selectedRaid]?.bosses : undefined;
 
   const normalKilled = !isLoading ? (raidDataItem?.normal ?? 0) : 0;
   const heroicKilled = !isLoading ? (raidDataItem?.heroic ?? 0) : 0;
@@ -75,7 +77,7 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
 
       <Grid>
         {rings.map(({ label, killed, color }) => {
-          const pct = Math.round((killed / total) * 100);
+          const pct = bosses ? Math.round((killed / bosses) * 100) : 0;
           return (
             <Grid.Col key={label} span={{ base: 12, sm: 4 }} pb={0}>
               <Paper withBorder shadow="sm" className={classes.ringCard}>
@@ -91,17 +93,17 @@ export const RaidProgression: React.FC<RaidProgressionProps> = ({
                       lh={1.2}
                       ff="Space Grotesk, system-ui, sans-serif"
                     >
-                      {`${killed}/${total}`}
+                      {bosses ? `${killed}/${bosses}` : "—"}
                     </Text>
                   }
-                  sections={[{ value: (killed / total) * 100, color }]}
+                  sections={[{ value: pct, color }]}
                 />
                 <Stack className={classes.ringMeta} gap={2}>
                   <Text className={classes.diffLabel} m={0} style={{ color }}>
                     {label}
                   </Text>
                   <Text className={classes.pctLabel} m={0}>
-                    {pct}% cleared
+                    {bosses ? `${pct}% cleared` : "Not tracked"}
                   </Text>
                 </Stack>
               </Paper>

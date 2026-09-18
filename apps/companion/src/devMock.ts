@@ -73,14 +73,14 @@ const APPLICANTS: Frame["applicants"] = [
 
 /** What the backend adds on top of the strip. Item level is deliberately a point higher than
  *  the strip's: in game the API lags a gear swap, and the row must keep showing the live one. */
-const CHARACTERS: Record<string, { class: string; ilvl: number; rio: number }> = {
-  Frostvyre: { class: "MAGE", ilvl: 303, rio: 0 },
-  Bearlyalive: { class: "DRUID", ilvl: 300, rio: 2884 },
-  Lightwarden: { class: "PRIEST", ilvl: 298, rio: 2705 },
-  Soulrend: { class: "WARLOCK", ilvl: 296, rio: 2611 },
-  Emberhoof: { class: "PALADIN", ilvl: 294, rio: 2450 },
-  Quickshot: { class: "HUNTER", ilvl: 289, rio: 2201 },
-  Bloodhilt: { class: "DEATHKNIGHT", ilvl: 285, rio: 1840 },
+const CHARACTERS: Record<string, { class: string; ilvl: number; rating: number }> = {
+  Frostvyre: { class: "MAGE", ilvl: 303, rating: 0 },
+  Bearlyalive: { class: "DRUID", ilvl: 300, rating: 2884 },
+  Lightwarden: { class: "PRIEST", ilvl: 298, rating: 2705 },
+  Soulrend: { class: "WARLOCK", ilvl: 296, rating: 2611 },
+  Emberhoof: { class: "PALADIN", ilvl: 294, rating: 2450 },
+  Quickshot: { class: "HUNTER", ilvl: 289, rating: 2201 },
+  Bloodhilt: { class: "DEATHKNIGHT", ilvl: 285, rating: 1840 },
 };
 
 const SPECS: Record<string, string> = { MAGE: "Fire", DRUID: "Guardian", PRIEST: "Holy", WARLOCK: "Destruction", PALADIN: "Retribution", HUNTER: "Beast Mastery", DEATHKNIGHT: "Blood" };
@@ -112,7 +112,7 @@ window.fetch = async (input, init) => {
           activeSpec: SPECS[ch.class],
           equippedItemLevel: ch.ilvl,
           mythicPlus: {
-            currentSeason: ch.rio ? { rating: ch.rio, color: ["#e6cc80", "#a335ee", "#a335ee", "#a335ee", "#0070dd", "#0070dd", "#1eff00"][i] } : null,
+            currentSeason: ch.rating ? { rating: ch.rating, color: ["#e6cc80", "#a335ee", "#a335ee", "#a335ee", "#0070dd", "#0070dd", "#1eff00"][i] } : null,
           },
           raidProgression: [{ raid: "some-world-boss", normal: 1, heroic: 1, mythic: 0 }, { raid: DEFAULT_RAID, normal: 8, heroic: [8, 6, 8, 4, 6, 0, 0][i], mythic: 0 }],
           raidLogs: { bestPerformanceAverage: [96, 78, 61, 44, 33, 19, 8][i], medianPerformanceAverage: 50 },

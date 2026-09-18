@@ -24,7 +24,7 @@ const BODY_BLOCK = /<!--body:start-->[\s\S]*?<!--body:end-->/;
 const EMPTY_APP = '<div id="app"></div>';
 
 const GENERIC_DESCRIPTION =
-  "View gear, Raider.IO score, raid progression and Mythic+ runs.";
+  "View gear, Mythic+ rating, raid progression and Mythic+ runs.";
 
 /** Escapes all HTML-significant characters. Route params arrive percent-decoded
  * from Express, so every user-supplied or DB-sourced value must pass through
@@ -79,7 +79,7 @@ function buildDescription(
     .join(" ");
   const stats = [
     snapshot?.itemLevel != null ? `ilvl ${Math.round(snapshot.itemLevel)}` : null,
-    rating != null ? `M+ score ${Math.round(rating)}` : null,
+    rating != null ? `M+ rating ${Math.round(rating)}` : null,
   ].filter(Boolean);
 
   const details = [traits, ...stats].filter(Boolean).join(", ");
@@ -117,7 +117,7 @@ function buildBodySummary(
   if (snapshot.itemLevel != null) facts.push(["Item level", String(Math.round(snapshot.itemLevel))]);
   const season = snapshot.progression?.mythicPlus.currentSeason;
   const topKey = topTimedKey(season);
-  if (season) facts.push(["Mythic+ score", String(Math.round(season.rating))]);
+  if (season) facts.push(["Mythic+ rating", String(Math.round(season.rating))]);
   if (topKey != null) facts.push(["Best Mythic+ key", `+${topKey}`]);
   if (progress) {
     facts.push([
@@ -146,9 +146,9 @@ function buildBodySummary(
   return `<div id="app">
   <main>
     <h1>${escapeHtml(heading)}</h1>
-    <p>${escapeHtml(intro)} This page combines gear and item level from the Blizzard
-    profile API, Mythic+ score and dungeon runs from Raider.IO, and raid parse
-    percentiles from Warcraft Logs.</p>${factList}
+    <p>${escapeHtml(intro)} This page combines gear, item level, Mythic+ rating and raid
+    progression from the Blizzard profile API, recent Mythic+ runs from Raider.IO,
+    and raid parse percentiles from Warcraft Logs.</p>${factList}
     <p>Figures are a snapshot from the last time this character was looked up, not
     live values.</p>
     <p><a href="${config.publicOrigin}/">Inspect another character</a> ·
@@ -270,7 +270,7 @@ export async function renderRosterPageHtml(region: string, slug: string): Promis
 
   const count = roster.characters.length;
   const title = `Roster Check (${count} character${count === 1 ? "" : "s"}) | PugInspect`;
-  const description = `A shared ${regionLc.toUpperCase()} raid roster - item level, Raider.IO score, raid progress and log percentiles for all ${count} characters at a glance.`;
+  const description = `A shared ${regionLc.toUpperCase()} raid roster - item level, M+ rating, raid progress and log percentiles for all ${count} characters at a glance.`;
   const canonical = `${config.publicOrigin}/roster/${regionLc}/${slug}`;
 
   const metaBlock = [

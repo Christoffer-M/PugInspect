@@ -106,6 +106,69 @@ async function fetchBlizzardItemSetIds(): Promise<number[]> {
  * short list is indistinguishable from realms closing, and the failure is
  * total — an empty table sends every realm down the guessing fallback.
  */
+type JournalRaid = { id: number; name: string; bosses: string[] };
+
+/**
+ * Blizzard's journal raids per expansion (keyed by expansion name, which
+ * EXPANSIONS shares with the journal), each with its boss list. Raid
+ * progression from the profile API is reported per journal instance, so these
+ * ids are what a config raid's progression is summed over.
+ */
+async function fetchJournalRaids(expansionNames: string[]): Promise<Map<string, JournalRaid[]>> {
+  const access_token = await blizzardToken();
+  const get = (path: string) =>
+    getJson(`https://eu.api.blizzard.com/data/wow/${path}?namespace=static-eu&locale=en_US`, {
+      Authorization: `Bearer ${access_token}`,
+    });
+  const index = await get("journal-expansion/index");
+  const byExpansion = new Map<string, JournalRaid[]>();
+  for (const name of expansionNames) {
+    const tier = (index.tiers as { id: number; name: string }[]).find((t) => t.name === name);
+    if (!tier) throw new Error(`No Blizzard journal expansion named "${name}" — check EXPANSIONS`);
+    const expansion = await get(`journal-expansion/${tier.id}`);
+    byExpansion.set(
+      name,
+      await Promise.all(
+        (expansion.raids as { id: number; name: string }[]).map(async (r) => {
+          const instance = await get(`journal-instance/${r.id}`);
+          return { id: r.id, name: r.name, bosses: (instance.encounters as { name: string }[]).map((e) => e.name) };
+        })
+      )
+    );
+  }
+  return byExpansion;
+}
+
+/**
+ * The Blizzard journal instances a Raider.IO raid covers: the instance with its
+ * exact name, else every instance whose bosses all belong to the raid — a
+ * multi-instance tier like tier-mn-1 (Voidspire + Dreamrift + March on
+ * Quel'Danas). Strict on purpose: this runs once per season and the diff is
+ * reviewed, so a near-miss should surface as a warning, not a guess at runtime.
+ * Raider.IO-only constructs (the "Awakened" re-runs rename every boss) match
+ * nothing, which is correct: Blizzard doesn't track them apart.
+ */
+function resolveJournalInstances(
+  raid: { name: string; slug: string; encounters: { name: string }[] },
+  journal: JournalRaid[]
+): { instanceIds: number[]; bosses: number } | undefined {
+  const exact = journal.find((j) => norm(j.name) === norm(raid.name));
+  if (exact) return { instanceIds: [exact.id], bosses: exact.bosses.length };
+
+  const raidBosses = new Set(raid.encounters.map((e) => norm(e.name)));
+  const parts = journal.filter((j) => j.bosses.length > 0 && j.bosses.every((b) => raidBosses.has(norm(b))));
+  if (!parts.length) return undefined;
+  const covered = new Set(parts.flatMap((j) => j.bosses.map(norm)));
+  const missing = [...raidBosses].filter((b) => !covered.has(b));
+  if (missing.length)
+    warnings.push(
+      `Raid "${raid.name}" (${raid.slug}) only partly maps to Blizzard instances ${parts
+        .map((j) => j.name)
+        .join(" + ")} — bosses without an instance: ${missing.join(", ")}`
+    );
+  return { instanceIds: parts.map((j) => j.id), bosses: parts.reduce((n, j) => n + j.bosses.length, 0) };
+}
+
 function assertNoMassRealmLoss(path: string, next: Record<string, Record<string, string>>) {
   let previous: Record<string, Record<string, string>>;
   try {
@@ -272,9 +335,13 @@ const started = (r: { starts: { us: string } }) => Date.parse(r.starts.us) <= no
 
 async function main() {
   const current = EXPANSIONS[0]!;
-  const [mplus, wclZones, itemSetIds, heroTalents, { slugs: realmSlugs, names: realmNames }, ...raidData] = await Promise.all([
+  const [mplus, previousMplus, wclZones, journalRaids, itemSetIds, heroTalents, { slugs: realmSlugs, names: realmNames }, ...raidData] = await Promise.all([
     getJson(`https://raider.io/api/v1/mythic-plus/static-data?expansion_id=${current.rioId}`),
+    EXPANSIONS[1]
+      ? getJson(`https://raider.io/api/v1/mythic-plus/static-data?expansion_id=${EXPANSIONS[1].rioId}`)
+      : { seasons: [] },
     fetchWclZones(),
+    fetchJournalRaids(EXPANSIONS.map((e) => e.name)),
     fetchBlizzardItemSetIds(),
     fetchHeroTalents(),
     fetchRealmSlugs(),
@@ -311,6 +378,20 @@ async function main() {
     warnings.push(
       `No WCL zone for the current M+ season (${currentSeason.slug}) — the companion's M+ parse lookups will be disabled`
     );
+  // Blizzard names M+ seasons only by id. Raider.IO's main seasons carry that
+  // id, which lets the backend label a Blizzard season (and key its score
+  // colour scale) exactly — including the previous expansion's last season,
+  // which is "previous" at an expansion's first season.
+  const seasonSlugsByBlizzardId: Record<number, string> = {};
+  for (const s of [...(previousMplus.seasons as any[]), ...(mplus.seasons as any[])]) {
+    if (!s.is_main_season || !started(s)) continue;
+    if (typeof s.blizzard_season_id !== "number")
+      throw new Error(`Raider.IO season ${s.slug} has no blizzard_season_id`);
+    seasonSlugsByBlizzardId[s.blizzard_season_id] = s.slug;
+  }
+  if (!Object.values(seasonSlugsByBlizzardId).includes(currentSeason.slug))
+    throw new Error(`Current season ${currentSeason.slug} has no Blizzard season id`);
+
   const dungeons = (currentSeason.dungeons as any[]).map((d) => ({
     id: d.id,
     challenge_mode_id: d.challenge_mode_id,
@@ -322,13 +403,18 @@ async function main() {
     background_image_url: d.background_image_url,
   }));
 
-  // --- Raids (current + previous expansion), newest first ------------------
-  const raids: Record<string, object> = {};
-  // Backend copy keeps RIO's own raid name and boss list: Blizzard's
-  // encounters/raids payload is matched against them to rebuild progression
-  // under RIO's slugs, including multi-instance tiers like tier-mn-1.
-  const backendRaids: Record<string, { name: string; encounters: string[] }> = {};
-  let defaultRaid: string | undefined;
+  // --- Raids (every EXPANSIONS entry), newest first -------------------------
+  // Raider.IO's raid list (slugs, names, WCL zones) mapped onto Blizzard's
+  // journal instances, which is what profile progression is reported against.
+  type RaidEntry = {
+    slug: string;
+    zoneId: number;
+    displayName: string;
+    expansion: number;
+    /** Absent when Blizzard can't report progression for the raid (logs only). */
+    tracked?: { instanceIds: number[]; bosses: number };
+  };
+  const raidEntries: RaidEntry[] = [];
   for (const [i, expansion] of EXPANSIONS.entries()) {
     const expansionRaids = (raidData[i].raids as any[]).filter(started);
     expansionRaids.sort((a, b) => Date.parse(b.starts.us) - Date.parse(a.starts.us));
@@ -339,22 +425,41 @@ async function main() {
         warnings.push(`Skipping raid "${r.name}" (${r.slug}) — no WCL zone yet`);
         continue;
       }
-      raids[r.slug] = {
+      raidEntries.push({
+        slug: r.slug,
         zoneId,
         displayName: RAID_DISPLAY_OVERRIDES[r.slug] ?? r.name,
         expansion: expansion.rioId,
-        bosses: r.encounters.length,
-      };
-      backendRaids[r.slug] = {
-        name: r.name,
-        encounters: (r.encounters as any[]).map((e) => e.name),
-      };
-      // Default = newest raid tier of the current expansion; single-boss
-      // event raids (e.g. Sporefall) don't count as a tier.
-      if (i === 0 && !defaultRaid && r.encounters.length >= 3) defaultRaid = r.slug;
+        tracked: resolveJournalInstances(r, journalRaids.get(expansion.name) ?? []),
+      });
     }
   }
-  if (!defaultRaid) throw new Error("No default raid found (≥3 encounters, current expansion)");
+
+  // One entry per WCL zone. Two raids share a zone when Raider.IO splits out a
+  // re-run (Awakened Amirdrassil = Amirdrassil's zone): the logs are the same,
+  // so keep the one Blizzard tracks and drop the duplicate.
+  const keptRaids = raidEntries.filter((r) => {
+    const sameZone = raidEntries.filter((o) => o.zoneId === r.zoneId);
+    const keep = sameZone.length === 1 || (r.tracked ? true : !sameZone.some((o) => o.tracked));
+    if (!keep) console.log(`Dropping raid ${r.slug}: shares WCL zone ${r.zoneId} with a raid Blizzard tracks`);
+    else if (!r.tracked)
+      warnings.push(`Raid ${r.slug} maps to no Blizzard journal instance — listed for logs, no progression`);
+    return keep;
+  });
+
+  // Default = newest raid tier of the current expansion; single-boss event
+  // raids (e.g. Sporefall) don't count as a tier.
+  const defaultRaid = keptRaids.find((r) => r.expansion === current.rioId && (r.tracked?.bosses ?? 0) >= 3)?.slug;
+  if (!defaultRaid) throw new Error("No default raid found (tracked, ≥3 bosses, current expansion)");
+  const defaultRaidBosses = keptRaids.find((r) => r.slug === defaultRaid)!.tracked!.bosses;
+
+  const raids = Object.fromEntries(
+    keptRaids.map((r) => [
+      r.slug,
+      { zoneId: r.zoneId, displayName: r.displayName, expansion: r.expansion, bosses: r.tracked?.bosses },
+    ])
+  );
+  const backendRaids = Object.fromEntries(keptRaids.flatMap((r) => (r.tracked ? [[r.slug, r.tracked]] : [])));
 
   // --- Tier-set ranges: seed + new contiguous 13-blocks above it -----------
   const tierRanges = [...TIER_SEED].sort((a, b) => a.from - b.from);
@@ -402,7 +507,8 @@ export type RaidInfo = {
   zoneId?: number;
   displayName: string;
   expansion: number;
-  bosses: number;
+  /** Boss count Blizzard tracks progression over; absent for a logs-only raid. */
+  bosses?: number;
 };
 
 export const EXPANSION_DISPLAY_NAMES: Record<number, string> = ${stringify(
@@ -443,9 +549,9 @@ export type Dungeon = {
 };
 
 export type RaidInfo = {
-  /** Raider.IO's name, which is Blizzard's instance name for single-instance raids. */
-  name: string;
-  encounters: string[];
+  /** Blizzard journal instances whose kills make up this raid's progression. */
+  instanceIds: number[];
+  bosses: number;
 };
 
 export const DEFAULT_RAID = ${stringify(defaultRaid)};
@@ -458,9 +564,13 @@ export const DEFAULT_MYTHIC_PLUS_SEASON = ${stringify(currentSeason.slug)};
 
 export const CURRENT_DUNGEONS: Dungeon[] = ${stringify(dungeons)};
 
-// Raids newest first, keyed by slug (the key every client looks progression up
-// by). Blizzard's per-instance kills are mapped onto these; see
-// blizzardProgression.mapper.ts.
+// Blizzard Mythic+ season id → Raider.IO season slug: the season's label and
+// the key for its score colour scale.
+export const MYTHIC_PLUS_SEASON_SLUGS: Record<number, string> = ${stringify(seasonSlugsByBlizzardId)};
+
+// Raids Blizzard tracks progression for, keyed by the slug every client looks
+// progression up by. Resolved from the Blizzard journal at generation time;
+// see resolveJournalInstances in the generator.
 export const RAIDS: Record<string, RaidInfo> = ${stringify(backendRaids)};
 
 // Slots expected to carry a permanent enchant this era.
@@ -486,7 +596,7 @@ export const HERO_TALENTS_BY_SPEC: Record<string, string[]> = ${stringify(
   // Companion-only: it needs just the raid slug to pick the right progression row.
   const companion = `${header}
 export const DEFAULT_RAID = ${stringify(defaultRaid)};
-export const DEFAULT_RAID_BOSSES = ${(raids[defaultRaid] as { bosses: number }).bosses};
+export const DEFAULT_RAID_BOSSES = ${defaultRaidBosses};
 /** WCL zone of the current Mythic+ season, for M+ parse lookups. */
 export const MYTHIC_PLUS_ZONE_ID: number | undefined = ${stringify(
     // currentSeason is Raider.IO's raw season object and has no zoneId — the

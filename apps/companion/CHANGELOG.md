@@ -4,6 +4,14 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.8.0
+
+- The "rio" column is now "m+". Ratings come straight from Blizzard — the same number
+  Raider.IO shows, still in Raider.IO's colours — so they and raid progress load noticeably
+  faster.
+- Required by PugInspect's updated servers: older versions no longer show ratings or raid
+  progress.
+
 ## 0.7.1
 
 - Character pages opened from the app now carry a marker saying the link came from the

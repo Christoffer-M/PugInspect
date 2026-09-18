@@ -29,7 +29,7 @@ const Home: React.FC = () => {
           </Title>
 
           <Text className={classes.tag} m={0}>
-            Quickly view WoW character stats, RIO scores, and raid logs
+            Quickly view WoW character stats, M+ ratings, and raid logs
           </Text>
 
           <CharacterSearchInput />

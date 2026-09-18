@@ -10,6 +10,8 @@ import {
 import { getCharacterProfiles } from "../services/character/characterProfile.service.js";
 import { mapBlizzardCharacter } from "../mappers/blizzard.mapper.js";
 import { mapRecentRuns } from "../mappers/raiderIo.mapper.js";
+import { ratingColor } from "../services/raiderIo/scoreTiers.service.js";
+import type { StoredMythicPlusSeason } from "../services/blizzard/model/Progression.js";
 import { mapRaidLogs } from "../mappers/raidLogs.mapper.js";
 import { mapMythicPlusLogs } from "../mappers/mythicPlusLogs.mapper.js";
 import { mapGear } from "../mappers/gear.mapper.js";
@@ -371,5 +373,10 @@ export default {
       if (!parent._characterId) return [];
       return getLinkedCharacters(parent._characterId);
     },
+  },
+
+  // Derived on read, never stored: Raider.IO's scale moves during a season.
+  MythicPlusSeason: {
+    color: (season: StoredMythicPlusSeason) => ratingColor(season.season, season.rating),
   },
 };

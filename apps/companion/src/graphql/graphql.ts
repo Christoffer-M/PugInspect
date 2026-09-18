@@ -365,7 +365,10 @@ export type MythicPlusSeason = {
   __typename?: 'MythicPlusSeason';
   /** Best run per dungeon, highest rated first. */
   bestRuns: Array<MythicPlusRun>;
-  /** In-game rating colour (#rrggbb). Null once the season has ended: Blizzard drops it. */
+  /**
+   * Raider.IO's colour for the rating (#rrggbb), from that season's current
+   * scale. Null when the scale isn't available; clients fall back to their own.
+   */
   color?: Maybe<Scalars['String']['output']>;
   rating: Scalars['Float']['output'];
   /** Season slug from the season config, e.g. season-mn-2. Null if the config predates it. */

@@ -134,7 +134,7 @@ const RosterPaste: React.FC = () => {
                 <Anchor size="13px" href={ADDON_URL} target="_blank" rel="noopener noreferrer">
                   PugInspect addon
                 </Anchor>{" "}
-                and every character gets looked up at once - item level, RIO score, raid progress
+                and every character gets looked up at once - item level, M+ rating, raid progress
                 and log percentiles for the whole team on one screen.
               </Text>
             </Stack>

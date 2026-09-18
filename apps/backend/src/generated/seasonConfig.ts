@@ -21,9 +21,9 @@ export type Dungeon = {
 };
 
 export type RaidInfo = {
-  /** Raider.IO's name, which is Blizzard's instance name for single-instance raids. */
-  name: string;
-  encounters: string[];
+  /** Blizzard journal instances whose kills make up this raid's progression. */
+  instanceIds: number[];
+  bosses: number;
 };
 
 export const DEFAULT_RAID = "the-venomous-abyss";
@@ -128,176 +128,75 @@ export const CURRENT_DUNGEONS: Dungeon[] = [
   }
 ];
 
-// Raids newest first, keyed by slug (the key every client looks progression up
-// by). Blizzard's per-instance kills are mapped onto these; see
-// blizzardProgression.mapper.ts.
+// Blizzard Mythic+ season id → Raider.IO season slug: the season's label and
+// the key for its score colour scale.
+export const MYTHIC_PLUS_SEASON_SLUGS: Record<number, string> = {
+  "13": "season-tww-1",
+  "14": "season-tww-2",
+  "15": "season-tww-3",
+  "17": "season-mn-1",
+  "18": "season-mn-2"
+};
+
+// Raids Blizzard tracks progression for, keyed by the slug every client looks
+// progression up by. Resolved from the Blizzard journal at generation time;
+// see resolveJournalInstances in the generator.
 export const RAIDS: Record<string, RaidInfo> = {
   "the-venomous-abyss": {
-    "name": "The Venomous Abyss",
-    "encounters": [
-      "Nek'zali the Soulcoiler",
-      "Entombed Sentinels",
-      "The Lost Explorers",
-      "Vashnik the Malignant",
-      "Sszorak",
-      "The Twin Fangs",
-      "The Coiled Altar",
-      "Ula'tek"
-    ]
+    "instanceIds": [
+      1320
+    ],
+    "bosses": 8
   },
   "sporefall": {
-    "name": "Sporefall",
-    "encounters": [
-      "Rotmire"
-    ]
+    "instanceIds": [
+      1305
+    ],
+    "bosses": 1
   },
   "tier-mn-1": {
-    "name": "MN Tier 1 (VS / DR / MQD)",
-    "encounters": [
-      "Imperator Averzian",
-      "Vorasius",
-      "Fallen-King Salhadaar",
-      "Vaelgor & Ezzorak",
-      "Lightblinded Vanguard",
-      "Crown of the Cosmos",
-      "Chimaerus the Undreamt God",
-      "Belo'ren, Child of Al'ar",
-      "Midnight Falls"
-    ]
+    "instanceIds": [
+      1314,
+      1307,
+      1308
+    ],
+    "bosses": 9
   },
   "manaforge-omega": {
-    "name": "Manaforge Omega",
-    "encounters": [
-      "Plexus Sentinel",
-      "Loom'ithar",
-      "Soulbinder Naazindhri",
-      "Forgeweaver Araz",
-      "The Soul Hunters",
-      "Fractillus",
-      "Nexus-King Salhadaar",
-      "Dimensius"
-    ]
+    "instanceIds": [
+      1302
+    ],
+    "bosses": 8
   },
   "liberation-of-undermine": {
-    "name": "Liberation of Undermine",
-    "encounters": [
-      "Vexie and the Geargrinders",
-      "Cauldron of Carnage",
-      "Rik Reverb",
-      "Stix Bunkjunker",
-      "Sprocketmonger Lockenstock",
-      "One-Armed Bandit",
-      "Mug'Zee, Heads of Security",
-      "Chrome King Gallywix"
-    ]
-  },
-  "blackrock-depths": {
-    "name": "Blackrock Depths",
-    "encounters": [
-      "Lord Roccor",
-      "Bael'Gar",
-      "Lord Incendius",
-      "Golem Lord Argelmach",
-      "The Seven",
-      "General Angerforge",
-      "Ambassador Flamelash",
-      "Emperor Dagran Thaurissan"
-    ]
+    "instanceIds": [
+      1296
+    ],
+    "bosses": 8
   },
   "nerubar-palace": {
-    "name": "Nerub-ar Palace",
-    "encounters": [
-      "Ulgrax the Devourer",
-      "The Bloodbound Horror",
-      "Sikran",
-      "Rasha'nan",
-      "Broodtwister Ovi'nax",
-      "Nexus-Princess Ky'veza",
-      "The Silken Court",
-      "Queen Ansurek"
-    ]
-  },
-  "awakened-amirdrassil-the-dreams-hope": {
-    "name": "Awakened Amirdrassil, the Dream's Hope",
-    "encounters": [
-      "Awakened Gnarlroot",
-      "Awakened Igira the Cruel",
-      "Awakened Volcoross",
-      "Awakened Council of Dreams",
-      "Awakened Larodar, Keeper of the Flame",
-      "Awakened Nymue, Weaver of the Cycle",
-      "Awakened Smolderon",
-      "Awakened Tindral Sageswift, Seer of the Flame",
-      "Awakened Fyrakk the Blazing"
-    ]
-  },
-  "awakened-aberrus-the-shadowed-crucible": {
-    "name": "Awakened Aberrus, the Shadowed Crucible",
-    "encounters": [
-      "Awakened Kazzara, the Hellforged",
-      "Awakened The Amalgamation Chamber",
-      "Awakened The Forgotten Experiments",
-      "Awakened Assault of the Zaqali",
-      "Awakened Rashok, the Elder",
-      "Awakened The Vigilant Steward, Zskarn",
-      "Awakened Magmorax",
-      "Awakened Echo of Neltharion",
-      "Awakened Scalecommander Sarkareth"
-    ]
-  },
-  "awakened-vault-of-the-incarnates": {
-    "name": "Awakened Vault of the Incarnates",
-    "encounters": [
-      "Awakened Eranog",
-      "Awakened Terros",
-      "Awakened The Primal Council",
-      "Awakened Sennarth, the Cold Breath",
-      "Awakened Dathea, Ascended",
-      "Awakened Kurog Grimtotem",
-      "Awakened Broodkeeper Diurna",
-      "Awakened Raszageth the Storm-Eater"
-    ]
+    "instanceIds": [
+      1273
+    ],
+    "bosses": 8
   },
   "amirdrassil-the-dreams-hope": {
-    "name": "Amirdrassil, the Dream's Hope",
-    "encounters": [
-      "Gnarlroot",
-      "Igira the Cruel",
-      "Volcoross",
-      "Council of Dreams",
-      "Larodar, Keeper of the Flame",
-      "Nymue, Weaver of the Cycle",
-      "Smolderon",
-      "Tindral Sageswift, Seer of the Flame",
-      "Fyrakk the Blazing"
-    ]
+    "instanceIds": [
+      1207
+    ],
+    "bosses": 9
   },
   "aberrus-the-shadowed-crucible": {
-    "name": "Aberrus, the Shadowed Crucible",
-    "encounters": [
-      "Kazzara, the Hellforged",
-      "The Amalgamation Chamber",
-      "The Forgotten Experiments",
-      "Assault of the Zaqali",
-      "Rashok, the Elder",
-      "The Vigilant Steward, Zskarn",
-      "Magmorax",
-      "Echo of Neltharion",
-      "Scalecommander Sarkareth"
-    ]
+    "instanceIds": [
+      1208
+    ],
+    "bosses": 9
   },
   "vault-of-the-incarnates": {
-    "name": "Vault of the Incarnates",
-    "encounters": [
-      "Eranog",
-      "Terros",
-      "The Primal Council",
-      "Sennarth, the Cold Breath",
-      "Dathea, Ascended",
-      "Kurog Grimtotem",
-      "Broodkeeper Diurna",
-      "Raszageth the Storm-Eater"
-    ]
+    "instanceIds": [
+      1200
+    ],
+    "bosses": 8
   }
 };
 

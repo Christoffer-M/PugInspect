@@ -119,7 +119,7 @@ describe("renderCharacterPageHtml", () => {
     const html = await renderCharacterPageHtml("eu", "kazzak", "pugsley");
 
     expect(html).toContain(
-      "Pugsley on Kazzak (EU) — Orc Enhancement Shaman, ilvl 678, M+ score 2802."
+      "Pugsley on Kazzak (EU) — Orc Enhancement Shaman, ilvl 678, M+ rating 2802."
     );
     expect(getCharacterSeoSnapshot).toHaveBeenCalledWith({
       region: "eu",
@@ -138,7 +138,7 @@ describe("renderCharacterPageHtml", () => {
     expect(html).toContain("<h1>Pugsley-Kazzak (EU)</h1>");
     expect(html).toContain("Pugsley is an Orc Enhancement Shaman on Kazzak (EU).");
     expect(html).toContain("<dt>Item level</dt>\n      <dd>678</dd>");
-    expect(html).toContain("<dt>Mythic+ score</dt>\n      <dd>2802</dd>");
+    expect(html).toContain("<dt>Mythic+ rating</dt>\n      <dd>2802</dd>");
     expect(html).toContain("<dt>Best Mythic+ key</dt>\n      <dd>+14</dd>");
     // Mythic kills outrank the heroic clear, matching the character page.
     expect(html).toContain("4/8 Mythic in");

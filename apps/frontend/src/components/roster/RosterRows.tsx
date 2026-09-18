@@ -62,7 +62,7 @@ const Row = React.memo(function Row({
   const prog = entry ? progFor(entry, difficulty) : null;
   const name = character?.name ?? upperCaseFirstLetter(hint.name);
   const realm = upperCaseFirstLetter(character?.realm ?? hint.realm);
-  const rio = character?.mythicPlus?.currentSeason?.rating;
+  const rating = character?.mythicPlus?.currentSeason?.rating;
   const best = character?.raidLogs?.bestPerformanceAverage;
   // Progression and parses land after identity, so a resolved row can still be waiting
   // on them - a dash there would read as "no score" / "no logs".
@@ -118,7 +118,7 @@ const Row = React.memo(function Row({
           className={classes.rowValue}
           style={{ color: character?.mythicPlus?.currentSeason?.color ?? "var(--mantine-color-dark-2)" }}
         >
-          {rio != null ? Math.round(rio).toLocaleString() : "-"}
+          {rating != null ? Math.round(rating).toLocaleString() : "-"}
         </span>
       )}
       {progressionPending ? (
@@ -179,7 +179,7 @@ export const RosterRows: React.FC<{
         <div className={`${classes.rowGrid} ${classes.rowsHeader}`}>
           <span className={classes.summaryLabel}>Character</span>
           <span className={classes.summaryLabel}>Item lvl</span>
-          <span className={classes.summaryLabel}>RIO</span>
+          <span className={classes.summaryLabel}>M+</span>
           <span className={classes.summaryLabel}>Prog</span>
           <span className={classes.summaryLabel}>Best %</span>
           <span className={classes.summaryLabel}>Median %</span>

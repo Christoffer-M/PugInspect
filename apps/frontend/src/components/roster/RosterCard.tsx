@@ -181,7 +181,7 @@ export const RosterCard = React.memo(function RosterCard({
               </span>
             </div>
             <div className={classes.statCell}>
-              <span className={classes.statLabel}>RIO</span>
+              <span className={classes.statLabel}>M+</span>
               {progressionPending ? (
                 <Skeleton h={14} w={44} mt={3} />
               ) : (

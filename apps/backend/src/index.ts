@@ -2,6 +2,7 @@ import { ApolloServer, BaseContext } from "@apollo/server";
 import { characterTypedefs } from "./schema/character/character.typedefs.js";
 import { startMythicPlusStatsRefresh } from "./schema/services/mythicPlusStats/scheduler.js";
 import { startLeaderboardCrawl } from "./schema/services/blizzard/leaderboardCrawler.js";
+import { startScoreTierRefresh } from "./schema/services/raiderIo/scoreTiers.service.js";
 import {
   defaultZoneId,
   refreshMythicPlusStats,
@@ -126,6 +127,8 @@ logger.info("Database ready");
 // crawls only run in the deployed container — locally it's the /dev button below
 // and `pnpm crawl:leaderboards`.
 const isLocal = process.env.NODE_ENV !== "production";
+// Not a crawl: two requests an hour, and without it no rating has a colour.
+startScoreTierRefresh();
 if (isLocal) logger.info("Local run — scheduled crawls disabled");
 else {
   startMythicPlusStatsRefresh();

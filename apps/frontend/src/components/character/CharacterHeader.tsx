@@ -50,11 +50,12 @@ function getLastActiveColor(days: number): string {
   return DIMMED;
 }
 
-// RAIDS is newest-first. Previous tier = the nearest older raid with more than
-// one boss — single-boss mid-tier raids (Sporefall) aren't what people compare against.
+// RAIDS is newest-first. Previous tier = the nearest older tracked raid with
+// more than one boss — single-boss mid-tier raids (Sporefall) aren't what
+// people compare against, and a logs-only raid has no progression to show.
 const PREVIOUS_RAID = Object.keys(RAIDS)
   .slice(Object.keys(RAIDS).indexOf(DEFAULT_RAID) + 1)
-  .find((slug) => RAIDS[slug]!.bosses > 1);
+  .find((slug) => (RAIDS[slug]?.bosses ?? 0) > 1);
 
 /** Raid progression summary for a tier, e.g. "4/8 M"; "—" without a kill.
  * Kept in sync with currentRaidProgress in backend seo/progress.ts. */
@@ -200,7 +201,7 @@ export const CharacterHeader: React.FC<{
         {/* Stat Strip */}
         <Box className={classes.statstrip}>
           <Stack className={classes.stat} gap={3}>
-            <Text className={classes.statLabel} m={0}>RIO Score</Text>
+            <Text className={classes.statLabel} m={0}>M+ Rating</Text>
             {isLoadingProgression ? (
               <StatSkeleton valueW={54} subW={62} withPrev />
             ) : (

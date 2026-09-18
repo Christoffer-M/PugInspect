@@ -15,7 +15,8 @@ export type RaidInfo = {
   zoneId?: number;
   displayName: string;
   expansion: number;
-  bosses: number;
+  /** Boss count Blizzard tracks progression over; absent for a logs-only raid. */
+  bosses?: number;
 };
 
 export const EXPANSION_DISPLAY_NAMES: Record<number, string> = {
@@ -73,31 +74,12 @@ export const RAIDS: Record<string, RaidInfo> = {
   "blackrock-depths": {
     "zoneId": 40,
     "displayName": "Blackrock Depths",
-    "expansion": 10,
-    "bosses": 8
+    "expansion": 10
   },
   "nerubar-palace": {
     "zoneId": 38,
     "displayName": "Nerub-ar Palace",
     "expansion": 10,
-    "bosses": 8
-  },
-  "awakened-amirdrassil-the-dreams-hope": {
-    "zoneId": 35,
-    "displayName": "Awakened Amirdrassil, the Dream's Hope",
-    "expansion": 9,
-    "bosses": 9
-  },
-  "awakened-aberrus-the-shadowed-crucible": {
-    "zoneId": 33,
-    "displayName": "Awakened Aberrus, the Shadowed Crucible",
-    "expansion": 9,
-    "bosses": 9
-  },
-  "awakened-vault-of-the-incarnates": {
-    "zoneId": 31,
-    "displayName": "Awakened Vault of the Incarnates",
-    "expansion": 9,
     "bosses": 8
   },
   "amirdrassil-the-dreams-hope": {
