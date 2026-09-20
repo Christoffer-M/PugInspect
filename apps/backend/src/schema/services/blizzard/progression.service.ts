@@ -4,6 +4,7 @@ import type { QueryCharacterArgs } from "@repo/graphql-types";
 import { BlizzardService } from "./blizzard.services.js";
 import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
 import { markCache, markStale } from "../../utils/spans.js";
+import { characterKey, isMissingCharacter, markMissingCharacter } from "../../utils/missingCharacters.js";
 import { VALID_REGIONS } from "../../utils/regions.js";
 import { getCachedProgression, persistProgression } from "../../../db/persistence.js";
 import { mapBlizzardProgression } from "../../mappers/blizzardProgression.mapper.js";
@@ -52,9 +53,13 @@ export class ProgressionService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
-    return dedupeInFlight(this.inFlight, `${region}:${normalizedRealm}:${name.toLowerCase()}`, () =>
-      this.fetchProfile(region, normalizedRealm, name)
-    );
+    const key = characterKey(region, normalizedRealm, name);
+    if (!bypassCache && isMissingCharacter(key)) {
+      markCache("blizzard_progression", "missing");
+      throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
+    }
+
+    return dedupeInFlight(this.inFlight, key, () => this.fetchProfile(region, normalizedRealm, name));
   }
 
   private static async fetchProfile(region: string, realm: string, name: string): Promise<Result> {
@@ -73,7 +78,10 @@ export class ProgressionService {
         getJson<BlizzardRaidEncounters>(`${base}/encounters/raids?${ns}`, token),
       ]);
       // A season 404 only means no keys that season; a raids 404 means no character.
-      if (!raids) throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
+      if (!raids) {
+        markMissingCharacter(characterKey(region, realm, name));
+        throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
+      }
 
       const data = mapBlizzardProgression({ currentSeason, previousSeason, raids });
       const fetchedAt = Math.floor(Date.now() / 1000);

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BlizzardService } from "./blizzard.services.js";
 import { getCachedBlizzardProfile, getCachedEquipment } from "../../../db/persistence.js";
+import { clearMissingCharacters } from "../../utils/missingCharacters.js";
 
 vi.mock("../../../db/persistence.js", () => ({
   getCachedBlizzardProfile: vi.fn(),
@@ -64,5 +65,52 @@ describe("BlizzardService stale fallback", () => {
     await expect(
       BlizzardService.getCharacterProfile({ ...args(), region: "oce" })
     ).rejects.toThrow("Invalid region");
+  });
+});
+
+describe("BlizzardService negative cache", () => {
+  const notFound = () =>
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string) =>
+        url.includes("oauth")
+          ? new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }), { status: 200 })
+          : new Response("", { status: 404 })
+      )
+    );
+
+  beforeEach(() => clearMissingCharacters());
+
+  it("asks Blizzard once for a character that 404s, then answers from memory", async () => {
+    notFound();
+    const character = args();
+
+    await expect(BlizzardService.getCharacterProfile(character)).rejects.toThrow("Character not found");
+    const afterFirst = vi.mocked(fetch).mock.calls.length;
+
+    await expect(BlizzardService.getCharacterProfile(character)).rejects.toThrow("Character not found");
+    expect(vi.mocked(fetch).mock.calls.length).toBe(afterFirst);
+  });
+
+  it("does not spend equipment calls on a character the profile already 404'd", async () => {
+    notFound();
+    const character = args();
+
+    await expect(BlizzardService.getCharacterProfile(character)).rejects.toThrow("Character not found");
+    const afterProfile = vi.mocked(fetch).mock.calls.length;
+
+    await expect(BlizzardService.getCharacterEquipment(character)).rejects.toThrow("Character not found");
+    expect(vi.mocked(fetch).mock.calls.length).toBe(afterProfile);
+  });
+
+  it("an explicit refresh still reaches Blizzard", async () => {
+    notFound();
+    const character = args();
+
+    await expect(BlizzardService.getCharacterProfile(character)).rejects.toThrow("Character not found");
+    const afterFirst = vi.mocked(fetch).mock.calls.length;
+
+    await expect(BlizzardService.getCharacterProfile(character, true)).rejects.toThrow("Character not found");
+    expect(vi.mocked(fetch).mock.calls.length).toBeGreaterThan(afterFirst);
   });
 });

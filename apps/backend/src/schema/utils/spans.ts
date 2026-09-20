@@ -17,8 +17,9 @@ export function withSpan<T>(name: string, attributes: Attributes, fn: () => Prom
 type CacheSource = "blizzard_profile" | "blizzard_equipment" | "blizzard_progression" | "raiderio" | "wcl";
 
 /** Where one upstream's data came from for the active span: the DB snapshot or
- *  a real upstream call. */
-export function markCache(source: CacheSource, outcome: "hit" | "miss") {
+ *  a real upstream call. "missing" is the negative cache — a character Blizzard
+ *  404'd recently, answered without spending a request. */
+export function markCache(source: CacheSource, outcome: "hit" | "miss" | "missing") {
   trace.getActiveSpan()?.setAttribute(`app.cache.${source}`, outcome);
 }
 

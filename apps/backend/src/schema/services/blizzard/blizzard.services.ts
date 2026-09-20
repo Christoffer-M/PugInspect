@@ -4,6 +4,7 @@ import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
 import { markCache, markStale, withSpan } from "../../utils/spans.js";
+import { characterKey, isMissingCharacter, markMissingCharacter } from "../../utils/missingCharacters.js";
 import { getCachedBlizzardProfile, persistBlizzardProfile, getCachedEquipment, persistEquipment } from "../../../db/persistence.js";
 import type { BlizzardCharacterMedia, BlizzardCharacterProfile } from "./model/CharacterProfile.js";
 import type { BlizzardCharacterEquipment, BlizzardItemMedia } from "./model/CharacterEquipment.js";
@@ -86,13 +87,15 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
+    const key = characterKey(region, normalizedRealm, name);
+    if (!bypassCache && isMissingCharacter(key)) {
+      markCache("blizzard_profile", "missing");
+      throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
+    }
+
     // Two companions watching the same listing fire identical lookups within
     // milliseconds — share one upstream fetch instead of spending quota twice.
-    return dedupeInFlight(
-      this.profileInFlight,
-      `${region}:${normalizedRealm}:${name.toLowerCase()}`,
-      () => this.fetchProfile(args, normalizedRealm)
-    );
+    return dedupeInFlight(this.profileInFlight, key, () => this.fetchProfile(args, normalizedRealm));
   }
 
   private static readonly profileInFlight = new Map<
@@ -123,6 +126,9 @@ export class BlizzardService {
 
       const res = profileRes.value;
       if (res.status === 404) {
+        // Authoritative: no profile, no character. Every other endpoint for it
+        // would 404 too, so stop asking for a while.
+        markMissingCharacter(characterKey(region, normalizedRealm, name));
         throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
       }
       if (!res.ok) throw new Error(`Blizzard profile request failed: ${res.status} ${res.statusText}`);
@@ -197,11 +203,16 @@ export class BlizzardService {
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
-    return dedupeInFlight(
-      this.equipmentInFlight,
-      `${region}:${normalizedRealm}:${name.toLowerCase()}`,
-      () => this.fetchEquipment(args, normalizedRealm)
-    );
+    // Reads the negative cache but never writes it: an equipment 404 on its own
+    // isn't proof the character is gone, and marking from here would let one odd
+    // response blank the profile too.
+    const key = characterKey(region, normalizedRealm, name);
+    if (!bypassCache && isMissingCharacter(key)) {
+      markCache("blizzard_equipment", "missing");
+      throw new GraphQLError("Character not found", { extensions: { code: "NOT_FOUND" } });
+    }
+
+    return dedupeInFlight(this.equipmentInFlight, key, () => this.fetchEquipment(args, normalizedRealm));
   }
 
   private static readonly equipmentInFlight = new Map<
