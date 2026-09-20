@@ -52,3 +52,7 @@ ds-bundle/
 .design-sync/learnings/
 .design-sync/node_modules
 packages/ui/.ds-css-entry.css
+
+# Frontend builds published by deploy.sh (RELEASES_DIR); the deploy box keeps
+# these outside the checkout, this covers a local default of ./releases.
+releases/

@@ -63,19 +63,39 @@ services:
       - internal
 
   frontend:
-    image: ghcr.io/christoffer-m/puginspect-frontend:${TAG:-latest}
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
+    # Stock nginx, and long-lived. A deploy swaps the files underneath it
+    # rather than replacing it, so this container is only ever recreated when
+    # the config or nginx itself changes — which means nginx-proxy never sees
+    # the upstream change and never has two versions of the site in rotation.
+    # The per-SHA image built from Dockerfile.frontend is just the carrier
+    # deploy.sh extracts the build from; it is not run.
+    image: nginx:alpine
     logging: *logging
+    volumes:
+      # Config from the checkout deploy.sh already git-pulls, so changing it is
+      # a file edit rather than an image rebuild.
+      - ./nginx/docker.conf:/etc/nginx/conf.d/default.conf:ro
+      # The parent of html/ and assets/, not html/ itself: nginx resolves paths
+      # under this mount per request, which is what lets a deploy replace the
+      # contents without the container knowing.
+      - ${RELEASES_DIR:-./releases}:/srv/releases:ro
     environment:
       VIRTUAL_HOST: puginspect.com,www.puginspect.com
       VIRTUAL_PORT: 80
       LETSENCRYPT_HOST: puginspect.com,www.puginspect.com
-    depends_on:
-      backend:
-        condition: service_healthy
     restart: unless-stopped
+    # No depends_on: with the backend resolved per request (see nginx/docker.conf)
+    # this serves the static site fine while the backend is down or restarting,
+    # instead of being held back by it.
+    healthcheck:
+      # Nothing waits on this any more — it is here so `docker ps` tells the
+      # truth. 127.0.0.1, not localhost: that resolves to ::1 first and nginx
+      # listens on IPv4 only, so the check would fail every time.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     networks:
       - internal
       - proxy
