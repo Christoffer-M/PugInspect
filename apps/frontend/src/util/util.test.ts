@@ -41,6 +41,12 @@ describe("parseCharacterUrl", () => {
     ).toEqual({ region: "EU", realm: "tarren-mill", name: "Pugsley" });
   });
 
+  it("parses locale-prefixed raider.io URLs", () => {
+    expect(
+      parseCharacterUrl("https://raider.io/ru/characters/eu/dun-modr/Kiwitox?utm_source=addon"),
+    ).toEqual({ region: "EU", realm: "dun-modr", name: "Kiwitox" });
+  });
+
   it("parses puginspect.com URLs, ignoring query and hash", () => {
     expect(
       parseCharacterUrl("https://puginspect.com/us/area-52/Pugsley?tab=raids#top"),

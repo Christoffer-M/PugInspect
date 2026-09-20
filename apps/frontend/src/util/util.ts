@@ -14,8 +14,10 @@ export const upperCaseFirstLetter = (str: string) => {
 export function parseCharacterUrl(
   url: string,
 ): { region: string; realm: string; name: string } | null {
+  // Raider.IO localizes its paths (raider.io/ru/characters/...) and the addon
+  // hands out exactly those links, so the locale segment is optional.
   const match = url.match(
-    /(?:raider\.io\/characters|puginspect\.com)\/([^/]+)\/([^/]+)\/([^/?#]+)/i,
+    /(?:raider\.io(?:\/[a-z]{2})?\/characters|puginspect\.com)\/([^/]+)\/([^/]+)\/([^/?#]+)/i,
   );
   if (!match) return null;
   const [, region, rawRealm, name] = match;
