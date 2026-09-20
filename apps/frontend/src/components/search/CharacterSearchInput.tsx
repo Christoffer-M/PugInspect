@@ -79,6 +79,15 @@ const CharacterSearchInput: React.FC = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
+    // A link we couldn't parse still lands in the box; split as "Name-Realm" it
+    // becomes a plausible-looking wrong character ("raider.io/ru/characters/eu/
+    // dun-modr/Kiwitox?..." navigated to /eu/modr/kiwitox, because the "?" ends
+    // the pathname). Reject it instead of fetching a realm nobody asked for.
+    if (/[/:]/.test(trimmed)) {
+      setErrorText("Invalid character URL");
+      return;
+    }
+
     // Split only on the first dash: name is before, realm is everything after
     const dashIndex = trimmed.indexOf("-");
     if (dashIndex === -1) {
