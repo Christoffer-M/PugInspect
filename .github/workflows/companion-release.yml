@@ -43,6 +43,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/companion/src-tauri
+          # Restores what companion.yml saved on main. A cache saved from a tag
+          # is only visible to that same tag, so saving here just burns a minute.
+          shared-key: companion
+          save-if: false
 
       - name: Check tag matches app version
         shell: bash
