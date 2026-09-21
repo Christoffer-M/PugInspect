@@ -1,6 +1,6 @@
 //! Captures the WoW window a few times a second, decodes the pixel strip and
 //! pushes changes to the webview as `sync` events.
-use crate::pixel::{self, DecodeErr, Frame, ParseErr, PROTOCOL};
+use crate::pixel::{self, Frame, ParseErr, PROTOCOL};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 use std::sync::Mutex;
@@ -126,12 +126,9 @@ fn run(app: AppHandle) {
                     None
                 }
             },
-            // A protocol 2 strip does not decode at all, so the version never reaches parse.
-            Some(Err(DecodeErr::LegacyAddon)) => {
-                set_status(&mut status, &mut last, "addon_outdated");
-                fresh = Instant::now();
-                None
-            }
+            // Anything else -- no strip on screen, or a half-painted one -- is not a version
+            // problem: only a CRC-valid strip may move the status off "waiting", because a
+            // guess here sticks until WoW restarts.
             _ => None,
         };
         if let Some(frame) = frame {

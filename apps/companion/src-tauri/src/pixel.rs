@@ -29,10 +29,6 @@ pub const MAX_ROWS: u32 = 4;
 const STEP: u32 = 17;
 /// Magic block, as nibble levels.
 const MAGIC: [u8; 3] = [10, 1, 13];
-/// Protocol 2's magic block, as a raw colour. Recognised only so an app meeting an old
-/// addon can say which side to update instead of looking dead. It does not collide with
-/// `MAGIC`: quantised it reads (2, 0, 4).
-const MAGIC_V2: [u8; 3] = [42, 0, 69];
 /// Magic, length (3 nibbles), CRC-8 (2 nibbles + pad).
 const HEADER_BLOCKS: u32 = 3;
 /// Two nibbles per byte, three per block.
@@ -48,8 +44,6 @@ pub enum ParseErr {
 #[derive(Debug, PartialEq)]
 pub enum DecodeErr {
     NoMagic,
-    /// A protocol 2 strip is on screen; the addon needs updating.
-    LegacyAddon,
     TooLong,
     Crc,
     Utf8,
@@ -126,20 +120,6 @@ fn nibbles(img: &RgbaImage, x0: u32, y0: u32, i: u32) -> Option<[u8; 3]> {
     block(img, x0, y0, i).map(|p| [level(p[0]), level(p[1]), level(p[2])])
 }
 
-/// Whether block 0 at this origin is a protocol 2 magic block. Sampled twice across the
-/// block so a lone dark-purple game pixel does not read as an outdated addon, and loosely,
-/// because the colour drift that forced protocol 3 also moves this block.
-fn is_legacy(img: &RgbaImage, x0: u32, y0: u32) -> bool {
-    let near = |p: [u8; 3]| p.iter().zip(MAGIC_V2).all(|(a, b)| a.abs_diff(b) <= 8);
-    [1, 2].iter().all(|&dx| {
-        (x0 + dx < img.width() && y0 + B / 2 < img.height())
-            && near({
-                let p = img.get_pixel(x0 + dx, y0 + B / 2).0;
-                [p[0], p[1], p[2]]
-            })
-    })
-}
-
 /// Finds the strip near the top-left of the frame and decodes it.
 pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
     // Every origin whose block 0 quantises to the magic levels is a candidate, and the
@@ -148,11 +128,9 @@ pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
     // decoding for as long as it is on screen.
     // ponytail: brute force. ~13k single-pixel probes worst case, 4x a second.
     let mut err = DecodeErr::NoMagic;
-    let mut legacy = false;
     for y in 0..=MAX_OFFSET {
         for x in 0..=MAX_INSET {
             if nibbles(img, x, y, 0) != Some(MAGIC) {
-                legacy = legacy || is_legacy(img, x, y);
                 continue;
             }
             match decode_at(img, x, y) {
@@ -160,10 +138,6 @@ pub fn decode(img: &RgbaImage) -> Result<String, DecodeErr> {
                 Err(e) => err = e,
             }
         }
-    }
-    // Only when nothing decoded: a live protocol 3 strip always wins over a stale match.
-    if err == DecodeErr::NoMagic && legacy {
-        return Err(DecodeErr::LegacyAddon);
     }
     Err(err)
 }
@@ -346,27 +320,6 @@ mod tests {
         img
     }
 
-    /// Protocol 2's encoder, kept only to prove an old strip is reported as such.
-    fn encode_v2(payload: &[u8]) -> RgbaImage {
-        let mut img = RgbaImage::from_pixel(COLS * B, MAX_ROWS * B, Rgba([0, 0, 0, 255]));
-        let len = payload.len() as u16;
-        let header = [(len >> 8) as u8, (len & 255) as u8, crc8(payload)];
-        let blocks = [MAGIC_V2, header].into_iter().chain(payload.chunks(3).map(|c| {
-            let mut b = [0u8; 3];
-            b[..c.len()].copy_from_slice(c);
-            b
-        }));
-        for (i, [r, g, b]) in blocks.enumerate() {
-            let (x0, y0) = ((i as u32 % COLS) * B, (i as u32 / COLS) * B);
-            for y in y0..y0 + B {
-                for x in x0..x0 + B {
-                    img.put_pixel(x, y, Rgba([r, g, b, 255]));
-                }
-            }
-        }
-        img
-    }
-
     const PAYLOAD: &str = "5\t17\teu\tRavencrest\t1234\t2516\t+15 Ara-Kara go\t3\t+\n\
         Puggy-Ravencrest:T:1:635:41:15:1\n\
         Healbot:H:5:628:41:0:0\n\
@@ -513,16 +466,16 @@ mod tests {
         assert_ne!(decode(&img).as_deref(), Ok(wire(PAYLOAD).as_str()));
     }
 
+    /// Game pixels are never a strip. The protocol 2 detector this replaces matched on two
+    /// adjacent dark-purple pixels with nothing to corroborate them, so any dark-purple UI
+    /// art in the scanned corner pinned the app to "addon_outdated" until WoW was restarted.
     #[test]
-    fn legacy_strip_reports_outdated_addon() {
-        let img = encode_v2(b"2\t1\teu\tKazzak\t9\t1\told\t0\t+");
-        assert_eq!(decode(&img), Err(DecodeErr::LegacyAddon));
-        // A live protocol 3 strip below an old one still wins.
-        let new = encode(wire(PAYLOAD).as_bytes());
-        let mut both = RgbaImage::from_pixel(new.width(), new.height() + 100, Rgba([9, 9, 9, 255]));
-        image::imageops::replace(&mut both, &img, 0, 0);
-        image::imageops::replace(&mut both, &new, 0, 100);
-        assert_eq!(decode(&both).unwrap(), wire(PAYLOAD));
+    fn dark_purple_game_pixels_are_not_a_strip() {
+        let mut img = RgbaImage::from_pixel(400, 500, Rgba([9, 9, 9, 255]));
+        for x in 0..4 {
+            img.put_pixel(x, 202, Rgba([44, 3, 66, 255]));
+        }
+        assert_eq!(decode(&img), Err(DecodeErr::NoMagic));
     }
 
     /// Golden vector, asserted byte-for-byte in the addon's test_applicants.lua too. If this
