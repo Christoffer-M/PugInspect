@@ -130,6 +130,12 @@ export type CompanionFunnel = {
   neverNoWindow: Scalars['Int']['output'];
 };
 
+export type CompanionIdle = {
+  __typename?: 'CompanionIdle';
+  beats: Scalars['Int']['output'];
+  installs: Scalars['Int']['output'];
+};
+
 export type CompanionInstallRow = {
   __typename?: 'CompanionInstallRow';
   activatedAt?: Maybe<Scalars['String']['output']>;
@@ -186,9 +192,16 @@ export type CompanionTelemetry = {
   funnel: CompanionFunnel;
   /** Cumulative install count, one point per day across the window. */
   growth: Array<CompanionDailyCount>;
+  /** Beats reporting no_window: app open, game closed. Not a fault. */
+  idle: CompanionIdle;
   installs: Array<CompanionInstallRow>;
-  /** Capture link states over the last 7 days, healthy first. */
+  /**
+   * Capture link states over the last 7 days, healthy first. Excludes
+   * no_window, which is idle rather than a fault — see the idle field.
+   */
   links: Array<CompanionLinkStat>;
+  /** beatsThisWeek minus the idle ones — the denominator links is a mix of. */
+  liveBeatsThisWeek: Scalars['Int']['output'];
   lookups: CompanionLookups;
   newThisWindow: Scalars['Int']['output'];
   /** Newest last_seen across all installs, ISO. Null when there are none. */
