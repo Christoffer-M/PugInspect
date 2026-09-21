@@ -4,6 +4,13 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.9.1
+
+- The app no longer claims "Version mismatch" and tells you to update an addon that is
+  already current. Some dark-purple pixels in the top-left of the game window were being
+  mistaken for an ancient version of the strip, and once that happened the warning stayed
+  up until World of Warcraft was restarted.
+
 ## 0.9.0
 
 - A bell button in the titlebar mutes notifications in one click. The status bar says
