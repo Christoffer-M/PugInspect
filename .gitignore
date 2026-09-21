@@ -53,6 +53,7 @@ ds-bundle/
 .design-sync/node_modules
 packages/ui/.ds-css-entry.css
 
-# Frontend builds published by deploy.sh (RELEASES_DIR); the deploy box keeps
-# these outside the checkout, this covers a local default of ./releases.
+# Frontend builds published by deploy.sh. Both deploy.sh and docker-compose.yml
+# default to a sibling of the checkout, so this only catches someone pointing
+# RELEASES_DIR at a path inside it.
 releases/

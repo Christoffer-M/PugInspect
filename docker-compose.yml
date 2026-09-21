@@ -78,7 +78,12 @@ services:
       # The parent of html/ and assets/, not html/ itself: nginx resolves paths
       # under this mount per request, which is what lets a deploy replace the
       # contents without the container knowing.
-      - ${RELEASES_DIR:-./releases}:/srv/releases:ro
+      # The default is the path deploy.sh publishes to (a sibling of the
+      # checkout), so a compose command run by hand on the box still mounts the
+      # real releases directory. Anything else and docker would create an empty
+      # one, compose would recreate the frontend onto it, and the whole site
+      # would 404 until someone re-ran deploy.sh.
+      - ${RELEASES_DIR:-../puginspect-releases}:/srv/releases:ro
     environment:
       VIRTUAL_HOST: puginspect.com,www.puginspect.com
       VIRTUAL_PORT: 80
