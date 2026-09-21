@@ -10,6 +10,7 @@ import { notifications, Notifications } from "@mantine/notifications";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen.ts";
+import { registerChunkReload } from "./chunkReload.ts";
 
 
 import { MantineProvider } from "@mantine/core";
@@ -19,6 +20,10 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+
+// Before the router, so a route chunk that a deploy removed is handled from
+// the first navigation onwards.
+registerChunkReload();
 
 // Create a new router instance
 const router = createRouter({
