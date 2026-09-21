@@ -9,6 +9,11 @@ const query = graphql(`
       windowDays
       newestReport
       beatsThisWeek
+      liveBeatsThisWeek
+      idle {
+        beats
+        installs
+      }
       newThisWindow
       runtimeBeats
       funnel {

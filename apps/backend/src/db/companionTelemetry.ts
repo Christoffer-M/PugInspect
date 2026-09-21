@@ -23,8 +23,15 @@ const MAX_INSTALLS = 500;
 export const STRIP_CAP = 20;
 /** Beats come every 30 minutes, so a longer silence than this ends a session. */
 const SESSION_GAP = 45 * 60_000;
-/** Fixed display order: healthy first, then the states worth acting on. */
-const LINK_ORDER = ["ok", "no_window", "no_hud", "addon_outdated", "incompatible", "lost", "app_outdated"] as const;
+/** Fixed display order: healthy first, then the states worth acting on.
+ *
+ *  no_window is deliberately not here. It means the app is open and the game
+ *  is not — somebody left it running while doing something else, which is not
+ *  a fault and has nothing to say about whether capture works. Counted in the
+ *  mix it drowned everything: one install left open overnight is 48 beats a
+ *  day, all of them "no_window", so the panel read as a wall of breakage when
+ *  nothing was broken. It is reported on its own as `idle` instead. */
+const LINK_ORDER = ["ok", "no_hud", "addon_outdated", "incompatible", "lost", "app_outdated"] as const;
 const SESSION_BUCKETS = ["30 min", "1 h", "1.5–2 h", "2 h +"] as const;
 
 type Install = Pick<
@@ -91,10 +98,19 @@ export function summarizeCompanionTelemetry(installs: Install[], beats: Beat[], 
     neverNoWindow: installs.filter((i) => i.activatedAt === null && lastBeat.get(i.installId)?.link === "no_window").length,
   };
 
+  // The mix is over beats where the game was actually running, so each bar is
+  // a share of "times we could have been reading the strip", not a share of
+  // wall-clock the app happened to be open.
+  const idleBeats = beats7.filter((b) => b.link === "no_window");
+  const liveBeats = beats7.filter((b) => b.link !== "no_window");
   const links = LINK_ORDER.map((link) => {
-    const rows = beats7.filter((b) => b.link === link);
+    const rows = liveBeats.filter((b) => b.link === link);
     return { link, beats: rows.length, installs: new Set(rows.map((r) => r.installId)).size };
   });
+  const idle = {
+    beats: idleBeats.length,
+    installs: new Set(idleBeats.map((b) => b.installId)).size,
+  };
 
   // One point per day, cumulative. A stepped line reads a dozen install events
   // honestly; a smoothed curve would invent a trend that isn't there.
@@ -217,7 +233,9 @@ export function summarizeCompanionTelemetry(installs: Install[], beats: Beat[], 
     newestReport: installs.length ? iso(new Date(Math.max(...installs.map((i) => i.lastSeen.getTime())))) : null,
     funnel,
     links,
+    idle,
     beatsThisWeek: beats7.length,
+    liveBeatsThisWeek: liveBeats.length,
     growth,
     newThisWindow: installs.filter((i) => i.firstSeen.getTime() >= windowStart).length,
     versions,

@@ -99,9 +99,18 @@ fn run(app: AppHandle) {
             thread::sleep(Duration::from_secs(1));
             continue;
         };
-        // ponytail: a minimized window just yields no frames and turns "lost" after 5 s.
+        // A minimized window paints nothing, so letting it fall through would let
+        // the 5 s timer call it "lost" -- reporting somebody who alt-tabbed away
+        // as a mid-session breakage. It is the same thing as the game not being
+        // there, so it gets the same idle status, and `fresh` is held forward so
+        // restoring the window doesn't flicker through "lost" before the next hb.
         let img = match w.is_minimized() {
-            Ok(true) => None,
+            Ok(true) => {
+                set_status(&mut status, &mut last, "no_window");
+                fresh = Instant::now();
+                thread::sleep(Duration::from_secs(1));
+                continue;
+            }
             _ => match w.capture_image() {
                 Ok(img) => Some(img),
                 Err(_) => {

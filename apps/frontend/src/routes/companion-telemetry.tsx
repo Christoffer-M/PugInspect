@@ -36,11 +36,13 @@ const ACCENT = "#8b7fd4";
 const linkColor = (link?: string | null) =>
   link === "ok"
     ? GREEN
-    : link === "no_window" || link === "no_hud" || link === "lost"
-      ? AMBER
-      : link
-        ? RED
-        : "dimmed";
+    : link === "no_window"
+      ? "dimmed" // idle, not a fault — see the link-mix panel
+      : link === "no_hud" || link === "lost"
+        ? AMBER
+        : link
+          ? RED
+          : "dimmed";
 /** Newest build is fine, one behind is worth watching, older is stuck. */
 const versionColor = (index: number) =>
   index === 0 ? ACCENT : index === 1 ? AMBER : RED;
@@ -173,6 +175,7 @@ const Panel: React.FC<{
 
 const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
   const maxLink = Math.max(1, ...data.links.map((l) => l.beats));
+  const idlePercent = Math.round(pct(data.idle.beats, data.beatsThisWeek));
   const maxVersion = Math.max(1, ...data.versions.map((v) => v.count));
   const maxRegion = Math.max(1, ...data.regions.map((r) => r.count));
   const lookupOk =
@@ -237,15 +240,13 @@ const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
           title="Why capture fails"
           right={
             <Text size="xs" c="dimmed">
-              {data.beatsThisWeek.toLocaleString()} beats · 7 days
+              {data.liveBeatsThisWeek.toLocaleString()} beats with the game up · 7 days
             </Text>
           }
           footer={
             <>
-              <Text span c={AMBER} inherit>
-                no_window
-              </Text>{" "}
-              is a game-not-running problem.{" "}
+              Only beats with WoW running, so every bar is a share of the time
+              capture was actually asked to do something.{" "}
               <Text span c={AMBER} inherit>
                 no_hud
               </Text>{" "}
@@ -257,11 +258,17 @@ const Dashboard: React.FC<{ data: CompanionTelemetry }> = ({ data }) => {
               <Text span c={AMBER} inherit>
                 lost
               </Text>{" "}
-              broke mid-session.
+              broke mid-session — minimizing the game no longer counts as one.
             </>
           }
         >
           <Stack gap="sm">
+            <Text size="xs" c="dimmed">
+              Plus {data.idle.beats.toLocaleString()} idle beats ({idlePercent}%
+              of all reports) from {data.idle.installs} install
+              {data.idle.installs === 1 ? "" : "s"} left open with the game
+              closed. Not a fault, and excluded below.
+            </Text>
             {data.links.map((l) => (
               <BarRow
                 key={l.link}
