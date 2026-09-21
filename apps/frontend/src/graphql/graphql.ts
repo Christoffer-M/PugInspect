@@ -130,6 +130,12 @@ export type CompanionFunnel = {
   neverNoWindow: Scalars['Int']['output'];
 };
 
+export type CompanionIdle = {
+  __typename?: 'CompanionIdle';
+  beats: Scalars['Int']['output'];
+  installs: Scalars['Int']['output'];
+};
+
 export type CompanionInstallRow = {
   __typename?: 'CompanionInstallRow';
   activatedAt?: Maybe<Scalars['String']['output']>;
@@ -186,9 +192,16 @@ export type CompanionTelemetry = {
   funnel: CompanionFunnel;
   /** Cumulative install count, one point per day across the window. */
   growth: Array<CompanionDailyCount>;
+  /** Beats reporting no_window: app open, game closed. Not a fault. */
+  idle: CompanionIdle;
   installs: Array<CompanionInstallRow>;
-  /** Capture link states over the last 7 days, healthy first. */
+  /**
+   * Capture link states over the last 7 days, healthy first. Excludes
+   * no_window, which is idle rather than a fault — see the idle field.
+   */
   links: Array<CompanionLinkStat>;
+  /** beatsThisWeek minus the idle ones — the denominator links is a mix of. */
+  liveBeatsThisWeek: Scalars['Int']['output'];
   lookups: CompanionLookups;
   newThisWindow: Scalars['Int']['output'];
   /** Newest last_seen across all installs, ISO. Null when there are none. */
@@ -778,7 +791,7 @@ export type CompanionTelemetryQueryVariables = Exact<{
 }>;
 
 
-export type CompanionTelemetryQuery = { __typename?: 'Query', companionTelemetry: { __typename?: 'CompanionTelemetry', windowDays: number, newestReport?: string | null, beatsThisWeek: number, newThisWindow: number, runtimeBeats: number, funnel: { __typename?: 'CompanionFunnel', installs: number, activated: number, activeThisWeek: number, never: number, neverNoWindow: number }, links: Array<{ __typename?: 'CompanionLinkStat', link: string, beats: number, installs: number }>, growth: Array<{ __typename?: 'CompanionDailyCount', date: string, count: number }>, versions: Array<{ __typename?: 'CompanionVersionCount', version: string, count: number }>, stranded: Array<{ __typename?: 'CompanionStranded', from: string, to: string, installs: number, failures: number }>, cohorts: Array<{ __typename?: 'CompanionCohort', start: string, end: string, size: number, day1: number, day7: number, pending: boolean, daysToWait: number }>, runtime: Array<{ __typename?: 'CompanionDailyCount', date: string, count: number }>, sessions: Array<{ __typename?: 'CompanionSessionBucket', bucket: string, percent: number }>, lookups: { __typename?: 'CompanionLookups', total: number, notFound: number, errors: number }, cap: { __typename?: 'CompanionCap', limit: number, beats: number, installs: number, maxTotal: number }, installs: Array<{ __typename?: 'CompanionInstallRow', installId: string, firstSeen: string, lastSeen: string, version: string, region?: string | null, country?: string | null, activatedAt?: string | null, link?: string | null }>, regions: Array<{ __typename?: 'CompanionRegionCount', region: string, count: number }>, countries: Array<{ __typename?: 'CompanionCountryCount', country: string, count: number }> } };
+export type CompanionTelemetryQuery = { __typename?: 'Query', companionTelemetry: { __typename?: 'CompanionTelemetry', windowDays: number, newestReport?: string | null, beatsThisWeek: number, liveBeatsThisWeek: number, newThisWindow: number, runtimeBeats: number, idle: { __typename?: 'CompanionIdle', beats: number, installs: number }, funnel: { __typename?: 'CompanionFunnel', installs: number, activated: number, activeThisWeek: number, never: number, neverNoWindow: number }, links: Array<{ __typename?: 'CompanionLinkStat', link: string, beats: number, installs: number }>, growth: Array<{ __typename?: 'CompanionDailyCount', date: string, count: number }>, versions: Array<{ __typename?: 'CompanionVersionCount', version: string, count: number }>, stranded: Array<{ __typename?: 'CompanionStranded', from: string, to: string, installs: number, failures: number }>, cohorts: Array<{ __typename?: 'CompanionCohort', start: string, end: string, size: number, day1: number, day7: number, pending: boolean, daysToWait: number }>, runtime: Array<{ __typename?: 'CompanionDailyCount', date: string, count: number }>, sessions: Array<{ __typename?: 'CompanionSessionBucket', bucket: string, percent: number }>, lookups: { __typename?: 'CompanionLookups', total: number, notFound: number, errors: number }, cap: { __typename?: 'CompanionCap', limit: number, beats: number, installs: number, maxTotal: number }, installs: Array<{ __typename?: 'CompanionInstallRow', installId: string, firstSeen: string, lastSeen: string, version: string, region?: string | null, country?: string | null, activatedAt?: string | null, link?: string | null }>, regions: Array<{ __typename?: 'CompanionRegionCount', region: string, count: number }>, countries: Array<{ __typename?: 'CompanionCountryCount', country: string, count: number }> } };
 
 export type MythicPlusSpecStatsQueryVariables = Exact<{
   zoneId?: InputMaybe<Scalars['Int']['input']>;
@@ -1109,6 +1122,11 @@ export const CompanionTelemetryDocument = new TypedDocumentString(`
     windowDays
     newestReport
     beatsThisWeek
+    liveBeatsThisWeek
+    idle {
+      beats
+      installs
+    }
     newThisWindow
     runtimeBeats
     funnel {

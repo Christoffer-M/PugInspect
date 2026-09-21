@@ -214,9 +214,14 @@ export const characterTypedefs = gql`
     """Newest last_seen across all installs, ISO. Null when there are none."""
     newestReport: String
     funnel: CompanionFunnel!
-    """Capture link states over the last 7 days, healthy first."""
+    """Capture link states over the last 7 days, healthy first. Excludes
+    no_window, which is idle rather than a fault — see the idle field."""
     links: [CompanionLinkStat!]!
+    """Beats reporting no_window: app open, game closed. Not a fault."""
+    idle: CompanionIdle!
     beatsThisWeek: Int!
+    """beatsThisWeek minus the idle ones — the denominator links is a mix of."""
+    liveBeatsThisWeek: Int!
     """Cumulative install count, one point per day across the window."""
     growth: [CompanionDailyCount!]!
     newThisWindow: Int!
@@ -232,6 +237,11 @@ export const characterTypedefs = gql`
     installs: [CompanionInstallRow!]!
     regions: [CompanionRegionCount!]!
     countries: [CompanionCountryCount!]!
+  }
+
+  type CompanionIdle {
+    beats: Int!
+    installs: Int!
   }
 
   type CompanionFunnel {

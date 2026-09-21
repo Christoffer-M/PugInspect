@@ -117,6 +117,27 @@ describe("summarizeCompanionTelemetry", () => {
     expect(d.lookups).toEqual({ total: 200, notFound: 6, errors: 2 });
   });
 
+  it("keeps idle beats out of the link mix", () => {
+    const d = summarizeCompanionTelemetry(
+      [install({ installId: "a", firstSeen: ago(20), lastSeen: ago(1) })],
+      [
+        // App left open overnight with the game closed: the case that used to
+        // bury every real state under a wall of no_window.
+        ...Array.from({ length: 20 }, (_, i) => beat({ installId: "a", at: ago(1, i), link: "no_window" })),
+        beat({ installId: "a", at: ago(2), link: "ok" }),
+        beat({ installId: "a", at: ago(3), link: "lost" }),
+      ],
+      NOW
+    );
+    expect(d.idle).toEqual({ beats: 20, installs: 1 });
+    expect(d.links.map((l) => l.link)).not.toContain("no_window");
+    // The mix is half ok, half lost — not 9% ok drowned by idle time.
+    expect(d.links.find((l) => l.link === "ok")!.beats).toBe(1);
+    expect(d.links.find((l) => l.link === "lost")!.beats).toBe(1);
+    expect(d.liveBeatsThisWeek).toBe(2);
+    expect(d.beatsThisWeek).toBe(22);
+  });
+
   it("survives an empty database", () => {
     const d = summarizeCompanionTelemetry([], [], NOW);
     expect(d.newestReport).toBeNull();
