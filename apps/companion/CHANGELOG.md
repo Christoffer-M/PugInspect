@@ -4,6 +4,12 @@ Sections are keyed by the version in `package.json`. The release workflow lifts
 the section for the tagged version into the GitHub release body, which lands in
 `latest.json` and is what the in-app update banner shows.
 
+## 0.9.2
+
+- Minimizing World of Warcraft no longer makes the app say the connection was lost and
+  ask you to /reload. Having the app open while you do something else is not a problem,
+  and it now says so.
+
 ## 0.9.1
 
 - The app no longer claims "Version mismatch" and tells you to update an addon that is
