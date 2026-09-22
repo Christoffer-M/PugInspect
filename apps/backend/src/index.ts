@@ -12,6 +12,7 @@ import { config } from "./config/index.js";
 import { initDb } from "./db/index.js";
 import { runMigrations } from "./db/migrate.js";
 import { parseBeat, pruneCompanionTelemetry, recordCompanionBeat } from "./db/companion.js";
+import { pruneSnapshots } from "./db/persistence.js";
 import express from "express";
 import cors from "cors";
 import { isbot } from "isbot";
@@ -442,6 +443,10 @@ app.get("/card/:region/:realm/:name", cardRateLimiter, async (req, res) => {
 // Beats are kept 90 days, install rows 24 months after they go quiet.
 pruneCompanionTelemetry();
 setInterval(pruneCompanionTelemetry, 24 * 60 * 60 * 1000);
+
+// Cached upstream snapshots: WCL 1 day, everything else Blizzard's 30-day cap.
+void pruneSnapshots();
+setInterval(() => void pruneSnapshots(), 24 * 60 * 60 * 1000);
 
 app.listen({ port: config.port });
 
