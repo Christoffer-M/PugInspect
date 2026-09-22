@@ -1,4 +1,5 @@
-import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, ne, or, sql } from "drizzle-orm";
+import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { getDb } from "./index.js";
 import { upsertDirectory } from "./characterDirectory.js";
 import { isKnownRealm } from "../schema/utils/helpers.js";
@@ -822,4 +823,44 @@ export async function updateRosterCharacters(
     )
     .returning({ slug: rosters.slug, region: rosters.region, characters: rosters.characters });
   return rows[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Retention
+//
+// Cached upstream data may not be kept indefinitely. Blizzard's terms cap it at
+// 30 days; WarcraftLogs answers with `Cache-Control: no-cache, private` and
+// their terms forbid holding a copy longer than the header allows, so WCL gets
+// the shortest window that still lets a page view hit a warm cache.
+//
+// Rows go by fetchedAt, NOT expiresAt: the SEO and crawler paths read expired
+// rows on purpose (see getCharacterSeoSnapshot), so this only drops characters
+// nobody has looked at for the whole window. Anything still being viewed is
+// refreshed long before the cutoff.
+// ---------------------------------------------------------------------------
+
+/** Blizzard's hard ceiling on retaining cached Data. Nothing here may exceed it. */
+export const MAX_RETENTION_DAYS = 30;
+
+export const RETENTION: { label: string; table: PgTable; fetchedAt: PgColumn; days: number }[] = [
+  { label: "wcl", table: characterWclSnapshots, fetchedAt: characterWclSnapshots.fetchedAt, days: 1 },
+  { label: "rio", table: characterRioSnapshots, fetchedAt: characterRioSnapshots.fetchedAt, days: 30 },
+  { label: "progression", table: characterProgressionSnapshots, fetchedAt: characterProgressionSnapshots.fetchedAt, days: 30 },
+  { label: "blizzard", table: characterBlizzardSnapshots, fetchedAt: characterBlizzardSnapshots.fetchedAt, days: 30 },
+  { label: "equipment", table: characterEquipmentSnapshots, fetchedAt: characterEquipmentSnapshots.fetchedAt, days: 30 },
+  { label: "achievements", table: characterAchievements, fetchedAt: characterAchievements.fetchedAt, days: 30 },
+];
+
+/** Drops cached upstream snapshots past their retention window. Runs daily. */
+export async function pruneSnapshots(): Promise<void> {
+  for (const { label, table, fetchedAt, days } of RETENTION) {
+    try {
+      const cutoff = new Date(Date.now() - days * 86_400_000);
+      const deleted = await getDb().delete(table).where(lt(fetchedAt, cutoff));
+      logger.info("Pruned expired snapshots", { table: label, days, rows: deleted.rowCount ?? 0 });
+    } catch (error) {
+      // One bad table must not stop the rest — the next daily tick retries.
+      logger.error("Prune failed", { table: label, error: String(error) });
+    }
+  }
 }
