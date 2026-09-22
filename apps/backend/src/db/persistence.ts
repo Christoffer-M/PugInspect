@@ -842,25 +842,42 @@ export async function updateRosterCharacters(
 /** Blizzard's hard ceiling on retaining cached Data. Nothing here may exceed it. */
 export const MAX_RETENTION_DAYS = 30;
 
-export const RETENTION: { label: string; table: PgTable; fetchedAt: PgColumn; days: number }[] = [
-  { label: "wcl", table: characterWclSnapshots, fetchedAt: characterWclSnapshots.fetchedAt, days: 1 },
-  { label: "rio", table: characterRioSnapshots, fetchedAt: characterRioSnapshots.fetchedAt, days: 30 },
-  { label: "progression", table: characterProgressionSnapshots, fetchedAt: characterProgressionSnapshots.fetchedAt, days: 30 },
-  { label: "blizzard", table: characterBlizzardSnapshots, fetchedAt: characterBlizzardSnapshots.fetchedAt, days: 30 },
-  { label: "equipment", table: characterEquipmentSnapshots, fetchedAt: characterEquipmentSnapshots.fetchedAt, days: 30 },
-  { label: "achievements", table: characterAchievements, fetchedAt: characterAchievements.fetchedAt, days: 30 },
+export const RETENTION: { label: string; table: PgTable; id: PgColumn; fetchedAt: PgColumn; days: number }[] = [
+  { label: "wcl", table: characterWclSnapshots, id: characterWclSnapshots.id, fetchedAt: characterWclSnapshots.fetchedAt, days: 1 },
+  { label: "rio", table: characterRioSnapshots, id: characterRioSnapshots.id, fetchedAt: characterRioSnapshots.fetchedAt, days: 30 },
+  { label: "progression", table: characterProgressionSnapshots, id: characterProgressionSnapshots.id, fetchedAt: characterProgressionSnapshots.fetchedAt, days: 30 },
+  { label: "blizzard", table: characterBlizzardSnapshots, id: characterBlizzardSnapshots.id, fetchedAt: characterBlizzardSnapshots.fetchedAt, days: 30 },
+  { label: "equipment", table: characterEquipmentSnapshots, id: characterEquipmentSnapshots.id, fetchedAt: characterEquipmentSnapshots.fetchedAt, days: 30 },
+  { label: "achievements", table: characterAchievements, id: characterAchievements.id, fetchedAt: characterAchievements.fetchedAt, days: 30 },
 ];
+
+/**
+ * How many rows one DELETE may take. None of these tables is indexed on
+ * fetchedAt alone, so an unbounded delete is a sequential scan holding locks
+ * for however long the backlog takes — batching keeps each statement short.
+ */
+const PRUNE_BATCH = 1_000;
 
 /** Drops cached upstream snapshots past their retention window. Runs daily. */
 export async function pruneSnapshots(): Promise<void> {
-  for (const { label, table, fetchedAt, days } of RETENTION) {
+  for (const { label, table, id, fetchedAt, days } of RETENTION) {
+    const cutoff = new Date(Date.now() - days * 86_400_000);
+    let total = 0;
     try {
-      const cutoff = new Date(Date.now() - days * 86_400_000);
-      const deleted = await getDb().delete(table).where(lt(fetchedAt, cutoff));
-      logger.info("Pruned expired snapshots", { table: label, days, rows: deleted.rowCount ?? 0 });
+      for (;;) {
+        const doomed = getDb()
+          .select({ id })
+          .from(table)
+          .where(lt(fetchedAt, cutoff))
+          .limit(PRUNE_BATCH);
+        const deleted = await getDb().delete(table).where(inArray(id, doomed));
+        total += deleted.rowCount ?? 0;
+        if ((deleted.rowCount ?? 0) < PRUNE_BATCH) break;
+      }
+      logger.info("Pruned expired snapshots", { table: label, days, rows: total });
     } catch (error) {
       // One bad table must not stop the rest — the next daily tick retries.
-      logger.error("Prune failed", { table: label, error: String(error) });
+      logger.error("Prune failed", { table: label, error: String(error), rows: total });
     }
   }
 }
