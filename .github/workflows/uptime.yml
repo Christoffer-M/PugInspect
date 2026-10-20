@@ -1,0 +1,57 @@
+name: Uptime
+
+# External probe for the backend. Honeycomb can't prove uptime: the healthcheck
+# and bots are untraced, so an outage just looks like a quiet day (Oct 2026: six
+# hours of 502s on every backend route while the container stayed healthy).
+# This goes through Cloudflare and nginx like a visitor, so it catches the
+# whole path, not just the process.
+#
+# ponytail: GitHub cron is best-effort — runs can start 5-15 min late, and
+# scheduled workflows are disabled after 60 days without repo activity. Move to
+# a dedicated monitor (UptimeRobot, Better Stack) if that gap ever matters.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+permissions:
+  actions: read # to read the previous run's result
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Retries ride out a single dropped request or a deploy's restart blip.
+      - name: Probe /graphql
+        id: probe
+        run: |
+          curl -fsS --max-time 15 --retry 2 --retry-delay 20 --retry-all-errors \
+            -H 'Content-Type: application/json' -d '{"query":"{__typename}"}' \
+            https://puginspect.com/graphql | grep -q '"__typename":"Query"'
+
+      # Only on a change of state, so a long outage is one message, not one
+      # every five minutes. The job's own pass/fail is the stored state.
+      - name: Tell Discord when the state changes
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          OUTCOME: ${{ steps.probe.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          prev="$(gh run list -R "$GITHUB_REPOSITORY" --workflow uptime.yml --status completed -L 5 \
+            --json conclusion -q 'map(select(.conclusion != "cancelled"))[0].conclusion')"
+          if [ "$OUTCOME" = failure ] && [ "$prev" != failure ]; then
+            msg="🔴 PugInspect backend is DOWN: https://puginspect.com/graphql is failing through Cloudflare. $RUN_URL"
+          elif [ "$OUTCOME" = success ] && [ "$prev" = failure ]; then
+            msg="🟢 PugInspect backend is back up."
+          else
+            exit 0
+          fi
+          jq -n --arg content "$msg" '{content: $content}' \
+            | curl -fsS -X POST -H 'Content-Type: application/json' -d @- "$DISCORD_WEBHOOK_URL"
