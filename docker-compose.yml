@@ -60,7 +60,13 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - internal
+      internal:
+        # nginx proxies to this name, not the bare service name: the frontend
+        # also sits on the shared `proxy` network, where any other stack's
+        # `backend` service answers to `backend` too. Oct 2026, miffer's did,
+        # and nginx sent every API request to it for hours.
+        aliases:
+          - puginspect-backend
 
   frontend:
     # Stock nginx, and long-lived. A deploy swaps the files underneath it
