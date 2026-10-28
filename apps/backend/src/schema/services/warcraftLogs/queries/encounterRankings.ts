@@ -40,17 +40,6 @@ export const ENCOUNTER_RANKINGS_BOTH: DocumentNode = gql`
   }
 `;
 
-/** Same, healing metric only. */
-export const ENCOUNTER_RANKINGS_HPS: DocumentNode = gql`
-  query EncounterRankingsHps($encounterID: Int!, $page: Int!, $className: String!, $specName: String!) {
-    worldData {
-      encounter(id: $encounterID) {
-        hps: characterRankings(difficulty: 10, metric: hps, bracket: 0, page: $page, className: $className, specName: $specName, includeCombatantInfo: true)
-      }
-    }
-  }
-`;
-
 /** Dungeon list + keystone bracket range for a Mythic+ season zone. */
 export const MYTHIC_PLUS_ZONE: DocumentNode = gql`
   query MythicPlusZone($zoneID: Int!) {

@@ -4,10 +4,13 @@ import { createLogger } from "../../utils/logger.js";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { dedupeInFlight, normalizeRealm } from "../../utils/helpers.js";
 import { markCache, markStale } from "../../utils/spans.js";
-import { getCachedWclProfile, persistWclProfile } from "../../../db/persistence.js";
-import {
+import { getCachedWclProfile, persistWclProfile, type CharacterKey, type WclQueryKey } from "../../../db/persistence.js";
+import type {
   CharacterProfileQuery,
   CharacterProfileQueryVariables,
+  MythicPlusZoneQuery,
+  MythicPlusZoneQueryVariables,
+  WclRateLimitQuery,
   ZonePartitionsQuery,
   ZonePartitionsQueryVariables,
 } from "./generated/index.js";
@@ -16,7 +19,6 @@ import { ZONE_PARTITIONS } from "./queries/zone.js";
 import {
   ENCOUNTER_RANKINGS_BOTH,
   ENCOUNTER_RANKINGS_DPS,
-  ENCOUNTER_RANKINGS_HPS,
   MYTHIC_PLUS_ZONE,
   RATE_LIMIT,
 } from "./queries/encounterRankings.js";
@@ -27,9 +29,11 @@ import type {
 import { GraphQLError } from "graphql";
 import { QueryCharacterArgs } from "@repo/graphql-types";
 import { mapDifficulty, buildProfileParams } from "./warcraftlogs.helpers.js";
-import { WclGraphQLClient } from "./wclGraphQLClient.js";
+import { isRateLimitError, WclGraphQLClient } from "./wclGraphQLClient.js";
 
 export type ZonePartitionInfo = { id: number; name: string; compactName: string; isDefault: boolean };
+
+type WclProfile = { data: CharacterProfileQuery["characterData"]; fetchedAt: number };
 
 const logger = createLogger({ service: "WarcraftLogs" });
 
@@ -56,10 +60,7 @@ export class WarcraftLogsService {
 
   private static readonly client = new WclGraphQLClient(WarcraftLogsService.tokens);
 
-  private static profileFetchInFlight = new Map<
-    string,
-    Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }>
-  >();
+  private static profileFetchInFlight = new Map<string, Promise<WclProfile>>();
 
   private static partitionCache = new Map<number, { partitions: ZonePartitionInfo[]; cachedAt: number }>();
   private static readonly PARTITION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -70,11 +71,9 @@ export class WarcraftLogsService {
   }
 
   /** Remaining rate-limit budget, so a crawl can yield to live lookups. */
-  static async getRateLimit(): Promise<{ limitPerHour: number; pointsSpentThisHour: number } | null> {
+  static async getRateLimit(): Promise<NonNullable<WclRateLimitQuery["rateLimitData"]> | null> {
     try {
-      const { data } = await this.client.query<{
-        rateLimitData?: { limitPerHour: number; pointsSpentThisHour: number };
-      }>(RATE_LIMIT.loc?.source.body ?? "", {});
+      const { data } = await this.client.query<WclRateLimitQuery>(RATE_LIMIT, {});
       return data?.rateLimitData ?? null;
     } catch (error) {
       logger.warn("Failed to read WarcraftLogs rate limit", { error: String(error) });
@@ -84,9 +83,9 @@ export class WarcraftLogsService {
 
   /** Dungeon list and keystone bracket range for a Mythic+ season zone. */
   static async getMythicPlusZone(zoneId: number): Promise<MythicPlusZone | undefined> {
-    const { data } = await this.client.query<{ worldData?: { zone?: MythicPlusZone } }>(
-      MYTHIC_PLUS_ZONE.loc?.source.body ?? "",
-      { zoneID: zoneId }
+    const { data } = await this.client.query<MythicPlusZoneQuery>(
+      MYTHIC_PLUS_ZONE,
+      { zoneID: zoneId } satisfies MythicPlusZoneQueryVariables
     );
     return data?.worldData?.zone ?? undefined;
   }
@@ -100,17 +99,13 @@ export class WarcraftLogsService {
     page: number,
     className: string,
     specName: string,
-    metric: "dps" | "hps" | "both"
+    metric: "dps" | "both"
   ): Promise<{ dps?: CharacterRankingsPage; hps?: CharacterRankingsPage }> {
-    const doc =
-      metric === "both"
-        ? ENCOUNTER_RANKINGS_BOTH
-        : metric === "hps"
-          ? ENCOUNTER_RANKINGS_HPS
-          : ENCOUNTER_RANKINGS_DPS;
+    // characterRankings is an untyped JSON scalar, so the generated query
+    // types say `any` — CharacterRankingsPage is the verified shape.
     const { data } = await this.client.query<{
       worldData?: { encounter?: { dps?: CharacterRankingsPage; hps?: CharacterRankingsPage } };
-    }>(doc.loc?.source.body ?? "", {
+    }>(metric === "both" ? ENCOUNTER_RANKINGS_BOTH : ENCOUNTER_RANKINGS_DPS, {
       encounterID: encounterId,
       page,
       className,
@@ -119,20 +114,16 @@ export class WarcraftLogsService {
     return data?.worldData?.encounter ?? {};
   }
 
+  /** Never throws: an empty list just hides the partition picker. */
   static async getZonePartitions(zoneId: number): Promise<ZonePartitionInfo[]> {
     const cached = this.partitionCache.get(zoneId);
     if (cached && Date.now() - cached.cachedAt < this.PARTITION_CACHE_TTL_MS) {
       return cached.partitions;
     }
 
-    if (this.client.isCircuitOpen()) {
-      trace.getActiveSpan()?.setAttribute("app.wcl.circuit_open", true);
-      return [];
-    }
-
     try {
       const { data } = await this.client.query<ZonePartitionsQuery>(
-        ZONE_PARTITIONS.loc?.source.body ?? "",
+        ZONE_PARTITIONS,
         { zoneID: zoneId } satisfies ZonePartitionsQueryVariables
       );
 
@@ -159,23 +150,21 @@ export class WarcraftLogsService {
     args: QueryCharacterArgs,
     bypassCache = false,
     cacheOnly = false
-  ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
-    const { name, realm, region, zoneId, partition: argPartition } = args;
-    const normalizedRealm = normalizeRealm(realm);
-    const partition = argPartition ?? undefined;
-    const cacheKey = `wcl:${region}:${normalizedRealm}:${name}:${zoneId ?? ""}:${args.difficulty ?? ""}:${args.role ?? ""}:${args.metric ?? ""}:${args.byBracket ?? ""}:${partition ?? ""}`.toLowerCase();
+  ): Promise<WclProfile> {
+    const key: CharacterKey = { region: args.region, realm: normalizeRealm(args.realm), name: args.name };
+    const params = buildProfileParams(args, args.partition ?? undefined);
 
     // Crawler traffic is served from cache only (stale allowed) and must
     // never spend upstream API quota.
     if (cacheOnly) {
-      const cached = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
+      const cached = await getCachedWclProfile(key, params, true);
       markCache("wcl", cached ? "hit" : "miss");
       if (cached) return cached;
       throw new GraphQLError("Character not cached", { extensions: { code: "NOT_FOUND" } });
     }
 
     if (!bypassCache) {
-      const cached = await this.checkCacheOrNull(args, normalizedRealm, partition);
+      const cached = await getCachedWclProfile(key, params);
       if (cached) {
         markCache("wcl", "hit");
         return cached;
@@ -183,127 +172,76 @@ export class WarcraftLogsService {
     }
     markCache("wcl", "miss");
 
+    // Derived from the same params as the DB row, so two requests share a
+    // fetch exactly when they would share a snapshot.
+    const inFlightKey = `wcl:${key.region}:${key.realm}:${key.name}:${Object.values(params).join(":")}`.toLowerCase();
+
     // Cache is checked above, outside the map — an in-flight entry is therefore
     // always a real upstream fetch, so even bypassCache callers can join it.
-    return dedupeInFlight(this.profileFetchInFlight, cacheKey, () =>
-      this.acquireCharacterProfile(args, normalizedRealm, partition)
-    );
+    return dedupeInFlight(this.profileFetchInFlight, inFlightKey, () => this.fetchProfile(args, key, params));
   }
 
-  private static async checkCacheOrNull(
+  private static async fetchProfile(
     args: QueryCharacterArgs,
-    normalizedRealm: string,
-    partition: number | undefined,
-    allowStale = false
-  ) {
-    return getCachedWclProfile(
-      { region: args.region, realm: normalizedRealm, name: args.name },
-      buildProfileParams(args, partition),
-      allowStale
-    );
-  }
+    key: CharacterKey,
+    params: WclQueryKey
+  ): Promise<WclProfile> {
+    const { role, metric, difficulty, byBracket, zoneId, partition } = args;
 
-  private static async executeWclRequest(
-    args: QueryCharacterArgs,
-    normalizedRealm: string,
-    partition: number | undefined
-  ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
-    const { name, region, role, metric, difficulty, byBracket, zoneId } = args;
-
-    const { data } = await this.client.query<CharacterProfileQuery>(
-      CHARACTER_PROFILE.loc?.source.body ?? "",
-      {
-        name,
-        server: normalizedRealm,
-        region,
+    try {
+      const { data } = await this.client.query<CharacterProfileQuery>(CHARACTER_PROFILE, {
+        name: key.name,
+        server: key.realm,
+        region: key.region,
         zoneID: zoneId ?? undefined,
         difficulty: mapDifficulty(difficulty),
         role,
         metric,
         byBracket,
-        partition,
-      } satisfies CharacterProfileQueryVariables
-    );
+        partition: partition ?? undefined,
+      } satisfies CharacterProfileQueryVariables);
 
-    // Every profile response carries rateLimitData; shout well before the
-    // quota is gone, since exhaustion trips the circuit breaker site-wide.
-    const rl = data?.rateLimitData;
-    if (rl) {
-      trace.getActiveSpan()?.setAttributes({
-        "app.wcl.rate_limit.points_spent": rl.pointsSpentThisHour,
-        "app.wcl.rate_limit.limit_per_hour": rl.limitPerHour,
-        "app.wcl.rate_limit.reset_in_s": rl.pointsResetIn,
-      });
-    }
-    if (rl?.limitPerHour && rl.pointsSpentThisHour != null && rl.pointsSpentThisHour / rl.limitPerHour > 0.8) {
-      logger.warn("WCL_QUOTA_HIGH", {
-        pointsSpentThisHour: rl.pointsSpentThisHour,
-        limitPerHour: rl.limitPerHour,
-        pointsResetIn: rl.pointsResetIn,
-      });
-    }
-
-    if (!data?.characterData?.character) {
-      return { data: null, fetchedAt: Math.floor(Date.now() / 1000) };
-    }
-
-    return { data: data.characterData, fetchedAt: Math.floor(Date.now() / 1000) };
-  }
-
-  private static persistAsync(
-    args: QueryCharacterArgs,
-    normalizedRealm: string,
-    partition: number | undefined,
-    characterData: NonNullable<CharacterProfileQuery["characterData"]>,
-    fetchedAt: number
-  ): void {
-    persistWclProfile(
-      { region: args.region, realm: normalizedRealm, name: args.name },
-      buildProfileParams(args, partition),
-      characterData,
-      fetchedAt
-    ).catch((err: unknown) => {
-      logger.warn("Failed to persist WCL profile to DB cache", { name: args.name, realm: normalizedRealm, region: args.region, error: String(err) });
-    });
-  }
-
-  private static async acquireCharacterProfile(
-    args: QueryCharacterArgs,
-    normalizedRealm: string,
-    partition: number | undefined = undefined
-  ): Promise<{ data: CharacterProfileQuery["characterData"]; fetchedAt: number }> {
-    if (this.client.isCircuitOpen()) {
-      const retryAfterMs = this.client.circuitRetryAfterMs();
-      // The circuit stays open for minutes and applies site-wide, so this is
-      // the one failure that blanks parses on every character page at once.
-      // An expired snapshot is a far better answer than a rate-limit error.
-      trace.getActiveSpan()?.setAttribute("app.wcl.circuit_open", true);
-      const stale = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
-      if (stale) {
-        markStale("wcl", stale.fetchedAt);
-        return stale;
+      // Every profile response carries rateLimitData; shout well before the
+      // quota is gone, since exhaustion trips the circuit breaker site-wide.
+      const rl = data?.rateLimitData;
+      if (rl) {
+        trace.getActiveSpan()?.setAttributes({
+          "app.wcl.rate_limit.points_spent": rl.pointsSpentThisHour,
+          "app.wcl.rate_limit.limit_per_hour": rl.limitPerHour,
+          "app.wcl.rate_limit.reset_in_s": rl.pointsResetIn,
+        });
       }
-      throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
-        extensions: { code: "RATE_LIMITED", retryAfterMs },
-      });
-    }
-
-    try {
-      const result = await this.executeWclRequest(args, normalizedRealm, partition);
-      if (result.data) {
-        this.persistAsync(args, normalizedRealm, partition, result.data, result.fetchedAt);
+      if (rl?.limitPerHour && rl.pointsSpentThisHour != null && rl.pointsSpentThisHour / rl.limitPerHour > 0.8) {
+        logger.warn("WCL_QUOTA_HIGH", {
+          pointsSpentThisHour: rl.pointsSpentThisHour,
+          limitPerHour: rl.limitPerHour,
+          pointsResetIn: rl.pointsResetIn,
+        });
       }
-      return result;
+
+      const fetchedAt = Math.floor(Date.now() / 1000);
+      if (!data?.characterData?.character) return { data: null, fetchedAt };
+
+      persistWclProfile(key, params, data.characterData, fetchedAt).catch((err: unknown) => {
+        logger.warn("Failed to persist WCL profile to DB cache", { ...key, error: String(err) });
+      });
+      return { data: data.characterData, fetchedAt };
     } catch (error) {
-      if (error instanceof GraphQLError) throw error;
-      trace.getActiveSpan()?.recordException(error as Error);
+      // Rate limits included — whether the circuit was already open or this
+      // very request tripped it. The circuit stays open for minutes and applies
+      // site-wide, so it is the one failure that blanks parses on every
+      // character page at once; an expired snapshot beats an error.
+      const rateLimited = isRateLimitError(error);
+      if (rateLimited) trace.getActiveSpan()?.setAttribute("app.wcl.circuit_open", true);
+      else trace.getActiveSpan()?.recordException(error as Error);
 
-      const stale = await this.checkCacheOrNull(args, normalizedRealm, partition, true);
+      const stale = await getCachedWclProfile(key, params, true);
       if (stale) {
         markStale("wcl", stale.fetchedAt);
         return stale;
       }
 
+      if (rateLimited) throw error;
       throw new GraphQLError("Failed to fetch character profile from Warcraft Logs", {
         extensions: { code: "INTERNAL_SERVER_ERROR" },
       });

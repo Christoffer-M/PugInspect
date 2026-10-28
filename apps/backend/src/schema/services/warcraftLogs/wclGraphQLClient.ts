@@ -1,5 +1,5 @@
 import { trace } from "@opentelemetry/api";
-import { GraphQLError } from "graphql";
+import { GraphQLError, print, type DocumentNode } from "graphql";
 import { OAuthTokenManager } from "../../utils/oauthTokenManager.js";
 import { createLogger } from "../../utils/logger.js";
 
@@ -24,21 +24,26 @@ export class WclGraphQLClient {
     return Date.now() < this.circuitOpenUntil;
   }
 
-  circuitRetryAfterMs(): number {
-    return Math.max(0, this.circuitOpenUntil - Date.now());
+  private rateLimited(): GraphQLError {
+    return new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
+      extensions: { code: "RATE_LIMITED", retryAfterMs: Math.max(0, this.circuitOpenUntil - Date.now()) },
+    });
   }
 
-  async query<T>(query: string, variables: object): Promise<{ data: T }> {
+  private tripCircuit(context: Record<string, unknown> = {}): GraphQLError {
+    this.circuitOpenUntil = Date.now() + RATE_LIMIT_BACKOFF_MS;
+    logger.warn("WCL_CIRCUIT_OPENED", { retryAfterMs: RATE_LIMIT_BACKOFF_MS, ...context });
+    return this.rateLimited();
+  }
+
+  async query<T>(document: DocumentNode, variables: object): Promise<{ data: T }> {
     if (this.isCircuitOpen()) {
-      const retryAfterMs = this.circuitRetryAfterMs();
       trace.getActiveSpan()?.setAttribute("app.wcl.circuit_open", true);
-      throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
-        extensions: { code: "RATE_LIMITED", retryAfterMs },
-      });
+      throw this.rateLimited();
     }
 
     const token = await this.tokens.getToken();
-    const body = JSON.stringify({ query, variables });
+    const body = JSON.stringify({ query: print(document), variables });
 
     // A hung fetch would hang every caller joined on the in-flight dedup map
     // and pin its entry until restart. 15s (not the 10s used for Blizzard/RIO)
@@ -50,14 +55,7 @@ export class WclGraphQLClient {
       signal: AbortSignal.timeout(15_000),
     });
 
-    if (res.status === 429) {
-      this.circuitOpenUntil = Date.now() + RATE_LIMIT_BACKOFF_MS;
-      const retryAfterMs = this.circuitRetryAfterMs();
-      logger.warn("WCL_CIRCUIT_OPENED", { retryAfterMs });
-      throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
-        extensions: { code: "RATE_LIMITED", retryAfterMs },
-      });
-    }
+    if (res.status === 429) throw this.tripCircuit();
 
     if (!res.ok) {
       throw new Error(`WCL request failed: ${res.status} ${res.statusText}`);
@@ -68,14 +66,7 @@ export class WclGraphQLClient {
       const messages = json.errors.map((e) => e.message).join("; ");
       // WCL also reports quota exhaustion inside a 200 response's errors
       // array; treat it like a 429 so callers back off instead of retrying.
-      if (/rate limit/i.test(messages)) {
-        this.circuitOpenUntil = Date.now() + RATE_LIMIT_BACKOFF_MS;
-        const retryAfterMs = this.circuitRetryAfterMs();
-        logger.warn("WCL_CIRCUIT_OPENED", { retryAfterMs, messages });
-        throw new GraphQLError("WarcraftLogs is temporarily rate-limited. Please try again later.", {
-          extensions: { code: "RATE_LIMITED", retryAfterMs },
-        });
-      }
+      if (/rate limit/i.test(messages)) throw this.tripCircuit({ messages });
       // GraphQL permits errors alongside usable partial data (e.g. one
       // restricted sub-field on an otherwise-valid character profile) — only a
       // data-less error response is fatal. Left unchecked those surfaced as
