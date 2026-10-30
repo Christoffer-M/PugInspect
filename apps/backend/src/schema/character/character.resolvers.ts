@@ -304,13 +304,7 @@ export default {
     zonePartitions: async (
       _: unknown,
       args: QueryZonePartitionsArgs
-    ) => {
-      try {
-        return await WarcraftLogsService.getZonePartitions(args.zoneId);
-      } catch {
-        return [];
-      }
-    },
+    ) => WarcraftLogsService.getZonePartitions(args.zoneId),
 
     characterSuggestions: async (
       _: unknown,

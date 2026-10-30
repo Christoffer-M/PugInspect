@@ -1,7 +1,7 @@
 import type { SpecRole } from "@repo/graphql-types";
 import { createLogger } from "../../utils/logger.js";
 import type { Parse } from "./stats.js";
-import { lookupSpec, metricForRole, SPECS } from "./specs.js";
+import { lookupSpec, SPECS } from "./specs.js";
 import { HERO_TALENTS } from "../../../generated/heroTalents.js";
 import { isRateLimitError } from "../warcraftLogs/wclGraphQLClient.js";
 import type {
@@ -39,7 +39,7 @@ export type RankingsFetcher = (
   page: number,
   className: string,
   specName: string,
-  metric: "dps" | "hps" | "both"
+  metric: "dps" | "both"
 ) => Promise<{ dps?: CharacterRankingsPage; hps?: CharacterRankingsPage }>;
 
 /**
@@ -118,7 +118,7 @@ export async function crawlDungeon(
   for (const spec of SPECS) {
     // Healers are shown on both healing and damage; one dual-alias request
     // covers both for ~1 extra point.
-    const metric = spec.role === "HEALER" ? "both" : metricForRole(spec.role);
+    const metric = spec.role === "HEALER" ? "both" : "dps";
     try {
       for (let page = 1; page <= PAGES_PER_SPEC; page++) {
         const result = await fetchPage(encounterId, page, spec.classSlug, spec.specSlug, metric);

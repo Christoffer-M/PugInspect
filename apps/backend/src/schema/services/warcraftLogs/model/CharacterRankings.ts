@@ -1,3 +1,5 @@
+import type { MythicPlusZoneQuery } from "../generated/index.js";
+
 /**
  * Shape of the untyped `JSON` blob returned by
  * `worldData.encounter.characterRankings`. Verified against the live API.
@@ -43,9 +45,4 @@ export type CharacterRankingRow = {
   server?: { id?: number; name?: string; region?: string };
 };
 
-export type MythicPlusZone = {
-  id?: number;
-  name?: string;
-  brackets?: { min?: number; max?: number; bucket?: number };
-  encounters?: { id?: number; name?: string }[];
-};
+export type MythicPlusZone = NonNullable<NonNullable<MythicPlusZoneQuery["worldData"]>["zone"]>;
