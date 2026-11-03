@@ -58,4 +58,18 @@ describe("RaiderIOService.getCharacterProfile", () => {
       "Character not found on RaiderIO"
     );
   });
+
+  // Private profiles answer 403 "Profile is private". That's a user-side state,
+  // not a RaiderIO failure, and stale data would leak what they've hidden.
+  it("maps a private profile 403 to NOT_FOUND without serving stale data", async () => {
+    onlyStaleCached();
+    vi.mocked(fetcher).mockRejectedValue(
+      new FetchError("Fetch failed: 403 Forbidden", 403, "Profile is private")
+    );
+
+    await expect(RaiderIOService.getCharacterProfile(args())).rejects.toMatchObject({
+      message: "Character profile is private on RaiderIO",
+      extensions: { code: "NOT_FOUND" },
+    });
+  });
 });

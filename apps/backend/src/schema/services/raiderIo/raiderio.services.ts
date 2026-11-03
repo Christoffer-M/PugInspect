@@ -173,6 +173,19 @@ export class RaiderIOService {
         });
       }
 
+      // 403 "Profile is private": the player hid their RaiderIO profile. That's
+      // user input, not an outage — and a stale snapshot would show data they've
+      // since hidden, so no cache fallback either.
+      if (
+        error instanceof FetchError &&
+        error.status === 403 &&
+        /private/i.test(error.apiMessage)
+      ) {
+        throw new GraphQLError("Character profile is private on RaiderIO", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
       // RaiderIO is flaky enough that blanking the recent runs on every blip
       // is the worse answer for a character we looked up minutes ago. Serve
       // the expired snapshot instead — the TTL is 15 minutes, so "stale" is
