@@ -245,7 +245,7 @@ export class BlizzardService {
       // a slow gear panel is often the icons, not the equipment call. Misses
       // above zero on most requests mean the in-process icon cache is churning.
       await withSpan("blizzard.item_icons", {}, async () => {
-        const iconMisses = await this.resolveItemIcons(data, token);
+        const iconMisses = await this.resolveItemIcons(data, token, region);
         trace.getActiveSpan()?.setAttribute("app.blizzard.icon_misses", iconMisses);
       });
 
@@ -272,14 +272,18 @@ export class BlizzardService {
   /** Sets iconUrl on every equipped item, fetching item media only for cache
    *  misses. Per-item failures are non-fatal. Returns how many items missed the
    *  process cache, i.e. how many upstream requests this fan-out actually made. */
-  private static async resolveItemIcons(data: BlizzardCharacterEquipment, token: string): Promise<number> {
+  private static async resolveItemIcons(data: BlizzardCharacterEquipment, token: string, region: string): Promise<number> {
     const misses = data.equipped_items.filter((it) => !itemIconCache.has(it.item.id));
 
     await Promise.allSettled(
       misses.map(async (it) => {
-        // media.key.href normally carries the static namespace as a query string
-        const href = it.media.key.href;
-        const res = await fetch(`${href}${href.includes("?") ? "&" : "?"}locale=en_US`, {
+        // media.key.href pins the versioned static namespace of the build the
+        // character was last saved on (e.g. static-12.0.5_66741-eu), and Blizzard
+        // 404s old builds' namespaces. Keep the host/path, force the unversioned one.
+        const url = new URL(it.media.key.href);
+        url.searchParams.set("namespace", `static-${region.toLowerCase()}`);
+        url.searchParams.set("locale", "en_US");
+        const res = await fetch(url.href, {
           headers: { Authorization: `Bearer ${token}` },
           signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
         });
