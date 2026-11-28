@@ -114,3 +114,34 @@ describe("BlizzardService negative cache", () => {
     expect(vi.mocked(fetch).mock.calls.length).toBeGreaterThan(afterFirst);
   });
 });
+
+describe("BlizzardService item icons", () => {
+  // Equipment hrefs pin the static namespace of the build the character was last
+  // saved on; Blizzard 404s old builds, so icons must use the unversioned one.
+  it("requests item media with the unversioned static namespace", async () => {
+    const gear = {
+      _links: { self: { href: "" } },
+      equipped_items: [{
+        item: { key: { href: "" }, id: 990001 },
+        media: {
+          key: { href: "https://eu.api.blizzard.com/data/wow/media/item/990001?namespace=static-12.0.5_66741-eu" },
+          id: 990001,
+        },
+      }],
+    };
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("oauth")) return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }), { status: 200 });
+      if (url.includes("/equipment")) return new Response(JSON.stringify(gear), { status: 200 });
+      return url.includes("namespace=static-eu&")
+        ? new Response(JSON.stringify({ assets: [{ key: "icon", value: "https://render/icon.jpg" }] }), { status: 200 })
+        : new Response("", { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { data } = await BlizzardService.getCharacterEquipment(args());
+
+    const mediaUrl = fetchMock.mock.calls.map(([u]) => u as string).find((u) => u.includes("/media/item/"));
+    expect(mediaUrl).toBe("https://eu.api.blizzard.com/data/wow/media/item/990001?namespace=static-eu&locale=en_US");
+    expect(data.equipped_items[0]!.iconUrl).toBe("https://render/icon.jpg");
+  });
+});
